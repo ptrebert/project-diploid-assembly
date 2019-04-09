@@ -1,0 +1,3 @@
+# Execute in Snakefile folder
+
+snakemake --configfile snake_config.yml --profile environment/snakemake/d3compute
