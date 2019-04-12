@@ -1,5 +1,5 @@
 
-notify: False
+notify: True
 notify_email: pebert@mpi-inf.mpg.de
 
 
@@ -10,20 +10,47 @@ ref_genome:
 
 
 read_files:
-  ucsc_round2:
+  ucsc1:
+    fileN:
+      skip: 0
+      range: 1354
+      url: https://miten-giab-pion-data.s3-us-west-2.amazonaws.com/10_10_18_pION_GM24385_NB_SS/basecalled/GM24385NBMR101018/1-A7-D7/fastq_{FILENUM}.fastq
+      name: HG002.ucsc1.ont-ul.chunk.{FILENUM}
+  pangen:
     file1:
+      skip: 0
       url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_1.fastq.gz
-      name: HG002.ucsc2.ont.part1
+      name: HG002.pangen.ont-ul.part.1
     file2:
+      skip: 0
       url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_2.fastq.gz
-      name: HG002.ucsc2.ont.part2
+      name: HG002.pangen.ont-ul.part.2
     file3:
+      skip: 0
       url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_3.fastq.gz
-      name: HG002.ucsc2.ont.part3
+      name: HG002.pangen.ont-ul.part.3
+    file4:
+      skip: 0
+      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_1.fastq.gz
+      name: HG00733.pangen.ont-ul.part.1
+    file5:
+      skip: 0
+      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_2.fastq.gz
+      name: HG00733.pangen.ont-ul.part.2
+    file6:
+      skip: 0
+      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_3.fastq.gz
+      name: HG00733.pangen.ont-ul.part.3
   giab:
     file1:
+      skip: 1
       url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-05-18/combined_2018-05-18.fastq.gz
-      name: HG002.giab.ont-ul.201805
+      name: HG002.giab.ont-ul.part.1805
     file2:
+      skip: 1
       url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-08-10/combined_2018-08-10.fastq.gz
-      name: HG002.giab.ont-ul.201808
+      name: HG002.giab.ont-ul.part.1808
+    file3:
+      skip: 0
+      url: https://miten-giab-pion-data.s3-us-west-2.amazonaws.com/2019-02-13_albacore.fastq
+      name: HG002.giab.ont-ul.cmp
