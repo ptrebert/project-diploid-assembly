@@ -1,0 +1,165 @@
+#############################################
+# Processing template / Snakemake pipeline
+# by Tobias Marschall
+#
+# Pipeline in repository root follows this
+# setup w/o hard coding for specific samples
+##############################################
+
+
+REFERENCE = "ref/GRCh38_full_analysis_set_plus_decoy_hla.fa"
+chromosomes = ['chr'+str(x) for x in range(1,23)] + ['chrX']
+
+
+rule download_pacbio_reads:
+    output: 'pacbio/fastq/HG00733.fastq.gz'
+    log: 'pacbio/fastq/HG00733.fastq.gz.log'
+    resources: download=16
+    shell: 'aria2c -x 16 -s 16 -o {output} ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR761/003/SRR7615963/SRR7615963_subreads.fastq.gz > {log} 2>&1'
+    #shell: 'wget --output-file={log} -O {output} ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR761/003/SRR7615963/SRR7615963_subreads.fastq.gz'
+
+#rule download_pacbio_reads:
+    #output: 'pacbio/fasta/HG00733.fasta.gz'
+    #log: 'pacbio/fasta/HG00733.fasta.gz.log'
+    #resources: download=1
+    #shell: '(fastq-dump SRR7615963 --stdout --fasta | pigz > {output}) 2> {log}'
+
+
+rule map_pacbio:
+    input:
+        fastq='pacbio/fastq/HG00733.fastq.gz',
+        ref=REFERENCE,
+    output:
+        cram=temp('pacbio/cram/HG00733.cram')
+    log: 'pacbio/cram/HG00733.log'
+    threads: 48
+    shell: '(minimap2 -t {threads} -R \'@RG\\tID:1\\tSM:HG00733\' -ax map-pb {input.ref} {input.fastq} | samtools view -T {input.ref} -C - > {output.cram}) 2> {log}'
+
+
+rule sort_cram:
+    input:
+        cram='{file}.cram'
+    output:
+        cram='{file}.sorted.cram'
+    threads: 10
+    shell:
+        'samtools sort -o {output.cram} -m 25G -@ {threads} {input.cram}'
+
+rule index_cram:
+    input:
+        cram='{file}.sorted.cram'
+    output:
+        crai='{file}.sorted.cram.crai'
+    threads: 4
+    shell:
+        'samtools index -@ {threads} {input.cram}'
+
+
+rule phase_pb:
+    input:
+        vcf='snvs/HG00733.{chromosome}.vcf.gz',
+        tbi='snvs/HG00733.{chromosome}.vcf.gz.tbi',
+        cram='pacbio/cram/HG00733.sorted.cram',
+        crai='pacbio/cram/HG00733.sorted.cram.crai',
+        ref=REFERENCE,
+    output:
+        vcf='phased-snvs/pb/HG00733.{chromosome}.vcf.gz',
+    log: 'phased-snvs/pb/HG00733.{chromosome}.vcf.log'
+    shell: 'whatshap phase --reference {input.ref} --chromosome {wildcards.chromosome} -o {output.vcf} {input.vcf} {input.cram} > {log} 2>&1'
+
+
+rule phase_pb_ss:
+    input:
+        vcf='snvs/HG00733.{chromosome}.vcf.gz',
+        tbi='snvs/HG00733.{chromosome}.vcf.gz.tbi',
+        cram='pacbio/cram/HG00733.sorted.cram',
+        crai='pacbio/cram/HG00733.sorted.cram.crai',
+        ss_vcf='input/strandseq/HG00733/{chromosome}.vcf',
+        ref=REFERENCE,
+    output:
+        vcf='phased-snvs/pb_ss/HG00733.{chromosome}.vcf.gz',
+    log: 'phased-snvs/pb_ss/HG00733.{chromosome}.vcf.log'
+    shell: 'whatshap phase --reference {input.ref} --chromosome {wildcards.chromosome} -o {output.vcf} {input.vcf} {input.cram} {input.ss_vcf} > {log} 2>&1'
+
+
+rule vcf_extract_sample:
+    input:
+        vcf='input/snv-calls-family/PR05.{chromosome}.vcf.gz',
+        tbi='input/snv-calls-family/PR05.{chromosome}.vcf.gz.tbi',
+    output:
+        vcf='snvs/HG00733.{chromosome}.vcf.gz',
+    log: 'snvs/HG00733.{chromosome}.log'
+    shell: 'bcftools view --samples HG00733 --output-file {output.vcf} --output-type z {input.vcf} > {log} 2>&1'
+
+
+rule index_vcf:
+    input:
+        vcf='{file}.vcf.gz'
+    output:
+        tbi='{file}.vcf.gz.tbi'
+    log: '{file}.vcf.gz.tbi.log'
+    shell: 'bcftools index --tbi --output-file {output.tbi} {input.vcf} > {log} 2>&1'
+
+
+rule merge_vcfs:
+    input:
+        vcf=expand('phased-snvs/{{what}}/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
+        tbi=expand('phased-snvs/{{what}}/HG00733.{chromosome}.vcf.gz.tbi', chromosome=chromosomes),
+    output:
+        vcf='phased-snvs-merged/{what}/HG00733.vcf.gz',
+    log:
+        vcf='phased-snvs-merged/{what}/HG00733.log',
+    shell:
+        'bcftools concat -o {output.vcf} -O z {input.vcf} > {log} 2>&1'
+
+
+rule haplotag:
+    input:
+        vcf='phased-snvs-merged/pb_ss/HG00733.vcf.gz',
+        tbi='phased-snvs-merged/pb_ss/HG00733.vcf.gz.tbi',
+        cram='pacbio/cram/HG00733.sorted.cram',
+        crai='pacbio/cram/HG00733.sorted.cram.crai',
+        ref=REFERENCE,
+    output:
+        cram='pacbio/cram/HG00733.sorted.tagged.cram',
+        taglist='pacbio/cram/HG00733.haplotag.tsv.gz',
+    log:
+        'pacbio/cram/HG00733.haplotag.log'
+    shell:
+        'whatshap haplotag -o {output.cram} -r {input.ref} --output-haplotag-list {output.taglist} {input.vcf} {input.cram} > {log} 2>&1'
+
+
+rule haplosplit_fastq:
+    input:
+        fastq='pacbio/fastq/HG00733.fastq.gz',
+        taglist='pacbio/cram/HG00733.haplotag.tsv.gz',
+    output:
+        fastq1='pacbio/fastq/HG00733.h1-only.fastq.gz',
+        fastq2='pacbio/fastq/HG00733.h2-only.fastq.gz',
+    log:
+        'pacbio/fastq/HG00733.h1-only.log'
+    shell:
+        'whatshap split --pigz --output-h1 {output.fastq1} --output-h2 {output.fastq2} {input.fastq} {input.taglist} > {log} 2>&1'
+
+
+rule haplosplit_fastq_include_untagged:
+    input:
+        fastq='pacbio/fastq/HG00733.fastq.gz',
+        taglist='pacbio/cram/HG00733.haplotag.tsv.gz',
+    output:
+        fastq1='pacbio/fastq/HG00733.h1-plus-untagged.fastq.gz',
+        fastq2='pacbio/fastq/HG00733.h2-plus-untagged.fastq.gz',
+    log:
+        'pacbio/fastq/HG00733.h1-plus-untagged.log'
+    shell:
+        'whatshap split --pigz --add-untagged --output-h1 {output.fastq1} --output-h2 {output.fastq2} {input.fastq} {input.taglist} > {log} 2>&1'
+
+rule wtdbg2:
+    input:
+        fastq='pacbio/fastq/HG00733.h{hap}.fastq.gz',
+    output:
+        layout='wtdbg2/HG00733-h{hap}.ctg.lay.gz',
+    log: 'wtdbg2/HG00733-h{hap}.log'
+    threads: 48
+    shell:
+        'wtdbg2 -x sq -g3g -t {threads} -i {input.fastq} -o wtdbg2/HG00733-h{wildcards.hap} > {log} 2>&1'
