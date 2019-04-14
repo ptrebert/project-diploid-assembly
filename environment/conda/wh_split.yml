@@ -1,0 +1,9 @@
+name: wh_split
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.6.*
+  - cython=0.29.6
+  - pip:
+    - git+https://bitbucket.org/whatshap/whatshap@split
