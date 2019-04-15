@@ -4,8 +4,8 @@ import collections as col
 wildcard_constraints:
     sample="HG[0-9]{3,5}"
 
-REFKEY = config['use_reference_genome']
-REFNAME = config['ref_genome'][REFKEY]['name']
+REFKEY = config['use_ref_genome']
+REFNAME = REFKEY + '.fa'
 REFCHROM = config['chromosomes'][REFKEY]
 
 # Collect ALL
@@ -65,10 +65,20 @@ for project, source_files in config['read_files'].items():
 SAMPLES = sorted(set(SAMPLES))
 PROJECTS = sorted(set(PROJECTS))
 
+# TODO this needs to be reworked
+REF_DOWNLOADS = ['GRCh38_decoy_hla.fa',
+                 'GRCh38_giab_HG002_hconf-regions.bed',
+                 'GRCh38_giab_HG002_hconf-variants.vcf.gz',
+                 'GRCh38_giab_HG002_hconf-variants.vcf.gz.tbi']
+
+# this needs to be sorted out when finalizing the pipeline
+ruleorder: merge_part_read_files > download_uncompressed_reads_complete
+ruleorder: merge_phased_variants > prepare_trio_phased_variants
 
 rule master:
     input:
-        'references/' + REFNAME,
+        expand('references/{ref_file}',
+                ref_file=REF_DOWNLOADS),
         # Output files: download tasks
         expand('input/read_data/part/{gzfile}.fastq.gz',
                 gzfile=DOWNLOAD_SORT[(0, 1, 0, 1)]),
@@ -76,7 +86,7 @@ rule master:
         expand('input/read_data/chunk/{rawfile}.fastq.gz',
                 rawfile=DOWNLOAD_SORT[(1, 0, 0, 0)]),
 
-        expand('input/read_data/cmp/{rawfile}.fastq.gz',
+        expand('input/read_data/aln_ready/{rawfile}.fastq.gz',
                 rawfile=DOWNLOAD_SORT[(0, 0, 1, 0)]),
 
         # Mapping of chunks fails w/o error message - merge chunks
@@ -85,20 +95,22 @@ rule master:
                 subset=[1, 2, 3, 4, 5], split=[5],
                 sample=['HG002'], project=['ucsc1']),
 
+        expand('input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz',
+                sample=['HG002'], project=['ucsc1', 'pangen', 'giab']),
+        expand('input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz',
+                sample=['HG00733'], project=['pangen']),
+
         # Output files: read mapping against reference
         expand('output/alignments/{sample}.{project}.ont-ul.cram',
-                sample=['HG002', 'HG00733'], project=['pangen']),
+                sample=['HG00733'], project=['pangen']),
         expand('output/alignments/{sample}.{project}.ont-ul.cram',
-                sample=['HG002'], project=['giab']),
-        expand('output/alignments/{sample}.{project}.ont-ul.cram',
-                sample=['HG002'], project=['ucsc1']),
+                sample=['HG002'], project=['giab', 'pangen', 'ucsc1']),
+
 
         expand('output/sorted_aln/{sample}.{project}.ont-ul.sorted.cram',
-                sample=['HG002', 'HG00733'], project=['pangen']),
+                sample=['HG00733'], project=['pangen']),
         expand('output/sorted_aln/{sample}.{project}.ont-ul.sorted.cram',
-                sample=['HG002'], project=['giab']),
-        expand('output/sorted_aln/{sample}.{project}.ont-ul.sorted.cram',
-                sample=['HG002'], project=['ucsc1']),
+                sample=['HG002'], project=['giab', 'ucsc1', 'pangen']),
 
         # Phase variants
         expand('output/phased_variants/{sample}.{project}.{chromosome}.vcf.gz',
@@ -108,12 +120,21 @@ rule master:
         # Merge phased variants
         expand('output/merged_phased_variants/{sample}.{project}.vcf.gz',
                 sample=['HG00733'], project=['pangen']),
+        expand('output/merged_phased_variants/{sample}.{project}.vcf.gz',
+                sample=['HG002'], project=['giab', 'pangen', 'ucsc1']),
 
         # Perform haplo-tagging
         expand('output/tagged_aln/{sample}.{project}.ont-ul.sorted.tagged.cram',
                 sample=['HG00733'], project=['pangen']),
         expand('output/tagged_aln/{sample}.{project}.ont-ul.haplotag.tsv.gz',
-                sample=['HG00733'], project=['pangen'])
+                sample=['HG00733'], project=['pangen']),
+
+        # Split by haplotype
+        expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz',
+                sample=['HG00733'], project=['pangen'], tag=['h1', 'h2', 'un']),
+        expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz',
+                sample=['HG002'], project=['pangen', 'giab', 'ucsc1'],
+                tag=['h1', 'h2', 'un'])
 
 #        expand('phased-snvs/pb/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
 #        expand('phased-snvs/pb_ss/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
@@ -135,25 +156,30 @@ onerror:
         shell('mail -s "[Snakemake] diploid genome assembly - ERRROR" {} < {{log}}'.format(config['notify_email']))
 
 
-rule download_reference_genome:
-    output:
-        'references/' + REFNAME,
-    log: 'log/DL_{}.log'.format(REFNAME)
-    threads: 4
-    params:
-        seq_url = config['ref_genome'][REFKEY]['url']
-    run:
-        exec = 'aria2c -s {threads} -x {threads}'
-        exec += ' -o {output}'
-        exec += ' {params.seq_url}'
-        exec += ' &> {log}'
-        shell(exec)
+for record in config['ref_data']:
+    if 'load' not in record:
+        continue
+    remote_url = record['load']['url']
+    local_name = record['load']['name']
+    local_path = 'references/' + local_name
+    rule:
+        output:
+            local_path
+        log: 'log/references/DL_{}.log'.format(local_name.rsplit('.', 1)[0])
+        threads: 4
+        message: 'Downloading reference file {}'.format(local_name)
+        run:
+            exec = 'aria2c -s {threads} -x {threads}'
+            exec += ' -o {output}'
+            exec += ' {}'.format(remote_url)
+            exec += ' &> {log}'
+            shell(exec)
 
 
 rule download_big_gzipped_reads:
     output:
-        expand('input/read_data/{size}/{{gzfile}}.fastq.gz',
-                size=['part'])
+        expand('input/read_data/{status}/{{gzfile}}.fastq.gz',
+                status=['part'])
     log: 'log/download/{gzfile}.log'
     threads: 8
     run:
@@ -171,8 +197,8 @@ rule download_uncompressed_reads_chunk:
     in parallel and cause a s***load of I/O
     """
     output:
-        expand('input/read_data/{size}/{{rawfile}}.fastq.gz',
-                size=['chunk']),
+        expand('input/read_data/{status}/{{rawfile}}.fastq.gz',
+                status=['chunk']),
     log: 'log/download/{rawfile}.log'
     threads: 1
     run:
@@ -185,8 +211,8 @@ rule download_uncompressed_reads_chunk:
 
 rule download_uncompressed_reads_complete:
     output:
-        expand('input/read_data/{size}/{{rawfile}}.fastq.gz',
-                size=['cmp'])
+        expand('input/read_data/{status}/{{rawfile}}.fastq.gz',
+                status=['aln_ready'])
     log: 'log/download/{rawfile}.log'
     threads: 1
     run:
@@ -205,7 +231,7 @@ def collect_read_files_merging(wildcards):
     data_path = os.path.join(os.getcwd(), 'input', 'read_data')
     input_files = []
     for root, dirs, files in os.walk(data_path):
-        if any([root.endswith(s) for s in ['part', 'chunk']]):
+        if any([root.endswith(s) for s in ['chunk']]):
             read_files = sorted(filter(filter_fun, files), key=lambda x: int(x.split('.')[-3]))
             subset_size = int(len(read_files) // split)
             # this is left-exclusive as chunks are enumerated starting from 1
@@ -232,14 +258,16 @@ rule merge_chunked_read_files:
     shell:
         "cat {input} > {output} 2> {log}"
 
-
-def collect_read_files_alignment(wildcards):
+# Why this? Turns out WhatsHap split can actually not process
+# several FASTQ files in one go - so merging read into one file
+# should simply become the standard starting point for this pipeline...
+def collect_read_subsets_aln_ready(wildcards):
 
     filter_fun = lambda x: wildcards.sample in x and wildcards.project in x
     data_path = os.path.join(os.getcwd(), 'input', 'read_data')
     input_files = []
     for root, dirs, files in os.walk(data_path):
-        if any([root.endswith(s) for s in ['part', 'cmp', 'mrg']]):
+        if any([root.endswith(s) for s in ['part', 'mrg']]):
             read_files = filter(filter_fun, files)
             read_files = [os.path.join(root, f) for f in sorted(read_files)]
             input_files.extend(read_files)
@@ -247,10 +275,42 @@ def collect_read_files_alignment(wildcards):
     return input_files
 
 
+rule merge_part_read_files:
+    input:
+        read_data = collect_read_subsets_aln_ready
+    output:
+        'input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz'
+    log: 'log/aln-ready_{sample}.{project}.log'
+    shell:
+        "cat {input} > {output} 2> {log}"
+
+
+rule prepare_trio_phased_variants:
+    input:
+        vcf = 'references/trio-phased-variants/AJ.vcf.gz',
+        tbi = 'references/trio-phased-variants/AJ.vcf.gz.tbi'
+    output:
+        vcf = 'output/merged_phased_variants/{sample}.{project}.vcf.gz',
+        tbi = 'output/merged_phased_variants/{sample}.{project}.vcf.gz.tbi',
+    log: 'log/prep_trio_phased/{sample}.{project}.log'
+    run:
+        exec = 'bcftools view -o {output.vcf} -O z --samples {wildcards.sample} {input.vcf} &> {log}'
+        exec += ' && '
+        exec += 'bcftools index --tbi --output-file {output.tbi} {output.vcf} &>> {log}'
+        shell(exec)
+
+
+####################################################
+# The following rules represent the actual pipeline
+# Everything above is subject to change depending
+# on the input data and final phasing strategy
+####################################################
+
+
 rule map_reads:
     input:
         reference = 'references/' + REFNAME,
-        read_data = collect_read_files_alignment
+        read_data = 'input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz'
     output:
         'output/alignments/{sample}.{project}.ont-ul.cram'
     log:
@@ -294,9 +354,9 @@ rule sort_cram_alignments:
 
 rule index_cram_alignments:
     input:
-        cram='{cramfile}.sorted.cram'
+        cram = '{cramfile}.sorted.cram'
     output:
-        crai='{cramfile}.sorted.cram.crai'
+        crai = '{cramfile}.sorted.cram.crai'
     threads: 8
     shell:
         "samtools index -@ {threads} {input.cram}"
@@ -351,9 +411,19 @@ rule haplotag_reads:
         "environment/conda/wh_split.yml"
     shell:
         "whatshap haplotag --output {output.cram} --reference {input.ref} --output-haplotag-list {output.taglist} {input.vcf} {input.cram} &> {log}"
-    #run:
-    #    exec = 'whatshap haplotag --output {output.cram}'
-    #    exec += ' --reference {input.ref} --output-haplotag-list {output.taglist}'
-    #    exec += ' {input.vcf} {input.cram}'
-    #    exec += ' &> {log}'
-    #    shell(exec)
+
+
+rule haplosplit_fastq:
+    input:
+        fastq = 'input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz',
+        taglist = 'output/tagged_aln/{sample}.{project}.ont-ul.haplotag.tsv.gz'
+    output:
+        haplo1 = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-h1.fastq.gz',
+        haplo2 = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-h2.fastq.gz',
+        untag = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-un.fastq.gz'
+    log:
+        'log/haplosplit/{sample}.{project}.haplosplit.log'
+    conda:
+        "environment/conda/wh_split.yml"
+    shell:
+        "whatshap split --pigz --output-h1 {output.haplo1} --output-h2 {output.haplo2} --output-untagged {output.untag} {input.fastq} {input.taglist} &> {log}"

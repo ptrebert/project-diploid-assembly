@@ -5,4 +5,4 @@ cores: 46
 latency-wait: 5
 keep-going: True
 rerun-incomplete: True
-restart-times: 1
+restart-times: 0
