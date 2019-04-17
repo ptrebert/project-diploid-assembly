@@ -132,17 +132,19 @@ rule master:
         # Split by haplotype
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz',
                 sample=['HG00733'], project=['pangen'], tag=['h1', 'h2', 'un']),
+        # GIAB sample still buggy
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz',
-                sample=['HG002'], project=['pangen', 'giab', 'ucsc1'],
-                tag=['h1', 'h2', 'un'])
+                sample=['HG002'], project=['pangen', 'ucsc1'],
+                tag=['h1', 'h2', 'un']),
 
+        # Compute MD5 before uploading
+        expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz.md5',
+                sample=['HG00733'], project=['pangen'], tag=['h1', 'h2', 'un']),
+        expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz.md5',
+                sample=['HG002'], project=['pangen', 'ucsc1'],
+                tag=['h1', 'h2', 'un'])
 #        expand('phased-snvs/pb/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
 #        expand('phased-snvs/pb_ss/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
-#        'pacbio/cram/HG00733.sorted.tagged.cram',
-#        'pacbio/fastq/HG00733.h1-only.fastq.gz',
-#        'pacbio/fastq/HG00733.h2-only.fastq.gz',
-#        'pacbio/fastq/HG00733.h1-plus-untagged.fastq.gz',
-#        'pacbio/fastq/HG00733.h2-plus-untagged.fastq.gz',
     message: 'Executing ALL'
 
 
@@ -254,7 +256,7 @@ rule merge_chunked_read_files:
         read_data = collect_read_files_merging
     output:
         'input/read_data/mrg/{sample}.{project}.ont-ul.part.{subset}{split}.fastq.gz',
-    log: 'log/merge_{sample}.{project}.{subset}{split}.log'
+    log: 'log/merge_chunks/merge_{sample}.{project}.{subset}{split}.log'
     shell:
         "cat {input} > {output} 2> {log}"
 
@@ -280,7 +282,7 @@ rule merge_part_read_files:
         read_data = collect_read_subsets_aln_ready
     output:
         'input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz'
-    log: 'log/aln-ready_{sample}.{project}.log'
+    log: 'log/merge_parts/aln-ready_{sample}.{project}.log'
     shell:
         "cat {input} > {output} 2> {log}"
 
@@ -307,6 +309,15 @@ rule prepare_trio_phased_variants:
 ####################################################
 
 
+rule compute_md5_checksum:
+    input:
+        '{filepath}'
+    output:
+        '{filepath}.md5'
+    shell:
+        "md5sum {input} > {output}"
+
+
 rule map_reads:
     input:
         reference = 'references/' + REFNAME,
@@ -314,8 +325,8 @@ rule map_reads:
     output:
         'output/alignments/{sample}.{project}.ont-ul.cram'
     log:
-        minimap = 'log/{sample}.{project}.minimap.log',
-        samtools = 'log/{sample}.{project}.samtools.log'
+        minimap = 'log/alignments/{sample}.{project}.minimap.log',
+        samtools = 'log/alignments/{sample}.{project}.samtools.log'
     params:
         cache_path = os.path.join(os.getcwd(), 'references', 'cache')
     threads: 48
@@ -410,7 +421,7 @@ rule haplotag_reads:
     conda:
         "environment/conda/wh_split.yml"
     shell:
-        "whatshap haplotag --output {output.cram} --reference {input.ref} --output-haplotag-list {output.taglist} {input.vcf} {input.cram} &> {log}"
+        "whatshap --debug haplotag --output {output.cram} --reference {input.ref} --output-haplotag-list {output.taglist} {input.vcf} {input.cram} &> {log}"
 
 
 rule haplosplit_fastq:
@@ -426,4 +437,4 @@ rule haplosplit_fastq:
     conda:
         "environment/conda/wh_split.yml"
     shell:
-        "whatshap split --pigz --output-h1 {output.haplo1} --output-h2 {output.haplo2} --output-untagged {output.untag} {input.fastq} {input.taglist} &> {log}"
+        "whatshap --debug split --pigz --output-h1 {output.haplo1} --output-h2 {output.haplo2} --output-untagged {output.untag} {input.fastq} {input.taglist} &> {log}"
