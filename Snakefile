@@ -100,6 +100,12 @@ rule master:
         expand('input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz',
                 sample=['HG00733'], project=['pangen']),
 
+        # input validation
+        expand('output/fastq_validation/{sample}.{project}.ont-ul.cmp.stats.pck',
+                sample=['HG002'], project=['ucsc1', 'pangen', 'giab']),
+        expand('output/fastq_validation/{sample}.{project}.ont-ul.cmp.stats.pck',
+                sample=['HG00733'], project=['pangen']),
+
         # Output files: read mapping against reference
         expand('output/alignments/{sample}.{project}.ont-ul.cram',
                 sample=['HG00733'], project=['pangen']),
@@ -307,6 +313,23 @@ rule prepare_trio_phased_variants:
 # Everything above is subject to change depending
 # on the input data and final phasing strategy
 ####################################################
+
+
+rule validate_fastq:
+    input:
+        'input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz'
+    output:
+        'output/fastq_validation/{sample}.{project}.ont-ul.cmp.stats.pck'
+    log: 'log/fastq_validation/{sample}.{project}.stats.log'
+    threads: 8
+    params:
+        scriptdir = config['script_dir']
+    run:
+        exec = '{params.scriptdir}/collect_read_stats.py --debug'
+        exec += ' --fastq-input {input} --output {output}'
+        exec += ' --chunk-size 25000 --validate'
+        exec += ' --num-cpu {threads} &> {log}'
+        shell(exec)
 
 
 rule compute_md5_checksum:

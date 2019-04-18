@@ -2,6 +2,8 @@
 notify: True
 notify_email: pebert@mpi-inf.mpg.de
 
+script_dir: /home/pebert/work/code/github/project-diploid-assembly/scripts
+
 use_ref_genome: GRCh38_decoy_hla
 
 ref_data:
