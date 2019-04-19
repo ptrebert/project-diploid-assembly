@@ -20,7 +20,7 @@ import numpy as np
 
 FASTQ_QUAL_ENCODING = """!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"""
 
-Read = col.namedtuple('Read', 'seqid sequence separator qualities')
+Read = col.namedtuple('Read', 'line seqid sequence separator qualities record')
 
 
 def parse_command_line():
@@ -113,14 +113,20 @@ def validate_read_record(check_sequence, check_qualities, read):
     :param check_qualities:
     :return:
     """
-    assert len(read.seqid) > 0 and read.seqid[0] == '@', \
-        'Malformed SEQID: {}'.format(read.seqid)
-    assert check_sequence(read.sequence) is not None, \
-        'Sequence of read {} does not conform to specified alphabet'.format(read.seqid)
-    assert len(read.separator) > 0 and read.separator[0] == '+', \
-        'Malformed separator line for SEQID: {}'.format(read.seqid)
-    assert check_qualities(read.qualities) is not None, \
-        'Quality values of read {} do not adhere to FASTQ specification'.format(read.seqid)
+    try:
+        assert len(read.seqid) > 0 and read.seqid[0] == '@', \
+            'LN {} --- malformed SEQID: {}'.format(read.line, read.seqid)
+        assert check_sequence(read.sequence) is not None, \
+            'LN {} --- sequence of read {} does not conform to specified alphabet'.format(read.line, read.seqid)
+        assert len(read.separator) > 0 and read.separator[0] == '+', \
+            'LN {} --- malformed separator line for SEQID: {}'.format(read.line, read.seqid)
+        assert check_qualities(read.qualities) is not None, \
+            'LN {} --- quality values of read {} do not adhere to FASTQ specification'.format(read.line, read.seqid)
+        assert len(read.sequence) == len(read.qualities), \
+            'LN {} --- sequence and qualities of different length'.format(read.line)
+    except AssertionError as ae:
+        ae.args += ('error_record', read.record)
+        raise
     return compute_read_statistics(read.sequence)
 
 
@@ -166,9 +172,10 @@ def read_complete_records(fpath, chunk_size):
     record = 0
     record_is_active = False
     active_record = None
-    read_buffer = ['', '', '', '']
+    read_buffer = ['', '', '', '', '', '']
     with gz.open(fpath, 'rt') as fastq:
         for ln, line in enumerate(fastq, start=1):
+            assert line.endswith('\n'), 'Line {} does not end with newline character'.format(ln)
             if not line.strip() and record_is_active:
                 # empty line within active read record
                 # is not part of the FASTQ format specification
@@ -181,22 +188,24 @@ def read_complete_records(fpath, chunk_size):
                         'Encountered new read at line {}, but previous one (SEQID {}) is still active'.format(ln, active_record)
                     record_is_active = True
                     active_record = line.strip()
-                    read_buffer[0] = active_record
+                    read_buffer[0] = str(ln)
+                    read_buffer[1] = active_record
                     line_num += 1
                 elif 1 < line_num % 4 < 4:
                     assert record_is_active, \
                         'Inactive record (active SEQID {}) while still reading read information at line {}'.format(active_record, ln)
                     remainder = line_num % 4
-                    read_buffer[remainder - 1] = line.strip()
+                    read_buffer[remainder] = line.strip()
                     line_num += 1
                 elif line_num % 4 == 0:
                     assert record_is_active, \
                         'Inactive record (active SEQID {}) while still reading read information at line {}'.format(active_record, ln)
-                    read_buffer[3] = line.strip()
+                    read_buffer[4] = line.strip()
+                    read_buffer[5] = str(record)
                     chunk_buffer[record] = Read(*read_buffer)
                     record += 1
                     record_is_active = False
-                    read_buffer = ['', '', '', '']
+                    read_buffer = ['', '', '', '', '', '']
                     line_num += 1
                     if record == chunk_size:
                         yield chunk_buffer
@@ -206,6 +215,25 @@ def read_complete_records(fpath, chunk_size):
                     raise RuntimeError('This cannot happen (at line {}: {})'.format(ln, line.strip()))
     if record > 0:
         yield chunk_buffer[:record]
+    return
+
+
+def dump_error_records(active_chunk, record_num, dump_file):
+    """
+    :param active_chunk:
+    :param record_num:
+    :param dump_file:
+    :return:
+    """
+    left_bound = max(0, record_num - 5)
+    right_bound = min(len(active_chunk), record_num + 5)
+    records_to_write = active_chunk[left_bound:right_bound]
+    with gz.open(dump_file, 'wt') as dump:
+        for rec in records_to_write:
+            _ = dump.write(rec.seqid + '\n')
+            _ = dump.write(rec.sequence + '\n')
+            _ = dump.write(rec.separator + '\n')
+            _ = dump.write(rec.qualities + '\n')
     return
 
 
@@ -246,14 +274,27 @@ def main(logger, cargs):
             for chunk in chunk_reader(fastq, cargs.chunksize):
                 read_chunk_size = len(chunk)
                 logger.debug('Processing chunk of size {} ({})'.format(read_chunk_size, ti.ctime()))
-                resit = pool.imap_unordered(read_processor, chunk)
-                for idx, (l, n, c) in enumerate(resit):
-                    len_stats[l] += 1
-                    nuc_stats.update(n)
-                    gc_buffer[idx] = c
-                logger.debug('Binning GC values')
-                gc_stats.update(col.Counter(np.digitize(gc_buffer[:read_chunk_size], gc_bins, right=False)))
-                read_count += (len(chunk))
+                try:
+                    resit = pool.imap(read_processor, chunk)
+                    for idx, (l, n, c) in enumerate(resit):
+                        len_stats[l] += 1
+                        nuc_stats.update(n)
+                        gc_buffer[idx] = c
+                    logger.debug('Binning GC values')
+                    gc_stats.update(col.Counter(np.digitize(gc_buffer[:read_chunk_size], gc_bins, right=False)))
+                    read_count += (len(chunk))
+                except AssertionError as ae:
+                    if len(ae.args) != 3:
+                        raise
+                    else:
+                        msg = ae.args[0]
+                        const = ae.args[1]
+                        record_num = int(ae.args[2])
+                        logger.error('Found faulty read record: {} - {} - {}'.format(msg, const, record_num))
+                        dump_file = os.path.basename(fastq).replace('fastq.gz', 'error.fastq.gz')
+                        dump_path = os.path.join(os.path.dirname(fastq), dump_file)
+                        dump_error_records(chunk, record_num, dump_path)
+                        raise
 
     logger.debug('Done - processed {} reads'.format(read_count))
     gc_info_reads = sum(gc_stats.values())
