@@ -27,7 +27,7 @@ def parse_command_line():
     """
     :return:
     """
-    parser = argp.ArgumentParser(prog="get_stranded_read_counts.py", description=__doc__)
+    parser = argp.ArgumentParser(prog="collect_read_stats.py", description=__doc__)
     parser.add_argument(
         "--debug",
         "-d",
@@ -139,7 +139,7 @@ def read_sequence_records(fpath, chunk_size):
     chunk_buffer = [''] * chunk_size
     line_num = 1
     record = 0
-    with gz.open(fpath, 'rt') as fastq:
+    with gz.open(fpath, 'rt', encoding='ascii') as fastq:
         for line in fastq:
             if not line.strip():
                 # simply skip over empty lines, though
@@ -173,7 +173,7 @@ def read_complete_records(fpath, chunk_size):
     record_is_active = False
     active_record = None
     read_buffer = ['', '', '', '', '', '']
-    with gz.open(fpath, 'rt') as fastq:
+    with gz.open(fpath, 'rt', encoding='ascii') as fastq:
         for ln, line in enumerate(fastq, start=1):
             assert line.endswith('\n'), 'Line {} does not end with newline character'.format(ln)
             if not line.strip() and record_is_active:

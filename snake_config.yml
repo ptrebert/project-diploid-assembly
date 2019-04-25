@@ -89,6 +89,10 @@ read_files:
       url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-08-10/combined_2018-08-10.fastq.gz
       name: HG002.giab.ont-ul.part.1808
     file3:
-      skip: 0
+      skip: 1
       url: https://miten-giab-pion-data.s3-us-west-2.amazonaws.com/2019-02-13_albacore.fastq
+      name: HG002.giab.ont-ul.corrupt
+    file4:
+      skip: 0
+      url: https://storage.googleapis.com/kishwar-friday-data/Nanopore/HG002_04202019/GM24385_HG002_Nanopore_0420_miten_fixed.fastq.gz
       name: HG002.giab.ont-ul.cmp

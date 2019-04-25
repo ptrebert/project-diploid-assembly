@@ -72,7 +72,7 @@ REF_DOWNLOADS = ['GRCh38_decoy_hla.fa',
                  'GRCh38_giab_HG002_hconf-variants.vcf.gz.tbi']
 
 # this needs to be sorted out when finalizing the pipeline
-ruleorder: merge_part_read_files > download_uncompressed_reads_complete
+ruleorder: download_complete_gzipped_reads > merge_part_read_files
 ruleorder: merge_phased_variants > prepare_trio_phased_variants
 
 rule master:
@@ -86,8 +86,8 @@ rule master:
         expand('input/read_data/chunk/{rawfile}.fastq.gz',
                 rawfile=DOWNLOAD_SORT[(1, 0, 0, 0)]),
 
-        expand('input/read_data/aln_ready/{rawfile}.fastq.gz',
-                rawfile=DOWNLOAD_SORT[(0, 0, 1, 0)]),
+        expand('input/read_data/aln_ready/{gzfile}.fastq.gz',
+                gzfile=DOWNLOAD_SORT[(0, 0, 1, 1)]),
 
         # Mapping of chunks fails w/o error message - merge chunks
         # before mapping...
@@ -129,25 +129,25 @@ rule master:
         expand('output/merged_phased_variants/{sample}.{project}.vcf.gz',
                 sample=['HG002'], project=['giab', 'pangen', 'ucsc1']),
 
-        # Perform haplo-tagging
-        expand('output/tagged_aln/{sample}.{project}.ont-ul.sorted.tagged.cram',
-                sample=['HG00733'], project=['pangen']),
-        expand('output/tagged_aln/{sample}.{project}.ont-ul.haplotag.tsv.gz',
-                sample=['HG00733'], project=['pangen']),
+#        # Perform haplo-tagging
+#        expand('output/tagged_aln/{sample}.{project}.ont-ul.sorted.tagged.cram',
+#                sample=['HG00733'], project=['pangen']),
+#        expand('output/tagged_aln/{sample}.{project}.ont-ul.haplotag.tsv.gz',
+#                sample=['HG00733'], project=['pangen']),
 
         # Split by haplotype
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz',
                 sample=['HG00733'], project=['pangen'], tag=['h1', 'h2', 'un']),
         # GIAB sample still buggy
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz',
-                sample=['HG002'], project=['pangen', 'ucsc1'],
+                sample=['HG002'], project=['pangen', 'ucsc1', 'giab'],
                 tag=['h1', 'h2', 'un']),
 
         # Compute MD5 before uploading
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz.md5',
                 sample=['HG00733'], project=['pangen'], tag=['h1', 'h2', 'un']),
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz.md5',
-                sample=['HG002'], project=['pangen', 'ucsc1'],
+                sample=['HG002'], project=['pangen', 'ucsc1', 'giab'],
                 tag=['h1', 'h2', 'un'])
 #        expand('phased-snvs/pb/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
 #        expand('phased-snvs/pb_ss/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
@@ -217,17 +217,17 @@ rule download_uncompressed_reads_chunk:
         shell(exec)
 
 
-rule download_uncompressed_reads_complete:
+rule download_complete_gzipped_reads:
     output:
-        expand('input/read_data/{status}/{{rawfile}}.fastq.gz',
+        expand('input/read_data/{status}/{{gzfile}}.fastq.gz',
                 status=['aln_ready'])
-    log: 'log/download/{rawfile}.log'
-    threads: 1
+    log: 'log/download/{gzfile}.log'
+    threads: 8
     run:
-        exec = 'wget --quiet -O - '
-        exec += ' {}'.format(READ_SOURCE_URL[wildcards.rawfile])
-        exec += ' | gzip > {output}'
-        exec += ' 2> {log}'
+        exec = 'aria2c -s {threads} -x {threads}'
+        exec += ' -o {output}'
+        exec += ' {}'.format(READ_SOURCE_URL[wildcards.gzfile])
+        exec += ' &> {log}'
         shell(exec)
 
 def collect_read_files_merging(wildcards):
