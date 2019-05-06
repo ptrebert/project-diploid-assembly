@@ -9,6 +9,9 @@ dependencies:
   - minimap2=2.16
   - sambamba=0.6.8
   - samtools=1.9
-  - whatshap=0.18
   - bcftools=1.9
   - wtdbg=2.3
+  - pbgzip
+  - pigz=2.4
+  - pip:
+    - git+https://bitbucket.org/whatshap/whatshap

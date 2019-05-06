@@ -86,8 +86,9 @@ rule master:
         expand('input/read_data/chunk/{rawfile}.fastq.gz',
                 rawfile=DOWNLOAD_SORT[(1, 0, 0, 0)]),
 
-        expand('input/read_data/aln_ready/{gzfile}.fastq.gz',
-                gzfile=DOWNLOAD_SORT[(0, 0, 1, 1)]),
+        # this is the GIAB sample
+#        expand('input/read_data/aln_ready/{gzfile}.fastq.gz',
+#                gzfile=DOWNLOAD_SORT[(0, 0, 1, 1)]),
 
         # Mapping of chunks fails w/o error message - merge chunks
         # before mapping...
@@ -96,13 +97,13 @@ rule master:
                 sample=['HG002'], project=['ucsc1']),
 
         expand('input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz',
-                sample=['HG002'], project=['ucsc1', 'pangen', 'giab']),
+                sample=['HG002'], project=['ucsc1', 'pangen']),
         expand('input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz',
                 sample=['HG00733'], project=['pangen']),
 
         # input validation
         expand('output/fastq_validation/{sample}.{project}.ont-ul.cmp.stats.pck',
-                sample=['HG002'], project=['ucsc1', 'pangen', 'giab']),
+                sample=['HG002'], project=['ucsc1', 'pangen']),
         expand('output/fastq_validation/{sample}.{project}.ont-ul.cmp.stats.pck',
                 sample=['HG00733'], project=['pangen']),
 
@@ -110,13 +111,13 @@ rule master:
         expand('output/alignments/{sample}.{project}.ont-ul.cram',
                 sample=['HG00733'], project=['pangen']),
         expand('output/alignments/{sample}.{project}.ont-ul.cram',
-                sample=['HG002'], project=['giab', 'pangen', 'ucsc1']),
+                sample=['HG002'], project=['pangen', 'ucsc1']),
 
 
         expand('output/sorted_aln/{sample}.{project}.ont-ul.sorted.cram',
                 sample=['HG00733'], project=['pangen']),
         expand('output/sorted_aln/{sample}.{project}.ont-ul.sorted.cram',
-                sample=['HG002'], project=['giab', 'ucsc1', 'pangen']),
+                sample=['HG002'], project=['ucsc1', 'pangen']),
 
         # Phase variants
         expand('output/phased_variants/{sample}.{project}.{chromosome}.vcf.gz',
@@ -127,30 +128,40 @@ rule master:
         expand('output/merged_phased_variants/{sample}.{project}.vcf.gz',
                 sample=['HG00733'], project=['pangen']),
         expand('output/merged_phased_variants/{sample}.{project}.vcf.gz',
-                sample=['HG002'], project=['giab', 'pangen', 'ucsc1']),
-
-#        # Perform haplo-tagging
-#        expand('output/tagged_aln/{sample}.{project}.ont-ul.sorted.tagged.cram',
-#                sample=['HG00733'], project=['pangen']),
-#        expand('output/tagged_aln/{sample}.{project}.ont-ul.haplotag.tsv.gz',
-#                sample=['HG00733'], project=['pangen']),
+                sample=['HG002'], project=['pangen', 'ucsc1']),
 
         # Split by haplotype
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz',
                 sample=['HG00733'], project=['pangen'], tag=['h1', 'h2', 'un']),
         # GIAB sample still buggy
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz',
-                sample=['HG002'], project=['pangen', 'ucsc1', 'giab'],
+                sample=['HG002'], project=['pangen', 'ucsc1'],
                 tag=['h1', 'h2', 'un']),
 
         # Compute MD5 before uploading
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz.md5',
                 sample=['HG00733'], project=['pangen'], tag=['h1', 'h2', 'un']),
         expand('output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{tag}.fastq.gz.md5',
-                sample=['HG002'], project=['pangen', 'ucsc1', 'giab'],
-                tag=['h1', 'h2', 'un'])
-#        expand('phased-snvs/pb/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
-#        expand('phased-snvs/pb_ss/HG00733.{chromosome}.vcf.gz', chromosome=chromosomes),
+                sample=['HG002'], project=['pangen', 'ucsc1'],
+                tag=['h1', 'h2', 'un']),
+
+         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}.ctg.lay.gz',
+                sample=['HG002'], project=['pangen'],
+                haplotype=['h1', 'h2']),
+#         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}.ctg.lay.gz',
+#                sample=['HG00733'], project=['pangen'],
+#                haplotype=['h1', 'h2']),
+
+         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}-un.ctg.lay.gz',
+                sample=['HG002'], project=['pangen'],
+                haplotype=['h1', 'h2']),
+#         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}-un.ctg.lay.gz',
+#                sample=['HG00733'], project=['pangen'],
+#                haplotype=['h1', 'h2'])
+
+         expand('output/consensus_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}{untagged}.ctg.fa',
+                sample=['HG002'], project=['pangen'],
+                haplotype=['h1', 'h2'], untagged=['', '-un'])
     message: 'Executing ALL'
 
 
@@ -461,3 +472,50 @@ rule haplosplit_fastq:
         "environment/conda/wh_split.yml"
     shell:
         "whatshap --debug split --pigz --output-h1 {output.haplo1} --output-h2 {output.haplo2} --output-untagged {output.untag} {input.fastq} {input.taglist} &> {log}"
+
+
+rule assemble_haplotypes:
+    input:
+        fastq = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{haplotype}.fastq.gz',
+    output:
+        layout = 'output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}.ctg.lay.gz',
+    log: 'log/haplotype_assembly/{sample}.{project}.tag-{haplotype}.log'
+    threads: 48
+    run:
+        exec = 'wtdbg2 -x ont'  # parameter preset for ONT
+        exec += ' -i {input.fastq}'
+        exec += ' -g3g -t {threads}'  # approx genome size
+        exec += ' -o output/assembled_haplotypes/{wildcards.sample}.{wildcards.project}.ont-ul.tag-{wildcards.haplotype}'
+        exec += ' &> {log}'
+        shell(exec)
+
+
+rule assemble_haplotypes_untagged:
+    input:
+        hap_fastq = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{haplotype}.fastq.gz',
+        un_fastq = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-un.fastq.gz',
+    output:
+        layout = 'output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}-un.ctg.lay.gz',
+    log: 'log/haplotype_assembly/{sample}.{project}.tag-{haplotype}-un.log'
+    threads: 48
+    run:
+        exec = 'wtdbg2 -x ont'  # parameter preset for ONT
+        exec += ' -i {input.hap_fastq} -i {input.un_fastq}'
+        exec += ' -g3g -t {threads}'  # approx genome size
+        exec += ' -o output/assembled_haplotypes/{wildcards.sample}.{wildcards.project}.ont-ul.tag-{wildcards.haplotype}-un'
+        exec += ' &> {log}'
+        shell(exec)
+
+
+rule derive_assembly_consensus:
+    input:
+        ctg_layout = 'output/assembled_haplotypes/{hapassm}.ctg.lay.gz'
+    output:
+        'output/consensus_haplotypes/{hapassm}.ctg.fa'
+    log: 'log/consensus_haplotypes/{hapassm}.log'
+    threads: 48
+    run:
+        exec = 'wtpoa-cns -t {threads}'
+        exec += ' -i {input.ctg_layout}'
+        exec += ' -o {output} &> {log}'
+        shell(exec)
