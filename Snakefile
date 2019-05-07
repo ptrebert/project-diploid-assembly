@@ -161,7 +161,20 @@ rule master:
 
          expand('output/consensus_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}{untagged}.ctg.fa',
                 sample=['HG002'], project=['pangen'],
+                haplotype=['h1', 'h2'], untagged=['', '-un']),
+
+         expand('output/assembly_analysis/mummer/{sample}.{project}.ont-ul.tag-{haplotype}{untagged}.delta',
+                sample=['HG002'], project=['pangen'],
+                haplotype=['h1', 'h2'], untagged=['', '-un']),
+
+         expand('output/assembly_analysis/mummer/{sample}.{project}.ont-ul.tag-{haplotype}{untagged}.delta.gz',
+                sample=['HG002'], project=['pangen'],
+                haplotype=['h1', 'h2'], untagged=['', '-un']),
+
+         expand('output/assembly_analysis/mummer/{sample}.{project}.ont-ul.tag-{haplotype}{untagged}.coord.tab',
+                sample=['HG002'], project=['pangen'],
                 haplotype=['h1', 'h2'], untagged=['', '-un'])
+
     message: 'Executing ALL'
 
 
@@ -320,6 +333,28 @@ rule prepare_trio_phased_variants:
 
 
 ####################################################
+# Utility rules
+####################################################
+
+rule compute_md5_checksum:
+    input:
+        '{filepath}'
+    output:
+        '{filepath}.md5'
+    shell:
+        "md5sum {input} > {output}"
+
+
+rule gzip_file:
+    input:
+        '{filepath}'
+    output:
+        '{filepath}.gz'
+    shell:
+        "gzip -c {input} > {output}"
+
+
+####################################################
 # The following rules represent the actual pipeline
 # Everything above is subject to change depending
 # on the input data and final phasing strategy
@@ -341,15 +376,6 @@ rule validate_fastq:
         exec += ' --chunk-size 25000 --validate'
         exec += ' --num-cpu {threads} &> {log}'
         shell(exec)
-
-
-rule compute_md5_checksum:
-    input:
-        '{filepath}'
-    output:
-        '{filepath}.md5'
-    shell:
-        "md5sum {input} > {output}"
 
 
 rule map_reads:
@@ -518,4 +544,37 @@ rule derive_assembly_consensus:
         exec = 'wtpoa-cns -t {threads}'
         exec += ' -i {input.ctg_layout}'
         exec += ' -o {output} &> {log}'
+        shell(exec)
+
+
+rule compute_assembly_delta:
+    input:
+        contigs = 'output/consensus_haplotypes/{hapassm}.ctg.fa',
+        reference = 'references/' + REFNAME
+    output:
+        delta = 'output/assembly_analysis/mummer/{hapassm}.delta'
+    log: 'log/assembly_analysis/mummer/{hapassm}.log'
+    threads: 12
+    run:
+        exec = 'nucmer --maxmatch -l 100 -c 500'
+        exec += ' --threads={threads}'
+        exec += ' {input.reference} {input.contigs}'
+        exec += ' --delta={output}'
+        exec += ' &> {log}'
+        shell(exec)
+
+
+rule convert_delta_to_coordinates:
+    input:
+        delta = 'output/assembly_analysis/mummer/{hapassm}.delta'
+    output:
+        tab = 'output/assembly_analysis/mummer/{hapassm}.coord.tab'
+    params:
+        minlen = 10000
+    run:
+        exec = 'show-coords -l'  # incl. seq. len. info.
+        exec += ' -L {params.minlen}'  # min. aln. len.
+        exec += ' -r'  # sort by reference ID
+        exec += ' -T'  # switch to tab-sep output
+        exec += ' {input.delta} > {output.tab}'
         shell(exec)
