@@ -5,6 +5,7 @@ notify_email: pebert@mpi-inf.mpg.de
 script_dir: /home/pebert/work/code/github/project-diploid-assembly/scripts
 
 use_ref_genome: GRCh38_decoy_hla
+ref_cache_folder: references/cache
 
 ref_data:
   - load:
@@ -47,6 +48,11 @@ chromosomes:
     - chr22
     - chrX
 
+samples:
+  - HG002.ucsc1.ont-ul
+  - HG002.pangen.ont-ul
+  - HG00733.pangen.ont-ul
+
 read_files:
   ucsc1:
     fileN:
@@ -84,15 +90,19 @@ read_files:
       skip: 1
       url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-05-18/combined_2018-05-18.fastq.gz
       name: HG002.giab.ont-ul.part.1805
+      comment: "outdated"
     file2:
       skip: 1
       url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-08-10/combined_2018-08-10.fastq.gz
       name: HG002.giab.ont-ul.part.1808
+      comment: "outdated"
     file3:
       skip: 1
       url: https://miten-giab-pion-data.s3-us-west-2.amazonaws.com/2019-02-13_albacore.fastq
       name: HG002.giab.ont-ul.corrupt
+      comment: "contains invalid read records - probably merge error"
     file4:
-      skip: 0
+      skip: 1
       url: https://storage.googleapis.com/kishwar-friday-data/Nanopore/HG002_04202019/GM24385_HG002_Nanopore_0420_miten_fixed.fastq.gz
       name: HG002.giab.ont-ul.cmp
+      comment: "erroneously corrected (?) and merged data of HG002 PanGen - exact duplicate"
