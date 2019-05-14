@@ -18,9 +18,6 @@ include: 'smk_include/dl_read_data_parts.smk'
 
 rule master:
     input:
-        expand('references/{ref_file}',
-                ref_file=REF_DOWNLOADS),
-
         # input validation
         expand('output/fastq_validation/{sample}.stats.pck',
                 sample=SAMPLES),
