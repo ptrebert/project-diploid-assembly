@@ -19,9 +19,9 @@ rule gzip_file_copy:
 
 rule samtools_index_cram_alignment:
     input:
-        '{filepath}'
+        cram = '{filepath}'
     output:
-        '{filepath}.crai'
+        crai = '{filepath}.crai'
     threads: 8
     shell:
         "samtools index -@ {threads} {input.cram}"
@@ -29,19 +29,19 @@ rule samtools_index_cram_alignment:
 
 rule samtools_index_bam_alignment:
     input:
-        '{filepath}'
+        bam = '{filepath}'
     output:
-        '{filepath}.bai'
+        bai = '{filepath}.bai'
     threads: 8
     shell:
-        "samtools index -@ {threads} {input}"
+        "samtools index -@ {threads} {input.bam}"
 
 
 rule validate_fastq:
     input:
         '{filename}.fastq.gz'
     output:
-        'output/fastq_validation/{filename}.stats.pck'
+        '{filename}.stats.pck'
     log: 'log/fastq_validation/{filename}.stats.log'
     wildcard_constraints:
         filename="[A-Za-z0-9_\-\.]+"

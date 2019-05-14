@@ -8,18 +8,33 @@ use_ref_genome: GRCh38_decoy_hla
 ref_cache_folder: references/cache
 
 ref_data:
-  - load:
-      url: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa
-      name: GRCh38_decoy_hla.fa
-  - load:
-      url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_noinconsistent.bed
-      name: GRCh38_giab_HG002_hconf-regions.bed
-  - load:
-      url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz
-      name: GRCh38_giab_HG002_hconf-variants.vcf.gz
-  - load:
-      url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi
-      name: GRCh38_giab_HG002_hconf-variants.vcf.gz.tbi
+  genome:
+    - record:
+        url: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa
+        name: GRCh38_decoy_hla.fa
+  annotation:
+    - record:
+        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh38/supplementaryFiles/genomic_regions_definitions_modeledcentromere.bed
+        name: GRCh38_HG001_centromeres.bed
+
+ref_variants:
+  giab:
+    - record:
+        skip: 0
+        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz
+        name: GRCh38_AJ-HG002_triophased-high-conf.vcf.gz
+        path: references/variant_call_sets/family_individuals/AJ
+    - record:
+        skip: 0
+        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi
+        name: GRCh38_AJ-HG002_triophased-high-conf.vcf.gz.tbi
+        path: references/variant_call_sets/family_individuals/AJ
+    - record:
+        skip: 0
+        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/supplementaryFiles/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf.bed
+        name: GRCh38_AJ-HG002_high-conf-regions.bed
+        path: references/variant_regions/AJ
+
 
 
 chromosomes:

@@ -32,11 +32,6 @@ for project, source_files in config['read_files'].items():
 
 CHUNKED_SAMPLES = sorted(set(CHUNKED_SAMPLES))
 
-#rule prepare_chunked_read_data:
-#    input:
-#        expand('input/read_data/diploid_assembly_input/{sample}.fastq.gz',
-#                sample=CHUNKED_SAMPLES)
-
 
 rule download_uncompressed_reads_chunk:
     """
@@ -97,6 +92,8 @@ rule merge_chunk_part_read_files:
                 subset=[1, 2, 3, 4, 5], split=[5])
     output:
         'input/read_data/diploid_assembly_input/{sample}.fastq.gz'
+    wildcard_constraints:
+        sample = '(' + '|'.join(CHUNKED_SAMPLES) + ')'
     log: 'log/merge_parts/merge_{sample}.log'
     shell:
         "cat {input} > {output} 2> {log}"

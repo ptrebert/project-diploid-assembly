@@ -37,11 +37,6 @@ for project, source_files in config['read_files'].items():
 
 PARTITIONED_SAMPLES = sorted(set(PARTITIONED_SAMPLES))
 
-#rule prepare_partitioned_read_data:
-#    input:
-#        expand('input/read_data/diploid_assembly_input/{sample}.fastq.gz',
-#                sample=PARTITIONED_SAMPLES)
-
 
 rule download_compressed_read_parts:
     output:
@@ -62,6 +57,8 @@ rule merge_partitioned_read_files:
                                  partnum=PARTITIONS_PER_SAMPLE[wildcards.sample], sample=wildcards.sample)
     output:
         'input/read_data/diploid_assembly_input/{sample}.fastq.gz'
+    wildcard_constraints:
+        sample = '(' + '|'.join(PARTITIONED_SAMPLES) + ')'
     log: 'log/merge_parts/merge_{sample}.log'
     shell:
         "cat {input} > {output} 2> {log}"

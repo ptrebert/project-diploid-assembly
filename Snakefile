@@ -7,17 +7,12 @@ REFCHROM = config['chromosomes'][REFKEY]
 
 SAMPLES = config['samples']
 
-# TODO this needs to be reworked
-REF_DOWNLOADS = ['GRCh38_decoy_hla.fa',
-                 'GRCh38_giab_HG002_hconf-regions.bed',
-                 'GRCh38_giab_HG002_hconf-variants.vcf.gz',
-                 'GRCh38_giab_HG002_hconf-variants.vcf.gz.tbi']
-
 # this needs to be sorted out when finalizing the pipeline
 ruleorder: merge_phased_variants > prepare_trio_phased_variants
 ruleorder: merge_chunk_part_read_files > merge_partitioned_read_files
 
 include: 'smk_include/aux_utilities.smk'
+include: 'smk_include/dl_reference_data.smk'
 include: 'smk_include/dl_read_data_chunks.smk'
 include: 'smk_include/dl_read_data_parts.smk'
 
@@ -30,9 +25,13 @@ rule master:
         expand('output/fastq_validation/{sample}.stats.pck',
                 sample=SAMPLES),
 
-        # produce sorted alignment files (against reference genome)
-        expand('output/alignments/{sample}.sort.cram',
-                sample=SAMPLES),
+        # assembled haplotypes
+        # - only haplotypes
+        # - haplotypes plus untagged reads
+        expand('output/haplotype_assembly/consensus/{sample}.tag-{haplotype}{untagged}.ctg.fa',
+               sample=SAMPLES,
+               haplotype=['h1', 'h2'],
+               untagged=['', '-un']),
 
 #
 #        # Phase variants
@@ -75,9 +74,7 @@ rule master:
 ##                sample=['HG00733'], project=['pangen'],
 ##                haplotype=['h1', 'h2'])
 #
-#         expand('output/consensus_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}{untagged}.ctg.fa',
-#                sample=['HG002'], project=['pangen'],
-#                haplotype=['h1', 'h2'], untagged=['', '-un']),
+
 #
 #         expand('output/assembly_analysis/mummer/{sample}.{project}.ont-ul.tag-{haplotype}{untagged}.delta',
 #                sample=['HG002'], project=['pangen'],
@@ -105,26 +102,6 @@ onsuccess:
 onerror:
     if config['notify']:
         shell('mail -s "[Snakemake] diploid genome assembly - ERRROR" {} < {{log}}'.format(config['notify_email']))
-
-
-for record in config['ref_data']:
-    if 'load' not in record:
-        continue
-    remote_url = record['load']['url']
-    local_name = record['load']['name']
-    local_path = 'references/' + local_name
-    rule:
-        output:
-            local_path
-        log: 'log/references/DL_{}.log'.format(local_name.rsplit('.', 1)[0])
-        threads: 4
-        message: 'Downloading reference file {}'.format(local_name)
-        run:
-            exec = 'aria2c -s {threads} -x {threads}'
-            exec += ' -o {output}'
-            exec += ' {}'.format(remote_url)
-            exec += ' &> {log}'
-            shell(exec)
 
 
 rule prepare_trio_phased_variants:
@@ -164,6 +141,8 @@ rule map_reads_to_reference:
         pb_preset = lambda wildcards: 'map-pb' if 'pb' in wildcards.sample else ''
     threads: 48
     run:
+        if not (params.ont_preset or params.pb_preset):
+            raise ValueError('No alignment preset selected for data: {}'.format(input.read_data))
         exec = 'REF_CACHE={params.cache_path}'
         exec += ' minimap2 -t {threads}'
         exec += ' -R \'@RG\\tID:1\\tSM:{wildcards.sample}\''
@@ -202,8 +181,8 @@ rule phase_variants:
     input:
         vcf = 'output/variant_calls/{sample}/{sample}.{chromosome}.vcf.gz',
         tbi = 'output/variant_calls/{sample}/{sample}.{chromosome}.vcf.gz.tbi',
-        cram = 'output/sorted_aln/{sample}.sort.cram',
-        crai = 'output/sorted_aln/{sample}.sort.cram.crai',
+        cram = 'output/alignments/{sample}.sort.cram',
+        crai = 'output/alignments/{sample}.sort.cram.crai',
         ref = 'references/' + REFNAME,
     output:
         vcf = 'output/phased_variants/{sample}.{chromosome}.vcf.gz',
@@ -232,78 +211,86 @@ rule merge_phased_variants:
         shell(exec)
 
 
-rule haplotag_reads:
+rule haplotype_partitioning_read_tagging:
     input:
-        vcf = 'output/merged_phased_variants/{sample}.{project}.vcf.gz',
-        tbi = 'output/merged_phased_variants/{sample}.{project}.vcf.gz.tbi',
-        cram = 'output/sorted_aln/{sample}.{project}.ont-ul.sorted.cram',
-        crai = 'output/sorted_aln/{sample}.{project}.ont-ul.sorted.cram.crai',
+        vcf = 'output/merged_phased_variants/{sample}.vcf.gz',
+        tbi = 'output/merged_phased_variants/{sample}.vcf.gz.tbi',
+        cram = 'output/alignments/{sample}.sort.cram',
+        crai = 'output/alignments/{sample}.sort.cram.crai',
         ref = 'references/' + REFNAME,
     output:
-        cram = 'output/tagged_aln/{sample}.{project}.ont-ul.sorted.tagged.cram',
-        taglist = 'output/tagged_aln/{sample}.{project}.ont-ul.haplotag.tsv.gz'
-    log: 'log/tagged_aln/{sample}.{project}.haplotag.log'
+        cram = 'output/haplotype_partitioning/tagging/{sample}.haplotag.cram',
+        taglist = 'output/haplotype_partitioning/tagging/{sample}.haplotag.tsv.gz'
+    log: 'log/haplotag/{sample}.haplotag.log'
     conda:
         "environment/conda/wh_split.yml"
     shell:
         "whatshap --debug haplotag --output {output.cram} --reference {input.ref} --output-haplotag-list {output.taglist} {input.vcf} {input.cram} &> {log}"
 
 
-rule haplosplit_fastq:
+rule haplotype_partitioning_read_splitting:
     input:
-        fastq = 'input/read_data/aln_ready/{sample}.{project}.ont-ul.cmp.fastq.gz',
-        taglist = 'output/tagged_aln/{sample}.{project}.ont-ul.haplotag.tsv.gz'
+        fastq = 'input/read_data/diploid_assembly_input/{sample}.fastq.gz',
+        taglist = 'output/haplotype_partitioning/tagging/{sample}.haplotag.tsv.gz'
     output:
-        haplo1 = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-h1.fastq.gz',
-        haplo2 = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-h2.fastq.gz',
-        untag = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-un.fastq.gz'
+        haplo1 = 'output/haplotype_partitioning/splitting/{sample}.tag-h1.fastq.gz',
+        haplo2 = 'output/haplotype_partitioning/splitting/{sample}.tag-h2.fastq.gz',
+        untag = 'output/haplotype_partitioning/splitting/{sample}.tag-un.fastq.gz'
     log:
-        'log/haplosplit/{sample}.{project}.haplosplit.log'
+        'log/haplosplit/{sample}.haplosplit.log'
     conda:
         "environment/conda/wh_split.yml"
     shell:
         "whatshap --debug split --pigz --output-h1 {output.haplo1} --output-h2 {output.haplo2} --output-untagged {output.untag} {input.fastq} {input.taglist} &> {log}"
 
 
-rule assemble_haplotypes:
+rule haplotype_assembly_haplotypes_only:
     input:
-        fastq = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{haplotype}.fastq.gz',
+        fastq = 'output/haplotype_partitioning/splitting/{sample}.tag-{haplotype}.fastq.gz',
     output:
-        layout = 'output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}.ctg.lay.gz',
-    log: 'log/haplotype_assembly/{sample}.{project}.tag-{haplotype}.log'
+        layout = 'output/haplotype_assembly/assembly/{sample}.tag-{haplotype}/{sample}.tag-{haplotype}.ctg.lay.gz',
+    wildcard_constraints:
+        sample = '[A-Za-z0-9_\-\.]+',
+        haplotype = '[h12]+'
+    log: 'log/haplotype_assembly/{sample}.tag-{haplotype}.assembly.log'
     threads: 48
     run:
         exec = 'wtdbg2 -x ont'  # parameter preset for ONT
         exec += ' -i {input.fastq}'
         exec += ' -g3g -t {threads}'  # approx genome size
-        exec += ' -o output/assembled_haplotypes/{wildcards.sample}.{wildcards.project}.ont-ul.tag-{wildcards.haplotype}'
+        exec += ' -o output/haplotype_assembly/assembly/{wildcards.sample}.tag-{wildcards.haplotype}/{wildcards.sample}.tag-{wildcards.haplotype}'
         exec += ' &> {log}'
         shell(exec)
 
 
-rule assemble_haplotypes_untagged:
+rule haplotype_assembly_haplotypes_plus_untagged:
     input:
-        hap_fastq = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-{haplotype}.fastq.gz',
-        un_fastq = 'output/haplosplit_reads/{sample}.{project}.ont-ul.tag-un.fastq.gz',
+        hap_fastq = 'output/haplotype_partitioning/splitting/{sample}.tag-{haplotype}.fastq.gz',
+        un_fastq = 'output/haplotype_partitioning/splitting/{sample}.tag-un.fastq.gz',
     output:
-        layout = 'output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}-un.ctg.lay.gz',
-    log: 'log/haplotype_assembly/{sample}.{project}.tag-{haplotype}-un.log'
+        layout = 'output/haplotype_assembly/assembly/{sample}.tag-{haplotype}-un/{sample}.tag-{haplotype}-un.ctg.lay.gz',
+    wildcard_constraints:
+        sample = '[A-Za-z0-9_\-\.]+',
+        haplotype = '[h12]+'
+    log: 'log/haplotype_assembly/{sample}.tag-{haplotype}-un.assembly.log'
     threads: 48
     run:
         exec = 'wtdbg2 -x ont'  # parameter preset for ONT
         exec += ' -i {input.hap_fastq} -i {input.un_fastq}'
         exec += ' -g3g -t {threads}'  # approx genome size
-        exec += ' -o output/assembled_haplotypes/{wildcards.sample}.{wildcards.project}.ont-ul.tag-{wildcards.haplotype}-un'
+        exec += ' -o output/haplotype_assembly/assembly/{wildcards.sample}.tag-{wildcards.haplotype}/{wildcards.sample}.tag-{wildcards.haplotype}-un'
         exec += ' &> {log}'
         shell(exec)
 
 
 rule derive_assembly_consensus:
     input:
-        ctg_layout = 'output/assembled_haplotypes/{hapassm}.ctg.lay.gz'
+        ctg_layout = 'output/haplotype_assembly/assembly/{hapassm}/{hapassm}.ctg.lay.gz'
     output:
-        'output/consensus_haplotypes/{hapassm}.ctg.fa'
-    log: 'log/consensus_haplotypes/{hapassm}.log'
+        'output/haplotype_assembly/consensus/{hapassm}.ctg.fa'
+    wildcard_constraints:
+        hapassm = '[A-Za-z0-9\.\-]+'
+    log: 'log/haplotype_consensus/{hapassm}.log'
     threads: 48
     run:
         exec = 'wtpoa-cns -t {threads}'
@@ -314,7 +301,7 @@ rule derive_assembly_consensus:
 
 rule compute_assembly_delta:
     input:
-        contigs = 'output/consensus_haplotypes/{hapassm}.ctg.fa',
+        contigs = 'output/haplotype_assembly/consensus/{hapassm}.ctg.fa',
         reference = 'references/' + REFNAME
     output:
         delta = 'output/assembly_analysis/mummer/{hapassm}.delta'
