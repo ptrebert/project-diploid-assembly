@@ -8,13 +8,13 @@ rule compute_md5_checksum:
         "md5sum {input} > {output}"
 
 
-rule gzip_file_copy:
-    input:
-        '{filepath}'
-    output:
-        '{filepath}.gz'
-    shell:
-        "gzip -c {input} > {output}"
+#rule gzip_file_copy:
+#    input:
+#        '{filepath}'
+#    output:
+#        '{filepath}.gz'
+#    shell:
+#        "gzip -c {input} > {output}"
 
 
 rule samtools_index_cram_alignment:
@@ -37,15 +37,32 @@ rule samtools_index_bam_alignment:
         "samtools index -@ {threads} {input.bam}"
 
 
-rule validate_fastq:
+rule validate_split_fastq:
     input:
-        '{filename}.fastq.gz'
+        'output/haplotype_partitioning/splitting/{filename}.fastq.gz'
     output:
-        '{filename}.stats.pck'
+        'output/fastq_validation/{filename}.stats.pck'
     log: 'log/fastq_validation/{filename}.stats.log'
-    wildcard_constraints:
-        filename="[A-Za-z0-9_\-\.]+"
-    threads: 8
+    benchmark: 'run/fastq_validation/{filename}.stats.rsrc'
+    threads: 4
+    params:
+        scriptdir = config['script_dir']
+    run:
+        exec = '{params.scriptdir}/collect_read_stats.py --debug'
+        exec += ' --fastq-input {input} --output {output}'
+        exec += ' --chunk-size 25000 --validate'
+        exec += ' --num-cpu {threads} &> {log}'
+        shell(exec)
+
+
+rule validate_input_fastq:
+    input:
+        'input/read_data/diploid_assembly_input/{filename}.fastq.gz'
+    output:
+        'output/fastq_validation/{filename}.stats.pck'
+    log: 'log/fastq_validation/{filename}.stats.log'
+    benchmark: 'run/fastq_validation/{filename}.stats.rsrc'
+    threads: 4
     params:
         scriptdir = config['script_dir']
     run:

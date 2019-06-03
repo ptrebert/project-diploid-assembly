@@ -6,3 +6,6 @@ latency-wait: 10
 keep-going: True
 rerun-incomplete: True
 restart-times: 0
+resources:
+  mem_mb=1520432
+# resource memory: ~1.4 TB

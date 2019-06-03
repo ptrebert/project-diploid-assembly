@@ -12,7 +12,6 @@ for config_entry in AUTOLOAD_REFERENCE_DATA:
                 if 'skip' in v:
                     if bool(v['skip']):
                         continue
-                remote_url = v['url']
                 local_name = v['name']
                 if reftype == 'genome':
                     use_genome = config['use_ref_genome']
@@ -22,15 +21,35 @@ for config_entry in AUTOLOAD_REFERENCE_DATA:
                     local_path = os.path.join(v['path'], local_name)
                 else:
                     local_path = os.path.join('references', local_name)
+                use_threads = 4
                 rule:
                     output:
                         local_path
                     log: 'log/references/DL_{}.log'.format(local_name.rsplit('.', 1)[0])
-                    threads: 4
+                    threads: use_threads
                     message: 'Downloading reference file {} / {}'.format(reftype, local_name)
+                    params:
+                        remote_url = v['url']
                     run:
-                        exec = 'aria2c -s {threads} -x {threads}'
-                        exec += ' -o {output}'
-                        exec += ' {}'.format(remote_url)
-                        exec += ' &> {log}'
+                        source_gzip = params.remote_url.endswith('.gz')
+                        target_gzip = local_path.endswith('.gz')
+                        load_parallel = (source_gzip and target_gzip) or (not source_gzip and not target_gzip)
+                        if load_parallel:
+                            exec = 'aria2c -s {threads} -x {threads}'
+                            exec += ' -o {output}'
+                            exec += ' {params.remote_url}'
+                            exec += ' &> {log}'
+                        elif source_gzip and (not target_gzip):
+                            exec = 'wget --quiet -O -'  # write to stdout
+                            exec += ' {params.remote_url} 2> {log}'
+                            exec += ' | gunzip -c > {output}'
+                            exec += ' 2>> {log}'
+                        elif (not source_gzip) and target_gzip:
+                            exec = 'wget --quiet -O -'  # write to stdout
+                            exec += ' {params.remote_url} 2> {log}'
+                            exec += ' | gzip -c > {output}'
+                            exec += ' 2>> {log}'
+                        else:
+                            raise ValueError('Cannot handle combo of remote'
+                                             ' and local path: {} / {}'.format(params.remote_url, local_path))
                         shell(exec)
