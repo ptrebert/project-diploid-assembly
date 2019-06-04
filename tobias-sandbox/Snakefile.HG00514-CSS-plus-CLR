@@ -1,0 +1,534 @@
+import gzip
+
+#REFERENCE = "ref/GRCh38_full_analysis_set_plus_decoy_hla.fa"
+REFERENCE = "ref/GRCh38.p13.renamed.fa"
+chromosomes = ['chr'+str(x) for x in range(1,23)] + ['chrX']
+ALL_FASTQ = [ s.strip() for s in open('input/HG00514.PacBioSequel2.ALL.files.tsv') ]
+CCS_FASTQ = [ s.strip() for s in open('input/HG00514.PacBioSequel2.CCS.files.tsv') ]
+CLR_FASTQ = [ s.strip() for s in open('input/HG00514.PacBioSequel2.CLR.files.tsv') ]
+SAMPLE = 'HG00514'
+
+CCS_INPUT = [
+	'HG00514.PacBioSequel2.EDEVI_20190215_S64018_PL100119428-2_B01.ccs.bam', 
+	'HG00514.PacBioSequel2.EDEVI_20190215_S64018_PL100119428-2_C01.ccs.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190315_S64018_PL100119428-4_A01.ccs.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190315_S64018_PL100119428-4_B01.ccs.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190405_S64018_PL100119428-4_B01.ccs.bam',
+]
+
+CLR_INPUT = [
+	'HG00514.PacBioSequel2.EDEVI_20190208_S64018_PL100119428-1_B01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190215_S64018_PL100119428-1_A01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190215_S64018_PL100119428-2_B01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190215_S64018_PL100119428-2_C01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190315_S64018_PL100119428-4_A01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190315_S64018_PL100119428-4_B01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190319_S64018_PL100119428-5_A01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190319_S64018_PL100119428-5_B01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190321_S64018_PL100119428-5_A01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190321_S64018_PL100119428-5_B01.subreads.bam',
+	'HG00514.PacBioSequel2.EDEVI_20190405_S64018_PL100119428-4_B01.subreads.bam',
+]
+
+TRANSLATE_CHR_NAME = {
+	'CM000663.2': 'chr1',
+	'CM000664.2': 'chr2',
+	'CM000665.2': 'chr3',
+	'CM000666.2': 'chr4',
+	'CM000667.2': 'chr5',
+	'CM000668.2': 'chr6',
+	'CM000669.2': 'chr7',
+	'CM000670.2': 'chr8',
+	'CM000671.2': 'chr9',
+	'CM000672.2': 'chr10',
+	'CM000673.2': 'chr11',
+	'CM000674.2': 'chr12',
+	'CM000675.2': 'chr13',
+	'CM000676.2': 'chr14',
+	'CM000677.2': 'chr15',
+	'CM000678.2': 'chr16',
+	'CM000679.2': 'chr17',
+	'CM000680.2': 'chr18',
+	'CM000681.2': 'chr19',
+	'CM000682.2': 'chr20',
+	'CM000683.2': 'chr21',
+	'CM000684.2': 'chr22',
+	'CM000685.2': 'chrX',
+	'CM000686.2': 'chrY',
+}
+
+rule master:
+	input:
+		'pacbio/aln-merged/HG00514.CCS.tagged.bam',
+		'final-het-svns/ccs/HG00514.vcf.gz',
+		'phased-snvs-merged/ccs_ss/HG00514.vcf.gz.tbi',
+		'phased-snvs-merged/ccs/HG00514.vcf.gz.tbi',
+		'wtdbg2/HG00514.CCS-h1-only.ctg.fa',
+		'wtdbg2/HG00514.CCS-h2-only.ctg.fa',
+		'wtdbg2/HG00514.CCS-h1-plus-untagged.ctg.fa',
+		'wtdbg2/HG00514.CCS-h2-plus-untagged.ctg.fa',
+		
+		#expand('whatshap-snv/ccs/retyped-fb/{sample}.{chromosome}.vcf.gz', sample=SAMPLE, chromosome=chromosomes),
+		#expand('whatshap-snv/ccs/genotyped/{sample}.{chromosome}.vcf.gz', sample=SAMPLE, chromosome=chromosomes),
+		#'pacbio/aln-merged/HG00514.CCS.bam.bai'
+		#expand('pacbio/aln/{file}', file=CCS_INPUT)
+		#'pacbio/fastq/HG00514.Sequel2.CCS.fastq.gz',
+		#'pacbio/fastq/HG00514.Sequel2.CLR.fastq.gz',
+	#	expand('freebayes/ccs/raw/{sample}.{chromosome}.vcf.gz', sample=SAMPLE, chromosome=chromosomes),
+		#expand('pacbio/fastq/{file}', file=ALL_FASTQ),
+		#expand('phased-snvs/pb_ss/{sample}.{chromosome}.vcf.gz', chromosome=chromosomes),
+		#'pacbio/cram/{sample}.sorted.tagged.cram',
+		#'pacbio/fastq/{sample}.h1-only.fastq.gz',
+		#'pacbio/fastq/{sample}.h2-only.fastq.gz',
+		#'pacbio/fastq/{sample}.h1-plus-untagged.fastq.gz',
+		#'pacbio/fastq/{sample}.h2-plus-untagged.fastq.gz',    
+
+
+rule download_pacbio_reads:
+	output: 'pacbio/fastq/{file}'
+	log: 'pacbio/fastq/{file}.log'
+	resources: download=1
+	#shell: 'aria2c -x 16 -s 16 -o {output} ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR761/003/SRR7615963/SRR7615963_subreads.fastq.gz > {log} 2>&1'
+	shell: 'wget --output-file={log} -O {output} http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20190508_HG00514_PacBioSequel2/{wildcards.file}'
+
+rule pbmm2_ccs:
+	input:
+		bam='pacbio/fastq/{file}.ccs.bam',
+		ref=REFERENCE,
+	output:
+		bam=temp('pacbio/aln/{file}.ccs.bam'),
+	log: 'pacbio/aln/{file}.ccs.bam.log'
+	threads: 48
+	shell:
+		'TMPDIR=$PWD pbmm2 align --sort --sample {SAMPLE} --preset CCS -j {threads} -J 10 -m 50G {input.ref} {input.bam} {output.bam} > {log} 2>&1'
+
+rule pbmm2_clr:
+	input:
+		bam='pacbio/fastq/{file}.subreads.bam',
+		ref=REFERENCE,
+	output:
+		bam=temp('pacbio/aln/{file}.subreads.bam'),
+	log: 'pacbio/aln/{file}.subreads.bam.log'
+	threads: 24
+	shell:
+		'TMPDIR=$PWD pbmm2 align --sort --strip --sample {SAMPLE} -j {threads} -J 10 -m 50G {input.ref} {input.bam} {output.bam} > {log} 2>&1'
+
+rule merge_pbmm2_bams:
+	input:
+		bams=expand('pacbio/aln/{file}', file=CCS_INPUT),
+	output:
+		bam='pacbio/aln-merged/HG00514.CCS.bam'
+	log: 'pacbio/aln-merged/HG00514.CCS.bam.log'
+	shell:
+		'samtools merge -@ 25 -O BAM {output.bam} {input.bams}'
+
+rule merge_pbmm2_bams_CLR:
+	input:
+		bams=expand('pacbio/aln/{file}', file=CLR_INPUT),
+	output:
+		bam='pacbio/aln-merged/HG00514.CLR.bam'
+	log: 'pacbio/aln-merged/HG00514.CLR.bam.log'
+	shell:
+		'samtools merge -@ 25 -O BAM {output.bam} {input.bams}'
+
+
+rule download_GRCh38_p13:
+	output:
+		'ref/GCA_000001405.28_GRCh38.p13_genomic.fna.gz'
+	log: 
+		'ref/GCA_000001405.28_GRCh38.p13_genomic.fna.gz.log'
+	shell:
+		'wget --output-file={log} -O {output} ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz'
+
+
+rule translate_chr_names_GRCh38_p13:
+	input:
+		'ref/GCA_000001405.28_GRCh38.p13_genomic.fna.gz'
+	output:
+		'ref/GRCh38.p13.renamed.fa'
+	log: 
+		'ref/GRCh38.p13.renamed.fa.log'
+	run:
+		o = open(output[0], 'w')
+		for line in gzip.open(input[0],'rt'):
+			if line.startswith('>'):
+				chr_name = line[1:].split()[0]
+				if chr_name in TRANSLATE_CHR_NAME:
+					print('>{}'.format(TRANSLATE_CHR_NAME[chr_name]), file=o)
+					continue
+			o.write(line)
+		o.close()
+
+
+#rule combine_reads_clr:
+	#input:
+		#expand('pacbio/fastq/{file}', file=CLR_FASTQ),
+	#output:
+		#'pacbio/fastq/HG00514.Sequel2.CLR.fastq.gz'
+	#shell:
+		#'zcat {input} | pigz > {output}'
+
+#rule combine_reads_ccs:
+	#input:
+		#expand('pacbio/fastq/{file}', file=CCS_FASTQ),
+	#output:
+		#'pacbio/fastq/HG00514.Sequel2.CCS.fastq.gz'
+	#shell:
+		#'zcat {input} | pigz > {output}'
+
+rule ccs_squashed_fastq:
+	input:
+		bams=['pacbio/fastq/{}'.format(f) for f in CCS_INPUT],
+	output:
+		fastq='pacbio/squashed-fastq/HG00514.CCS.fastq.gz',
+	threads: 10
+	log:
+		'pacbio/squashed-fastq/HG00514.CCS.fastq.log'
+	shell:
+		'(samtools cat {input.bams} | samtools fastq - | pigz > {output.fastq} ) 2> {log}'
+
+#rule map_ccs:
+	#input:
+		#fastq='pacbio/fastq/{sample}.Sequel2.CCS.fastq.gz',
+		#ref=REFERENCE,
+	#output:
+		#cram=temp('pacbio/cram/{sample}.Sequel2.CCS.cram')
+	#log: 'pacbio/cram/{sample}.Sequel2.CCS.log'
+	#threads: 48
+	#shell: '(minimap2 -t {threads} -R \'@RG\\tID:1\\tSM:{wildcards.sample}\' -ax asm20 {input.ref} {input.fastq} | samtools view -@ 10 -T {input.ref} -C - > {output.cram}) 2> {log}'
+
+#rule map_clr:
+	#input:
+		#fastq='pacbio/fastq/{sample}.Sequel2.CLR.fastq.gz',
+		#ref=REFERENCE,
+	#output:
+		#cram=temp('pacbio/cram/{sample}.Sequel2.CLR.cram')
+	#log: 'pacbio/cram/{sample}.Sequel2.CLR.log'
+	#threads: 48
+	#shell: '(minimap2 -t {threads} -R \'@RG\\tID:1\\tSM:{wildcards.sample}\' -ax map-pb {input.ref} {input.fastq} | samtools view -@ 10 -T {input.ref} -C - > {output.cram}) 2> {log}'
+
+rule sort_cram:
+	input: 
+		cram='{file}.cram'
+	output:
+		cram='{file}.sorted.cram'
+	threads: 10
+	shell:
+		'samtools sort -o {output.cram} -m 25G -@ {threads} {input.cram}'
+
+
+rule index_cram:
+	input: 
+		cram='{file}.sorted.cram'
+	output:
+		crai='{file}.sorted.cram.crai'
+	threads: 4
+	shell:
+		'samtools index -@ {threads} {input.cram}'
+
+rule index_bam:
+	input: 
+		cram='{file}.bam'
+	output:
+		crai='{file}.bam.bai'
+	threads: 4
+	shell:
+		'samtools index -@ {threads} {input.cram}'
+
+#rule freebayes_ccs:
+	#input:
+		#cram='pacbio/cram/{sample}.Sequel2.CCS.sorted.cram',
+		#crai='pacbio/cram/{sample}.Sequel2.CCS.sorted.cram.crai',
+		#ref=REFERENCE,
+	#output:
+		#vcf='freebayes/ccs/raw/{sample}.{chromosome}.vcf.gz'
+	#shell:
+		#'samtools view -h {input.cram} {wildcards.chromosome} | freebayes -f {input.ref} --stdin | bgzip > {output.vcf}'
+
+
+rule freebayes_ccs:
+	input:
+		bam='pacbio/aln-merged/{sample}.CCS.bam',
+		bai='pacbio/aln-merged/{sample}.CCS.bam.bai',
+		ref=REFERENCE,
+	output:
+		vcf='freebayes/ccs/raw/{sample}.vcf.gz',
+		joblog='freebayes/ccs/raw/{sample}.joblog',
+	log: 'freebayes/ccs/raw/{sample}.vcf.log'
+	threads: 48
+	shell:
+		'(./freebayes-parallel-timeout <(fasta_generate_regions.py {input.ref} 100000|grep \'^chr\') {threads} 120 {output.joblog} -f {input.ref} {input.bam} |bgzip > {output.vcf}) 2>{log}'
+
+rule filter_and_split_freebayes_vcf:
+	input:
+		vcf='freebayes/ccs/raw/{sample}.vcf.gz',
+		tbi='freebayes/ccs/raw/{sample}.vcf.gz.tbi',
+		ref=REFERENCE,
+	output:
+		vcf='freebayes/ccs/filtered/{sample}.{chromosome}.vcf.gz'
+	log: 
+		'freebayes/ccs/filtered/{sample}.{chromosome}.vcf.gz.log'
+	shell:
+		'(bcftools filter -i \'QUAL>=10\' -r {wildcards.chromosome} {input.vcf} | bcftools view -c 1 --types snps -m 2 -M 2 | bcftools norm -f {input.ref} -O z -o {output.vcf}) > {log} 2>&1'
+
+rule whatshap_snvs:
+	input:
+		bam='pacbio/aln-merged/{sample}.CCS.bam',
+		bai='pacbio/aln-merged/{sample}.CCS.bam.bai',
+		ref=REFERENCE,
+	output:
+		vcf=temp('whatshap-snv/ccs/candidates/{sample}.{chromosome}.vcf'),
+	log: 'whatshap-snv/ccs/candidates/{sample}.{chromosome}.vcf.log'
+	shell:
+		'(whatshap find_snv_candidates --pacbio --chromosome {wildcards.chromosome} {input.ref} {input.bam} > {output.vcf}) 2>{log}'
+
+
+rule merge_whatshap_snvs:
+	input:
+		vcfs=expand('whatshap-snv/ccs/candidates/{{sample}}.{chromosome}.vcf.gz', chromosome=chromosomes),
+		tbis=expand('whatshap-snv/ccs/candidates/{{sample}}.{chromosome}.vcf.gz.tbi', chromosome=chromosomes),
+	output:
+		vcf='whatshap-snv/ccs/candidates-merged/{sample}.vcf.gz'
+	log: 'whatshap-snv/ccs/candidates-merged/{sample}.vcf.gz.log'
+	shell:
+		'bcftools concat -O z -o {output.vcf} {input.vcfs} > {log} 2>&1'
+
+rule filter_close_calls:
+	input:
+		vcf='whatshap-snv/ccs/candidates/{sample}.{chromosome}.vcf.gz',
+	output:
+		vcf='whatshap-snv/ccs/candidates-nocluster/{sample}.{chromosome}.vcf.gz',
+	shell:
+		'(bcftools view -h {input.vcf} && (bedtools cluster -i {input.vcf} -d 20|uniq -f 8 -u |cut -f 1-8) ) | awk \'BEGIN {{OFS="\\t"}} $0 ~ /^##/ {{print}} $0 ~ /^#CHROM/ {{print $0, "FORMAT", "{wildcards.sample}"}} $0 !~ /^#/ {{print $0, ".", "."}}\' | bgzip > {output.vcf}'
+
+rule whatshap_genotype:
+	input:
+		bam='pacbio/aln-merged/{sample}.CCS.bam',
+		vcf='whatshap-snv/ccs/candidates-nocluster/{sample}.{chromosome}.vcf.gz',
+		tbi='whatshap-snv/ccs/candidates-nocluster/{sample}.{chromosome}.vcf.gz.tbi',
+		ref=REFERENCE,
+	output:
+		vcf='whatshap-snv/ccs/genotyped/{sample}.{chromosome}.vcf.gz',
+	log:
+		'whatshap-snv/ccs/genotyped/{sample}.{chromosome}.vcf.gz.log',
+	shell:
+		'(whatshap genotype --reference {input.ref} {input.vcf} {input.bam} | bgzip > {output.vcf}) 2> {log}'
+
+rule whatshap_regenotype_freebayes:
+	input:
+		bam='pacbio/aln-merged/{sample}.CCS.bam',
+		vcf='freebayes/ccs/filtered/{sample}.{chromosome}.vcf.gz',
+		tbi='freebayes/ccs/filtered/{sample}.{chromosome}.vcf.gz.tbi',
+		ref=REFERENCE,
+	output:
+		vcf='whatshap-snv/ccs/retyped-fb/{sample}.{chromosome}.vcf.gz',
+	log:
+		'whatshap-snv/ccs/retyped-fb/{sample}.{chromosome}.vcf.gz.log',
+	shell:
+		'(whatshap genotype --reference {input.ref} {input.vcf} {input.bam} | bgzip > {output.vcf}) 2> {log}'
+
+ruleorder: extract_hets > filter_gq
+
+rule filter_gq:
+	input:
+		vcf='whatshap-snv/ccs/retyped-fb/{sample}.{chromosome}.vcf.gz',
+	output:
+		vcf='whatshap-snv/ccs/retyped-fb-gq{gq,[0-9]+}/{sample}.{chromosome,chr([0-9+]|XY)}.vcf.gz',
+	shell:
+		'bcftools filter --include \'GQ>={wildcards.gq}\' -O z -o {output.vcf} {input.vcf}'
+
+rule snv_intersect:
+	input:
+		vcf_wh='whatshap-snv/ccs/retyped-fb-gq100/{sample}.{chromosome}.het-only.vcf.gz',
+		tbi_wh='whatshap-snv/ccs/retyped-fb-gq100/{sample}.{chromosome}.het-only.vcf.gz.tbi',
+		vcf_fb='freebayes/ccs/filtered/{sample}.{chromosome}.het-only.vcf.gz',
+		tbi_fb='freebayes/ccs/filtered/{sample}.{chromosome}.het-only.vcf.gz.tbi',
+	output:
+		vcf0='whatshap-snv/ccs/wh-fb-isec/{sample}.{chromosome}/0000.vcf',
+		vcf1='whatshap-snv/ccs/wh-fb-isec/{sample}.{chromosome}/0001.vcf',
+		vcf2='whatshap-snv/ccs/wh-fb-isec/{sample}.{chromosome}/0002.vcf',
+		vcf3='whatshap-snv/ccs/wh-fb-isec/{sample}.{chromosome}/0003.vcf',
+		vcf_zipped='whatshap-snv/ccs/wh-fb-isec/{sample}.{chromosome}.vcf.gz',
+	shell:
+		'bcftools isec -p whatshap-snv/ccs/wh-fb-isec/{wildcards.sample}.{wildcards.chromosome} {input.vcf_fb} {input.vcf_wh} && (cat {output.vcf2} | bgzip > {output.vcf_zipped})'
+
+rule filter_depth:
+	input:
+		vcf='whatshap-snv/ccs/wh-fb-isec/{sample}.{chromosome}.vcf.gz',
+		tbi='whatshap-snv/ccs/wh-fb-isec/{sample}.{chromosome}.vcf.gz.tbi',
+	output:
+		vcf='whatshap-snv/ccs/wh-fb-isec-dp{dp,[0-9]+}/{sample}.{chromosome}.vcf.gz',
+	shell:
+		'bcftools filter --exclude \'FORMAT/DP>{wildcards.dp}\' -O z -o {output.vcf} {input.vcf}'
+
+rule merge_final_vcf:
+	input:
+		vcfs=expand('whatshap-snv/ccs/wh-fb-isec-dp50/{{sample}}.{chromosome}.vcf.gz', chromosome=chromosomes),
+		tbi=expand('whatshap-snv/ccs/wh-fb-isec-dp50/{{sample}}.{chromosome}.vcf.gz.tbi', chromosome=chromosomes),
+	output:
+		vcf='final-het-svns/ccs/{sample}.vcf.gz',
+	shell:
+		'bcftools concat -a {input.vcfs} -O z -o {output.vcf}'
+
+rule extract_hets:
+	input:
+		vcf='{file}.vcf.gz',
+		tbi='{file}.vcf.gz.tbi',
+	output:
+		vcf='{file}.het-only.vcf.gz',
+	shell:
+		'bcftools view -g het -O z -o {output.vcf} {input.vcf}'
+
+rule bgzip_vcf:
+	input:
+		vcf='{file}.vcf'
+	output:
+		vcf='{file}.vcf.gz'
+	shell:
+		'cat {input.vcf} | bgzip > {output.vcf}'
+
+
+rule index_vcf:
+	input:
+		vcf='{file}.vcf.gz'
+	output:
+		tbi='{file}.vcf.gz.tbi'
+	shell:
+		'bcftools index --tbi {input.vcf}'
+
+
+# --- PHASING and HAPLOTAGGING -------------------------------------------------------------------------------
+rule phase_ccs:
+	input:
+		vcf='whatshap-snv/ccs/wh-fb-isec-dp50/{sample}.{chromosome}.vcf.gz',
+		tbi='whatshap-snv/ccs/wh-fb-isec-dp50/{sample}.{chromosome}.vcf.gz.tbi',
+		bam='pacbio/aln-merged/{sample}.CCS.bam',
+		bai='pacbio/aln-merged/{sample}.CCS.bam.bai',
+		ref=REFERENCE,
+	output:
+		vcf='phased-snvs/ccs/{sample}.{chromosome}.vcf.gz',
+	log: 'phased-snvs/ccs/{sample}.{chromosome}.vcf.log'
+	shell: 'whatshap phase --reference {input.ref} --chromosome {wildcards.chromosome} -o {output.vcf} {input.vcf} {input.bam} > {log} 2>&1'
+
+
+rule phase_ccs_ss:
+	input:
+		vcf='whatshap-snv/ccs/wh-fb-isec-dp50/{sample}.{chromosome}.vcf.gz',
+		tbi='whatshap-snv/ccs/wh-fb-isec-dp50/{sample}.{chromosome}.vcf.gz.tbi',
+		bam='pacbio/aln-merged/{sample}.CCS.bam',
+		bai='pacbio/aln-merged/{sample}.CCS.bam.bai',
+		ss_vcf='input/strandseq/{sample}/{chromosome}.vcf',
+		ref=REFERENCE,
+	output:
+		vcf='phased-snvs/ccs_ss/{sample}.{chromosome}.vcf.gz',
+	log: 'phased-snvs/ccs_ss/{sample}.{chromosome}.vcf.log'
+	shell: 'whatshap phase --reference {input.ref} --chromosome {wildcards.chromosome} -o {output.vcf} {input.vcf} {input.bam} {input.ss_vcf} > {log} 2>&1'
+
+rule merge_vcfs:
+	input:
+		vcf=expand('phased-snvs/{{what}}/{{sample}}.{chromosome}.vcf.gz', chromosome=chromosomes),
+		tbi=expand('phased-snvs/{{what}}/{{sample}}.{chromosome}.vcf.gz.tbi', chromosome=chromosomes),
+	output:
+		vcf='phased-snvs-merged/{what}/{sample}.vcf.gz',
+	log:
+		vcf='phased-snvs-merged/{what}/{sample}.log',
+	shell:
+		'bcftools concat -o {output.vcf} -O z {input.vcf} > {log} 2>&1'
+
+
+rule haplotag:
+	input:
+		vcf='phased-snvs-merged/ccs_ss/{sample}.vcf.gz',
+		tbi='phased-snvs-merged/ccs_ss/{sample}.vcf.gz.tbi',
+		bam='pacbio/aln-merged/{sample}.{what}.bam',
+		bai='pacbio/aln-merged/{sample}.{what}.bam.bai',
+		ref=REFERENCE,
+	output:
+		bam='pacbio/aln-merged/{sample}.{what,(CCS|CLR)}.tagged.bam',
+		taglist='pacbio/aln-merged/{sample}.{what,(CCS|CLR)}.haplotag.tsv.gz',
+	log:
+		'pacbio/aln-merged/{sample}.{what}.tagged.bam.log'
+	shell:
+		'whatshap haplotag -o {output.bam} -r {input.ref} --output-haplotag-list {output.taglist} {input.vcf} {input.bam} > {log} 2>&1'
+
+
+rule haplosplit_fastq_ccs:
+	input:
+		bams=['pacbio/fastq/{}'.format(f) for f in CCS_INPUT],
+		taglist='pacbio/aln-merged/HG00514.CCS.haplotag.tsv.gz',
+	output:
+		fastq1='pacbio/split-fastq/HG00514.CCS.h1-only.fastq.gz',
+		fastq2='pacbio/split-fastq/HG00514.CCS.h2-only.fastq.gz',
+		fastq_untagged='pacbio/split-fastq/HG00514.CCS.untagged.fastq.gz',
+	threads: 10
+	log:
+		'pacbio/split-fastq/HG00514.CCS.split.log'
+	shell:
+		'(samtools cat {input.bams} | samtools fastq - | whatshap split --pigz --only-largest-block --output-h1 {output.fastq1} --output-h2 {output.fastq2} --output-untagged {output.fastq_untagged} /dev/stdin {input.taglist} ) > {log} 2>&1'
+
+rule haplosplit_fastq_include_untagged_CCS:
+	input:
+		bams=['pacbio/fastq/{}'.format(f) for f in CCS_INPUT],
+		taglist='pacbio/aln-merged/HG00514.CCS.haplotag.tsv.gz',
+	output:
+		fastq1='pacbio/split-fastq/HG00514.CCS.h1-plus-untagged.fastq.gz',
+		fastq2='pacbio/split-fastq/HG00514.CCS.h2-plus-untagged.fastq.gz',
+	threads: 10
+	log:
+		'pacbio/split-fastq/split-HG00514.CCS.split-plus-untagged.log'
+	shell:
+		'(samtools cat {input.bams} | samtools fastq - | whatshap split --pigz --only-largest-block --output-h1 {output.fastq1} --output-h2 {output.fastq2} --add-untagged /dev/stdin {input.taglist} ) > {log} 2>&1'
+
+rule haplosplit_fastq_include_untagged_CLR:
+	input:
+		bams=['pacbio/fastq/{}'.format(f) for f in CLR_INPUT],
+		taglist='pacbio/aln-merged/HG00514.CLR.haplotag.tsv.gz',
+	output:
+		fastq1='pacbio/split-fastq/HG00514.CLR.h1-plus-untagged.fastq.gz',
+		fastq2='pacbio/split-fastq/HG00514.CLR.h2-plus-untagged.fastq.gz',
+	threads: 10
+	log:
+		'pacbio/split-fastq/split-HG00514.CLR.split-plus-untagged.log'
+	shell:
+		'(samtools cat {input.bams} | samtools fastq - | whatshap split --pigz --only-largest-block --output-h1 {output.fastq1} --output-h2 {output.fastq2} --add-untagged /dev/stdin {input.taglist} ) > {log} 2>&1'
+
+rule wtdbg2:
+	input:
+		fastq='pacbio/split-fastq/{sample}.CCS.{hap}.fastq.gz',
+	output:
+		layout='wtdbg2/{sample}.CCS-{hap}.ctg.lay.gz',
+	log: 'wtdbg2/{sample}.CCS-{hap}.log'
+	threads: 48
+	shell:
+		'./wtdbg2.local/wtdbg2 -x ccs -g3g -t {threads} -i {input.fastq} -o wtdbg2/{wildcards.sample}.CCS-{wildcards.hap} > {log} 2>&1'
+
+rule wtdbg2_consensus:
+	input:
+		layout='wtdbg2/{sample}.CCS-{hap}.ctg.lay.gz',
+	output:
+		fasta='wtdbg2/{sample}.CCS-{hap}.ctg.fa',
+	log: 'wtdbg2/{sample}.CCS-{hap}.ctg.fa.log'
+	threads: 48
+	shell:
+		'./wtdbg2.local/wtpoa-cns -t {threads} -i {input.layout} -fo {output.fasta}'
+
+
+rule wtdbg2_ccs_squashed:
+	input:
+		fastq='pacbio/squashed-fastq/{sample}.CCS.fastq.gz',
+	output:
+		layout='wtdbg2-squashed-ccs/{sample}.ctg.lay.gz',
+	log: 'wtdbg2-squashed-ccs/{sample}.log'
+	threads: 48
+	shell:
+		'./wtdbg2.local/wtdbg2 -x ccs -g3g -t {threads} -i {input.fastq} -o wtdbg2-squashed-ccs/{wildcards.sample} > {log} 2>&1'
+
+rule wtdbg2_ccs_squashed_consensus:
+	input:
+		layout='wtdbg2-squashed-ccs/{sample}.ctg.lay.gz',
+	output:
+		fasta='wtdbg2-squashed-ccs/{sample}.ctg.fa'
+	log: 'wtdbg2-squashed-ccs/{sample}.ctg.fa.log'
+	threads: 48
+	shell:
+		'./wtdbg2.local/wtpoa-cns -t {threads} -i {input.layout} -fo {output.fasta}'

@@ -1,0 +1,17 @@
+bcftools view -s HG00514 /MMCI/TM/scratch/hgsvc/consensus/freebayes_10X/SH032.chr19.vcf.gz | bcftools view -c 1 -O z -o HG00514.freebayes_10X.vcf.gz - 
+bcftools filter -i 'QUAL>=10' freebayes/ccs/raw/HG00514.chr19.vcf.gz | bcftools view -c 1 --types snps -m 2 -M 2 -O z -o HG00514.ccs.biallelic-snvs.qual10.vcf.gz -
+bcftools filter -i 'QUAL>=10' freebayes/ccs/raw/HG00514.chr19.vcf.gz | bcftools view -c 1 --types snps -m 2 -M 2 | bcftools norm -f ref/GRCh38_full_analysis_set_plus_decoy_hla.fa -O z -o HG00514.ccs.biallelic-snvs.qual10.vcf.gz -
+whatshap compare --sample HG00514 --names CCS,TRIO phased-snvs-merged/ccs_ss/HG00514.vcf.gz input/trio-phasing/SH032.all.vcf.gz
+bcftools mpileup -f ref/GRCh38.p13.renamed.fa -r chr19 pacbio/aln-merged/HG00514.CCS.bam| bcftools call -c -O z -o bcftools.chr19.vcf.gz --ploidy GRCh38 
+minimap2 -t 48 -ax asm10 ref/GRCh38.p13.renamed.fa /MMCI/TM/scratch/pebert/diploid_assembly/output/haplotype_assembly/consensus/HG00514.sequel2.pb-clr.tag-h1-un.ctg.fa | samtools view -Sb - > HG00514-CLR-H1.ctg.GRCh38.bam
+samtools sort -o HG00514-CLR-H1.ctg.GRCh38.sorted.bam HG00514-CLR-H1.ctg.GRCh38.bam
+samtools index HG00514-CLR-H1.ctg.GRCh38.sorted.bam
+whatshap phase --ignore-read-groups --reference ref/GRCh38.p13.renamed.fa -o HG00514-CLR-H1-assembly-phasing.vcf final-het-svns/ccs/HG00514.vcf.gz HG00514-CLR-H1.ctg.GRCh38.sorted.bam
+whatshap compare --sample HG00514 --switch-error-bed HG00514-CLR-H1-assembly-phasing.chr1.switcherrors.bed HG00514-CLR-H1-assembly-phasing.chr1.vcf.gz input/trio-phasing/SH032.chr1.vcf.gz 
+flye --genome-size 3g --out-dir flye-test --threads 48 -i 2 --pacbio-corr pacbio/split-fastq/HG00514.CCS.h1-plus-untagged.fastq.gz
+minimap2 -t 48 -ax asm20 /MMCI/TM/scratch/pebert/diploid_assembly/output/haplotype_assembly/consensus/HG00514.sequel2.pb-clr.tag-h1-un.ctg.fa pacbio/split-fastq/HG00514.CCS.h1-plus-untagged.fastq.gz |samtools view -@ 10 -Sb - > HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.bam
+ref="/MMCI/TM/scratch/pebert/diploid_assembly/output/haplotype_assembly/consensus/HG00514.sequel2.pb-clr.tag-h1-un.ctg.fa" ./freebayes-parallel-timeout <(fasta_generate_regions.py $ref 100000) 48 120 HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.freebayes.joblog -f $ref HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.bam  | bgzip > HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.freebayes.vcf.gz
+./freebayes-parallel-timeout <(fasta_generate_regions.py HG00514.sequel2.pb-clr.tag-h1-un.ctg.fa 100000) 48 120 HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.freebayes.joblog -f HG00514.sequel2.pb-clr.tag-h1-un.ctg.fa HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.sorted.bam  | bgzip > HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.freebayes.vcf.gz
+bcftools filter -i QUAL
+bcftools filter -i 'QUAL>=1' HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.freebayes.vcf.gz | bcftools view -c 2 --types snps -m 2 -M 2 -O z -o HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.freebayes.filtered.vcf.gz
+bcftools consensus  -f HG00514.sequel2.pb-clr.tag-h1-un.ctg.fa -o HG00514.sequel2.pb-clr.tag-h1-un.ctg.freebayes-polished.fa HG00514.CCS-mapped-to-CLR-contigs.h1-plus-untagged.freebayes.filtered.vcf.gz
