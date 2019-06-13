@@ -9,6 +9,7 @@ dependencies:
   - minimap2=2.16
   - pbmm2=1.0.0
   - pilon=1.23
+  - quast=5.0.2
   - mummer4
   - busco=3.0.2
   - sambamba=0.6.8
@@ -16,7 +17,7 @@ dependencies:
   - bcftools=1.9
   - freebayes=1.2.0
   - wtdbg=2.3
-  - racon=1.3.2
+  - racon=1.3.3
   - pbgzip
   - pigz=2.4
   - pip:
