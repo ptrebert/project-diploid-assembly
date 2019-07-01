@@ -1,0 +1,1 @@
+snakemake --configfile snake_config.yml --profile environment/snakemake/deepsrv --nolock
