@@ -101,13 +101,20 @@ wtdbg2_presets:
   HG00733.pangen.ont-ul: ont
   HG00514.sequel2.pb-ccs: ccs
   HG00514.sequel2.pb-clr: sq
+  HG00514.sequel2.pb-clr-25: sq
 
 minimap2_presets:
   HG002.ucsc1.ont-ul: map-ont
   HG002.pangen.ont-ul: map-ont
   HG00733.pangen.ont-ul: map-ont
-  HG00514.sequel2.pb-ccs: map-pb  # this one could be wrong
+  HG00514.sequel2.pb-ccs: map-pb
   HG00514.sequel2.pb-clr: map-pb
+
+flye_presets:
+  HG00514.sequel2.pb-ccs: pacbio-corr
+  HG00514.sequel2.pb-clr: pacbio-raw
+  HG00514.sequel2.pb-clr-25: pacbio-raw
+
 
 read_files:
   ucsc1:
