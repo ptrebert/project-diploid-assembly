@@ -16,6 +16,7 @@ import multiprocessing as mp
 
 
 import numpy as np
+import pysam as pysam
 
 
 FASTQ_QUAL_ENCODING = """!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"""
@@ -38,13 +39,13 @@ def parse_command_line():
         " errors/warnings will be reported to STDERR.",
     )
     parser.add_argument(
-        "--fastq-input",
-        "-fi",
+        "--input-files",
+        "-if",
         type=str,
         required=True,
-        dest="fastq",
+        dest="input",
         nargs='+',
-        help="Full path FASTQ read files (assumed to be gzip or bzip compressed).",
+        help="Full path FASTQ read files (assumed to be gzip or bzip compressed) or BAM alignments.",
     )
     parser.add_argument(
         "--output",
@@ -218,6 +219,27 @@ def read_complete_records(fpath, chunk_size):
     return
 
 
+def read_bam_sequence_records(fpath, chunk_size):
+    """
+    :param fpath:
+    :param chunk_size:
+    :return:
+    """
+    chunk_buffer = [''] * chunk_size
+    record = 0
+    with pysam.AlignmentFile(fpath, 'rb', check_sq=False) as bam:
+        for alignment in bam:
+            chunk_buffer[record] = alignment.query_sequence
+            record += 1
+            if record == chunk_size:
+                yield chunk_buffer
+                chunk_buffer = [''] * chunk_size
+                record = 0
+    if record > 0:
+        yield chunk_buffer[:record]
+    return
+
+
 def dump_error_records(active_chunk, record_num, dump_file):
     """
     :param active_chunk:
@@ -237,6 +259,39 @@ def dump_error_records(active_chunk, record_num, dump_file):
     return
 
 
+def assemble_file_processors(input_files, validate, logger):
+    """
+    Quick and dirty - if several input file types should now
+    be supported, need to implement an OO approach...
+
+    :param fastq_input:
+    :param bam_input:
+    :param validate:
+    :return:
+    """
+    seq_re = re.compile("^[" + ''.join(cargs.alphabet) + "]+$")
+    qual_re = re.compile("^[" + re.escape(FASTQ_QUAL_ENCODING) + "]+$")
+    check_seq = seq_re.match
+    check_qual = qual_re.match
+
+    file_paths, chunk_readers, read_processors = [], [], []
+    for input_file in input_files:
+        file_paths.append(input_file)
+        if '.fastq' in input_file and validate:
+            chunk_readers.append(read_complete_records)
+            read_processors.append(fnt.partial(validate_read_record, *(check_seq, check_qual)))
+        elif '.fastq' in input_file:
+            chunk_readers.append(read_sequence_records)
+            read_processors.append(compute_read_statistics)
+        elif '.bam' in input_file:
+            logger.debug('Adding BAM processors for file {}'.format(os.path.basename(input_file)))
+            chunk_readers.append(read_bam_sequence_records)
+            read_processors.append(compute_read_statistics)
+        else:
+            raise ValueError('Unrecognized input file format: {}'.format(input_file))
+    return file_paths, chunk_readers, read_processors
+
+
 def main(logger, cargs):
     """
     :param logger:
@@ -245,16 +300,7 @@ def main(logger, cargs):
     """
     logger.debug("Starting computations")
 
-    if cargs.validate:
-        chunk_reader = read_complete_records
-        seq_re = re.compile("^[" + ''.join(cargs.alphabet) + "]+$")
-        qual_re = re.compile("^[" + re.escape(FASTQ_QUAL_ENCODING) + "]+$")
-        check_seq = seq_re.match
-        check_qual = qual_re.match
-        read_processor = fnt.partial(validate_read_record, *(check_seq, check_qual))
-    else:
-        chunk_reader = read_sequence_records
-        read_processor = compute_read_statistics
+    file_paths, chunk_readers, read_processors = assemble_file_processors(cargs.input, cargs.validate, logger)
 
     len_stats = col.Counter()
     nuc_stats = col.Counter()
@@ -268,12 +314,12 @@ def main(logger, cargs):
 
     gc_buffer = np.zeros(cargs.chunksize, dtype=np.float16)
     with mp.Pool(cargs.numcpu) as pool:
-        logger.debug('Initialized worker pool: {}'.format(ti.ctime()))
-        for fastq in cargs.fastq:
-            logger.debug('Processing file {}'.format(fastq))
-            for chunk in chunk_reader(fastq, cargs.chunksize):
+        logger.debug('Initialized worker pool')
+        for input_file, chunk_reader, read_processor in zip(file_paths, chunk_readers, read_processors):
+            logger.debug('Processing file {}'.format(input_file))
+            for chunk in chunk_reader(input_file, cargs.chunksize):
                 read_chunk_size = len(chunk)
-                logger.debug('Processing chunk of size {} ({})'.format(read_chunk_size, ti.ctime()))
+                logger.debug('Processing chunk of size {}'.format(read_chunk_size))
                 try:
                     resit = pool.imap(read_processor, chunk)
                     for idx, (l, n, c) in enumerate(resit):
@@ -291,8 +337,8 @@ def main(logger, cargs):
                         const = ae.args[1]
                         record_num = int(ae.args[2])
                         logger.error('Found faulty read record: {} - {} - {}'.format(msg, const, record_num))
-                        dump_file = os.path.basename(fastq).replace('fastq.gz', 'error.fastq.gz')
-                        dump_path = os.path.join(os.path.dirname(fastq), dump_file)
+                        dump_file = os.path.basename(input_file) + 'error'
+                        dump_path = os.path.join(os.path.dirname(input_file), dump_file)
                         dump_error_records(chunk, record_num, dump_path)
                         raise
 
