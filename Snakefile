@@ -8,20 +8,135 @@ REFCHROM = config['chromosomes'][REFKEY]
 SAMPLES = config['samples']
 
 # this needs to be sorted out when finalizing the pipeline
-ruleorder: merge_phased_variants > prepare_trio_phased_variants
-ruleorder: merge_chunk_part_read_files > merge_partitioned_read_files
+#ruleorder: merge_phased_variants > prepare_trio_phased_variants
+#ruleorder: merge_chunk_part_read_files > merge_partitioned_read_files
+#ruleorder: compute_delta_between_assemblies > compute_assembly_delta
 
 include: 'smk_include/aux_utilities.smk'
 include: 'smk_include/ex_nihilo_injections.smk'
 include: 'smk_include/dl_reference_data.smk'
 include: 'smk_include/dl_read_data_chunks.smk'
 include: 'smk_include/dl_read_data_parts.smk'
+include: 'smk_include/compare_contig_phasing.smk'
+include: 'smk_include/compare_assemblies.smk'
+include: 'smk_include/build_assembly_flye.smk'
+include: 'smk_include/arrow_polishing.smk'
 
 rule master:
     input:
+        expand('output/fastq_validation/{read_sample}.{haplotype}.stats.pck',
+                read_sample=['HG00514.sequel2.pb-clr'],
+                haplotype=['tag-h1-un', 'tag-h2-un']),
+#        # USE WITH RACON RULE
+#        expand('output/assembly_analysis/mummer/{hapassm}.delta.gz',
+#                hapassm=[
+#                    'HG00514.sequel2.pb-ccs_to_HG00514.sequel2.pb-clr-25.tag-h1-un.racon-pass1',
+#                    'HG00514.sequel2.pb-ccs_to_HG00514.sequel2.pb-clr-25.tag-h1-un.racon-pass2',
+#                    'HG00514.sequel2.pb-ccs_to_HG00514.sequel2.pb-clr-25_to_HG00514.sequel2.pb-clr-25.tag-h1-un.arrow-pass1.racon-pass1',
+#                    'HG00514.sequel2.pb-ccs_to_HG00514.sequel2.pb-clr.tag-h1-un.racon-pass1',
+#                    'HG00514.sequel2.pb-ccs_to_HG00514.sequel2.pb-clr.tag-h1-un.racon-pass2',
+#                    'HG00514.sequel2.pb-ccs_to_HG00514.sequel2.pb-clr.tag-h2-un.racon-pass1',
+#                    'HG00514.sequel2.pb-ccs_to_HG00514.sequel2.pb-clr.tag-h2-un.racon-pass2',
+#                    'HG00514.sequel2.pb-clr-25_to_HG00514.sequel2.pb-clr-25.tag-h1-un.arrow-pass1',
+#                    'HG00514.sequel2.pb-clr-25.tag-h1-un',
+#                    'HG00514.sequel2.pb-clr.tag-h1-un',
+#                    'HG00514.sequel2.pb-clr.tag-h2-un',
+#                ])
+#
+
+         # USE WITH REGULAR RULE
+#        expand('output/assembly_analysis/mummer/{hapassm}.coord.tab',
+#                hapassm=[
+#                    'HG00514.sequel2.pb-clr-25.tag-h1-un',
+#                    'HG00514.sequel2.pb-clr.tag-h1-un',
+#                    'HG00514.sequel2.pb-clr.tag-h2-un',
+#                    ]),
+
+
+        # USE WITH ARROW RULE
+#        expand('output/assembly_analysis/mummer/{hapassm}.coord.tab',
+#                hapassm=['HG00514.sequel2.pb-clr-25_to_HG00514.sequel2.pb-clr-25.tag-h1-un.arrow-pass1'])
+
+#        expand('output/assembly_analysis/quastlg/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}/report.pdf',
+#               contig_sample=['HG00514.sequel2.pb-clr-25_to_HG00514.sequel2.pb-clr-25'],
+#               read_sample=['HG00514.sequel2.pb-ccs'],
+#               haplotype=['tag-h1-un'],
+#               round=[1]),
+#        expand('output/assembly_polishing/arrow_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.ctg.fa',
+#                read_sample=['HG00514.sequel2.pb-clr-25'],
+#                contig_sample=['HG00514.sequel2.pb-clr-25'],
+#                haplotype=['tag-h2-un'],
+#                round=[1])
+
+#        expand('output/assembly_analysis/whatshap/phasing_comparison/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}.eval.tsv',
+#               contig_sample=['HG00514.sequel2.pb-clr-25_to_HG00514.sequel2.pb-clr-25'],
+#               read_sample=['HG00514.sequel2.pb-ccs'],
+#               haplotype=['tag-h1-un'],
+#               round=[1]),
+
+
+
+#        # RUNNING ON compute04
+#        expand('output/assembly_analysis/whatshap/phasing_comparison/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.eval.tsv',
+#               contig_sample=['HG00514.sequel2.pb-clr-25'],
+#               read_sample=['HG00514.sequel2.pb-clr-25'],
+#               haplotype=['tag-h1-un'],
+#               round=[1]),
+#
+#        expand('output/assembly_analysis/quastlg/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}/report.pdf',
+#               contig_sample=['HG00514.sequel2.pb-clr-25'],
+#               read_sample=['HG00514.sequel2.pb-clr-25'],
+#               haplotype=['tag-h1-un'],
+#               round=[1]),
+
+
+# INACTIVE
+#        expand('output/assembly_analysis/quastlg/{sample}.tag-{haplotype}{untagged}/report.pdf',
+#                sample=['HG00514.sequel2.pb-clr'],
+#                haplotype=['h1', 'h2'],
+#                untagged=['-un']),
+#
+#        expand('output/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass{round}.ctg.fa',
+#                read_sample=['HG00514.sequel2.pb-ccs'],
+#                contig_sample=['HG00514.sequel2.pb-clr'],
+#                haplotype=['tag-h1-un', 'tag-h2-un'],
+#                round=[1, 2]),
+#
+#        expand('output/assembly_analysis/quastlg/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass{round}/report.pdf',
+#               contig_sample=['HG00514.sequel2.pb-clr'],
+#               read_sample=['HG00514.sequel2.pb-ccs'],
+#               haplotype=['tag-h1-un', 'tag-h2-un'],
+#               round=[1, 2]),
+#
+#        expand('output/assembly_analysis/whatshap/phasing_comparison/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass{round}.eval.tsv',
+#               contig_sample=['HG00514.sequel2.pb-clr'],
+#               read_sample=['HG00514.sequel2.pb-ccs'],
+#               haplotype=['tag-h1-un', 'tag-h2-un'],
+#               round=[1, 2]),
+#
+
+#
+#        expand('output/assembly_analysis/whatshap/phasing_comparison/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass{round}.eval.tsv',
+#               contig_sample=['HG00514.sequel2.pb-clr-25'],
+#               read_sample=['HG00514.sequel2.pb-ccs'],
+#               haplotype=['tag-h1-un'],
+#               round=[1, 2]),
+#        expand('output/assembly_analysis/quastlg/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass{round}/report.pdf',
+#               contig_sample=['HG00514.sequel2.pb-clr-25'],
+#               read_sample=['HG00514.sequel2.pb-ccs'],
+#               haplotype=['tag-h1-un'],
+#               round=[1, 2]),
+#
+#        expand('output/assembly_analysis/mummer/{assm1}_vs_{assm2}.racon-pass{round}.{haplotype}.coord.tab',
+#                assm1=['HG00514.sequel2.pb-clr'],
+#                assm2=['HG00514.sequel2.pb-ccs_to_HG00514.sequel2.pb-clr'],
+#                round=[1],
+#                haplotype=['tag-h1-un', 'tag-h2-un']
+#               ),
+
         # input validation
-        expand('output/fastq_validation/{sample}.stats.pck',
-                sample=SAMPLES),
+#        expand('output/fastq_validation/{sample}.stats.pck',
+#                sample=SAMPLES),
 
         # assembled haplotypes
         # - only haplotypes
@@ -35,20 +150,7 @@ rule master:
 #               sample=['HG00514.sequel2.pb-clr'],
 #               haplotype=['h1', 'h2'],
 #               untagged=['-un']),
-        expand('output/assembly_analysis/quastlg/{sample}.tag-{haplotype}{untagged}/report.pdf',
-               sample=['HG00514.sequel2.pb-clr'],
-               haplotype=['h1', 'h2'],
-               untagged=['-un']),
 
-        expand('output/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon.ctg.fa',
-                read_sample=['HG00514.sequel2.pb-ccs'],
-                contig_sample=['HG00514.sequel2.pb-clr'],
-                haplotype=['tag-h1-un', 'tag-h2-un']),
-
-        expand('output/assembly_analysis/quastlg/{read_sample}_to_{contig_sample}.{haplotype}.racon/report.pdf',
-               contig_sample=['HG00514.sequel2.pb-clr'],
-               read_sample=['HG00514.sequel2.pb-ccs'],
-               haplotype=['tag-h1-un', 'tag-h2-un']),
 
         # assembled haplotypes
         # - only haplotypes
@@ -104,16 +206,16 @@ rule master:
 #         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}.ctg.lay.gz',
 #                sample=['HG002'], project=['pangen'],
 #                haplotype=['h1', 'h2']),
-##         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}.ctg.lay.gz',
-##                sample=['HG00733'], project=['pangen'],
-##                haplotype=['h1', 'h2']),
+#         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}.ctg.lay.gz',
+#                sample=['HG00733'], project=['pangen'],
+#                haplotype=['h1', 'h2']),
 #
 #         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}-un.ctg.lay.gz',
 #                sample=['HG002'], project=['pangen'],
 #                haplotype=['h1', 'h2']),
-##         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}-un.ctg.lay.gz',
-##                sample=['HG00733'], project=['pangen'],
-##                haplotype=['h1', 'h2'])
+#         expand('output/assembled_haplotypes/{sample}.{project}.ont-ul.tag-{haplotype}-un.ctg.lay.gz',
+#                sample=['HG00733'], project=['pangen'],
+#                haplotype=['h1', 'h2'])
 #
 
 #
@@ -197,25 +299,83 @@ rule map_reads_to_reference:
         shell(exec)
 
 
-rule map_haplotype_reads_to_contigs:
+rule map_haplotype_reads_to_contigs_pass1:
     input:
         contigs = 'output/haplotype_assembly/consensus/{contig_sample}.{haplotype}.ctg.fa',
         read_data = 'output/haplotype_partitioning/splitting/{read_sample}.{haplotype}.fastq.gz'
     output:
-        'output/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.paf'
-    log: 'log/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.aln.log'
-    benchmark: 'run/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.rsrc'
-    wildcard_constraints:
-        hap = 'h[12]'
+        'output/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.sam'
+    log: 'log/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.aln.log'
+    benchmark: 'run/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.rsrc'
     params:
         param_preset = lambda wildcards: config['minimap2_presets'][wildcards.read_sample]
     threads: 48
     run:
         exec = ' minimap2 -t {threads}'
+        exec += ' -a'  # output in SAM format
+        exec += ' --eqx'  # write =/X CIGAR operations
+        exec += ' -m 5000 --secondary=no'  # parameters recommended by Aaron Wenger
         exec += ' -x {params.param_preset}'
         exec += ' {input.contigs}'
         exec += ' {input.read_data}'
-        exec += ' > {output} 2> {log}'
+        exec += ' 2> {log}'
+        exec += ' | samtools sort'
+        exec += ' | samtools view -q 10 -F0x704 /dev/stdin'
+        exec += ' > {output}'
+        shell(exec)
+
+
+rule map_haplotype_reads_to_contigs_pass2:
+    input:
+        contigs = 'output/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.ctg.fa',
+        read_data = 'output/haplotype_partitioning/splitting/{read_sample}.{haplotype}.fastq.gz'
+    output:
+        'output/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass2.sam'
+    log: 'log/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass2.aln.log'
+    benchmark: 'run/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass2  .rsrc'
+    params:
+        param_preset = lambda wildcards: config['minimap2_presets'][wildcards.read_sample]
+    threads: 48
+    run:
+        exec = ' minimap2 -t {threads}'
+        exec += ' -a'  # output in SAM format
+        exec += ' --eqx'  # write =/X CIGAR operations
+        exec += ' -m 5000 --secondary=no'  # parameters recommended by Aaron Wenger
+        exec += ' -x {params.param_preset}'
+        exec += ' {input.contigs}'
+        exec += ' {input.read_data}'
+        exec += ' 2> {log}'
+        exec += ' | samtools sort'
+        exec += ' | samtools view -q 10 -F0x704 /dev/stdin'
+        exec += ' > {output}'
+        shell(exec)
+
+
+rule map_haplotype_reads_to_polished_contigs_pass1:
+    input:
+        contigs = 'output/assembly_polishing/arrow_polished_contigs/{contig_sample}.{haplotype}.arrow-pass{round}.ctg.fa',
+        read_data = 'output/haplotype_partitioning/splitting/{read_sample}.{haplotype}.fastq.gz'
+    output:
+        'output/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}.sam'
+    log: 'log/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}.aln.log'
+    benchmark: 'run/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}.rsrc'
+    wildcard_constraints:
+        read_sample = '[A-Za-z0-9\.\-]+'
+    params:
+        param_preset = lambda wildcards: config['minimap2_presets'][wildcards.read_sample]
+    threads: 48
+    run:
+        exec = ' minimap2 -t {threads}'
+        exec += ' -a'  # output in SAM format
+        exec += ' --eqx'  # write =/X CIGAR operations
+        exec += ' -m 5000 --secondary=no'  # parameters recommended by Aaron Wenger
+        exec += ' -x {params.param_preset}'
+        exec += ' {input.contigs}'
+        exec += ' {input.read_data}'
+        exec += ' 2> {log}'
+        exec += ' | samtools sort'
+        exec += ' | samtools view -q 10 -F0x704 /dev/stdin'
+        exec += ' > {output}'
         shell(exec)
 
 
@@ -230,7 +390,7 @@ rule sort_cram_alignments:
     benchmark: 'run/alignments/{sample}.sort.rsrc'
     threads: 20
     resources:
-        mem_mb = 20 * 20480
+        mem_mb = 20 * (20 * 1024)  # twenty times twenty gigabyte
     params:
         mem_limit = '20G',
         cache_path = os.path.join(os.getcwd(), config['ref_cache_folder'])
@@ -330,27 +490,27 @@ rule haplotype_assembly_haplotypes_only:
         shell(exec)
 
 
-#rule haplotype_assembly_haplotypes_plus_untagged:
-#    input:
-#        hap_fastq = 'output/haplotype_partitioning/splitting/{sample}.tag-{haplotype}.fastq.gz',
-#        un_fastq = 'output/haplotype_partitioning/splitting/{sample}.tag-un.fastq.gz',
-#    output:
-#        layout = 'output/haplotype_assembly/assembly/{sample}.tag-{haplotype}-un/{sample}.tag-{haplotype}-un.ctg.lay.gz',
-#    wildcard_constraints:
-#        sample = '[A-Za-z0-9_\-\.]+',
-#        haplotype = '[h12]+'
-#    log: 'log/haplotype_assembly/layout/{sample}.tag-{haplotype}-un.layout.log'
-#    benchmark: 'run/haplotype_assembly/layout/{sample}.tag-{haplotype}-un.layout.rsrc'
-#    threads: 48
-#    params:
-#        param_preset = lambda wildcards: config['wtdbg2_presets'][wildcards.sample]
-#    run:
-#        exec = 'wtdbg2 -x {params.param_preset}'
-#        exec += ' -i {input.hap_fastq} -i {input.un_fastq}'
-#        exec += ' -g3g -t {threads}'  # approx genome size
-#        exec += ' -o output/haplotype_assembly/assembly/{wildcards.sample}.tag-{wildcards.haplotype}-un/{wildcards.sample}.tag-{wildcards.haplotype}-un'
-#        exec += ' &> {log}'
-#        shell(exec)
+rule haplotype_assembly_haplotypes_plus_untagged:
+    input:
+        hap_fastq = 'output/haplotype_partitioning/splitting/{sample}.tag-{haplotype}.fastq.gz',
+        un_fastq = 'output/haplotype_partitioning/splitting/{sample}.tag-un.fastq.gz',
+    output:
+        layout = 'output/haplotype_assembly/assembly/{sample}.tag-{haplotype}-un/{sample}.tag-{haplotype}-un.ctg.lay.gz',
+    wildcard_constraints:
+        sample = '[A-Za-z0-9_\-\.]+',
+        haplotype = '[h12]+'
+    log: 'log/haplotype_assembly/layout/{sample}.tag-{haplotype}-un.layout.log'
+    benchmark: 'run/haplotype_assembly/layout/{sample}.tag-{haplotype}-un.layout.rsrc'
+    threads: 48
+    params:
+        param_preset = lambda wildcards: config['wtdbg2_presets'][wildcards.sample]
+    run:
+        exec = 'wtdbg2 -x {params.param_preset}'
+        exec += ' -i {input.hap_fastq} -i {input.un_fastq}'
+        exec += ' -g3g -t {threads}'  # approx genome size
+        exec += ' -o output/haplotype_assembly/assembly/{wildcards.sample}.tag-{wildcards.haplotype}-un/{wildcards.sample}.tag-{wildcards.haplotype}-un'
+        exec += ' &> {log}'
+        shell(exec)
 
 
 rule derive_assembly_consensus:
@@ -370,7 +530,7 @@ rule derive_assembly_consensus:
         shell(exec)
 
 
-rule compute_assembly_delta:
+rule compute_assembly_delta_unpolished:
     input:
         contigs = 'output/haplotype_assembly/consensus/{hapassm}.ctg.fa',
         reference = 'references/' + REFNAME
@@ -388,13 +548,49 @@ rule compute_assembly_delta:
         shell(exec)
 
 
+#rule compute_assembly_delta_racon_polished:
+#    input:
+#        contigs = 'output/assembly_polishing/racon_polished_contigs/{hapassm}.ctg.fa',
+#        reference = 'references/' + REFNAME
+#    output:
+#        delta = 'output/assembly_analysis/mummer/{hapassm}.delta'
+#    log: 'log/assembly_analysis/mummer/{hapassm}.log'
+#    benchmark: 'run/assembly_analysis/mummer/{hapassm}.rsrc'
+#    threads: 24
+#    run:
+#        exec = 'nucmer --maxmatch -l 100 -c 500'
+#        exec += ' --threads={threads}'
+#        exec += ' {input.reference} {input.contigs}'
+#        exec += ' --delta={output}'
+#        exec += ' &> {log}'
+#        shell(exec)
+
+
+#rule compute_assembly_delta_arrow_polished:
+#    input:
+#        contigs = 'output/assembly_polishing/arrow_polished_contigs/{hapassm}.ctg.fa',
+#        reference = 'references/' + REFNAME
+#    output:
+#        delta = 'output/assembly_analysis/mummer/{hapassm}.delta'
+#    log: 'log/assembly_analysis/mummer/{hapassm}.log'
+#    benchmark: 'run/assembly_analysis/mummer/{hapassm}.rsrc'
+#    threads: 24
+#    run:
+#        exec = 'nucmer --maxmatch -l 100 -c 500'
+#        exec += ' --threads={threads}'
+#        exec += ' {input.reference} {input.contigs}'
+#        exec += ' --delta={output}'
+#        exec += ' &> {log}'
+#        shell(exec)
+
+
 rule convert_delta_to_coordinates:
     input:
         delta = 'output/assembly_analysis/mummer/{hapassm}.delta'
     output:
         tab = 'output/assembly_analysis/mummer/{hapassm}.coord.tab'
     params:
-        minlen = 10000
+        minlen = 5000
     run:
         exec = 'show-coords -l'  # incl. seq. len. info.
         exec += ' -L {params.minlen}'  # min. aln. len.
@@ -428,17 +624,17 @@ rule quast_assembly_statistics:
         shell(exec)
 
 
-rule polish_assembled_contigs:
+rule polish_assembled_contigs_pass1:
     input:
         use_for_correct = 'output/haplotype_partitioning/splitting/{read_sample}.{haplotype}.fastq.gz',
-        alignments = 'output/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.paf',
+        alignments = 'output/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.sam',
         correct_target = 'output/haplotype_assembly/consensus/{contig_sample}.{haplotype}.ctg.fa'
     output:
-        'output/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon.ctg.fa'
-    log: 'log/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon.log'
-    benchmark: 'run/assembly_polishing/racon_ploished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon.rsrc'
-    params:
-        param_preset = lambda wildcards: config['minimap2_presets'][wildcards.read_sample]
+        'output/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.ctg.fa'
+    log: 'log/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.log'
+    benchmark: 'run/assembly_polishing/racon_ploished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.rsrc'
+    wildcard_constraints:
+        read_sample = '[A-Z0-9\.\-]+'
     threads: 12
     run:
         exec = ' /home/pebert/work/code/github/external/racon/build/bin/racon --threads {threads}'
@@ -451,20 +647,67 @@ rule polish_assembled_contigs:
         shell(exec)
 
 
-rule quast_polished_assembly_statistics:
+rule polish_assembled_contigs_pass2:
     input:
-        contigs = 'output/assembly_polishing/racon_polished_contigs/{hapassm}.racon.ctg.fa',
+        use_for_correct = 'output/haplotype_partitioning/splitting/{read_sample}.{haplotype}.fastq.gz',
+        alignments = 'output/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass2.sam',
+        correct_target = 'output/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass1.ctg.fa'
+    output:
+        'output/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass2.ctg.fa'
+    log: 'log/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass2.log'
+    benchmark: 'run/assembly_polishing/racon_ploished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.racon-pass2.rsrc'
+    wildcard_constraints:
+        read_sample = '[A-Z0-9\.\-]+',
+        contig_sample = '[A-Z0-9\.\-]+'
+    threads: 12
+    run:
+        exec = ' /home/pebert/work/code/github/external/racon/build/bin/racon --threads {threads}'
+        exec += ' --include-unpolished'
+        exec += ' {input.use_for_correct}'
+        exec += ' {input.alignments}'
+        exec += ' {input.correct_target}'
+        exec += ' > {output}'
+        exec += ' 2> {log}'
+        shell(exec)
+
+
+rule polish_arrow_contigs_racon_pass1:
+    input:
+        use_for_correct = 'output/haplotype_partitioning/splitting/{read_sample}.{haplotype}.fastq.gz',
+        alignments = 'output/assembly_polishing/read_contig_alignments/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}.sam',
+        correct_target = 'output/assembly_polishing/arrow_polished_contigs/{contig_sample}.{haplotype}.arrow-pass{round}.ctg.fa'
+    output:
+        'output/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}.ctg.fa'
+    log: 'log/assembly_polishing/racon_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}.log'
+    benchmark: 'run/assembly_polishing/racon_ploished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.racon-pass{round}.rsrc'
+    wildcard_constraints:
+        read_sample = '[A-Za-z0-9\.\-]+',
+    threads: 12
+    run:
+        exec = ' /home/pebert/work/code/github/external/racon/build/bin/racon --threads {threads}'
+        exec += ' --include-unpolished'
+        exec += ' {input.use_for_correct}'
+        exec += ' {input.alignments}'
+        exec += ' {input.correct_target}'
+        exec += ' > {output}'
+        exec += ' 2> {log}'
+        shell(exec)
+
+
+rule quast_racon_polished_assembly_statistics:
+    input:
+        contigs = 'output/assembly_polishing/racon_polished_contigs/{polished_assembly}.ctg.fa',
         reference = 'references/' + REFNAME,
         genes = 'references/gencode.v30.basic.annotation.gff3.gz'
     output:
-        pdf_report = 'output/assembly_analysis/quastlg/{hapassm}.racon/report.pdf',
-        html_icarus = 'output/assembly_analysis/quastlg/{hapassm}.racon/icarus.html'
-    threads: 16
-    log: 'log/assembly_analysis/quastlg/{hapassm}.log'
-    benchmark: 'run/assembly_analysis/quastlg/{hapassm}.rsrc'
+        pdf_report = 'output/assembly_analysis/quastlg/{polished_assembly}/report.pdf',
+        html_icarus = 'output/assembly_analysis/quastlg/{polished_assembly}/icarus.html'
+    threads: 12
+    log: 'log/assembly_analysis/quastlg/{polished_assembly}.log'
+    benchmark: 'run/assembly_analysis/quastlg/{polished_assembly}.rsrc'
     priority: 100
     params:
-        output_dir = 'output/assembly_analysis/quastlg/{hapassm}.racon'
+        output_dir = 'output/assembly_analysis/quastlg/{polished_assembly}'
     run:
         exec = 'quast-lg.py --threads {threads}'
         exec += ' -r {input.reference}'
@@ -473,4 +716,58 @@ rule quast_polished_assembly_statistics:
         exec += ' {input.contigs}'
         exec += ' &> {log}'
         shell(exec)
+
+#
+# This still needs to be tested - for regular BUSCO analysis,
+# one can specify the gene set, which I don't see as an option
+# for Quast-LG
+#
+
+#rule quast_assembly_statistics_with_busco:
+#    input:
+#        contigs = 'output/haplotype_assembly/consensus/{hapassm}.ctg.fa',
+#        reference = 'references/' + REFNAME,
+#        genes = 'references/gencode.v30.basic.annotation.gff3.gz'
+#    output:
+#        pdf_report = 'output/assembly_analysis/quastlg/{hapassm}.busco/report.pdf',
+#        html_icarus = 'output/assembly_analysis/quastlg/{hapassm}.busco/icarus.html'
+#    threads: 12
+#    log: 'log/assembly_analysis/quastlg/{hapassm}.busco.log'
+#    benchmark: 'run/assembly_analysis/quastlg/{hapassm}.busco.rsrc'
+#    priority: 100
+#    params:
+#        output_dir = 'output/assembly_analysis/quastlg/{hapassm}.busco'
+#    run:
+#        exec = 'quast-lg.py --threads {threads}'
+#        exec += ' -r {input.reference}'
+#        exec += ' --features gene:{input.genes}'
+#        exec += ' --conserved-genes-finding'  # this is the BUSCO option
+#        exec += ' --output-dir {params.output_dir}'
+#        exec += ' {input.contigs}'
+#        exec += ' &> {log}'
+#        shell(exec)
+
+
+#rule quast_arrow_polished_assembly_statistics:
+#    input:
+#        contigs = 'output/assembly_polishing/arrow_polished_contigs/{polished_assembly}.ctg.fa',
+#        reference = 'references/' + REFNAME,
+#        genes = 'references/gencode.v30.basic.annotation.gff3.gz'
+#    output:
+#        pdf_report = 'output/assembly_analysis/quastlg/{polished_assembly}/report.pdf',
+#        html_icarus = 'output/assembly_analysis/quastlg/{polished_assembly}/icarus.html'
+#    threads: 12
+#    log: 'log/assembly_analysis/quastlg/{polished_assembly}.log'
+#    benchmark: 'run/assembly_analysis/quastlg/{polished_assembly}.rsrc'
+#    priority: 100
+#    params:
+#        output_dir = 'output/assembly_analysis/quastlg/{polished_assembly}'
+#    run:
+#        exec = 'quast-lg.py --threads {threads}'
+#        exec += ' -r {input.reference}'
+#        exec += ' --features gene:{input.genes}'
+#        exec += ' --output-dir {params.output_dir}'
+#        exec += ' {input.contigs}'
+#        exec += ' &> {log}'
+#        shell(exec)
 
