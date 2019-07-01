@@ -8,13 +8,13 @@ rule compute_md5_checksum:
         "md5sum {input} > {output}"
 
 
-#rule gzip_file_copy:
-#    input:
-#        '{filepath}'
-#    output:
-#        '{filepath}.gz'
-#    shell:
-#        "gzip -c {input} > {output}"
+rule gzip_file_copy:
+    input:
+        '{filepath}'
+    output:
+        '{filepath}.gz'
+    shell:
+        "gzip -c {input} > {output}"
 
 
 rule samtools_index_cram_alignment:
@@ -37,6 +37,36 @@ rule samtools_index_bam_alignment:
         "samtools index -@ {threads} {input.bam}"
 
 
+rule samtools_sort_bam_alignment:
+    input:
+        unsorted_bam = '{filepath}.bam'
+    output:
+        sorted_bam = '{filepath}.sort.bam'
+    threads: 8
+    resources:
+        mem_mb = 8 * (20 * 1024)  # eight times twenty gigabyte
+    params:
+        mem_per_thread = '20G'
+    run:
+        exec = 'samtools sort'
+        exec += ' -m {params.mem_per_thread}'
+        exec += ' --threads {threads}'
+        exec += ' -o {output.sorted_bam}'
+        exec += ' {input.unsorted_bam}'
+        shell(exec)
+
+
+rule samtools_index_fasta:
+    input:
+        '{filepath}/{filename}.fa'
+    output:
+        '{filepath}/{filename}.fa.fai'
+    wildcard_constraints:
+        filename = '[A-Za-z0-9\.\-_]+'
+    shell:
+        'samtools faidx {input}'
+
+
 rule validate_split_fastq:
     input:
         'output/haplotype_partitioning/splitting/{filename}.fastq.gz'
@@ -49,8 +79,8 @@ rule validate_split_fastq:
         scriptdir = config['script_dir']
     run:
         exec = '{params.scriptdir}/collect_read_stats.py --debug'
-        exec += ' --fastq-input {input} --output {output}'
-        exec += ' --chunk-size 25000 --validate'
+        exec += ' --input-files {input} --output {output}'
+        exec += ' --chunk-size 150000 --validate'
         exec += ' --num-cpu {threads} &> {log}'
         shell(exec)
 
@@ -67,7 +97,7 @@ rule validate_input_fastq:
         scriptdir = config['script_dir']
     run:
         exec = '{params.scriptdir}/collect_read_stats.py --debug'
-        exec += ' --fastq-input {input} --output {output}'
-        exec += ' --chunk-size 25000 --validate'
+        exec += ' --input-files {input} --output {output}'
+        exec += ' --chunk-size 150000 --validate'
         exec += ' --num-cpu {threads} &> {log}'
         shell(exec)
