@@ -83,5 +83,23 @@ rule merge_polished_contig_splits:
         collect_polished_splits
     output:
         'output/assembly_polishing/arrow_polished_contigs/{read_sample}_to_{contig_sample}.{haplotype}.arrow-pass{round}.ctg.fa'
-    shell:
-        'cat {input} > {output}'
+    run:
+        # note to future me:
+        # stuff like that runs into trouble because
+        # of character limits of single command lines
+        # (something related to this quantity:
+        # $ getconf ARG_MAX -> 2097152 )
+        # Maybe xargs could be a way to circumvent this,
+        # but for now, make it naive and slow...
+        # DOES NOT WORK:
+        #
+        #'cat {input} > {output}'
+
+        import io
+        in_buffer = io.StringIO()
+
+        for contig in input:
+            in_buffer.write(open(contig, 'r').read())
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write(in_buffer.getvalue())
