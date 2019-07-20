@@ -7,7 +7,6 @@ dependencies:
   - Snakemake=5.5.0
   - aria2=1.34.0
   - minimap2=2.16
-  - pbmm2=1.0.0
   - pilon=1.23
   - quast=5.0.2
   - mummer4
@@ -21,5 +20,12 @@ dependencies:
   - pbgzip
   - pigz=2.4
   - drmaa=0.7.9
+  - r-base=3.5.1
+  - r-devtools=2.0.1
+  - r-zoo=1.8_3
+  - bioconductor-genomicranges=1.34.0
+  - bioconductor-genomicalignments=1.18.0
+  - bioconductor-genomeinfodbdata=1.2.0
+  - bioconductor-bsgenome=1.50.0
   - pip:
     - git+https://bitbucket.org/whatshap/whatshap
