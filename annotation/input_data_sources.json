@@ -1,0 +1,14 @@
+{
+  "HG00733_hpg_ontpm-ul.part1": {
+    "remote_path": "https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_1.fastq.gz",
+    "local_path": "input/fastq/partial/parts/HG00733_hpg_ontpm-ul.part1.fastq.gz"
+  },
+  "HG00733_hpg_ontpm-ul.part2": {
+    "remote_path": "https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_2.fastq.gz",
+    "local_path": "input/fastq/partial/parts/HG00733_hpg_ontpm-ul.part2.fastq.gz"
+  },
+  "HG00733_hpg_ontpm-ul.part3": {
+    "remote_path": "https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_3.fastq.gz",
+    "local_path": "input/fastq/partial/parts/HG00733_hpg_ontpm-ul.part3.fastq.gz"
+  }
+}
