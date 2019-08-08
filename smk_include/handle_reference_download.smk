@@ -10,18 +10,19 @@ localrules: master_handle_reference_download, create_reference_download_request
 rule master_handle_reference_download:
     input:
         expand('references/downloads/{ref_genome}.fa.gz',
-                ref_genome=config['use_ref_genome'])
+                ref_genome=config['known_references'])
 
 
 rule create_reference_download_request:
-    input:
-        config['reference_sources']
     output:
         'references/{subfolder}/{reference}.request'
     run:
         import json as json
 
-        with open(input[0], 'r') as annotation:
+        ref_sources_path = config['reference_sources']
+        assert os.path.isfile(ref_sources_path), 'No reference sources configured'
+
+        with open(ref_sources_path, 'r') as annotation:
             sources = json.load(annotation)
 
         file_info = sources[wildcards.reference]
@@ -43,6 +44,34 @@ rule handle_raw_fasta_reference_download_request:
         'references/downloads/{reference}.request'
     output:
         protected('references/downloads/{reference}.fa.gz')
+    log:
+        'log/references/downloads/{reference}.download.log'
+    threads: 2  # compromise between wget and aria2c
+    run:
+        with open(input[0], 'r') as req_file:
+            remote_path = req_file.readline().strip()
+            local_path = req_file.readline().strip()
+
+        if remote_path.endswith('.gz'):
+            exec = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
+        else:
+            exec = CMD_DL_UNCOMPRESSED_SINGLE.format(**{'remote_path': remote_path})
+
+        with open(log[0], 'w') as logfile:
+            _ = logfile.write('Handling download request' + '\n')
+            _ = logfile.write('CMD: {}'.format(exec) + '\n\n')
+            if local_path != output[0]:
+                _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
+                raise RuntimeError
+
+        shell(exec)
+    # end of rule
+
+rule handle_gff_reference_download_request:
+    input:
+        'references/downloads/{reference}.request'
+    output:
+        protected('references/downloads/{reference}.gff3.gz')
     log:
         'log/references/downloads/{reference}.download.log'
     threads: 2  # compromise between wget and aria2c
