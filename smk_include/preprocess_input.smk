@@ -11,7 +11,12 @@ rule master_preprocess_input:
                 sample=config['samples']),
 
         expand('input/fastq/complete/{sample}_sseq.fastq.gz',
-                sample=config['strandseq_samples'])
+                sample=config['strandseq_samples']),
+
+
+rule ex_nihilo_input_injections:
+    output:
+        protected('input/fastq/complete/HG00733_hgsvc_pbsq2-ccs_1000.fastq.gz')
 
 
 def collect_fastq_input_parts(wildcards):

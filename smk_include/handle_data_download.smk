@@ -16,11 +16,6 @@ rule master_handle_data_download:
                 sample=['HG00733_hpg_ontpm-ul'],
                 partnum=[1, 2, 3]),
 
-        expand('input/fastq/complete/{sample}_1000.fastq.gz',
-                sample=['HG00733_sra_pbsq1-clr']),
-        'input/bioprojects/PRJEB12849.tsv',
-        'input/fastq/strand-seq/HG00733_PRJEB12849/requests'
-
 
 rule create_input_data_download_request:
     output:

@@ -9,8 +9,6 @@ localrules: master_handle_reference_download, create_reference_download_request
 
 rule master_handle_reference_download:
     input:
-        expand('references/downloads/{ref_genome}.fa.gz',
-                ref_genome=config['known_references'])
 
 
 rule create_reference_download_request:

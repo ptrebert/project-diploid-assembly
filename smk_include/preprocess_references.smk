@@ -8,7 +8,7 @@ rule master_preprocess_references:
         rules.master_handle_reference_download.input,
 
         expand('references/assemblies/{ref_genome}.fasta',
-                ref_genome=config['use_ref_genome'])
+                ref_genome=config['known_references'])
 
 
 rule normalize_reference_assembly_names:
@@ -17,6 +17,8 @@ rule normalize_reference_assembly_names:
     output:
         seq = 'references/assemblies/{ref_genome}.fasta',
         table = 'references/assemblies/{ref_genome}.sizes'
+    wildcard_constraints:
+        ref_genome = 'GRCh38_[USCENKGv197]+_[a-z]+'
     run:
         import gzip as gzip
         import io as io
