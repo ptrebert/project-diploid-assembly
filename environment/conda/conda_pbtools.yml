@@ -6,10 +6,8 @@ dependencies:
   - python=2.7.*
   - python-consensuscore2=3.4.1
   - genomicconsensus=2.3.3
-  - blasr=5.3.3
   - pbccs=3.4.1
-  - pbbam=0.23.0
-  - pbmm2=1.0.0
+  - pbbam=1.0.6
+  - pbmm2=1.1.0
   - pbcoretools=0.2.4
   - hap.py=0.3.10
-  - flye=2.4.2

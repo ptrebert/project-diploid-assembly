@@ -4,6 +4,7 @@ channels:
   - bioconda
 dependencies:
   - python=3.6.*
+  - pip=19.2.3
   - cython=0.29.6
   - pigz=2.4
   - pip:
