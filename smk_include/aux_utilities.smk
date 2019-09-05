@@ -8,15 +8,6 @@ rule compute_md5_checksum:
         "md5sum {input} > {output}"
 
 
-rule gzip_file_copy:
-    input:
-        '{filepath}'
-    output:
-        '{filepath}.gz'
-    shell:
-        "gzip -c {input} > {output}"
-
-
 rule samtools_index_cram_alignment:
     input:
         cram = '{filepath}'
@@ -37,11 +28,23 @@ rule samtools_index_bam_alignment:
         "samtools index -@ {threads} {input.bam}"
 
 
-rule samtools_sort_bam_alignment:
+rule samtools_convert_sam_to_bam:
     input:
-        unsorted_bam = '{filepath}.bam'
+        sam = '{filepath}.sam'
     output:
-        sorted_bam = '{filepath}.sort.bam'
+        bam = '{filepath}.sam.bam'
+    threads: 8
+    shell:
+        "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
+
+
+rule samtools_position_sort_bam_alignment:
+    input:
+        unsorted_bam = '{filepath}.sam.bam'
+    output:
+        sorted_bam = '{filepath}.psort.sam.bam'
+    wildcard_constraints:
+        filepath = '[\w\-\/]+'
     threads: 8
     resources:
         mem_mb = 8 * (20 * 1024)  # eight times twenty gigabyte
@@ -58,46 +61,26 @@ rule samtools_sort_bam_alignment:
 
 rule samtools_index_fasta:
     input:
-        '{filepath}/{filename}.fa'
+        '{filepath}.fasta'
     output:
-        '{filepath}/{filename}.fa.fai'
-    wildcard_constraints:
-        filename = '[A-Za-z0-9\.\-_]+'
+        '{filepath}.fasta.fai'
     shell:
         'samtools faidx {input}'
 
 
-rule validate_split_fastq:
+rule bgzip_file_copy:
     input:
-        'output/haplotype_partitioning/splitting/{filename}.fastq.gz'
+        '{filepath}'
     output:
-        'output/fastq_validation/{filename}.stats.pck'
-    log: 'log/fastq_validation/{filename}.stats.log'
-    benchmark: 'run/fastq_validation/{filename}.stats.rsrc'
-    threads: 4
-    params:
-        scriptdir = config['script_dir']
-    run:
-        exec = '{params.scriptdir}/collect_read_stats.py --debug'
-        exec += ' --input-files {input} --output {output}'
-        exec += ' --chunk-size 150000 --validate'
-        exec += ' --num-cpu {threads} &> {log}'
-        shell(exec)
+        '{filepath}.bgz'
+    shell:
+        'bgzip -c {input} > {output}'
 
 
-rule validate_input_fastq:
+rule bcftools_index_bgzipped_file:
     input:
-        'input/read_data/diploid_assembly_input/{filename}.fastq.gz'
+        '{filepath}.bgz'
     output:
-        'output/fastq_validation/{filename}.stats.pck'
-    log: 'log/fastq_validation/{filename}.stats.log'
-    benchmark: 'run/fastq_validation/{filename}.stats.rsrc'
-    threads: 4
-    params:
-        scriptdir = config['script_dir']
-    run:
-        exec = '{params.scriptdir}/collect_read_stats.py --debug'
-        exec += ' --input-files {input} --output {output}'
-        exec += ' --chunk-size 150000 --validate'
-        exec += ' --num-cpu {threads} &> {log}'
-        shell(exec)
+        '{filepath}.bgz.tbi'
+    shell:
+        'bcftools index --tbi {input}'
