@@ -16,7 +16,8 @@ rule master_preprocess_input:
 
 rule ex_nihilo_input_injections:
     output:
-        protected('input/fastq/complete/HG00733_hgsvc_pbsq2-ccs_1000.fastq.gz')
+        protected(expand('input/fastq/complete/{individual}_hgsvc_pbsq2-ccs_1000.fastq.gz',
+                         individual=['HG00733', 'HG00732', 'HG00731']))
 
 
 def collect_fastq_input_parts(wildcards):
