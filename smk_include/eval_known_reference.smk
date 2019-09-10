@@ -2,6 +2,8 @@
 include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'variant_calling.smk'
+include: 'canonical_dga.smk'
+include: 'strandseq_dga.smk'
 
 localrules: master_eval_known_reference
 
@@ -19,6 +21,9 @@ rule compute_assembly_delta_reference_custom:
         'log/output/evaluation/known_reference/mummer/{known}_vs_{custom}.log'
     benchmark:
         'run/output/evaluation/known_reference/mummer/{known}_vs_{custom}.delta.rsrc'
+    wildcard_constraints:
+        known = 'GRCh38\w+',
+        custom = '\w+'
     threads: 12
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.custom_ref} --delta={output.delta} &> {log}'
@@ -46,8 +51,12 @@ rule quast_analysis_reference_custom:
         'log/output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}/run.log',
     benchmark:
         'run/output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}/run.rsrc',
+    wildcard_constraints:
+        known = 'GRCh38\w+',
+        custom = '\w+'
     params:
         output_dir = 'output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}'
+    priority: 100
     run:
         exec = 'quast-lg.py --threads {threads}'
         exec += ' -r {input.known_ref}'
@@ -59,36 +68,97 @@ rule quast_analysis_reference_custom:
         shell(exec)
 
 
-rule compute_assembly_delta_reference_haploid_assembly:
+rule compute_assembly_delta_reference_canonical_haploid_assembly:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = FASTQ file to be used for haplotype reconstruction
+    """
     input:
         known_ref = 'references/assemblies/{known}.fasta',
-        haploid_assm = 'output/diploid_assembly/{approach}/{var_callset}/{reference}/{readset}/consensus/{readset}.{hap}.fasta'
+        haploid_assm = 'output/diploid_assembly/canonical/{var_callset}/{reference}/{vc_reads}/consensus/{hap_reads}.{hap}.fasta'
     output:
-        delta = 'output/evaluation/known_reference/mummer/{approach}.{var_callset}.{reference}.{readset}.{hap}.{known}/{known}_vs_{readset}.{hap}.delta',
+        delta = 'output/evaluation/known_reference/mummer/canonical.{var_callset}.{reference}.{vc_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.delta',
     log:
-        'log/output/evaluation/known_reference/mummer/{approach}.{var_callset}.{reference}.{readset}.{hap}.{known}/{known}_vs_{readset}.{hap}.log',
+        'log/output/evaluation/known_reference/mummer/canonical.{var_callset}.{reference}.{vc_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.log',
     benchmark:
-        'run/output/evaluation/known_reference/mummer/{approach}.{var_callset}.{reference}.{readset}.{hap}.{known}/{known}_vs_{readset}.{hap}.rsrc',
+        'run/output/evaluation/known_reference/mummer/canonical.{var_callset}.{reference}.{vc_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.rsrc',
     threads: 12
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.haploid_assm} --delta={output.delta} &> {log}'
 
 
-rule quast_analysis_reference_haploid_assembly:
+rule quast_analysis_reference_canonical_haploid_assembly:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = FASTQ file to be used for haplotype reconstruction
+    """
     input:
         known_ref = 'references/assemblies/{known}.fasta',
-        haploid_assm = 'output/diploid_assembly/{approach}/{var_callset}/{reference}/{readset}/consensus/{readset}.{hap}.fasta',
+        haploid_assm = 'output/diploid_assembly/canonical/{var_callset}/{reference}/{vc_reads}/consensus/{hap_reads}.{hap}.fasta',
         genes = 'references/downloads/{genemodel}.gff3.gz'
     output:
-        pdf_report = 'output/evaluation/known_reference/quastlg_busco/{approach}.{var_callset}.{reference}.{readset}.{hap}.{known}.{genemodel}/report.pdf',
-        html_icarus = 'output/evaluation/known_reference/quastlg_busco/{approach}.{var_callset}.{reference}.{readset}.{hap}.{known}.{genemodel}/icarus.html'
+        pdf_report = 'output/evaluation/known_reference/quastlg_busco/canonical.{var_callset}.{reference}.{vc_reads}.{hap_reads}.{hap}.{known}.{genemodel}/report.pdf',
+        html_icarus = 'output/evaluation/known_reference/quastlg_busco/canonical.{var_callset}.{reference}.{vc_reads}.{hap_reads}.{hap}.{known}.{genemodel}/icarus.html'
     threads: 12
     log:
-        'log/output/evaluation/known_reference/quastlg_busco/{approach}.{var_callset}.{reference}.{readset}.{hap}.{known}.{genemodel}/run.log',
+        'log/output/evaluation/known_reference/quastlg_busco/canonical.{var_callset}.{reference}.{vc_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.log',
     benchmark:
-        'run/output/evaluation/known_reference/quastlg_busco/{approach}.{var_callset}.{reference}.{readset}.{hap}.{known}.{genemodel}/run.rsrc',
+        'run/output/evaluation/known_reference/quastlg_busco/canonical.{var_callset}.{reference}.{vc_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.rsrc',
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
+    priority: 100
+    run:
+        exec = 'quast-lg.py --threads {threads}'
+        exec += ' -r {input.known_ref}'
+        exec += ' --features gene:{input.genes}'
+        exec += ' --conserved-genes-finding'
+        exec += ' --output-dir {params.output_dir}'
+        exec += ' {input.haploid_assm}'
+        exec += ' &> {log}'
+        shell(exec)
+
+
+rule compute_assembly_delta_reference_strandseq_haploid_assembly:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = FASTQ file to be used for haplotype reconstruction
+    sts_reads = FASTQ file used for strand-seq phasing
+    """
+    input:
+        known_ref = 'references/assemblies/{known}.fasta',
+        haploid_assm = 'output/diploid_assembly/strandseq/{var_callset}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta'
+    output:
+        delta = 'output/evaluation/known_reference/mummer/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.delta',
+    log:
+        'log/output/evaluation/known_reference/mummer/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.log',
+    benchmark:
+        'run/output/evaluation/known_reference/mummer/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.rsrc',
+    threads: 12
+    shell:
+        'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.haploid_assm} --delta={output.delta} &> {log}'
+
+
+rule quast_analysis_reference_strandseq_haploid_assembly:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = FASTQ file to be used for haplotype reconstruction
+    sts_reads = FASTQ file used for strand-seq phasing
+    """
+    input:
+        known_ref = 'references/assemblies/{known}.fasta',
+        haploid_assm = 'output/diploid_assembly/strandseq/{var_callset}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta',
+        genes = 'references/downloads/{genemodel}.gff3.gz'
+    output:
+        pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/report.pdf',
+        html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap}.{hap_reads}.{known}.{genemodel}/icarus.html'
+    threads: 12
+    log:
+        'log/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.log',
+    benchmark:
+        'run/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.rsrc',
+    params:
+        output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
+    priority: 100
     run:
         exec = 'quast-lg.py --threads {threads}'
         exec += ' -r {input.known_ref}'
