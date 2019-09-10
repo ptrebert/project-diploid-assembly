@@ -4,168 +4,219 @@ notify_email: pebert@mpi-inf.mpg.de
 
 script_dir: /home/pebert/work/code/github/project-diploid-assembly/scripts
 
-use_ref_genome: GRCh38_decoy_hla
+data_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/input_data_sources.json
+reference_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/reference_data_sources.json
+
 ref_cache_folder: references/cache
 
-ref_data:
-  genome:
-    - record:
-        url: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa
-        name: GRCh38_decoy_hla.fa
-    - record:
-        url: ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
-        name: GRCh38_p13.fa
-  annotation:
-    - record:
-        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh38/supplementaryFiles/genomic_regions_definitions_modeledcentromere.bed
-        name: GRCh38_HG001_centromeres.bed
-
-ref_variants:
-  giab:
-    - record:
-        skip: 0
-        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz
-        name: GRCh38_AJ-HG002_triophased-high-conf.vcf.gz
-        path: references/variant_call_sets/family_individuals/AJ
-    - record:
-        skip: 0
-        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi
-        name: GRCh38_AJ-HG002_triophased-high-conf.vcf.gz.tbi
-        path: references/variant_call_sets/family_individuals/AJ
-    - record:
-        skip: 0
-        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/supplementaryFiles/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf.bed
-        name: GRCh38_AJ-HG002_high-conf-regions.bed
-        path: references/variant_regions/AJ
-
-
-
-chromosomes:
-  GRCh38_decoy_hla:
-    - chr1
-    - chr2
-    - chr3
-    - chr4
-    - chr5
-    - chr6
-    - chr7
-    - chr8
-    - chr9
-    - chr10
-    - chr11
-    - chr12
-    - chr13
-    - chr14
-    - chr15
-    - chr16
-    - chr17
-    - chr18
-    - chr19
-    - chr20
-    - chr21
-    - chr22
-    - chrX
-  GRCh38_p13:
-    - chr1
-    - chr2
-    - chr3
-    - chr4
-    - chr5
-    - chr6
-    - chr7
-    - chr8
-    - chr9
-    - chr10
-    - chr11
-    - chr12
-    - chr13
-    - chr14
-    - chr15
-    - chr16
-    - chr17
-    - chr18
-    - chr19
-    - chr20
-    - chr21
-    - chr22
-    - chrX
-
 samples:
-  - HG002.ucsc1.ont-ul
-  - HG002.pangen.ont-ul
-  - HG00733.pangen.ont-ul
+  - HG00733_hpg_ontpm-ul
+  - HG00733_sra_pbsq1-clr
+  - HG00733_hgsvc_pbsq2-ccs
+  - HG00732_hgsvc_pbsq2-ccs
+  - HG00731_hgsvc_pbsq2-ccs
+
+known_references:
+  - GRCh38_UCSC_noalt
+  - GRCh38_ENSv97_primary
+  - GRCh38_1KG_decoy
+
+individuals:
+  - HG00733
+  - HG00732
+  - HG00731
+
+# needed for wildcard constraints
+# to manage download and merging
+# of initial input data
+complete_samples:
+  - HG00733_sra_pbsq1-clr
+
+partial_samples:
+  - HG00733_hpg_ontpm-ul
+
+strandseq_samples:
+  - HG00733_1kg_il25k-npe
+
+strandseq_to_bioproject:
+  HG00733_1kg_il25k-npe: PRJEB12849
+  HG00732_1kg_il25k-npe: PRJEB12849
+  HG00731_1kg_il25k-npe: PRJEB12849
 
 wtdbg2_presets:
-  HG002.ucsc1.ont-ul: ont
-  HG002.pangen.ont-ul: ont
-  HG00733.pangen.ont-ul: ont
-  HG00514.sequel2.pb-ccs: ccs
-  HG00514.sequel2.pb-clr: sq
-  HG00514.sequel2.pb-clr-25: sq
+  HG00733_hpg_ontpm-ul: ont
+  HG00733_sra_pbsq1-clr: sq
+  HG00733_hgsvc_pbsq2-ccs: ccs
+  HG00732_hgsvc_pbsq2-ccs: ccs
+  HG00731_hgsvc_pbsq2-ccs: ccs
 
-minimap2_presets:
-  HG002.ucsc1.ont-ul: map-ont
-  HG002.pangen.ont-ul: map-ont
-  HG00733.pangen.ont-ul: map-ont
-  HG00514.sequel2.pb-ccs: map-pb
-  HG00514.sequel2.pb-clr: map-pb
+filter_vcf_gq:
+  - 100
 
-flye_presets:
-  HG00514.sequel2.pb-ccs: pacbio-corr
-  HG00514.sequel2.pb-clr: pacbio-raw
-  HG00514.sequel2.pb-clr-25: pacbio-raw
+filter_vcf_dp:
+  - 50
 
 
-read_files:
-  ucsc1:
-    fileN:
-      skip: 0
-      range: 1354
-      url: https://miten-giab-pion-data.s3-us-west-2.amazonaws.com/10_10_18_pION_GM24385_NB_SS/basecalled/GM24385NBMR101018/1-A7-D7/fastq_{FILENUM}.fastq
-      name: HG002.ucsc1.ont-ul.chunk.{FILENUM}
-  pangen:
-    file1:
-      skip: 0
-      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_1.fastq.gz
-      name: HG002.pangen.ont-ul.part.1
-    file2:
-      skip: 0
-      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_2.fastq.gz
-      name: HG002.pangen.ont-ul.part.2
-    file3:
-      skip: 0
-      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_3.fastq.gz
-      name: HG002.pangen.ont-ul.part.3
-    file4:
-      skip: 0
-      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_1.fastq.gz
-      name: HG00733.pangen.ont-ul.part.1
-    file5:
-      skip: 0
-      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_2.fastq.gz
-      name: HG00733.pangen.ont-ul.part.2
-    file6:
-      skip: 0
-      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_3.fastq.gz
-      name: HG00733.pangen.ont-ul.part.3
-  giab:
-    file1:
-      skip: 1
-      url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-05-18/combined_2018-05-18.fastq.gz
-      name: HG002.giab.ont-ul.part.1805
-      comment: "outdated"
-    file2:
-      skip: 1
-      url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-08-10/combined_2018-08-10.fastq.gz
-      name: HG002.giab.ont-ul.part.1808
-      comment: "outdated"
-    file3:
-      skip: 1
-      url: https://miten-giab-pion-data.s3-us-west-2.amazonaws.com/2019-02-13_albacore.fastq
-      name: HG002.giab.ont-ul.corrupt
-      comment: "contains invalid read records - probably merge error"
-    file4:
-      skip: 1
-      url: https://storage.googleapis.com/kishwar-friday-data/Nanopore/HG002_04202019/GM24385_HG002_Nanopore_0420_miten_fixed.fastq.gz
-      name: HG002.giab.ont-ul.cmp
-      comment: "erroneously corrected (?) and merged data of HG002 PanGen - exact duplicate"
+#
+#ref_data:
+#  genome:
+#    - record:
+#        url: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa
+#        name: GRCh38_decoy_hla.fa
+#    - record:
+#        url: ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
+#        name: GRCh38_p13.fa
+#  annotation:
+#    - record:
+#        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh38/supplementaryFiles/genomic_regions_definitions_modeledcentromere.bed
+#        name: GRCh38_HG001_centromeres.bed
+#
+#ref_variants:
+#  giab:
+#    - record:
+#        skip: 0
+#        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz
+#        name: GRCh38_AJ-HG002_triophased-high-conf.vcf.gz
+#        path: references/variant_call_sets/family_individuals/AJ
+#    - record:
+#        skip: 0
+#        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf_triophased.vcf.gz.tbi
+#        name: GRCh38_AJ-HG002_triophased-high-conf.vcf.gz.tbi
+#        path: references/variant_call_sets/family_individuals/AJ
+#    - record:
+#        skip: 0
+#        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/supplementaryFiles/HG002_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf.bed
+#        name: GRCh38_AJ-HG002_high-conf-regions.bed
+#        path: references/variant_regions/AJ
+#
+
+#
+#chromosomes:
+#  GRCh38_decoy_hla:
+#    - chr1
+#    - chr2
+#    - chr3
+#    - chr4
+#    - chr5
+#    - chr6
+#    - chr7
+#    - chr8
+#    - chr9
+#    - chr10
+#    - chr11
+#    - chr12
+#    - chr13
+#    - chr14
+#    - chr15
+#    - chr16
+#    - chr17
+#    - chr18
+#    - chr19
+#    - chr20
+#    - chr21
+#    - chr22
+#    - chrX
+#  GRCh38_p13:
+#    - chr1
+#    - chr2
+#    - chr3
+#    - chr4
+#    - chr5
+#    - chr6
+#    - chr7
+#    - chr8
+#    - chr9
+#    - chr10
+#    - chr11
+#    - chr12
+#    - chr13
+#    - chr14
+#    - chr15
+#    - chr16
+#    - chr17
+#    - chr18
+#    - chr19
+#    - chr20
+#    - chr21
+#    - chr22
+#    - chrX
+#
+##samples:
+##  - HG002.ucsc1.ont-ul
+##  - HG002.pangen.ont-ul
+##  - HG00733.pangen.ont-ul
+#
+##
+##  HG002.ucsc1.ont-ul: ont
+##  HG002.pangen.ont-ul: ont
+##  HG00733.pangen.ont-ul: ont
+##  HG00514.sequel2.pb-ccs: ccs
+##  HG00514.sequel2.pb-clr: sq
+##  HG00514.sequel2.pb-clr-25: sq
+#
+#minimap2_presets:
+#  HG002.ucsc1.ont-ul: map-ont
+#  HG002.pangen.ont-ul: map-ont
+#  HG00733.pangen.ont-ul: map-ont
+#  HG00514.sequel2.pb-ccs: map-pb
+#  HG00514.sequel2.pb-clr: map-pb
+#
+#flye_presets:
+#  HG00514.sequel2.pb-ccs: pacbio-corr
+#  HG00514.sequel2.pb-clr: pacbio-raw
+#  HG00514.sequel2.pb-clr-25: pacbio-raw
+#
+#
+#read_files:
+#  ucsc1:
+#    fileN:
+#      skip: 0
+#      range: 1354
+#      url: https://miten-giab-pion-data.s3-us-west-2.amazonaws.com/10_10_18_pION_GM24385_NB_SS/basecalled/GM24385NBMR101018/1-A7-D7/fastq_{FILENUM}.fastq
+#      name: HG002.ucsc1.ont-ul.chunk.{FILENUM}
+#  pangen:
+#    file1:
+#      skip: 0
+#      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_1.fastq.gz
+#      name: HG002.pangen.ont-ul.part.1
+#    file2:
+#      skip: 0
+#      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_2.fastq.gz
+#      name: HG002.pangen.ont-ul.part.2
+#    file3:
+#      skip: 0
+#      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/GM24385/nanopore/GM24385_3.fastq.gz
+#      name: HG002.pangen.ont-ul.part.3
+#    file4:
+#      skip: 0
+#      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_1.fastq.gz
+#      name: HG00733.pangen.ont-ul.part.1
+#    file5:
+#      skip: 0
+#      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_2.fastq.gz
+#      name: HG00733.pangen.ont-ul.part.2
+#    file6:
+#      skip: 0
+#      url: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG00733/nanopore/HG00733_3.fastq.gz
+#      name: HG00733.pangen.ont-ul.part.3
+#  giab:
+#    file1:
+#      skip: 1
+#      url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-05-18/combined_2018-05-18.fastq.gz
+#      name: HG002.giab.ont-ul.part.1805
+#      comment: "outdated"
+#    file2:
+#      skip: 1
+#      url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/HG002_NA24385_son/Ultralong_OxfordNanopore/combined_2018-08-10/combined_2018-08-10.fastq.gz
+#      name: HG002.giab.ont-ul.part.1808
+#      comment: "outdated"
+#    file3:
+#      skip: 1
+#      url: https://miten-giab-pion-data.s3-us-west-2.amazonaws.com/2019-02-13_albacore.fastq
+#      name: HG002.giab.ont-ul.corrupt
+#      comment: "contains invalid read records - probably merge error"
+#    file4:
+#      skip: 1
+#      url: https://storage.googleapis.com/kishwar-friday-data/Nanopore/HG002_04202019/GM24385_HG002_Nanopore_0420_miten_fixed.fastq.gz
+#      name: HG002.giab.ont-ul.cmp
+#      comment: "erroneously corrected (?) and merged data of HG002 PanGen - exact duplicate"
