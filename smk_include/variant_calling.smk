@@ -11,46 +11,36 @@ rule master_variant_calling:
     input:
 
 
-checkpoint create_assembly_sequence_files:
-    input:
-        'references/assemblies/{reference}.fasta.fai'
-    output:
-        directory('output/support_files/assembly_sequences/{reference}')
-    run:
-        output_dir = output[0]
-        os.makedirs(output_dir, exist_ok=True)
-        with open(input[0], 'r') as fai:
-            for line in fai:
-                seq_name = line.split('\t')[0]
-                output_path = os.path.join(output_dir, seq_name + '.seq')
-                with open(output_path, 'w') as dump:
-                    _ = dump.write(line)
-
-
-rule compute_pos_coverage:
+rule compute_position_coverage:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
         ref_idx = 'references/assemblies/{reference}.fasta.fai',
-        read_ref_aln = 'output/alignments/reads_to_reference/{readset}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/{readset}_map-to_{reference}.psort.sam.bam.bai'
+        read_ref_aln = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam.bai'
     output:
-        'output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}.pos-cov.txt.gz'
+        'output/alignments/reads_to_reference/aux_files/{vc_reads}_map-to_{reference}.pos-cov.txt.gz'
     benchmark:
-        'run/output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}.pos-cov.rsrc'
+        'run/output/alignments/reads_to_reference/aux_files/{vc_reads}_map-to_{reference}.pos-cov.rsrc'
     threads: 2
     shell:
         'bedtools genomecov -d -ibam {input.read_ref_aln} | gzip > {output}'
 
 
 rule compute_uniform_coverage_regions:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        seq_info = 'output/support_files/assembly_sequences/{reference}/{sequence}.seq',
-        pos_cov = 'output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}.pos-cov.txt.gz'
+        seq_info = 'references/assemblies/{reference}/sequences/{sequence}.seq',
+        pos_cov = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.pos-cov.txt.gz'
     output:
-        'output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}/{sequence}.unicov.regions'
+        'output/alignments/reads_to_reference/aux_files/{hap_reads}_map-to_{reference}/{sequence}.unicov.regions'
     log:
-        'log/output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}/{sequence}.unicov.log'
+        'log/output/alignments/reads_to_reference/aux_files/{hap_reads}_map-to_{reference}/{sequence}.unicov.log'
     benchmark:
-        'run/output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}/{sequence}.unicov.rsrc'
+        'run/output/alignments/reads_to_reference/aux_files/{hap_reads}_map-to_{reference}/{sequence}.unicov.rsrc'
     params:
         num_regions = 128,
         script_dir = config['script_dir']
@@ -60,90 +50,77 @@ rule compute_uniform_coverage_regions:
             ' &> {log}'
 
 
-def collect_unicov_region_files(wildcards):
-    """
-    """
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(**wildcards).output[0]
-    assert os.path.isdir(seq_output_dir), 'Checkpoint updated, but no output folder at path: {}'.format(seq_output_dir)
-
-    checkpoint_wildcards = glob_wildcards(
-        os.path.join(seq_output_dir, '{sequence}.seq')
-        )
-
-    unicov_region_files = expand(
-        'output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}/{sequence}.unicov.regions',
-        readset=wildcards.readset,
-        reference=wildcards.reference,
-        sequence=checkpoint_wildcards.sequence
-        )
-    return unicov_region_files
-
-
-rule merge_uncov_region_files:
-    input:
-        regions = collect_unicov_region_files
-    output:
-        'output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}.unicov.regions'
-    run:
-        # NB: could be too many files to merge directly on the shell
-        # due to character limit - the following always works
-
-        with open(output[0], 'w') as dump:
-            for regfile in input:
-                with open(regfile, 'r') as regions:
-                    _ = dump.write(regions.read())
-    # rule end
-
-
 rule call_variants_freebayes_parallel:
+    """
+    NB: This works on separate region files, and in parallel on each file.
+        In other words, for a substantial speed up, this needs to be
+        distributed across a cluster or, at least, this job should run
+        on a large compute node
+
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        read_ref_aln = 'output/alignments/reads_to_reference/{readset}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/{readset}_map-to_{reference}.psort.sam.bam.bai',
+        read_ref_aln = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
         reference = 'references/assemblies/{reference}.fasta',
         ref_idx = 'references/assemblies/{reference}.fasta.fai',
-        ref_regions = 'output/support_files/freebayes_unicov_regions/{readset}_map-to_{reference}.unicov.regions'
+        ref_regions = 'output/alignments/reads_to_reference/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.regions'
     output:
-        'output/variant_calls/freebayes/{reference}/norm/{readset}.vcf'
+        'output/variant_calls/freebayes/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/freebayes/{reference}/norm/{readset}.parallel.log'
+        'log/output/variant_calls/freebayes/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.parallel.log'
     benchmark:
-        'run/output/variant_calls/freebayes/{reference}/norm/{readset}.rsrc'
+        'run/output/variant_calls/freebayes/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.rsrc'
     wildcard_constraints:
         reference = '[\w\-]+'
     params:
-        timeout = 3600,  # timeout in seconds
+        timeout = 2700,  # timeout in seconds
         script_dir = config['script_dir']
-    threads: 128
+    threads: 16
     shell:
         '{params.script_dir}/fb-parallel-timeout.sh {input.ref_regions} {threads} {params.timeout} {log}' \
             ' --use-best-n-alleles 4 -f {input.reference} {input.read_ref_aln} > {output}'
 
 
 rule call_variants_longshot:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        read_ref_aln = 'output/alignments/reads_to_reference/{readset}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/{readset}_map-to_{reference}.psort.sam.bam.bai',
+        read_ref_aln = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
         reference = 'references/assemblies/{reference}.fasta',
-        ref_idx = 'references/assemblies/{reference}.fasta.fai'
+        ref_idx = 'references/assemblies/{reference}.fasta.fai',
+        ref_split = 'references/assemblies/{reference}/sequences/{sequence}.seq',
     output:
-        'output/variant_calls/longshot/{reference}/raw/{readset}.vcf'
+        'output/variant_calls/longshot/{reference}/split_by_seq/raw/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/longshot/{reference}/raw/{readset}.log'
+        'log/output/variant_calls/longshot/{reference}/split_by_seq/raw/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/longshot/{reference}/raw/{readset}.rsrc'
+        'run/output/variant_calls/longshot/{reference}/split_by_seq/raw/{vc_reads}.{sequence}.rsrc'
     params:
-        individual = lambda wildcards: wildcards.readset.split('_')[0]
+        individual = lambda wildcards: wildcards.vc_reads.split('_')[0]
     shell:
-        'longshot --no_haps --bam {input.read_ref_aln} --ref {input.reference} --sample_id {params.individual} --out {output} &> {log}'
+        'longshot --no_haps --bam {input.read_ref_aln} ' \
+            ' --ref {input.reference} --region {wildcards.sequence}' \
+             '--sample_id {params.individual} --out {output} &> {log}'
 
 
 rule normalize_longshot_vcf:
+    """
+    NB: Currently, longshot does not adhere to the VCF specification
+        and uses a "." as decimal mark for the GQ format field. WhatsHap
+        cannot handle this. This step simply rounds the values to full
+        integers.
+
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        'output/variant_calls/longshot/{reference}/raw/{readset}.vcf'
+        'output/variant_calls/longshot/{reference}/split_by_seq/raw/{vc_reads}.{sequence}.vcf'
     output:
-        'output/variant_calls/longshot/{reference}/norm/{readset}.vcf'
+        'output/variant_calls/longshot/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/longshot/{reference}/norm/{readset}.log'
+        'log/output/variant_calls/longshot/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.log'
     params:
         script_dir = config['script_dir']
     shell:
@@ -151,16 +128,19 @@ rule normalize_longshot_vcf:
 
 
 rule quality_filter_variant_calls:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/norm/{readset}.vcf.bgz',
-        tbi = 'output/variant_calls/{var_caller}/{reference}/norm/{readset}.vcf.bgz.tbi',
+        vcf = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.vcf.bgz',
+        tbi = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.vcf.bgz.tbi',
         reference = 'references/assemblies/{reference}.fasta'
     output:
-        'output/variant_calls/{var_caller}/{reference}/filter_qual_type/{readset}.vcf'
+        'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_qual_type/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/filter_qual_type/{readset}.log'
+        'log/output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_qual_type/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/filter_qual_type/{readset}.rsrc'
+        'run/output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_qual_type/{vc_reads}.{sequence}.rsrc'
     run:
         exec = "bcftools filter"
         exec += " --include \'QUAL>=10\' {input.vcf}"
@@ -171,75 +151,120 @@ rule quality_filter_variant_calls:
 
 
 rule whatshap_regenotype_variant_calls:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/filter_qual_type/{readset}.vcf',
-        read_ref_aln = 'output/alignments/reads_to_reference/{readset}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/{readset}_map-to_{reference}.psort.sam.bam.bai',
+        vcf = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_qual_type/{vc_reads}.{sequence}.vcf',
+        read_ref_aln = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
         reference = 'references/assemblies/{reference}.fasta'
     output:
-        'output/variant_calls/{var_caller}/{reference}/regenotype_whatshap/{readset}.vcf'
+        'output/variant_calls/{var_caller}/{reference}/split_by_seq/regenotype_whatshap/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/regenotype_whatshap/{readset}.log'
+        'log/output/variant_calls/{var_caller}/{reference}/split_by_seq/regenotype_whatshap/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/regenotype_whatshap/{readset}.rsrc'
+        'run/output/variant_calls/{var_caller}/{reference}/split_by_seq/regenotype_whatshap/{vc_reads}.{sequence}.rsrc'
     shell:
-        'whatshap genotype --reference {input.reference} --output {output} {input.vcf} {input.read_ref_aln} &> {log}'
+        'whatshap genotype --chromosome {wildcards.sequence} --reference {input.reference} --output {output} {input.vcf} {input.read_ref_aln} &> {log}'
 
 
 rule genotype_quality_filter_retyped:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/regenotype_whatshap/{readset}.vcf',
+        vcf = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/regenotype_whatshap/{vc_reads}.{sequence}.vcf'
     output:
-        'output/variant_calls/{var_caller}/{reference}/filter_regenotyped_GQ_{gq}/{readset}.vcf'
+        'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_regenotyped_GQ_{gq}/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/filter_regenotyped_GQ_{gq}/{readset}.log'
+        'log/output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_regenotyped_GQ_{gq}/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/filter_regenotyped_GQ_{gq}/{readset}.rsrc'
+        'run/output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_regenotyped_GQ_{gq}/{vc_reads}.{sequence}.rsrc'
     shell:
         'bcftools filter --include \'GQ>={wildcards.gq}\' --output-type v --output {output} {input.vcf} &> {log}'
 
 
 rule intersect_original_retyped_variant_calls:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        original_vcf = 'output/variant_calls/{var_caller}/{reference}/filter_qual_type/{readset}.het-only.vcf.bgz',
-        original_tbi = 'output/variant_calls/{var_caller}/{reference}/filter_qual_type/{readset}.het-only.vcf.bgz.tbi',
-        retyped_vcf = 'output/variant_calls/{var_caller}/{reference}/filter_regenotyped_GQ_{gq}/{readset}.het-only.vcf.bgz',
-        retyped_tbi = 'output/variant_calls/{var_caller}/{reference}/filter_regenotyped_GQ_{gq}/{readset}.het-only.vcf.bgz.tbi'
+        original_vcf = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_qual_type/{vc_reads}.{sequence}.het-only.vcf.bgz',
+        original_tbi = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_qual_type/{vc_reads}.{sequence}.het-only.vcf.bgz.tbi',
+        retyped_vcf = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_regenotyped_GQ_{gq}/{vc_reads}.{sequence}.het-only.vcf.bgz',
+        retyped_tbi = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_regenotyped_GQ_{gq}/{vc_reads}.{sequence}.het-only.vcf.bgz.tbi'
     output:
-        uniq_original = 'output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}/0000.vcf',
-        uniq_retyped = 'output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}/0001.vcf',
-        shared_original = 'output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}/0002.vcf',
-        shared_retyped = 'output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}/0003.vcf',
-        desc = 'output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}/README.txt',
-        readset_copy = 'output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}.isect.vcf'
+        uniq_original = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}/0000.vcf',
+        uniq_retyped = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}/0001.vcf',
+        shared_original = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}/0002.vcf',
+        shared_retyped = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}/0003.vcf',
+        desc = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}/README.txt',
+        readset_copy = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}.isect.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}.isect.log'
+        'log/output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}.isect.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}.isect.rsrc'
+        'run/output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}.isect.rsrc'
     params:
-        outdir = 'output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}'
+        outdir = lambda wildcards, output: os.path.dirname(output.desc)
     shell:
         'bcftools isec -p {params.outdir} {input.original_vcf} {input.retyped_vcf} &> {log} && cp {output.shared_original} {output.readset_copy}'
 
 
 rule depth_filter_intersected_variant_calls:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        'output/variant_calls/{var_caller}/{reference}/intersect_original_retyped-GQ_{gq}/{readset}.isect.vcf'
+        'output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}.isect.vcf'
     output:
-        'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{readset}.final.vcf'
+        'output/variant_calls/{var_caller}/{reference}/split_by_seq/final_GQ{gq}_DP{dp}/{vc_reads}.{sequence}.final.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{readset}.final.log'
+        'log/output/variant_calls/{var_caller}/{reference}/split_by_seq/final_GQ{gq}_DP{dp}/{vc_reads}.{sequence}.final.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{readset}.final.rsrc'
+        'run/output/variant_calls/{var_caller}/{reference}/split_by_seq/final_GQ{gq}_DP{dp}/{vc_reads}.{sequence}.final.rsrc'
     shell:
         # TODO: find out why longshot has depth not as FORMAT field
         "bcftools filter --exclude \'INFO/DP>{wildcards.dp}\' --output-type v --output {output} {input} &> {log}"
 
 
 rule extract_heterozygous_variants:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    """
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/filter_{filter_type}/{readset}.vcf',
+        vcf = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_{filter_type}/{vc_reads}.{sequence}.vcf',
     output:
-        'output/variant_calls/{var_caller}/{reference}/filter_{filter_type}/{readset}.het-only.vcf',
+        'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_{filter_type}/{vc_reads}.{sequence}.het-only.vcf',
     shell:
         'bcftools view --genotype het --output-type v --output-file {output} {input.vcf}'
+
+
+def collect_sequence_vcf_files(wildcards):
+    """
+    """
+    seq_output_dir = checkpoints.create_assembly_sequence_files.get(**wildcards).output[0]
+
+    checkpoint_wildcards = glob_wildcards(
+        os.path.join(seq_output_dir, '{sequence}.seq')
+        )
+
+    vcf_files = expand(
+        'output/variant_calls/{var_caller}/{reference}/split_by_seq/final_GQ{gq}_DP{dp}/{vc_reads}.{sequence}.final.vcf',
+        var_caller=wildcards.var_caller,
+        reference=wildcards.reference,
+        gq=wildcards.gq,
+        dp=wildcards.dp,
+        vc_reads=wildcards.vc_reads,
+        sequence=checkpoint_wildcards.sequence
+        )
+    return vcf_files
+
+
+rule merge_sequence_vcf_files:
+    input:
+        vcf_files = collect_sequence_vcf_files
+    output:
+        'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf',
+    shell:
+        'bcftools concat --output {output} --output-type v {input.vcf_files}'
