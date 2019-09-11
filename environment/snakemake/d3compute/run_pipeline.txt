@@ -1,3 +1,3 @@
 # Execute in Snakefile folder
 
-snakemake --configfile snake_config.yml --profile environment/snakemake/d3compute --use-conda
+snakemake --profile environment/snakemake/d3compute --configfile snake_config.yml --use-conda --nolock --dry-run
