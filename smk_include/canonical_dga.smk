@@ -21,15 +21,48 @@ rule canonical_dga_phase_variants:
         tbi = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf.bgz.tbi',
         bam = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.sam.bam',
         bai = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
-        fasta = 'references/assemblies/{reference}.fasta'
+        fasta = 'references/assemblies/{reference}.fasta',
+        seq_info = 'references/assemblies/{reference}/sequences/{sequence}.seq',
     output:
-        vcf = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.phased.vcf'
+        vcf = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/split_by_seq/{hap_reads}.{sequence}.phased.vcf'
     log:
-        'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.phased.log'
+        'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/split_by_seq/{hap_reads}.{sequence}.phased.log'
     benchmark:
-        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.phased.rsrc'
+        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/split_by_seq/{hap_reads}.{sequence}.phased.rsrc'
     shell:
-        'whatshap --debug phase --reference {input.fasta} --output {output.vcf} {input.vcf} {input.bam} &> {log}'
+        'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} ' \
+            ' --output {output.vcf} {input.vcf} {input.bam} &> {log}'
+
+
+def cdga_collect_sequence_phased_vcf_files(wildcards):
+    """
+    """
+    seq_output_dir = checkpoints.create_assembly_sequence_files.get(**wildcards).output[0]
+
+    checkpoint_wildcards = glob_wildcards(
+        os.path.join(seq_output_dir, '{sequence}.seq')
+        )
+
+    vcf_files = expand(
+        'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/split_by_seq/{hap_reads}.{sequence}.phased.vcf',
+        var_caller=wildcards.var_caller,
+        reference=wildcards.reference,
+        gq=wildcards.gq,
+        dp=wildcards.dp,
+        vc_reads=wildcards.vc_reads,
+        hap_reads=wildcards.hap_reads,
+        sequence=checkpoint_wildcards.sequence
+        )
+    return vcf_files
+
+
+rule canonical_dga_merge_sequence_phased_vcf_files:
+    input:
+        vcf_files = cdga_collect_sequence_phased_vcf_files
+    output:
+        'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.phased.vcf'
+    shell:
+        'bcftools concat --output {output} --output-type v {input.vcf_files}'
 
 
 rule canonical_dga_haplo_tagging:
