@@ -84,3 +84,21 @@ rule bcftools_index_bgzipped_file:
         '{filepath}.bgz.tbi'
     shell:
         'bcftools index --tbi {input}'
+
+
+checkpoint create_assembly_sequence_files:
+    input:
+        'references/assemblies/{reference}.fasta.fai'
+    output:
+        directory('references/assemblies/{reference}/sequences')
+    wildcard_constraints:
+        reference = '[\-\w]+'
+    run:
+        output_dir = output[0]
+        os.makedirs(output_dir, exist_ok=True)
+        with open(input[0], 'r') as fai:
+            for line in fai:
+                seq_name = line.split('\t')[0]
+                output_path = os.path.join(output_dir, seq_name + '.seq')
+                with open(output_path, 'w') as dump:
+                    _ = dump.write(line)
