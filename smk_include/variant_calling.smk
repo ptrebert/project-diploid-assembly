@@ -103,7 +103,7 @@ rule call_variants_longshot:
     shell:
         'longshot --no_haps --bam {input.read_ref_aln} ' \
             ' --ref {input.reference} --region {wildcards.sequence}' \
-             '--sample_id {params.individual} --out {output} &> {log}'
+             ' --sample_id {params.individual} --out {output} &> {log}'
 
 
 rule normalize_longshot_vcf:
