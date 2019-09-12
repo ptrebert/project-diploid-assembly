@@ -23,7 +23,7 @@ rule compute_assembly_delta_reference_custom:
         'run/output/evaluation/known_reference/mummer/{known}_vs_{custom}.delta.rsrc'
     wildcard_constraints:
         known = 'GRCh38\w+',
-        custom = '\w+'
+        custom = '[\-\w]+'
     threads: 12
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.custom_ref} --delta={output.delta} &> {log}'
@@ -53,9 +53,9 @@ rule quast_analysis_reference_custom:
         'run/output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}/run.rsrc',
     wildcard_constraints:
         known = 'GRCh38\w+',
-        custom = '\w+'
+        custom = '[\-\w]+'
     params:
-        output_dir = 'output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}'
+        output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100
     run:
         exec = 'quast-lg.py --threads {threads}'
