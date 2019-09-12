@@ -31,7 +31,7 @@ rule canonical_dga_phase_variants:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/split_by_seq/{hap_reads}.{sequence}.phased.rsrc'
     shell:
         'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} ' \
-            ' --output {output.vcf} {input.vcf} {input.bam} &> {log}'
+            ' {input.vcf} {input.bam} 2> {log} | egrep "^(#|{wildcards.sequence}\s)" > {output}'
 
 
 def cdga_collect_sequence_phased_vcf_files(wildcards):
@@ -53,7 +53,7 @@ def cdga_collect_sequence_phased_vcf_files(wildcards):
         hap_reads=wildcards.hap_reads,
         sequence=checkpoint_wildcards.sequence
         )
-    return vcf_files
+    return sorted(vcf_files)
 
 
 rule canonical_dga_merge_sequence_phased_vcf_files:

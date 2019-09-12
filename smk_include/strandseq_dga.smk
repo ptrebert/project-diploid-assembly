@@ -38,7 +38,8 @@ rule strandseq_dga_phase_variants:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/split_by_seq/{hap_reads}.{sequence}.phased.rsrc'
     shell:
         'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} ' \
-            ' --output {output.vcf} {input.vcf} {input.bam} {input.sts_phased} &> {log}'
+            ' {input.vcf} {input.bam} {input.sts_phased} 2> {log} ' \
+            ' | egrep "^(#|{wildcards.sequence}\s)" > {output}'
 
 
 def sdga_collect_sequence_phased_vcf_files(wildcards):
@@ -61,7 +62,7 @@ def sdga_collect_sequence_phased_vcf_files(wildcards):
         hap_reads=wildcards.hap_reads,
         sequence=checkpoint_wildcards.sequence
         )
-    return vcf_files
+    return sorted(vcf_files)
 
 
 rule strandseq_dga_merge_sequence_phased_vcf_files:
