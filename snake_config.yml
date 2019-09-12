@@ -16,11 +16,6 @@ samples:
   - HG00732_hgsvc_pbsq2-ccs
   - HG00731_hgsvc_pbsq2-ccs
 
-known_references:
-  - GRCh38_UCSC_noalt
-  - GRCh38_ENSv97_primary
-  - GRCh38_1KG_decoy
-
 individuals:
   - HG00733
   - HG00732
@@ -56,6 +51,35 @@ filter_vcf_gq:
 filter_vcf_dp:
   - 50
 
+# main chromosomes to be used
+# for known references for main
+# pipeline steps (i.e., everything
+# before evaluation
+main_chromosomes:
+  - chr1
+  - chr2
+  - chr3
+  - chr4
+  - chr5
+  - chr6
+  - chr7
+  - chr8
+  - chr9
+  - chr10
+  - chr11
+  - chr12
+  - chr13
+  - chr14
+  - chr15
+  - chr16
+  - chr17
+  - chr18
+  - chr19
+  - chr20
+  - chr21
+  - chr22
+  - chrX
+  - chrY
 
 #
 #ref_data:
@@ -90,57 +114,6 @@ filter_vcf_dp:
 #        path: references/variant_regions/AJ
 #
 
-#
-#chromosomes:
-#  GRCh38_decoy_hla:
-#    - chr1
-#    - chr2
-#    - chr3
-#    - chr4
-#    - chr5
-#    - chr6
-#    - chr7
-#    - chr8
-#    - chr9
-#    - chr10
-#    - chr11
-#    - chr12
-#    - chr13
-#    - chr14
-#    - chr15
-#    - chr16
-#    - chr17
-#    - chr18
-#    - chr19
-#    - chr20
-#    - chr21
-#    - chr22
-#    - chrX
-#  GRCh38_p13:
-#    - chr1
-#    - chr2
-#    - chr3
-#    - chr4
-#    - chr5
-#    - chr6
-#    - chr7
-#    - chr8
-#    - chr9
-#    - chr10
-#    - chr11
-#    - chr12
-#    - chr13
-#    - chr14
-#    - chr15
-#    - chr16
-#    - chr17
-#    - chr18
-#    - chr19
-#    - chr20
-#    - chr21
-#    - chr22
-#    - chrX
-#
 ##samples:
 ##  - HG002.ucsc1.ont-ul
 ##  - HG002.pangen.ont-ul
