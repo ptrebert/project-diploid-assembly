@@ -5,10 +5,6 @@ localrules: master_preprocess_references
 
 rule master_preprocess_references:
     input:
-        rules.master_handle_reference_download.input,
-
-        expand('references/assemblies/{ref_genome}.fasta',
-                ref_genome=config['known_references'])
 
 
 rule normalize_reference_assembly_names:
@@ -18,10 +14,16 @@ rule normalize_reference_assembly_names:
         seq = 'references/assemblies/{ref_genome}.fasta',
         table = 'references/assemblies/{ref_genome}.sizes'
     wildcard_constraints:
-        ref_genome = 'GRCh38_[USCENKGv197]+_[a-z]+'
+        ref_genome = 'GRCh38_[USCENKGCAv97]+_[a-z13]+'
     run:
         import gzip as gzip
+        import re
         import io as io
+
+        get_chrom = re.compile('chromosome\s[0-9XY]+(\s|,)')
+        get_patch = re.compile('contig\s[A-Z0-9_\-]+,')
+
+        remove_chars = ['*', ':', '-', '|']
 
         out_buffer = io.StringIO()
         chromosome_sizes = []
@@ -40,11 +42,53 @@ rule normalize_reference_assembly_names:
                     except ValueError:
                         if chrom_name in ['X', 'Y', 'M', 'MT']:
                             chrom_name = 'chr' + chrom_name
+                    # some heuristics for nicer and more
+                    # consistent naming across all reference
+                    # assemblies, in particular for GenBank
+                    chrom_name = chrom_name.split('.')[0]
+                    if 'mitochondrion' in line.lower() and 'complete' in line.lower():
+                        chrom_name = 'chrM'
+                    elif 'unplaced genomic contig' in line.lower():
+                        chrom_name = 'chrUn_' + chrom_name
+                    elif 'unlocalized genomic contig' in line.lower():
+                        mobj = get_chrom.search(line)
+                        if mobj is not None:
+                            chrom_id = mobj.group(0).strip(' ,').split()[1]
+                            chrom_name = 'chr' + chrom_id + '_' + chrom_name + '_random'
+                    elif 'alternate locus' in line.lower():
+                        mobj = get_chrom.search(line)
+                        if mobj is not None:
+                            chrom_id = mobj.group(0).strip(' ,').split()[1]
+                            chrom_name = 'chr' + chrom_id + '_' + chrom_name + '_alt'
+                    elif 'PATCH' in line:
+                        mobj = get_chrom.search(line)
+                        if mobj is not None:
+                            chrom_id = mobj.group(0).strip(' ,').split()[1]
+                            mobj = get_patch.search(line)
+                            if mobj is not None:
+                                patch_id = mobj.group(0).strip(' ,').split()[1]
+                                patch_id = patch_id.strip('_PATCH')
+                                chrom_name = 'chr' + chrom_id + '_' + chrom_name + '_' + patch_id
+                    elif 'primary' in line.lower():
+                        mobj = get_chrom.search(line)
+                        if mobj is not None:
+                            chrom_id = mobj.group(0).strip().strip(',').split()[1]
+                            chrom_name = 'chr' + chrom_id
+                    else:
+                        # additional heuristics to be added
+                        pass
+                    if any([c in chrom_name for c in remove_chars]):
+                        for r in remove_chars:
+                            chrom_name = chrom_name.replace(r, '_')
+
+                    # end of heuristics
                     current_chrom = chrom_name
                     out_buffer.write('>{}\n'.format(chrom_name))
                 else:
                     out_buffer.write(line)
                     chrom_length += len(line.strip())
+
+        chromosome_sizes.append((current_chrom, chrom_length))
 
         with open(output.seq, 'w') as dump:
             _ = dump.write(out_buffer.getvalue())

@@ -11,6 +11,10 @@
     "remote_path": "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa",
     "local_path": "references/downloads/GRCh38_1KG_decoy.fa.gz"
   },
+  "GRCh38_GCA_p13": {
+    "remote_path": "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz",
+    "local_path": "references/downloads/GRCh38_GCA_p13.fa.gz"
+  },
   "HG00733_hgsvc_truth.tag-hA": {
     "remote_path": "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20180227_IlluminaPolishedPhasedSV/HG00733.h0.polish.fasta.gz",
     "local_path": "references/downloads/HG00733_hgsvc_truth.tag-hA.fa.gz"
