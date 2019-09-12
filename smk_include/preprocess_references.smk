@@ -97,3 +97,54 @@ rule normalize_reference_assembly_names:
             for chrom, size in chromosome_sizes:
                 _ = dump.write('{}\t{}\n'.format(chrom, size))
     # end of rule
+
+
+rule reduce_reference_to_main_chromosomes:
+    input:
+        full_ref = 'references/assemblies/GRCh38_{ref_id}.fasta'
+    output:
+        red_ref = 'references/assemblies/hg38_{ref_id}.fasta',
+        red_sizes = 'references/assemblies/hg38_{ref_id}.sizes'
+    run:
+        chrom_set = config['main_chromosomes']
+
+        import io
+
+        out_buffer = io.StringIO()
+        chromosome_sizes = []
+        skip = True
+        current_chrom = None
+        chrom_length = 0
+
+        with open(input.full_ref, 'r') as fasta:
+            for line in fasta:
+                if line.startswith('>'):
+                    if current_chrom is not None:
+                        chromosome_sizes.append((current_chrom, chrom_length))
+                        chrom_length = 0
+                    chrom_name = line.strip('>').split()[0]
+                    if chrom_name not in chrom_set:
+                        skip = True
+                        current_chrom = None
+                        chrom_length = 0
+                        continue
+                    skip = False
+                    current_chrom = chrom_name
+                    out_buffer.write('>{}\n'.format(chrom_name))
+                elif skip:
+                    continue
+                else:
+                    out_buffer.write(line)
+                    chrom_length += len(line.strip())
+
+        if current_chrom is not None:
+            chromosome_sizes.append((current_chrom, chrom_length))
+
+        with open(output.red_ref, 'w') as dump:
+            _ = dump.write(out_buffer.getvalue())
+
+        with open(output.red_sizes, 'w') as dump:
+            for chrom, size in chromosome_sizes:
+                _ = dump.write('{}\t{}\n'.format(chrom, size))
+    # end of rule
+
