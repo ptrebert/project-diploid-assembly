@@ -13,7 +13,153 @@ rule master_strandseq_dga:
 
 rule ex_nihilo_strandseq_dga_injections:
     output:
-        protected('output/strandseq_phased_variants/longshot_GQ100_DP50/HG00733_sra_pbsq1-clr_clustV1-100kb/HG00733_sra_pbsq1-clr_1000/HG00733_1kg_il25k-npe_sseq.phased.vcf')
+        protected('output/strandseq_phased_variants/longshot_GQ100_DP50/HG00733_sra_pbsq1-clr_clustV1-100kb/HG00733_sra_pbsq1-clr_1000/final/HG00733_1kg_il25k-npe_sseq.phased.vcf')
+
+
+rule install_rlib_breakpointr:
+    input:
+        'output/check_files/R_setup/saarclust.ok'
+    output:
+         touch('output/check_files/R_setup/breakpointr.ok')
+    log:
+        'log/output/check_files/R_setup/breakpointr.install.log'
+    params:
+        script_dir = config['script_dir']
+    shell:
+        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R &> {log}'
+
+
+rule install_rlib_strandphaser:
+    input:
+        'output/check_files/R_setup/breakpointr.ok'
+    output:
+         touch('output/check_files/R_setup/strandphaser.ok')
+    log:
+        'log/output/check_files/R_setup/strandphaser.install.log'
+    params:
+        script_dir = config['script_dir']
+    shell:
+        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R &> {log}'
+
+
+rule write_breakpointr_config_file:
+    input:
+        setup_ok = 'output/check_files/R_setup/breakpointr.ok',
+        reference = 'references/assemblies/{reference}.fasta'
+    output:
+        cfg = 'output/diploid_assembly/strandseq/config_files/{reference}/{sts_reads}/breakpointr.config'
+    threads: 64
+    run:
+        config_rows = [
+            '[General]',
+            'numCPU = ' + str(threads),
+            'reuse.existing.files = FALSE',
+            '',
+            '[breakpointR]',
+            'windowsize = 500000',
+            'binMethod = "size"',
+            'pairedEndReads = TRUE',
+            'pair2frgm = FALSE',
+            'min.mapq = 10',
+            'filtAlt = TRUE',
+            'background = 0.1',
+            'minReads = 50'
+        ]
+
+        with open(output.cfg, 'w') as dump:
+            _ = dump.write('\n'.join(config_rows) + '\n')
+
+
+rule run_breakpointr:
+    input:
+        cfg = 'output/diploid_assembly/strandseq/config_files/{reference}/{sts_reads}/breakpointr.config',
+        bams = collect_strandseq_alignments  # from module: prepare_custom_references - SaaRclust
+    output:
+        'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
+        # 'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpointR.config',
+        # 'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/README.txt',
+        # directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpoints'),
+        # directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/browserfiles'),
+        # directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/data'),
+        # directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/plots')
+    log:
+        'log/output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpointr.log'
+    benchmark:
+        'run/output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
+    params:
+        input_dir = lambda wildcards, input: os.path.dirname(input.bams[0]),
+        output_dir = lambda wildcards, output: os.path.dirname(output[0]),
+        script_dir = config['script_dir']
+    threads: 64
+    shell:
+        '{params.script_dir}/run_breakpointr.R {params.input_dir} {input.cfg} {params.output_dir} {output} &> {log}'
+
+
+rule write_strandphaser_config_file:
+    input:
+        setup_ok = 'output/check_files/R_setup/strandphaser.ok',
+        reference = 'references/assemblies/{reference}.fasta'
+    output:
+        cfg = 'output/diploid_assembly/strandseq/config_files/{reference}/{sts_reads}/strandphaser.config'
+    threads: 64
+    run:
+        config_rows = [
+            '[General]',
+            'numCPU = ' + str(threads),
+            'pairedEndReads = TRUE',
+            'min.mapq = 10',
+            '',
+            '[StrandPhaseR]',
+            'min.baseq = 20',
+            'num.iterations = 2',
+            'translateBases = TRUE',
+            'splitPhasedReads = TRUE'
+        ]
+
+        with open(output.cfg, 'w') as dump:
+            _ = dump.write('\n'.join(config_rows) + '\n')
+
+
+rule run_strandphaser:
+    input:
+        cfg = 'output/diploid_assembly/strandseq/config_files/{reference}/{sts_reads}/strandphaser.config',
+        bams = collect_strandseq_alignments,  # from module: prepare_custom_references - SaaRclust
+        wc_regions = 'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
+        variant_calls = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf',
+        #seq_files = expand('reference/assemblies/{{references}}/sequences/{sequence}.seq',
+                           
+    output:
+        browser = directory('output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/browserFiles'),
+        data = directory('output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/data'),
+        phased = directory('output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/Phased'),
+        maps = directory('output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/SingleCellHaps'),
+        vcf_dir = directory('output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/VCFfiles'),
+        cfg = 'output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/StrandPhaseR.config',
+        vcf = 'output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/final/{sts_reads}.phased.vcf'
+    log:
+        stp = 'log/output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}.phased.log',
+        bcf = 'log/output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}.concat.log',
+    benchmark:
+        'run/output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}.phased.rsrc'
+    threads: 64
+    wildcard_constraints:
+        gq = '[0-9]+',
+        dp = '[0-9]+',
+        reference = '[\w\-]+',
+        vc_reads = '[\w\-]+',
+        sts_reads = '[\w\-]+'
+    params:
+        input_dir = lambda wildcards, input: os.path.dirname(input.bams[0]),
+        output_dir = lambda wildcards, output: os.path.dirname(output.cfg),
+        individual = lambda wildcards: wildcards.sts_reads.split('_')[0],
+        script_dir = config['script_dir']
+    shell:
+        '{params.script_dir}/run_strandphaser.R {params.input_dir} {input.cfg} ' \
+            ' {input.variant_calls} {input.wc_regions} ' \
+            ' {params.output_dir} {params.individual} &> {log.stp}' \
+            ' && ' \
+            ' bcftools concat --output {output.vcf} --output-type v `ls {output.vcf_dir}/*phased.vcf` ' \
+            ' &> {log.bcf}'
 
 
 rule strandseq_dga_phase_variants:
@@ -29,13 +175,20 @@ rule strandseq_dga_phase_variants:
         bai = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
         fasta = 'references/assemblies/{reference}.fasta',
         seq_info = 'references/assemblies/{reference}/sequences/{sequence}.seq',
-        sts_phased = 'output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}.phased.vcf',
+        sts_phased = 'output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/final/{sts_reads}.phased.vcf'
     output:
         vcf = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/split_by_seq/{hap_reads}.{sequence}.phased.vcf'
     log:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/split_by_seq/{hap_reads}.{sequence}.phased.log'
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/split_by_seq/{hap_reads}.{sequence}.phased.rsrc'
+    wildcard_constraints:
+        var_caller = '(freebayes|longshot)',
+        gq = '[0-9]+',
+        dp = '[0-9]+',
+        reference = '[\w\-]+',
+        vc_reads = '[\w\-]+',
+        sts_reads = '[\w\-]+'
     shell:
         'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} ' \
             ' {input.vcf} {input.bam} {input.sts_phased} 2> {log} ' \
@@ -70,6 +223,13 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
         vcf_files = sdga_collect_sequence_phased_vcf_files
     output:
         'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf'
+    wildcard_constraints:
+        gq = '[0-9]+',
+        dp = '[0-9]+',
+        reference = '[\w\-]+',
+        vc_reads = '[\w\-]+',
+        sts_reads = '[\w\-]+',
+        hap_reads = '[\w\-]+'
     shell:
         'bcftools concat --output {output} --output-type v {input.vcf_files}'
 
@@ -119,8 +279,91 @@ rule strandseq_dga_haplo_splitting:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.rsrc',
     conda:
         "../environment/conda/wh_split.yml"
+    wildcard_constraints:
+        gq = '[0-9]+',
+        dp = '[0-9]+',
+        reference = '[\w\-]+',
+        vc_reads = '[\w\-]+',
+        sts_reads = '[\w\-]+',
+        hap_reads = '[\w\-]+'
     shell:
         "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
+
+
+rule strandseq_dga_haplo_tagging_pacbio_native:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
+    sts_reads = FASTQ file used for strand-seq phasing
+    """
+    input:
+        vcf = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf.bgz',
+        tbi = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf.bgz.tbi',
+        bam = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.pbn.bam',
+        bai = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
+        fasta = 'references/assemblies/{reference}.fasta'
+    output:
+        bam = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagged.pbn.bam',
+        tags = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.pbn.tsv',
+    log:
+        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagging.pbn.log',
+    benchmark:
+        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagging.pbn.rsrc',
+    conda:
+        "../environment/conda/wh_split.yml"
+    shell:
+        "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
+
+
+rule strandseq_dga_haplo_splitting_pacbio_native:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
+    sts_reads = FASTQ file used for strand-seq phasing
+    """
+    input:
+        pbn_bam = 'input/bam/complete/{hap_reads}.pbn.bam',
+        pbn_idx = 'input/bam/complete/{hap_reads}.pbn.bam.bai',
+        tags = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.pbn.tsv',
+    output:
+        h1 = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h1.pbn.bam',
+        h2 = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h2.pbn.bam',
+        un = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.un.pbn.bam',
+        hist = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.rlen-hist.tsv'
+    log:
+        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.pbn.log',
+    benchmark:
+        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.pbn.rsrc',
+    conda:
+        "../environment/conda/wh_split.yml"
+    wildcard_constraints:
+        gq = '[0-9]+',
+        dp = '[0-9]+',
+        reference = '[\w\-]+',
+        vc_reads = '[\w\-]+',
+        sts_reads = '[\w\-]+',
+        hap_reads = '[\w\-]+'
+    shell:
+        "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
+
+
+rule strandseq_dga_merge_tag_groups_pacbio_native:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
+    sts_reads = FASTQ file used for strand-seq phasing
+    """
+    input:
+        hap = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{hap}.pbn.bam',
+        un = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.un.pbn.bam',
+    output:
+        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{hap}-un.pbn.bam',
+    log:
+        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{hap}-un.pbn.mrg.log',
+    wildcard_constraints:
+        hap = '(1|2)'
+    shell:
+        'bamtools merge -in {input.hap} -in {input.un} -out {output} &> {log}'
 
 
 rule strandseq_dga_merge_tag_groups:
@@ -151,7 +394,13 @@ rule strandseq_dga_assemble_haplotypes_layout:
     output:
         layout = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/layout/{hap_reads}.{hap}.ctg.lay.gz',
     wildcard_constraints:
-        haplotype = '[h12\-un]+'
+        gq = '[0-9]+',
+        dp = '[0-9]+',
+        reference = '[\w\-]+',
+        vc_reads = '[\w\-]+',
+        sts_reads = '[\w\-]+',
+        hap_reads = '[\w\-]+',
+        hap = '[h12un\-]+'
     log:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.layout.log',
     benchmark:
@@ -181,5 +430,13 @@ rule strandseq_dga_assemble_haplotypes_consensus:
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.rsrc',
     threads: 64
+    wildcard_constraints:
+        gq = '[0-9]+',
+        dp = '[0-9]+',
+        reference = '[\w\-]+',
+        vc_reads = '[\w\-]+',
+        sts_reads = '[\w\-]+',
+        hap_reads = '[\w\-]+',
+        hap = '[h12un\-]+'
     shell:
         'wtpoa-cns -t {threads} -i {input.layout} -o {output} &> {log}'
