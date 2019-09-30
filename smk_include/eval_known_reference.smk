@@ -4,6 +4,7 @@ include: 'prepare_custom_references.smk'
 include: 'variant_calling.smk'
 include: 'canonical_dga.smk'
 include: 'strandseq_dga.smk'
+include: 'racon_polishing.smk'
 
 localrules: master_eval_known_reference
 
@@ -150,7 +151,7 @@ rule quast_analysis_reference_strandseq_haploid_assembly:
         genes = 'references/downloads/{genemodel}.gff3.gz'
     output:
         pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/report.pdf',
-        html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap}.{hap_reads}.{known}.{genemodel}/icarus.html'
+        html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/icarus.html'
     threads: 12
     log:
         'log/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.log',
@@ -158,6 +159,46 @@ rule quast_analysis_reference_strandseq_haploid_assembly:
         'run/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.rsrc',
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
+    priority: 100
+    run:
+        exec = 'quast-lg.py --threads {threads}'
+        exec += ' -r {input.known_ref}'
+        exec += ' --features gene:{input.genes}'
+        exec += ' --conserved-genes-finding'
+        exec += ' --output-dir {params.output_dir}'
+        exec += ' {input.haploid_assm}'
+        exec += ' &> {log}'
+        shell(exec)
+
+
+rule quast_analysis_reference_strandseq_polished_haploid_assembly:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = FASTQ file to be used for haplotype reconstruction
+    sts_reads = FASTQ file used for strand-seq phasing
+    """
+    input:
+        known_ref = 'references/assemblies/{known}.fasta',
+        haploid_assm = 'output/diploid_assembly/strandseq/{var_callset}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.{polisher}.fasta',
+        genes = 'references/downloads/{genemodel}.gff3.gz'
+    output:
+        pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
+        html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/icarus.html'
+    threads: 12
+    log:
+        'log/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/run.log',
+    benchmark:
+        'run/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/run.rsrc',
+    params:
+        output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
+    wildcard_constraints:
+        gq = '[0-9]+',
+        dp = '[0-9]+',
+        reference = '[\w\-]+',
+        vc_reads = '[\w\-]+',
+        sts_reads = '[\w\-]+',
+        hap_reads = '[\w\-]+',
+        var_callset = '\w+'
     priority: 100
     run:
         exec = 'quast-lg.py --threads {threads}'
