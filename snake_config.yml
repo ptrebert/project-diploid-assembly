@@ -20,6 +20,7 @@ individuals:
   - HG00733
   - HG00732
   - HG00731
+  - HG002
 
 # needed for wildcard constraints
 # to manage download and merging
@@ -32,6 +33,21 @@ partial_samples:
 
 strandseq_samples:
   - HG00733_1kg_il25k-npe
+  - HG00732_1kg_il25k-npe
+  - HG00731_1kg_il25k-npe
+
+# This is evidence of a design glitch:
+# here, manually associate strand-seq
+# datasets with long read datasets
+# for the SaaRclust step to avoid
+# having to carry around the sts_reads
+# wildcard for clustered assemblies
+# throughout the rest of the pipeline
+strandseq_to_assembly:
+  HG00733_sra_pbsq1-clr_sqa: HG00733_1kg_il25k-npe_sseg
+  HG00731_hgsvc_pbsq2-ccs_sqa: HG00731_1kg_il25k-npe_sseg
+  HG00732_hgsvc_pbsq2-ccs_sqa: HG00732_1kg_il25k-npe_sseg
+  HG00733_hgsvc_pbsq2-ccs_sqa: HG00733_1kg_il25k-npe_sseg
 
 strandseq_to_bioproject:
   HG00733_1kg_il25k-npe: PRJEB12849
@@ -45,6 +61,31 @@ wtdbg2_presets:
   HG00732_hgsvc_pbsq2-ccs: ccs
   HG00731_hgsvc_pbsq2-ccs: ccs
 
+pbmm2_presets:
+  HG00733_sra_pbsq1-clr: SUBREAD
+  HG00733_hgsvc_pbsq2-ccs: CCS
+  HG00732_hgsvc_pbsq2-ccs: CCS
+  HG00731_hgsvc_pbsq2-ccs: CCS
+  HG002_pbio_pbsq2-clr: SUBREAD
+
+# SaaRclust parameter sets
+# to obtain 24 clusters
+min_contig_size: 100000
+
+saarclust_z_limit:
+  HG00733_sra_pbsq1-clr_sqa: 3.5
+  HG00731_hgsvc_pbsq2-ccs_sqa: 3
+  HG00732_hgsvc_pbsq2-ccs_sqa: 3
+  HG00733_hgsvc_pbsq2-ccs_sqa: 3.5
+
+saarclust_step_size:
+  HG00733_sra_pbsq1-clr_sqa: 0
+  HG00731_hgsvc_pbsq2-ccs_sqa: 50000
+  HG00732_hgsvc_pbsq2-ccs_sqa: 50000
+  HG00733_hgsvc_pbsq2-ccs_sqa: 0
+
+# variant postprocessing
+# parameters
 filter_vcf_gq:
   - 100
 
@@ -81,20 +122,6 @@ main_chromosomes:
   - chrX
   - chrY
 
-#
-#ref_data:
-#  genome:
-#    - record:
-#        url: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/GRCh38_reference_genome/GRCh38_full_analysis_set_plus_decoy_hla.fa
-#        name: GRCh38_decoy_hla.fa
-#    - record:
-#        url: ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz
-#        name: GRCh38_p13.fa
-#  annotation:
-#    - record:
-#        url: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh38/supplementaryFiles/genomic_regions_definitions_modeledcentromere.bed
-#        name: GRCh38_HG001_centromeres.bed
-#
 #ref_variants:
 #  giab:
 #    - record:
@@ -113,26 +140,6 @@ main_chromosomes:
 #        name: GRCh38_AJ-HG002_high-conf-regions.bed
 #        path: references/variant_regions/AJ
 #
-
-##samples:
-##  - HG002.ucsc1.ont-ul
-##  - HG002.pangen.ont-ul
-##  - HG00733.pangen.ont-ul
-#
-##
-##  HG002.ucsc1.ont-ul: ont
-##  HG002.pangen.ont-ul: ont
-##  HG00733.pangen.ont-ul: ont
-##  HG00514.sequel2.pb-ccs: ccs
-##  HG00514.sequel2.pb-clr: sq
-##  HG00514.sequel2.pb-clr-25: sq
-#
-#minimap2_presets:
-#  HG002.ucsc1.ont-ul: map-ont
-#  HG002.pangen.ont-ul: map-ont
-#  HG00733.pangen.ont-ul: map-ont
-#  HG00514.sequel2.pb-ccs: map-pb
-#  HG00514.sequel2.pb-clr: map-pb
 #
 #flye_presets:
 #  HG00514.sequel2.pb-ccs: pacbio-corr
