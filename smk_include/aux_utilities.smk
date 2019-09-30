@@ -33,6 +33,8 @@ rule samtools_convert_sam_to_bam:
         sam = '{filepath}.sam'
     output:
         bam = '{filepath}.sam.bam'
+    wildcard_constraints:
+        filepath = '[\w\-\/]+'
     threads: 8
     shell:
         "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
@@ -102,3 +104,33 @@ checkpoint create_assembly_sequence_files:
                 output_path = os.path.join(output_dir, seq_name + '.seq')
                 with open(output_path, 'w') as dump:
                     _ = dump.write(line)
+
+
+def collect_assembly_sequence_files(wildcards):
+    """
+    """
+    seq_output_dir = checkpoints.create_assembly_sequence_files.get(reference=wildcards.reference).output[0]
+
+    checkpoint_wildcards = glob_wildcards(seq_output_dir, '{sequence}.seq')
+
+    return expand(os.path.join(seq_output_dir, '{sequence}.seq'),
+                    sequence=checkpoint_wildcards.sequence)
+
+
+rule generate_bwa_index:
+    input:
+        reference = 'references/assemblies/{reference}.fasta'
+    output:
+        'references/assemblies/bwa_index/{reference}.amb',
+        'references/assemblies/bwa_index/{reference}.ann',
+        'references/assemblies/bwa_index/{reference}.bwt',
+        'references/assemblies/bwa_index/{reference}.pac',
+        'references/assemblies/bwa_index/{reference}.sa'
+    params:
+        prefix = lambda wildcards, output: output[0].split('.')[0]
+    log:
+        'log/references/assemblies/bwa_index/{reference}.log'
+    benchmark:
+        'run/references/assemblies/bwa_index/{reference}.rsrc'
+    shell:
+        'bwa index -p {params.prefix} {input.reference} &> {log}'
