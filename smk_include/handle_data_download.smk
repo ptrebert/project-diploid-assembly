@@ -6,22 +6,38 @@ CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
 CMD_DL_UNCOMPRESSED_SINGLE = 'wget --quiet -O /dev/stdout {remote_path} 2>> {{log}} | gzip > {{output}}'
 
 localrules: master_handle_data_download, \
+            ex_nihilo_download_injections, \
             create_input_data_download_request, \
             download_bioproject_metadata, \
             create_bioproject_download_requests
 
+
+rule ex_nihilo_download_injections:
+    output:
+        protected(expand('input/bam/partial/parts/{individual}_hgsvc_pbsq2-ccs.part{partnum}.pbn.bam',
+                         individual=['HG00733', 'HG00732', 'HG00731'],
+                         partnum=[1,2,3,4])),
+        protected(expand('input/bam/partial/parts/{individual}_hgsvc_pbsq2-ccs.part{partnum}.pbn.bam',
+                         individual=['HG00733'],
+                         partnum=[5,6])),
+
+
 rule master_handle_data_download:
     input:
+        rules.ex_nihilo_download_injections.output,
         expand('input/fastq/partial/parts/{sample}.part{partnum}.fastq.gz',
                 sample=['HG00733_hpg_ontpm-ul'],
                 partnum=[1, 2, 3]),
+        expand('input/bam/partial/parts/{sample}.part{partnum}.pbn.bam',
+                sample=['HG00733_sra_pbsq1-clr'],
+                partnum=list(range(1, 29)))
 
 
 rule create_input_data_download_request:
     output:
         'input/{subfolder}/{sample}.request'
     wildcard_constraints:
-        subfolder = '^(fastq|bam).*'
+        subfolder = '(f|b)[a-z\/]+'
     run:
         import json as json
 
@@ -79,12 +95,14 @@ checkpoint create_bioproject_download_requests:
         'log/input/fastq/strand-seq/{individual}_{bioproject}.requests.log'
     run:
         import csv
-        #import pdb
+
         with open(log[0], 'w') as logfile:
             annotator = get_bioproject_sample_annotator(wildcards.bioproject)
             with open(input[0], 'r') as table:
                 rows = csv.DictReader(table, delimiter='\t')
                 for row in rows:
+                    if wildcards.individual not in row['sample_alias']:
+                        continue
                     label = annotator(row, wildcards.individual)
                     if label is None:
                         continue
@@ -103,9 +121,6 @@ checkpoint create_bioproject_download_requests:
                         local_fastq_path = os.path.join(local_fastq_folder, local_name)
                         request_file = os.path.join(local_req_folder, local_name.replace('.fastq.gz', '.request'))
 
-                        if request_file.endswith('_2.request'):
-                            # skip as SaarClust does not used mate2 info
-                            continue
                         _ = logfile.write('Creating request file at {}\n'.format(request_file))
                         try:
                             with open(request_file, 'w') as req:
@@ -213,6 +228,36 @@ rule handle_complete_fastq_download_request:
     # end of rule
 
 
+rule handle_partial_pbn_bam_download_request:
+    input:
+        'input/bam/partial/{split_type}/{sample_split}.request'
+    output:
+        protected('input/bam/partial/{split_type}/{sample_split}.pbn.bam')
+    log:
+        'log/input/bam/partial/{split_type}/{sample_split}.download.log'
+    wildcard_constraints:
+        split_type = '(parts|chunks)'
+    threads: 2  # compromise between wget and aria2c
+    run:
+        with open(input[0], 'r') as req_file:
+            remote_path = req_file.readline().strip()
+            local_path = req_file.readline().strip()
+
+        assert remote_path.endswith('.bam') or remote_path.endswith('.bam.1'), 'No BAM as download request'
+        exec = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
+
+        if not os.path.isfile(output[0]):
+            with open(log[0], 'w') as logfile:
+                _ = logfile.write('Handling download request' + '\n')
+                _ = logfile.write('CMD: {}'.format(exec) + '\n\n')
+                if local_path != output[0]:
+                    _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
+                    raise RuntimeError
+
+            shell(exec)
+    # end of rule
+
+
 def get_bioproject_sample_annotator(bioproject):
     known_projects = {'PRJEB12849': sample_annotator_PRJEB12849}
     return known_projects[bioproject]
@@ -225,17 +270,34 @@ def sample_annotator_PRJEB12849(sample_info, individual):
     assert 'illumina' in sample_info['instrument_platform'].lower()
     model = '25k'
     assert 'hiseq 2500' in sample_info['instrument_model'].lower()
+    libname = sample_info['library_name']
+    lib_individual, plate, libnum, nuc = libname.split('_')
+    assert lib_individual == individual, 'Individual mismatch: {} / {}'.format(libname, individual)
+    plate = 'P' + plate.rjust(3, '0')
+    assert len(libnum) == 3, 'Unexpected library number: {} / {}'.format(libname, libnum)
+    libnum = 'L' + libnum
+    sample_id = plate + libnum
+    # 2019-09-19 PE
+    # Exclude sample: causes segfault during markdup step
+    # for unknown reasons
+    # TODO 2019-09-30 PE
+    # segfault probably caused by sambamba
+    # put sample back into pipeline after Oct. 15.
+    if sample_id == 'P0IIL094':
+        import sys
+        sys.stderr.write('\n\nWARNING - MANUAL EXCLUDE: {}\n\n'.format(sample_info))
+        return None
     if '_mono' in sample_info['library_name'].lower():
         #read_info = '75pe'
-        read_info = 'npe'
+        read_info = '075mo'
     elif '_di' in sample_info['library_name'].lower():
         #read_info = '150pe'
-        read_info = 'npe'
+        read_info = '150di'
     else:
         raise ValueError('Unexpected library name: {}'.format(sample_info))
     assert 'paired' in sample_info['library_layout'].lower()
     if individual in sample_info['sample_alias']:
-        sample_label = '{}_{}_{}{}-{}'.format(individual, project, vendor, model, read_info)
+        sample_label = '{}_{}_{}{}-{}_{}'.format(individual, project, vendor, model, read_info, sample_id)
     else:
         sample_label = None
     return sample_label
