@@ -1,0 +1,21 @@
+name: rtest
+channels:
+  - conda-forge
+  - bioconda
+  - r
+dependencies:
+  - Python=3.6.*
+  - pip=19.2.3
+  - wget=1.19.4
+  - r-base<3.6
+  - r-devtools=2.2.1
+  - r-usethis=1.5.1
+  - r-withr=2.1.2
+  - r-igraph=1.2.4.1
+  - r-zoo=1.8_6
+  - r-cluster=2.1.0
+  - r-doparallel=1.0.15
+  - r-foreach=1.4.7
+  - r-biocmanager=1.30.7
+  - bioconductor-rhtslib=1.14.1
+  - bioconductor-bamsignals=1.14.0
