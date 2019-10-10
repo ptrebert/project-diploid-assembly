@@ -5,4 +5,4 @@ BiocManager::install(c(
     "breakpointR"
 ))
 
-#devtools::install_git("git://github.com/daewoooo/breakpointR.git", ref = "devel")
+quit(save="no")
