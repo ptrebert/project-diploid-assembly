@@ -7,12 +7,14 @@ args = commandArgs(trailingOnly=TRUE)
 bam.folder = args[1]
 config.file = args[2]
 output.folder = args[3]
-output.file = args[4]
+num.cpu = args[4]
+output.file = args[5]
 
 breakpointr(
     inputfolder=bam.folder,
     outputfolder=output.folder,
-    configfile=config.file
+    configfile=config.file,
+    numCPU=num.cpu
 )
 
 exportRegions(
