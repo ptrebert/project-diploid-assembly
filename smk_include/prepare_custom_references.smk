@@ -9,11 +9,6 @@ rule master_prepare_custom_references:
     input:
 
 
-rule ex_nihilo_custom_reference_injections:
-    output:
-        protected('references/assemblies/HG00733_sra_pbsq1-clr_clustV1.fasta')
-
-
 rule compute_wtdbg_squashed_assembly_layout:
     input:
         fastq = 'input/fastq/complete/{sample}_1000.fastq.gz'
@@ -21,16 +16,16 @@ rule compute_wtdbg_squashed_assembly_layout:
         layout = 'references/assemblies/squashed_layout/wtdbg2/{sample}/{sample}.ctg.lay.gz',
     log: 'log/references/assemblies/squashed_layout/wtdbg2/{sample}.layout.log',
     benchmark: 'run/references/assemblies/squashed_layout/wtdbg2/{sample}.layout.rsrc',
-    threads: 48
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 409600
     params:
-        param_preset = lambda wildcards: config['wtdbg2_presets'][wildcards.sample]
-    run:
-        exec = 'wtdbg2 -x {params.param_preset}'
-        exec += ' -i {input.fastq}'
-        exec += ' -g3g -t {threads}'
-        exec += ' -o references/assemblies/squashed_layout/wtdbg2/{wildcards.sample}/{wildcards.sample}'
-        exec += ' &> {log}'
-        shell(exec)
+        param_preset = lambda wildcards: config['wtdbg2_presets'][wildcards.sample],
+        out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0]
+    shell:
+        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g3g -t {threads}' \
+            ' -o {params.out_prefix} &> {log}'
 
 
 rule compute_wtdbg_squashed_assembly_consensus:
@@ -40,13 +35,12 @@ rule compute_wtdbg_squashed_assembly_consensus:
         squashed_assembly = 'references/assemblies/{sample}_sqa.fasta'
     log: 'log/references/assemblies/{sample}_sqa.consensus.log'
     benchmark: 'run/references/assemblies/{sample}_sqa.consensus.rsrc'
-    threads: 48
-    run:
-        exec = 'wtpoa-cns -t {threads}'
-        exec += ' -i {input.layout}'
-        exec += ' -o {output.squashed_assembly}'
-        exec += ' &> {log}'
-        shell(exec)
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 384,
+        mem_total_mb = 12288
+    shell:
+        'wtpoa-cns -t {threads} -i {input.layout} -o {output.squashed_assembly} &> {log}'
 
 
 rule filter_squashed_assembly_by_size:
@@ -60,20 +54,21 @@ rule filter_squashed_assembly_by_size:
     wildcard_constraints:
         assembly_type = '(sqa|clustV[0-9])'
     params:
-        scriptdir = config['script_dir']
-    run:
-        exec = '{params.scriptdir}/filter_squashed_assembly.py --debug'
-        exec += ' --input-fasta {input}'
-        exec += ' --output-fasta {output.fasta}'
-        exec += ' --output-metrics {output.stats}'
-        exec += ' --min-size 100000 &> {log}'
-        shell(exec)
+        scriptdir = config['script_dir'],
+        min_contig_size = config['min_contig_size'],
+        # because of hard-coded 100kb in filename...
+        check_size = lambda wildcards: assert 99999 < int(config['min_contig_size']) < 100001
+    shell:
+        '{params.scriptdir}/filter_squashed_assembly.py --debug --input-fasta {input}' \
+            ' --output-fasta {output.fasta} --output-metrics {output.stats}' \
+            ' --min-size {params.min_contig_size} &> {log}'
 
-
+# =================================
+# ====== STRAND_SEQ PART ==========
+# =================================
 # Below this point: SaarClust step
 # cluster squashed assembly contigs
 # based on strand-seq information
-
 
 def collect_strandseq_merge_files(wildcards):
     """
@@ -125,7 +120,7 @@ rule merge_mono_dinucleotide_fraction:
         'run/output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
     wildcard_constraints:
         lib_id = '[A-Z0-9]+'
-    threads: 4
+    threads: config['num_cpu_low']
     shell:
         'samtools merge -@ {threads} -O BAM {output} {input.nuc_files} &> {log}'
 
@@ -135,13 +130,12 @@ rule samtools_position_sort_strandseq_reads:
         'output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.sam.bam'
     output:
         temp('output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.psort.sam.bam')
-    threads: 4
+    threads: config['num_cpu_low']
     resources:
-        mem_mb = 4 * 2048  # 2 GB per thread
-    params:
-        mem_per_thread = '2G'
+        mem_per_cpu_mb = 2048
+        mem_total_mb = config['num_cpu_low'] * 2048
     shell:
-        'samtools sort -m {params.mem_per_thread} --threads {threads} -o {output} {input}'
+        'samtools sort -m {resources.mem_per_cpu_mb}M --threads {threads} -o {output} {input}'
 
 
 rule mark_duplicate_reads_strandseq:
@@ -153,20 +147,19 @@ rule mark_duplicate_reads_strandseq:
         'log/output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.psort.mdup.log'
     benchmark:
         'run/output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.psort.mdup.rsrc'
-    threads: 4
+    threads: config['num_cpu_low']
     shell:
         'sambamba markdup -t {threads} {input} {output} &> {log}'
 
 
 rule install_rlib_saarclust:
     output:
-         touch('output/check_files/R_setup/saarclust.ok')
-    log:
-        'log/output/check_files/R_setup/saarclust.install.log'
+         'output/check_files/R_setup/saarclust.ok'
     params:
-        script_dir = config['script_dir']
+        script_dir = config['script_dir'],
+        version = config['git_commit_saarclust']
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_saarclust.R &> {log}'
+        'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {output}'
 
 
 def collect_strandseq_alignments(wildcards):
@@ -241,11 +234,17 @@ rule run_saarclust_assembly_clustering:
         bam = collect_strandseq_alignments,
         seq_files = collect_assembly_sequence_files
     output:
-        directory('output/saarclust/results/{reference}/{sts_reads}')
+        directory('output/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
+        directory('output/saarclust/results/{reference}/{sts_reads}/data'),
+        directory('output/saarclust/results/{reference}/{sts_reads}/plots'),
+        'output/saarclust/results/{reference}/{sts_reads}/SaaRclust.config'
     log:
         'log/output/saarclust/results/{reference}/{sts_reads}/saarclust.log'
     benchmark:
         'run/output/saarclust/results/{reference}/{sts_reads}/saarclust.run'
+    resources:
+        mem_per_cpu_mb = 8192,
+        mem_total_mb = 8192
     wildcard_constraints:
         reference = '[\w\-]+',
         sts_reads = '[\w\-]+'
@@ -282,7 +281,8 @@ rule merge_fasta_clusters:
     input:
         fasta = collect_clustered_fasta_sequences
     output:
-        'references/assemblies/{reference}_clustV2.fasta'
+        expand('references/assemblies/{{reference}}_clustV{version}.fasta',
+                version=config['git_commit_version'])
     wildcard_constraints:
         reference = '[\w\-]+'
     shell:

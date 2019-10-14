@@ -14,7 +14,7 @@ rule validate_complete_input_fastq:
         'output/statistics/fastq_input/stat_dumps/{filename}.stats.pck'
     log: 'log/output/statistics/fastq_input/stat_dumps/{filename}.stats.log'
     benchmark: 'run/output/statistics/fastq_input/stat_dumps/{filename}.stats.rsrc'
-    threads: 4
+    threads: config['num_cpu_low']
     params:
         scriptdir = config['script_dir']
     run:

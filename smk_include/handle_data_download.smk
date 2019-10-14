@@ -1,4 +1,6 @@
 
+include: 'link_data_sources.smk'
+
 CMD_DL_COMPRESSED_PARALLEL = 'aria2c --out={{output}} --file-allocation=none -s 4 -x 4 {remote_path} &>> {{log}}'
 
 CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
@@ -6,31 +8,22 @@ CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
 CMD_DL_UNCOMPRESSED_SINGLE = 'wget --quiet -O /dev/stdout {remote_path} 2>> {{log}} | gzip > {{output}}'
 
 localrules: master_handle_data_download, \
-            ex_nihilo_download_injections, \
             create_input_data_download_request, \
             download_bioproject_metadata, \
             create_bioproject_download_requests
 
 
-rule ex_nihilo_download_injections:
-    output:
-        protected(expand('input/bam/partial/parts/{individual}_hgsvc_pbsq2-ccs.part{partnum}.pbn.bam',
-                         individual=['HG00733', 'HG00732', 'HG00731'],
-                         partnum=[1,2,3,4])),
-        protected(expand('input/bam/partial/parts/{individual}_hgsvc_pbsq2-ccs.part{partnum}.pbn.bam',
-                         individual=['HG00733'],
-                         partnum=[5,6])),
-
-
 rule master_handle_data_download:
     input:
-        rules.ex_nihilo_download_injections.output,
+        rules.link_hgsvc_sequel2_ccs_fastq_data.output,
+        rules.link_hgsvc_sequel2_ccs_bam_data.output,
         expand('input/fastq/partial/parts/{sample}.part{partnum}.fastq.gz',
                 sample=['HG00733_hpg_ontpm-ul'],
                 partnum=[1, 2, 3]),
         expand('input/bam/partial/parts/{sample}.part{partnum}.pbn.bam',
                 sample=['HG00733_sra_pbsq1-clr'],
-                partnum=list(range(1, 29)))
+                partnum=list(range(1, 29))),
+
 
 
 rule create_input_data_download_request:
@@ -66,7 +59,7 @@ rule download_bioproject_metadata:
     output:
         'input/bioprojects/{bioproject}.tsv'
     run:
-        load_url = 'https://www.ebi.ac.uk/ena/data/warehouse/filereport?accession='
+        load_url = 'https://www.ebi.ac.uk/ena/portal/api/filereport?accession='
         load_url += '{accession}'
         load_url += '&result=read_run&fields='
         load_url += 'study_accession,sample_accession,secondary_sample_accession'
@@ -76,7 +69,7 @@ rule download_bioproject_metadata:
         load_url += ',library_selection,read_count,center_name,study_title,fastq_md5'
         load_url += ',study_alias,experiment_alias,run_alias,fastq_ftp,submitted_ftp'
         load_url += ',sample_alias,sample_title'
-        load_url += '&download=txt'
+        load_url += '&format=tsv&download=txt'
 
         tmp = load_url.format(**{'accession': wildcards.bioproject})
         if os.path.isfile(output[0]):
@@ -168,7 +161,7 @@ rule handle_partial_fastq_download_request:
     input:
         'input/fastq/partial/{split_type}/{sample_split}.request'
     output:
-        protected('input/fastq/partial/{split_type}/{sample_split}.fastq.gz')
+        'input/fastq/partial/{split_type}/{sample_split}.fastq.gz'
     log:
         'log/input/fastq/partial/{split_type}/{sample_split}.download.log'
     wildcard_constraints:
@@ -200,7 +193,7 @@ rule handle_complete_fastq_download_request:
     input:
         'input/fastq/complete/{sample}.request'
     output:
-        protected('input/fastq/complete/{sample}_1000.fastq.gz')
+        'input/fastq/complete/{sample}_1000.fastq.gz'
     wildcard_constraints:
         sample = '(' + '|'.join(config['complete_samples']) + ')'
     log:
@@ -232,7 +225,7 @@ rule handle_partial_pbn_bam_download_request:
     input:
         'input/bam/partial/{split_type}/{sample_split}.request'
     output:
-        protected('input/bam/partial/{split_type}/{sample_split}.pbn.bam')
+        'input/bam/partial/{split_type}/{sample_split}.pbn.bam'
     log:
         'log/input/bam/partial/{split_type}/{sample_split}.download.log'
     wildcard_constraints:
@@ -277,16 +270,6 @@ def sample_annotator_PRJEB12849(sample_info, individual):
     assert len(libnum) == 3, 'Unexpected library number: {} / {}'.format(libname, libnum)
     libnum = 'L' + libnum
     sample_id = plate + libnum
-    # 2019-09-19 PE
-    # Exclude sample: causes segfault during markdup step
-    # for unknown reasons
-    # TODO 2019-09-30 PE
-    # segfault probably caused by sambamba
-    # put sample back into pipeline after Oct. 15.
-    if sample_id == 'P0IIL094':
-        import sys
-        sys.stderr.write('\n\nWARNING - MANUAL EXCLUDE: {}\n\n'.format(sample_info))
-        return None
     if '_mono' in sample_info['library_name'].lower():
         #read_info = '75pe'
         read_info = '075mo'

@@ -23,7 +23,10 @@ rule minimap_reads_to_reference_alignment:
         'run/output/alignments/reads_to_reference/{sample}_map-to_{reference}.rsrc'
     wildcard_constraints:
         reference = '[\w\-]+'
-    threads: 64
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 2048,
+        mem_total_mb = 65536
     run:
         preset = None
         is_pacbio = False
@@ -56,7 +59,7 @@ rule pbmm2_reads_to_reference_alignment:
         reads = 'input/bam/complete/{sample}.pbn.bam',
         reference = 'references/assemblies/{reference}.fasta'
     output:
-        'output/alignments/reads_to_reference/{sample}_map-to_{reference}.psort.pbn.bam'
+        bam = 'output/alignments/reads_to_reference/{sample}_map-to_{reference}.psort.pbn.bam',
     log:
         'log/output/alignments/reads_to_reference/{sample}_map-to_{reference}.pbn.log'
     benchmark:
@@ -64,21 +67,22 @@ rule pbmm2_reads_to_reference_alignment:
     wildcard_constraints:
         reference = '[\w\-]+'
     conda:
-        "../environment/conda/conda_pbtools.yml"
-    threads: 64
+        config['conda_env_pbtools']
+    threads: config['cpu_mem_high']
+    resources:
+        mem_per_cpu_mb = 3072,
+        mem_total_mb = 94208,
     params:
-        align_threads = 56,
-        sort_threads = 8,
-        sort_memory = '8192M',
+        align_threads = config['cpu_mem_high'] - config['cpu_mem_low'],
+        sort_threads = config['cpu_mem_low'],
+        sort_memory_mb = 3072,  # also per thread
         param_preset = lambda wildcards: config['pbmm2_presets'][wildcards.sample.rsplit('_', 1)[0]],
         individual = lambda wildcards: wildcards.sample.split('_')[0]
-    resources:
-        mem_mb = 8 * 8192
     shell:
-        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory} ' \
+        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory}M --no-bai ' \
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} ' \
             ' --preset {params.param_preset} --sample {params.individual} ' \
-            ' {input.reference} {input.reads} {output} &> {log}'
+            ' {input.reference} {input.reads} {output.bam} &> {log}'
 
 
 rule bwa_strandseq_to_reference_alignment:
@@ -93,9 +97,10 @@ rule bwa_strandseq_to_reference_alignment:
         samtools = 'log/output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/{individual}_{project}_{spec}_{lib_id}_{run_id}.samtools.log',
     benchmark:
         'run/output/alignments/strandseq_to_reference/{reference}_{individual}_{bioproject}/{individual}_{project}_{spec}_{lib_id}_{run_id}.rsrc'
-    threads: 4
+    threads: config['num_cpu_low']
     resources:
-        mem_mb=8096
+        mem_per_cpu_mb = 2048,
+        mem_total_mb = config['num_cpu_low'] * 2048
     params:
         read_spec = lambda wildcards: wildcards.spec.split('-')[1],
         idx_prefix = lambda wildcards, input: input.ref_index.split('.')[0]
@@ -122,7 +127,10 @@ rule racon_strandseq_polish_alignment_pass1:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.racon-p1.log'
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.racon-p1.rsrc'
-    threads: 64
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 768,
+        mem_total_mb = 25600
     run:
         preset = None
         is_pacbio = False
@@ -135,7 +143,7 @@ rule racon_strandseq_polish_alignment_pass1:
                 preset = 'asm20'
             else:
                 raise ValueError('Unknown minimap2 preset: {}'.format(wildcards.pol_reads))
-        if '_ont' in wildcards.readset:
+        if '_ont' in wildcards.pol_reads:
             preset = 'map-ont'
 
         assert preset is not None, 'No minimap preset selected for sample {}'.format(wildcards.pol_reads)
@@ -167,18 +175,19 @@ rule pbmm2_strandseq_polish_alignment_pass1:
     wildcard_constraints:
         reference = '[\w\-]+'
     conda:
-        "../environment/conda/conda_pbtools.yml"
-    threads: 64
+        config['conda_env_pbtools']
+    threads: config['cpu_mem_high']
+    resources:
+        mem_per_cpu_mb = 3072,
+        mem_total_mb = 94208,
     params:
-        align_threads = 56,
-        sort_threads = 8,
-        sort_memory = '8192M',
+        align_threads = config['cpu_mem_high'] - config['cpu_mem_low'],
+        sort_threads = config['cpu_mem_low'],
+        sort_memory_mb = 3072,  # also per thread
         param_preset = lambda wildcards: config['pbmm2_presets'][wildcards.pol_reads.rsplit('_', 1)[0]],
         individual = lambda wildcards: wildcards.pol_reads.split('_')[0]
-    resources:
-        mem_mb = 8 * 8192
     shell:
-        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory} ' \
+        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory} --no-bai ' \
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} ' \
             ' --preset {params.param_preset} --sample {params.individual} ' \
-            ' {input.reference} {input.reads} {output.bam} &> {log}'
+            ' {input.contigs} {input.reads} {output.bam} &> {log}'

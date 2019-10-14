@@ -84,7 +84,7 @@ rule canonical_dga_haplo_tagging:
     benchmark:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.tagging.rsrc',
     conda:
-        "../environment/conda/wh_split.yml"
+        config['conda_env_whsplit']
     shell:
         "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
 
@@ -107,7 +107,7 @@ rule canonical_dga_haplo_splitting:
     benchmark:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.splitting.rsrc',
     conda:
-        "../environment/conda/wh_split.yml"
+        config['conda_env_whsplit']
     shell:
         "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
 
@@ -143,7 +143,10 @@ rule canonical_dga_assemble_haplotypes_layout:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.{hap}.layout.log',
     benchmark:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.{hap}.layout.rsrc',
-    threads: 64
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 409600
     params:
         param_preset = lambda wildcards: config['wtdbg2_presets'][wildcards.hap_reads.rsplit('_', 1)[0]],
         out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0]
@@ -166,6 +169,9 @@ rule canonical_dga_assemble_haplotypes_consensus:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}.{hap}.log',
     benchmark:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}.{hap}.rsrc',
-    threads: 64
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 384,
+        mem_total_mb = 12288
     shell:
         'wtpoa-cns -t {threads} -i {input.layout} -o {output} &> {log}'

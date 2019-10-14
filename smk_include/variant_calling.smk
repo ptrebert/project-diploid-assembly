@@ -82,7 +82,10 @@ rule call_variants_freebayes_parallel:
     params:
         timeout = 2700,  # timeout in seconds
         script_dir = config['script_dir']
-    threads: 16
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 12288,
+        mem_total_mb = 393216  # memory consumption varies wildly!!! Replacing FreeBayes at some point would be nice...
     shell:
         '{params.script_dir}/fb-parallel-timeout.sh {input.ref_regions} {threads} {params.timeout} {log}' \
             ' --use-best-n-alleles 4 -f {input.reference} {input.read_ref_aln} > {output}'
@@ -106,6 +109,9 @@ rule call_variants_longshot:
         'run/output/variant_calls/longshot/{reference}/split_by_seq/raw/{vc_reads}.{sequence}.rsrc'
     params:
         individual = lambda wildcards: wildcards.vc_reads.split('_')[0]
+    resources:
+        mem_per_cpu_mb = 16384,
+        mem_total_mb = 16384
     shell:
         'longshot --no_haps --bam {input.read_ref_aln} ' \
             ' --ref {input.reference} --region {wildcards.sequence}' \

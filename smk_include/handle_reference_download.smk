@@ -41,7 +41,7 @@ rule handle_raw_fasta_reference_download_request:
     input:
         'references/downloads/{reference}.request'
     output:
-        protected('references/downloads/{reference}.fa.gz')
+        'references/downloads/{reference}.fa.gz'
     log:
         'log/references/downloads/{reference}.download.log'
     threads: 2  # compromise between wget and aria2c
@@ -69,7 +69,7 @@ rule handle_gff_reference_download_request:
     input:
         'references/downloads/{reference}.request'
     output:
-        protected('references/downloads/{reference}.gff3.gz')
+        'references/downloads/{reference}.gff3.gz'
     log:
         'log/references/downloads/{reference}.download.log'
     threads: 2  # compromise between wget and aria2c

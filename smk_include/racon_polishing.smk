@@ -1,7 +1,7 @@
 
 include: 'run_alignments.smk'
 
-rule polish_assembled_contigs_pass1:
+rule racon_contig_polishing_pass1:
     input:
         use_for_correct = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.fastq.gz',
         alignments = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.racon-p1.psort.sam',
@@ -21,9 +21,14 @@ rule polish_assembled_contigs_pass1:
         hap_reads = '[\w\-]+',
         pol_reads = '[\w\-]+',
         hap = '[h12un\-]+',
-    threads: 12
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 14336,
+        mem_total_mb = 172032
+    params:
+        exec = config['racon_binary']
     shell:
-        'racon --threads {threads} --include-unpolished {input.use_for_correct} {input.alignments} {input.target_seqs} > {output} 2> {log}'
+        '{params.exec} --threads {threads} --include-unpolished {input.use_for_correct} {input.alignments} {input.target_seqs} > {output} 2> {log}'
 
 #
 #rule polish_assembled_contigs_pass2:

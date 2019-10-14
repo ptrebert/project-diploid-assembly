@@ -1,6 +1,7 @@
 
 include: 'eval_known_reference.smk'
 include: 'eval_variant_calls.smk'
+include: 'arrow_polishing.smk'
 
 localrules: master_results_child
 
@@ -18,8 +19,23 @@ rule master_results_child:
         - HG002_v20_pbsq2-ccs_1520.fastq.gz
     """
     input:
-#        # TODO URGENT - after BIANCA finished with at least one PacBio native alignment
-#        expand('output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.arrow-p1.psort.pbn.bam',
+       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
+               var_caller=['freebayes'],
+               gq=config['filter_vcf_gq']['freebayes'],
+               dp=config['filter_vcf_dp']['freebayes'],
+               reference=['HG00733_sra_pbsq1-clr_clustV1-100kb'],
+               vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+               hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+               sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+               pol_reads=['HG00733_sra_pbsq1-clr_1000'],
+               polisher=['arrow-p1'],
+               hap=['h1-un', 'h2-un'],
+               known_ref=['GRCh38_GCA_p13'],
+               genemodel=['GRCh38_GENCODEv31_basic']
+               ),
+
+#        # Running on UMBRIEL
+#        expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
 #                var_caller=['freebayes'],
 #                gq=config['filter_vcf_gq'],
 #                dp=config['filter_vcf_dp'],
@@ -28,28 +44,100 @@ rule master_results_child:
 #                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
 #                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
 #                pol_reads=['HG00733_sra_pbsq1-clr_1000'],
-#                hap=['h1', 'h2', 'h1-un', 'h2-un'],
+#                polisher=['arrow-p1'],
+#                hap=['h2-un'],
+#                known_ref=['GRCh38_GCA_p13'],
+#                genemodel=['GRCh38_GENCODEv31_basic']
 #                ),
 
-#        # TODO running on BIANCA
-#        expand('output/alignments/reads_to_reference/{sample}_map-to_{reference}.psort.pbn.bam',
-#                sample=['HG00733_sra_pbsq1-clr_1000'],
-#                reference=['HG00733_sra_pbsq1-clr_clustV1-100kb', 'HG00733_sra_pbsq1-clr_clustV2-100kb']),
+#        # Running on CORDELIA
+#        expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
+#                var_caller=['freebayes'],
+#                gq=config['filter_vcf_gq'],
+#                dp=config['filter_vcf_dp'],
+#                reference=['HG00733_sra_pbsq1-clr_clustV1-100kb'],
+#                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                pol_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                polisher=['racon-p1'],
+#                hap=['h1-un', 'h2-un'],
+#                known_ref=['GRCh38_GCA_p13'],
+#                genemodel=['GRCh38_GENCODEv31_basic']
+#                ),
 
-#          # TODO running on CORDELIA
-#         expand('output/evaluation/known_reference/quastlg_busco/{approach}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known_ref}.{genemodel}/report.pdf',
-#                 approach=['strandseq'],
-#                 var_caller=['freebayes'],
-#                 gq=config['filter_vcf_gq'],
-#                 dp=config['filter_vcf_dp'],
-#                 reference=['HG00733_hgsvc_pbsq2-ccs_clustV2-100kb'],
-#                 vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
-#                 hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
-#                 sts_reads=['HG00733_1kg_il25k-npe_sseq'],
-#                 hap=['h1', 'h2', 'h1-un', 'h2-un'],
-#                 known_ref=['GRCh38_GCA_p13'],
-#                 genemodel=['GRCh38_GENCODEv31_basic']
-#                 ),
+#        # Running on MIRANDA
+#        expand('output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.{polisher}.psort.pbn.bam',
+#                var_caller=['freebayes'],
+#                gq=config['filter_vcf_gq'],
+#                dp=config['filter_vcf_dp'],
+#                reference=['HG00733_sra_pbsq1-clr_clustV1-100kb'],
+#                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                pol_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                polisher=['arrow-p1'],
+#                hap=['h2-un'],
+#                ),
+
+#        # Running on BIANCA
+#        expand('output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.{polisher}.psort.pbn.bam',
+#                var_caller=['freebayes'],
+#                gq=config['filter_vcf_gq'],
+#                dp=config['filter_vcf_dp'],
+#                reference=['HG00733_sra_pbsq1-clr_clustV1-100kb'],
+#                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                pol_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                polisher=['arrow-p1'],
+#                hap=['h1-un'],
+#                ),
+
+#        # TODO on CORDELIA
+#        expand('output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.{polisher}.fasta',
+#                var_caller=['freebayes'],
+#                gq=config['filter_vcf_gq'],
+#                dp=config['filter_vcf_dp'],
+#                reference=['HG00733_sra_pbsq1-clr_clustV2-100kb'],
+#                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                pol_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                polisher=['arrow-p1'],
+#                hap=['h2-un']
+#                ),
+
+#        # Running on CORDELIA
+#        expand('output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.arrow-p1.{sequence}.fasta',
+#                var_caller=['freebayes'],
+#                gq=config['filter_vcf_gq'],
+#                dp=config['filter_vcf_dp'],
+#                reference=['HG00733_sra_pbsq1-clr_clustV2-100kb'],
+#                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                pol_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                polisher=['arrow-p1'],
+#                hap=['h2-un'],
+#                sequence=list(['ctg' + str(i) for i in range(1, 3354)])
+#                ),
+
+#        # ERROR on UMBRIEL
+#        expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
+#                var_caller=['freebayes'],
+#                gq=config['filter_vcf_gq'],
+#                dp=config['filter_vcf_dp'],
+#                reference=['HG00733_sra_pbsq1-clr_clustV2-100kb'],
+#                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                pol_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                polisher=['racon-p1'],
+#                hap=['h1', 'h2', 'h1-un', 'h2-un'],
+#                known_ref=['GRCh38_GCA_p13'],
+#                genemodel=['GRCh38_GENCODEv31_basic']
+#                ),
 
 #        # TODO running on JULIET
 #        expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
@@ -67,7 +155,56 @@ rule master_results_child:
 #                genemodel=['GRCh38_GENCODEv31_basic']
 #                ),
 
-#        # TODO running on UMBRIEL
+#        # DONE
+#        expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
+#                var_caller=['freebayes'],
+#                gq=config['filter_vcf_gq'],
+#                dp=config['filter_vcf_dp'],
+#                reference=['HG00733_hgsvc_pbsq2-ccs_clustV2-100kb'],
+#                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                pol_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                polisher=['racon-p1'],
+#                hap=['h1', 'h2', 'h1-un', 'h2-un'],
+#                known_ref=['GRCh38_GCA_p13'],
+#                genemodel=['GRCh38_GENCODEv31_basic']
+#                ),
+
+#        # DONE
+#        expand('output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.arrow-p1.psort.pbn.bam',
+#                var_caller=['freebayes'],
+#                gq=config['filter_vcf_gq'],
+#                dp=config['filter_vcf_dp'],
+#                reference=['HG00733_sra_pbsq1-clr_clustV1-100kb'],
+#                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                pol_reads=['HG00733_sra_pbsq1-clr_1000'],
+#                hap=['h1', 'h2', 'h1-un', 'h2-un'],
+#                ),
+
+#        # DONE
+#        expand('output/alignments/reads_to_reference/{sample}_map-to_{reference}.psort.pbn.bam',
+#                sample=['HG00733_sra_pbsq1-clr_1000'],
+#                reference=['HG00733_sra_pbsq1-clr_clustV1-100kb', 'HG00733_sra_pbsq1-clr_clustV2-100kb']),
+
+#          # DONE
+#         expand('output/evaluation/known_reference/quastlg_busco/{approach}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known_ref}.{genemodel}/report.pdf',
+#                 approach=['strandseq'],
+#                 var_caller=['freebayes'],
+#                 gq=config['filter_vcf_gq'],
+#                 dp=config['filter_vcf_dp'],
+#                 reference=['HG00733_hgsvc_pbsq2-ccs_clustV2-100kb'],
+#                 vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                 hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+#                 sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+#                 hap=['h1', 'h2', 'h1-un', 'h2-un'],
+#                 known_ref=['GRCh38_GCA_p13'],
+#                 genemodel=['GRCh38_GENCODEv31_basic']
+#                 ),
+
+#        # DONE
 #        expand('output/evaluation/known_reference/quastlg_busco/{approach}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known_ref}.{genemodel}/report.pdf',
 #                approach=['strandseq'],
 #                var_caller=['freebayes'],
@@ -81,8 +218,6 @@ rule master_results_child:
 #                known_ref=['GRCh38_GCA_p13'],
 #                genemodel=['GRCh38_GENCODEv31_basic']
 #                ),
-
-
 
 #        # DONE
 #        expand(rules.merge_sequence_vcf_files.output,

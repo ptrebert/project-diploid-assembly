@@ -1,16 +1,8 @@
 
 include: 'handle_data_download.smk'
+include: 'link_data_sources.smk'
 
-localrules: master_preprocess_input, ex_nihilo_input_injections
-
-rule ex_nihilo_input_injections:
-    output:
-        protected(expand('input/fastq/complete/{individual}_hgsvc_pbsq2-ccs_1000.fastq.gz',
-                         individual=['HG00733', 'HG00732', 'HG00731'])),
-        protected('input/fastq/complete/HG002_pbio_pbsq2-ccs_1000.fastq.gz'),
-        protected('input/fastq/complete/HG002_v19_pbsq2-ccs_1925.fastq.gz'),
-        protected('input/fastq/complete/HG002_v20_pbsq2-ccs_1520.fastq.gz'),
-        protected('input/bam/complete/HG002_pbio_pbsq2-clr_1000.pbn.bam'),
+localrules: master_preprocess_input
 
 
 rule master_preprocess_input:
@@ -22,6 +14,8 @@ rule master_preprocess_input:
 def collect_fastq_input_parts(wildcards):
 
     base_path = 'input/fastq/partial/parts'
+    if not os.path.isdir(base_path):
+        return []
 
     sample = wildcards.sample
 
@@ -96,6 +90,8 @@ rule merge_strandseq_libraries:
 def collect_pacbio_bam_input_parts(wildcards):
 
     base_path = 'input/bam/partial/parts'
+    if not os.path.isdir(base_path):
+        return []
 
     sample = wildcards.sample
 
@@ -112,7 +108,7 @@ def collect_pacbio_bam_input_parts(wildcards):
 
 rule merge_pacbio_native_bams:
     input:
-        parts = collect_pacbio_bam_input_parts
+        collect_pacbio_bam_input_parts
     output:
         'input/bam/complete/{sample}_1000.pbn.bam'
     log:
@@ -120,6 +116,6 @@ rule merge_pacbio_native_bams:
     benchmark:
         'run/input/bam/complete/{sample}_1000.mrg.rsrc'
     params:
-        input_list = lambda wildcards, input: ' -in ' + ' -in '.join(input.parts)
+        input_list = lambda wildcards, input: ' -in ' + ' -in '.join(input)
     shell:
         'bamtools merge {params.input_list} -out {output}'

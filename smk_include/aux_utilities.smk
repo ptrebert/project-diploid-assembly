@@ -13,7 +13,7 @@ rule samtools_index_cram_alignment:
         cram = '{filepath}'
     output:
         crai = '{filepath}.crai'
-    threads: 8
+    threads: config['num_cpu_low']
     shell:
         "samtools index -@ {threads} {input.cram}"
 
@@ -23,9 +23,20 @@ rule samtools_index_bam_alignment:
         bam = '{filepath}'
     output:
         bai = '{filepath}.bai'
-    threads: 8
+    threads: config['num_cpu_low']
     shell:
         "samtools index -@ {threads} {input.bam}"
+
+
+rule pb_bamtools_index_bam_alignment:
+    input:
+        pbn_bam = '{filepath}'
+    output:
+        pbi = '{filepath}.pbi'
+    conda:
+        config['conda_env_pbtools']
+    shell:
+        'pbindex {input}'
 
 
 rule samtools_convert_sam_to_bam:
@@ -35,7 +46,7 @@ rule samtools_convert_sam_to_bam:
         bam = '{filepath}.sam.bam'
     wildcard_constraints:
         filepath = '[\w\-\/]+'
-    threads: 8
+    threads: config['num_cpu_low']
     shell:
         "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
 
@@ -47,9 +58,10 @@ rule samtools_position_sort_bam_alignment:
         sorted_bam = '{filepath}.psort.sam.bam'
     wildcard_constraints:
         filepath = '[\w\-\/]+'
-    threads: 8
+    threads: config['num_cpu_low']
     resources:
-        mem_mb = 8 * (20 * 1024)  # eight times twenty gigabyte
+        mem_per_cpu_mb = 20 * 1024,  # 20G per CPU
+        mem_total_mb = config['num_cpu_low'] * (20 * 1024)
     params:
         mem_per_thread = '20G'
     run:
@@ -126,11 +138,14 @@ rule generate_bwa_index:
         'references/assemblies/bwa_index/{reference}.bwt',
         'references/assemblies/bwa_index/{reference}.pac',
         'references/assemblies/bwa_index/{reference}.sa'
-    params:
-        prefix = lambda wildcards, output: output[0].split('.')[0]
     log:
         'log/references/assemblies/bwa_index/{reference}.log'
     benchmark:
         'run/references/assemblies/bwa_index/{reference}.rsrc'
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 6144
+    params:
+        prefix = lambda wildcards, output: output[0].split('.')[0]
     shell:
         'bwa index -p {params.prefix} {input.reference} &> {log}'

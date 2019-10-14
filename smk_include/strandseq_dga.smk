@@ -11,35 +11,27 @@ rule master_strandseq_dga:
     input:
 
 
-rule ex_nihilo_strandseq_dga_injections:
-    output:
-        protected('output/strandseq_phased_variants/longshot_GQ100_DP50/HG00733_sra_pbsq1-clr_clustV1-100kb/HG00733_sra_pbsq1-clr_1000/final/HG00733_1kg_il25k-npe_sseq.phased.vcf')
-
-
 rule install_rlib_breakpointr:
     input:
         'output/check_files/R_setup/saarclust.ok'
     output:
-         touch('output/check_files/R_setup/breakpointr.ok')
-    log:
-        'log/output/check_files/R_setup/breakpointr.install.log'
+         'output/check_files/R_setup/breakpointr.ok'
     params:
         script_dir = config['script_dir']
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R &> {log}'
+        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R &> {output}'
 
 
 rule install_rlib_strandphaser:
     input:
         'output/check_files/R_setup/breakpointr.ok'
     output:
-         touch('output/check_files/R_setup/strandphaser.ok')
-    log:
-        'log/output/check_files/R_setup/strandphaser.install.log'
+         'output/check_files/R_setup/strandphaser.ok'
     params:
-        script_dir = config['script_dir']
+        script_dir = config['script_dir'],
+        version = config['git_commit_strandphaser']
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R &> {log}'
+        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R {params.version} &> {output}'
 
 
 rule write_breakpointr_config_file:
@@ -48,11 +40,11 @@ rule write_breakpointr_config_file:
         reference = 'references/assemblies/{reference}.fasta'
     output:
         cfg = 'output/diploid_assembly/strandseq/config_files/{reference}/{sts_reads}/breakpointr.config'
-    threads: 64
+    threads: config['num_cpu_high']
     run:
         config_rows = [
             '[General]',
-            'numCPU = ' + str(threads),
+            'numCPU = ' + str(threads),  # due to a bug in breakpointr, this value has to be repeated on the CLI
             'reuse.existing.files = FALSE',
             '',
             '[breakpointR]',
@@ -76,12 +68,12 @@ rule run_breakpointr:
         bams = collect_strandseq_alignments  # from module: prepare_custom_references - SaaRclust
     output:
         'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
-        # 'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpointR.config',
-        # 'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/README.txt',
-        # directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpoints'),
-        # directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/browserfiles'),
-        # directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/data'),
-        # directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/plots')
+        'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpointR.config',
+        'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/README.txt',
+        directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpoints'),
+        directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/browserfiles'),
+        directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/data'),
+        directory('output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/plots')
     log:
         'log/output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/breakpointr.log'
     benchmark:
@@ -90,9 +82,12 @@ rule run_breakpointr:
         input_dir = lambda wildcards, input: os.path.dirname(input.bams[0]),
         output_dir = lambda wildcards, output: os.path.dirname(output[0]),
         script_dir = config['script_dir']
-    threads: 64
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 128,
+        mem_total_mb = config['num_cpu_high'] * 128
     shell:
-        '{params.script_dir}/run_breakpointr.R {params.input_dir} {input.cfg} {params.output_dir} {output} &> {log}'
+        '{params.script_dir}/run_breakpointr.R {params.input_dir} {input.cfg} {params.output_dir} {threads} {output} &> {log}'
 
 
 rule write_strandphaser_config_file:
@@ -101,7 +96,7 @@ rule write_strandphaser_config_file:
         reference = 'references/assemblies/{reference}.fasta'
     output:
         cfg = 'output/diploid_assembly/strandseq/config_files/{reference}/{sts_reads}/strandphaser.config'
-    threads: 64
+    threads: config['num_cpu_high']
     run:
         config_rows = [
             '[General]',
@@ -125,9 +120,7 @@ rule run_strandphaser:
         cfg = 'output/diploid_assembly/strandseq/config_files/{reference}/{sts_reads}/strandphaser.config',
         bams = collect_strandseq_alignments,  # from module: prepare_custom_references - SaaRclust
         wc_regions = 'output/diploid_assembly/strandseq/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
-        variant_calls = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf',
-        #seq_files = expand('reference/assemblies/{{references}}/sequences/{sequence}.seq',
-                           
+        variant_calls = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf'
     output:
         browser = directory('output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/browserFiles'),
         data = directory('output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/data'),
@@ -141,7 +134,10 @@ rule run_strandphaser:
         bcf = 'log/output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}.concat.log',
     benchmark:
         'run/output/strandseq_phased_variants/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}.phased.rsrc'
-    threads: 64
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 256,
+        mem_total_mb = config['num_cpu_high'] * 256
     wildcard_constraints:
         gq = '[0-9]+',
         dp = '[0-9]+',
@@ -254,7 +250,7 @@ rule strandseq_dga_haplo_tagging:
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagging.rsrc',
     conda:
-        "../environment/conda/wh_split.yml"
+        config['conda_env_whsplit']
     shell:
         "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
 
@@ -278,7 +274,7 @@ rule strandseq_dga_haplo_splitting:
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.rsrc',
     conda:
-        "../environment/conda/wh_split.yml"
+        config['conda_env_whsplit']
     wildcard_constraints:
         gq = '[0-9]+',
         dp = '[0-9]+',
@@ -310,7 +306,7 @@ rule strandseq_dga_haplo_tagging_pacbio_native:
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagging.pbn.rsrc',
     conda:
-        "../environment/conda/wh_split.yml"
+        config['conda_env_whsplit']
     shell:
         "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
 
@@ -335,7 +331,7 @@ rule strandseq_dga_haplo_splitting_pacbio_native:
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.pbn.rsrc',
     conda:
-        "../environment/conda/wh_split.yml"
+        config['conda_env_whsplit']
     wildcard_constraints:
         gq = '[0-9]+',
         dp = '[0-9]+',
@@ -344,7 +340,7 @@ rule strandseq_dga_haplo_splitting_pacbio_native:
         sts_reads = '[\w\-]+',
         hap_reads = '[\w\-]+'
     shell:
-        "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
+        "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.pbn_bam} {input.tags} &> {log}"
 
 
 rule strandseq_dga_merge_tag_groups_pacbio_native:
@@ -405,7 +401,10 @@ rule strandseq_dga_assemble_haplotypes_layout:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.layout.log',
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.layout.rsrc',
-    threads: 64
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 409600
     params:
         param_preset = lambda wildcards: config['wtdbg2_presets'][wildcards.hap_reads.rsplit('_', 1)[0]],
         out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0]
@@ -429,7 +428,10 @@ rule strandseq_dga_assemble_haplotypes_consensus:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.log',
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.rsrc',
-    threads: 64
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = 384,
+        mem_total_mb = 12288
     wildcard_constraints:
         gq = '[0-9]+',
         dp = '[0-9]+',

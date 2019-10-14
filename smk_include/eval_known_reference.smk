@@ -12,7 +12,7 @@ rule master_eval_known_reference:
     input:
 
 
-rule compute_assembly_delta_reference_custom:
+rule compute_assembly_delta_reference_squashed:
     input:
         known_ref = 'references/assemblies/{known}.fasta',
         custom_ref = 'references/assemblies/{custom}.fasta'
@@ -25,21 +25,15 @@ rule compute_assembly_delta_reference_custom:
     wildcard_constraints:
         known = 'GRCh38\w+',
         custom = '[\-\w]+'
-    threads: 12
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 65536
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.custom_ref} --delta={output.delta} &> {log}'
 
 
-rule gzip_delta_for_assemblytics:
-    input:
-        'output/evaluation/known_reference/mummer/{ref1}_vs_{ref2}.delta'
-    output:
-        'output/evaluation/known_reference/assemblytics/delta_upload/{ref1}_vs_{ref2}.delta.gz'
-    shell:
-        "gzip -c {input} > {output}"
-
-
-rule quast_analysis_reference_custom:
+rule quast_analysis_reference_squashed:
     input:
         known_ref = 'references/assemblies/{known}.fasta',
         custom_ref = 'references/assemblies/{custom}.fasta',
@@ -47,26 +41,25 @@ rule quast_analysis_reference_custom:
     output:
         pdf_report = 'output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}/report.pdf',
         html_icarus = 'output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}/icarus.html',
-    threads: 12
     log:
         'log/output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}/run.log',
     benchmark:
         'run/output/evaluation/known_reference/quastlg_busco/{custom}.{known}.{genemodel}/run.rsrc',
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 65536
     wildcard_constraints:
         known = 'GRCh38\w+',
         custom = '[\-\w]+'
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100
-    run:
-        exec = 'quast-lg.py --threads {threads}'
-        exec += ' -r {input.known_ref}'
-        exec += ' --features gene:{input.genes}'
-        exec += ' --conserved-genes-finding'
-        exec += ' --output-dir {params.output_dir}'
-        exec += ' {input.custom_ref}'
-        exec += ' &> {log}'
-        shell(exec)
+    shell:
+        'quast-lg.py --threads {threads} -r {input.known_ref}' \
+            ' --features gene:{input.genes} --conserved-genes-finding' \
+            ' --output-dir {params.output_dir} {input.custom_ref}' \
+            ' &> {log}'
 
 
 rule compute_assembly_delta_reference_canonical_haploid_assembly:
@@ -83,7 +76,10 @@ rule compute_assembly_delta_reference_canonical_haploid_assembly:
         'log/output/evaluation/known_reference/mummer/canonical.{var_callset}.{reference}.{vc_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.log',
     benchmark:
         'run/output/evaluation/known_reference/mummer/canonical.{var_callset}.{reference}.{vc_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.rsrc',
-    threads: 12
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 65536
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.haploid_assm} --delta={output.delta} &> {log}'
 
@@ -100,23 +96,22 @@ rule quast_analysis_reference_canonical_haploid_assembly:
     output:
         pdf_report = 'output/evaluation/known_reference/quastlg_busco/canonical.{var_callset}.{reference}.{vc_reads}.{hap_reads}.{hap}.{known}.{genemodel}/report.pdf',
         html_icarus = 'output/evaluation/known_reference/quastlg_busco/canonical.{var_callset}.{reference}.{vc_reads}.{hap_reads}.{hap}.{known}.{genemodel}/icarus.html'
-    threads: 12
     log:
         'log/output/evaluation/known_reference/quastlg_busco/canonical.{var_callset}.{reference}.{vc_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.log',
     benchmark:
         'run/output/evaluation/known_reference/quastlg_busco/canonical.{var_callset}.{reference}.{vc_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.rsrc',
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 65536
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100
     run:
-        exec = 'quast-lg.py --threads {threads}'
-        exec += ' -r {input.known_ref}'
-        exec += ' --features gene:{input.genes}'
-        exec += ' --conserved-genes-finding'
-        exec += ' --output-dir {params.output_dir}'
-        exec += ' {input.haploid_assm}'
-        exec += ' &> {log}'
-        shell(exec)
+        'quast-lg.py --threads {threads} -r {input.known_ref}' \
+            ' --features gene:{input.genes} --conserved-genes-finding' \
+            ' --output-dir {params.output_dir} {input.haploid_assm}' \
+            ' &> {log}'
 
 
 rule compute_assembly_delta_reference_strandseq_haploid_assembly:
@@ -134,7 +129,10 @@ rule compute_assembly_delta_reference_strandseq_haploid_assembly:
         'log/output/evaluation/known_reference/mummer/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.log',
     benchmark:
         'run/output/evaluation/known_reference/mummer/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}.{hap}.rsrc',
-    threads: 12
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 65536
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.haploid_assm} --delta={output.delta} &> {log}'
 
@@ -152,23 +150,22 @@ rule quast_analysis_reference_strandseq_haploid_assembly:
     output:
         pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/report.pdf',
         html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/icarus.html'
-    threads: 12
     log:
         'log/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.log',
     benchmark:
         'run/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{hap}.{known}.{genemodel}/run.rsrc',
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 65536
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100
     run:
-        exec = 'quast-lg.py --threads {threads}'
-        exec += ' -r {input.known_ref}'
-        exec += ' --features gene:{input.genes}'
-        exec += ' --conserved-genes-finding'
-        exec += ' --output-dir {params.output_dir}'
-        exec += ' {input.haploid_assm}'
-        exec += ' &> {log}'
-        shell(exec)
+        'quast-lg.py --threads {threads} -r {input.known_ref}' \
+            ' --features gene:{input.genes} --conserved-genes-finding' \
+            ' --output-dir {params.output_dir} {input.haploid_assm}' \
+            ' &> {log}'
 
 
 rule quast_analysis_reference_strandseq_polished_haploid_assembly:
@@ -184,11 +181,14 @@ rule quast_analysis_reference_strandseq_polished_haploid_assembly:
     output:
         pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
         html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/icarus.html'
-    threads: 12
     log:
         'log/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/run.log',
     benchmark:
         'run/output/evaluation/known_reference/quastlg_busco/strandseq.{var_callset}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/run.rsrc',
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 65536
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     wildcard_constraints:
@@ -201,11 +201,7 @@ rule quast_analysis_reference_strandseq_polished_haploid_assembly:
         var_callset = '\w+'
     priority: 100
     run:
-        exec = 'quast-lg.py --threads {threads}'
-        exec += ' -r {input.known_ref}'
-        exec += ' --features gene:{input.genes}'
-        exec += ' --conserved-genes-finding'
-        exec += ' --output-dir {params.output_dir}'
-        exec += ' {input.haploid_assm}'
-        exec += ' &> {log}'
-        shell(exec)
+        'quast-lg.py --threads {threads} -r {input.known_ref}' \
+            ' --features gene:{input.genes} --conserved-genes-finding' \
+            ' --output-dir {params.output_dir} {input.haploid_assm}' \
+            ' &> {log}'
