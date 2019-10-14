@@ -3,6 +3,8 @@ include: 'smk_include/handle_data_download.smk'
 include: 'smk_include/results_child.smk'
 include: 'smk_include/results_parents.smk'
 
+localrules: master
+
 rule master:
     input:
         # this triggers a checkpoint
@@ -10,7 +12,6 @@ rule master:
         expand('input/fastq/strand-seq/{individual}_{bioproject}/requests',
                 individual=['HG00733', 'HG00732', 'HG00731'],
                 bioproject=['PRJEB12849']),
-
         rules.master_results_child.input,
         rules.master_results_parents.input
 
@@ -35,11 +36,15 @@ def make_log_useful(log_path, status):
 
 onsuccess:
     make_log_useful(log, 'SUCCESS')
-    if config['notify']:
+    import socket
+    host = socket.gethostname()
+    if config['notify'] and 'bibigrid' not in host:
         shell('mail -s "[Snakemake] DGA - SUCCESS" {} < {{log}}'.format(config['notify_email']))
 
 
 onerror:
     make_log_useful(log, 'ERROR')
-    if config['notify']:
+    import socket
+    host = socket.gethostname()
+    if config['notify'] and 'bibigrid' not in host:
         shell('mail -s "[Snakemake] DGA - ERRROR" {} < {{log}}'.format(config['notify_email']))
