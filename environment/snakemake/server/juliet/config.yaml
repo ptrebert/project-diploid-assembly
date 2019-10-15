@@ -1,0 +1,10 @@
+# Default runtime profile for temp. infrastructure / JULIET
+
+directory: /TM_beegfs/projects/diploid-genome-assembly/pebert
+cores: 40
+latency-wait: 5
+keep-going: True
+rerun-incomplete: True
+restart-times: 2
+resources:
+  mem_mb=515072

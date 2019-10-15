@@ -1,0 +1,10 @@
+# Default runtime profile for temp. infrastructure / ARIEL
+
+directory: /TM_beegfs/projects/diploid-genome-assembly/pebert
+cores: 12
+latency-wait: 5
+keep-going: True
+rerun-incomplete: False
+restart-times: 1
+resources:
+  mem_mb=257024

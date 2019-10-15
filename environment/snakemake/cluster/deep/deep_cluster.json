@@ -1,0 +1,19 @@
+{
+  "__default__": {
+    "clusterSpec": " -V -S /bin/bash -l h_vmem=32G,slots_free=4,mem_free=8G",
+    "jobName": "{rule}__defaultSpec__"
+  },
+  "arrow_contig_polishing_pass1": {
+    "clusterSpec": " -V -S /bin/bash -l h_vmem=124G,slots_free=16,mem_free=80G",
+    "jobName": "{rule}_arpol1"
+  },
+  "racon_contig_polishing_pass1": {
+    "clusterSpec": " -V -S /bin/bash -l h_vmem=124G,slots_free=8,mem_free=80G",
+    "jobName": "{rule}_rcpol1"
+  },
+  "quast_analysis_reference_strandseq_polished_haploid_assembly": {
+    "clusterSpec": " -V -S /bin/bash -l h_vmem=124G,slots_free=12,mem_free=80G",
+    "jobName": "{rule}_quast"
+  }
+}
+

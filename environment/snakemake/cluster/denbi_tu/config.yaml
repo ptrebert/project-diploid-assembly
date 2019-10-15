@@ -1,0 +1,14 @@
+# Default runtime profile for deNBI Tuebingen infrastructure / SLURM cluster
+
+directory: /mnt/vol/gridshare/projects/diploid-assembly
+cluster: " sbatch --export=ALL --cpus-per-task={cluster.cores} --mem-per-cpu={cluster.mem_mb}M --job-name={cluster.name} --output={cluster.output} --error={cluster.error} "
+cluster-config: /mnt/vol/gridshare/user/code/project-diploid-assembly/environment/snakemake/cluster/denbi_tu/denbi_cluster.json
+local-cores: 2
+jobs: 200
+latency-wait: 1
+keep-going: True
+rerun-incomplete: False
+restart-times: 1
+default-resources:
+  - mem_per_cpu_mb=2048
+  - mem_total_mb=4096

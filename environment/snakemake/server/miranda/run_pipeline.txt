@@ -1,0 +1,3 @@
+# Execute in Snakefile folder
+
+snakemake --profile environment/snakemake/miranda --configfile snake_config.yml --use-conda --nolock

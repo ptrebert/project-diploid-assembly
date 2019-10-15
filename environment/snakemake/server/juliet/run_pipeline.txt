@@ -1,0 +1,3 @@
+# Execute in Snakefile folder
+
+snakemake [--snakefile smk_include/variant_calling.smk] --profile environment/snakemake/juliet --configfile snake_config.yml --use-conda --nolock
