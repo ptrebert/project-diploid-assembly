@@ -24,7 +24,7 @@ wildcard_constraints:
     # HAP = haplotype, read set that is tagged and split by haplotype
     hap_reads = '[A-Za-z0-9_\-]+',
     # POL = polishing, read set used for polishing (aligned against contigs to be polished)
-    pol_reads = '[A-Za-z0-9_\-]',
+    pol_reads = '[A-Za-z0-9_\-]+',
     # allowed variant callers
     var_caller = '(freebayes|longshot|deepvar)',
     # allowed assembly tools
