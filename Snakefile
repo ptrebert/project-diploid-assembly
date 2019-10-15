@@ -1,6 +1,8 @@
 
 include: 'smk_include/handle_data_download.smk'
+include: 'smk_include/preprocess_references.smk'
 include: 'smk_include/prepare_custom_references.smk'
+include: 'smk_include/variant_calling.smk'
 include: 'smk_include/canonical_dga.smk'
 include: 'smk_include/strandseq_dga.smk'
 include: 'smk_include/arrow_polishing.smk'
