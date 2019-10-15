@@ -1,4 +1,8 @@
 
+include: 'canonical_dga.smk'
+include: 'strandseq_dga.smk'
+include: 'arrow_polishing.smk'
+include: 'racon_polishing.smk'
 include: 'eval_known_reference.smk'
 include: 'eval_variant_calls.smk'
 
