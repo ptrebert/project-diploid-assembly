@@ -4,6 +4,7 @@ include: 'preprocess_input.smk'
 include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'canonical_dga.smk'
+include: 'strandseq_dga.smk'
 
 localrules: master_run_alignments
 
