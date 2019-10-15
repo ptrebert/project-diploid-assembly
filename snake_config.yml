@@ -9,6 +9,39 @@ reference_sources: /home/pebert/work/code/github/project-diploid-assembly/annota
 
 ref_cache_folder: references/cache
 
+# === Software setup settings ===
+# Specify git commits for SaaRclust
+# and StrandPhaseR setup
+git_commit_saarclust: 3bb6bc0
+git_commit_strandphaser: e8913f3
+# arbitrarily tying a version number
+# to the git commits to avoid additional
+# wildcards - increment this number when
+# git commits are changed!
+git_commit_version: 3
+
+# YAML Conda environments can only be used
+# if the Conda installations lives on the same
+# file system as the Snakemake working
+# directory (where the Snakemake-internal
+# Conda envs will be created)
+# see: bitbucket.org/snakemake/snakemake/issues/1266/add-copy-option-for-conda-env
+# Replace .txt with .yml depending on system
+conda_env_pbtools: "../environment/conda/conda_pbtools.yml"
+conda_env_whsplit: "../environment/conda/wh_split.yml"
+
+run_env: denbi_tu
+num_cpu_high: 36
+num_cpu_medium: 12
+num_cpu_low: 6
+
+# System-specific binaries for tools requiring certain
+# CPU instruction sets - otherwise, just give name of
+# tool to be found in $PATH
+# racon_binary: /home/pebert/work/code/github/project-diploid-assembly/scripts/racon_no_avx
+racon_binary: racon
+
+
 samples:
   - HG00733_hpg_ontpm-ul
   - HG00733_sra_pbsq1-clr
@@ -30,6 +63,9 @@ complete_samples:
 
 partial_samples:
   - HG00733_hpg_ontpm-ul
+  - HG00733_hgsvc_pbsq2-ccs
+  - HG00732_hgsvc_pbsq2-ccs
+  - HG00731_hgsvc_pbsq2-ccs
 
 strandseq_samples:
   - HG00733_1kg_il25k-npe
@@ -44,29 +80,15 @@ strandseq_samples:
 # wildcard for clustered assemblies
 # throughout the rest of the pipeline
 strandseq_to_assembly:
-  HG00733_sra_pbsq1-clr_sqa: HG00733_1kg_il25k-npe_sseg
-  HG00731_hgsvc_pbsq2-ccs_sqa: HG00731_1kg_il25k-npe_sseg
-  HG00732_hgsvc_pbsq2-ccs_sqa: HG00732_1kg_il25k-npe_sseg
-  HG00733_hgsvc_pbsq2-ccs_sqa: HG00733_1kg_il25k-npe_sseg
+  HG00733_sra_pbsq1-clr: HG00733_1kg_il25k-npe_sseg
+  HG00731_hgsvc_pbsq2-ccs: HG00731_1kg_il25k-npe_sseg
+  HG00732_hgsvc_pbsq2-ccs: HG00732_1kg_il25k-npe_sseg
+  HG00733_hgsvc_pbsq2-ccs: HG00733_1kg_il25k-npe_sseg
 
 strandseq_to_bioproject:
   HG00733_1kg_il25k-npe: PRJEB12849
   HG00732_1kg_il25k-npe: PRJEB12849
   HG00731_1kg_il25k-npe: PRJEB12849
-
-wtdbg2_presets:
-  HG00733_hpg_ontpm-ul: ont
-  HG00733_sra_pbsq1-clr: sq
-  HG00733_hgsvc_pbsq2-ccs: ccs
-  HG00732_hgsvc_pbsq2-ccs: ccs
-  HG00731_hgsvc_pbsq2-ccs: ccs
-
-pbmm2_presets:
-  HG00733_sra_pbsq1-clr: SUBREAD
-  HG00733_hgsvc_pbsq2-ccs: CCS
-  HG00732_hgsvc_pbsq2-ccs: CCS
-  HG00731_hgsvc_pbsq2-ccs: CCS
-  HG002_pbio_pbsq2-clr: SUBREAD
 
 # SaaRclust parameter sets
 # to obtain 24 clusters
@@ -84,18 +106,35 @@ saarclust_step_size:
   HG00732_hgsvc_pbsq2-ccs_sqa: 50000
   HG00733_hgsvc_pbsq2-ccs_sqa: 0
 
-# variant postprocessing
-# parameters
+# === Parameter presets for alignment tools ===
+wtdbg2_presets:
+  HG00733_hpg_ontpm-ul: ont
+  HG00733_sra_pbsq1-clr: sq
+  HG00733_hgsvc_pbsq2-ccs: ccs
+  HG00732_hgsvc_pbsq2-ccs: ccs
+  HG00731_hgsvc_pbsq2-ccs: ccs
+
+pbmm2_presets:
+  HG00733_sra_pbsq1-clr: SUBREAD
+  HG00733_hgsvc_pbsq2-ccs: CCS
+  HG00732_hgsvc_pbsq2-ccs: CCS
+  HG00731_hgsvc_pbsq2-ccs: CCS
+  HG002_pbio_pbsq2-clr: SUBREAD
+
+# VARIANT CALLING
+# Postprocessing parameters
 filter_vcf_gq:
-  - 100
+  freebayes: 100
 
 filter_vcf_dp:
-  - 50
+  freebayes: 50
+
+freebayes_timeout_sec: 3600
 
 # main chromosomes to be used
 # for known references for main
 # pipeline steps (i.e., everything
-# before evaluation
+# before evaluation)
 main_chromosomes:
   - chr1
   - chr2
