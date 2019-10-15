@@ -38,7 +38,7 @@ num_cpu_low: 6
 # System-specific binaries for tools requiring certain
 # CPU instruction sets - otherwise, just give name of
 # tool to be found in $PATH
-# racon_binary: /home/pebert/work/code/github/project-diploid-assembly/scripts/racon_no_avx
+# racon_binary w/o AVX: /home/pebert/work/code/github/external/racon/build/bin/racon_wrapper
 racon_binary: racon
 
 
