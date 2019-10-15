@@ -3,10 +3,10 @@ channels:
   - conda-forge
   - bioconda
   - r
-  - asmeurer  # needed for GLIBC
+#  - asmeurer  # needed for GLIBC
 dependencies:
   - Python=3.6.*
-  - glibc=2.19  # Quast-BUSCO (Augustus) req. >= 2.14
+#  - glibc=2.19  # Quast-BUSCO (Augustus) req. >= 2.14
   - pip=19.2.3
   - wget=1.19.4
   - numpy=1.17.1

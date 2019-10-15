@@ -372,7 +372,7 @@ rule strandseq_dga_merge_tag_groups:
         hap = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{haplotype}.fastq.gz',
         un = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.un.fastq.gz',
     output:
-        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{hap}-un.fastq.gz',
+        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{haplotype}-un.fastq.gz',
     wildcard_constraints:
         haplotype = '(1|2)'
     shell:
@@ -389,14 +389,6 @@ rule strandseq_dga_assemble_haplotypes_wtdbg_layout:
         fastq = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.fastq.gz',
     output:
         layout = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/layout/wtdbg2/{hap_reads}.{hap}.ctg.lay.gz',
-    wildcard_constraints:
-        gq = '[0-9]+',
-        dp = '[0-9]+',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        sts_reads = '[\w\-]+',
-        hap_reads = '[\w\-]+',
-        hap = '[h12un\-]+'
     log:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}-wtdbg.{hap}.layout.log',
     benchmark:
@@ -419,7 +411,7 @@ rule strandseq_dga_assemble_haplotypes_wtdbg_consensus:
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        layout = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/layout/wtdbg/{hap_reads}.{hap}.ctg.lay.gz',
+        layout = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/layout/wtdbg2/{hap_reads}.{hap}.ctg.lay.gz',
     output:
         'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-wtdbg.{hap}.fasta',
     wildcard_constraints:

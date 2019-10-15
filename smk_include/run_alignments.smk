@@ -64,13 +64,13 @@ rule pbmm2_reads_to_reference_alignment:
         'run/output/alignments/reads_to_reference/{sample}_map-to_{reference}.pbn.rsrc'
     conda:
         config['conda_env_pbtools']
-    threads: config['cpu_mem_high']
+    threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 3072,
         mem_total_mb = 94208,
     params:
-        align_threads = config['cpu_mem_high'] - config['cpu_mem_low'],
-        sort_threads = config['cpu_mem_low'],
+        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
+        sort_threads = config['num_cpu_low'],
         sort_memory_mb = 3072,  # also per thread
         param_preset = lambda wildcards: config['pbmm2_presets'][wildcards.sample.rsplit('_', 1)[0]],
         individual = lambda wildcards: wildcards.sample.split('_')[0]
@@ -170,13 +170,13 @@ rule pbmm2_strandseq_polish_alignment_pass1:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.arrow-p1.rsrc'
     conda:
         config['conda_env_pbtools']
-    threads: config['cpu_mem_high']
+    threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 3072,
         mem_total_mb = 94208,
     params:
-        align_threads = config['cpu_mem_high'] - config['cpu_mem_low'],
-        sort_threads = config['cpu_mem_low'],
+        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
+        sort_threads = config['num_cpu_low'],
         sort_memory_mb = 3072,  # also per thread
         param_preset = lambda wildcards: config['pbmm2_presets'][wildcards.pol_reads.rsplit('_', 1)[0]],
         individual = lambda wildcards: wildcards.pol_reads.split('_')[0]

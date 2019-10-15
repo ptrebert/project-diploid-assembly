@@ -56,8 +56,6 @@ rule filter_squashed_assembly_by_size:
     params:
         scriptdir = config['script_dir'],
         min_contig_size = config['min_contig_size'],
-        # because of hard-coded 100kb in filename...
-        check_size = lambda wildcards: assert 99999 < int(config['min_contig_size']) < 100001
     shell:
         '{params.scriptdir}/filter_squashed_assembly.py --debug --input-fasta {input}' \
             ' --output-fasta {output.fasta} --output-metrics {output.stats}' \
@@ -132,7 +130,7 @@ rule samtools_position_sort_strandseq_reads:
         temp('output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.psort.sam.bam')
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = 2048
+        mem_per_cpu_mb = 2048,
         mem_total_mb = config['num_cpu_low'] * 2048
     shell:
         'samtools sort -m {resources.mem_per_cpu_mb}M --threads {threads} -o {output} {input}'
@@ -259,14 +257,14 @@ def collect_clustered_fasta_sequences(wildcards):
 
     sqa_assembly = wildcards.reference + '_sqa-' + wildcards.assembler
 
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(reference=wildcards.sqa_assembly).output[0]
+    seq_output_dir = checkpoints.create_assembly_sequence_files.get(reference=sqa_assembly).output[0]
     checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
     saarclust_output_dir = 'output/saarclust/results/{reference}/{sts_reads}/clustered_assembly/{sequence}.fasta'
 
     cluster_fasta = expand(
         saarclust_output_dir,
-        reference=sqa_reference,
+        reference=sqa_assembly,
         sts_reads=strandseq_reads,
         cluster_id=checkpoint_wildcards.sequence
         )

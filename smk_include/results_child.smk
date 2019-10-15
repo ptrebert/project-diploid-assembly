@@ -1,7 +1,6 @@
 
 include: 'eval_known_reference.smk'
 include: 'eval_variant_calls.smk'
-include: 'arrow_polishing.smk'
 
 localrules: master_results_child
 
@@ -19,7 +18,7 @@ rule master_results_child:
         - HG002_v20_pbsq2-ccs_1520.fastq.gz
     """
     input:
-       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
+       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
                var_caller=['freebayes'],
                assembler=['wtdbg'],
                gq=config['filter_vcf_gq']['freebayes'],
@@ -35,7 +34,7 @@ rule master_results_child:
                genemodel=['GRCh38_GENCODEv31_basic']
                ),
 
-       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
+       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
                var_caller=['freebayes'],
                assembler=['wtdbg'],
                gq=config['filter_vcf_gq']['freebayes'],
@@ -51,7 +50,7 @@ rule master_results_child:
                genemodel=['GRCh38_GENCODEv31_basic']
                ),
 
-       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
+       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
                var_caller=['freebayes'],
                assembler=['wtdbg'],
                gq=config['filter_vcf_gq']['freebayes'],

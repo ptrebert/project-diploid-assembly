@@ -20,7 +20,7 @@ wildcard_constraints:
     # allowed variant callers
     var_caller = '(freebayes|longshot|deepvar)',
     # allowed assembly tools
-    assembler = '(wtdbg|canu|flye|pereg)'
+    assembler = '(wtdbg|canu|flye|pereg)',
     # GQ / DP = genotype quality / depth at position
     gq = '[0-9]+',
     dp = '[0-9]+',

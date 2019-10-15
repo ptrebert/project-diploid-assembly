@@ -15,7 +15,7 @@ rule master_results_parents:
         - HG00732_hgsvc_pbsq2-ccs_1000.fastq.gz
     """
     input:
-       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
+       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
                var_caller=['freebayes'],
                assembler=['wtdbg'],
                gq=config['filter_vcf_gq']['freebayes'],
@@ -31,7 +31,7 @@ rule master_results_parents:
                genemodel=['GRCh38_GENCODEv31_basic']
                ),
 
-       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
+       expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
                var_caller=['freebayes'],
                assembler=['wtdbg'],
                gq=config['filter_vcf_gq']['freebayes'],
