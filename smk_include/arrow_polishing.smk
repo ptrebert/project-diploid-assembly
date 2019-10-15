@@ -1,4 +1,8 @@
+
+include: 'canonical_dga.smk'
+include: 'strandseq_dga.smk'
 include: 'aux_utilities.smk'
+include: 'run_alignments.smk'
 
 checkpoint create_haploid_assembly_sequence_files:
     input:

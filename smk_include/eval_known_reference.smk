@@ -5,6 +5,7 @@ include: 'variant_calling.smk'
 include: 'canonical_dga.smk'
 include: 'strandseq_dga.smk'
 include: 'racon_polishing.smk'
+include: 'arrow_polishing.smk'
 
 localrules: master_eval_known_reference
 

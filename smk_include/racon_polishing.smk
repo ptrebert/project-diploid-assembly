@@ -1,4 +1,6 @@
 
+include: 'canonical_dga.smk'
+include: 'strandseq_dga.smk'
 include: 'run_alignments.smk'
 
 rule racon_contig_polishing_pass1:
