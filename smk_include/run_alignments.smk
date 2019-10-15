@@ -115,14 +115,14 @@ rule racon_strandseq_polish_alignment_pass1:
     pol_reads = FASTQ file used for Racon contig polishing
     """
     input:
-        reads = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.fastq.gz',
-        contigs = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
+        reads = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.fastq.gz',
+        contigs = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
     output:
-        sam = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.racon-p1.psort.sam',
+        sam = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.psort.sam',
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.racon-p1.log'
+        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.log'
     benchmark:
-        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.racon-p1.rsrc'
+        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.rsrc'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 768,
