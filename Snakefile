@@ -1,5 +1,6 @@
 
 include: 'smk_include/handle_data_download.smk'
+include: 'smk_include/prepare_custom_references.smk'
 include: 'smk_include/results_child.smk'
 include: 'smk_include/results_parents.smk'
 
