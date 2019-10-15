@@ -12,15 +12,6 @@ rule racon_contig_polishing_pass1:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.racon-p1.log'
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.racon-p1.rsrc'
-    wildcard_constraints:
-        gq = '[0-9]+',
-        dp = '[0-9]+',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        sts_reads = '[\w\-]+',
-        hap_reads = '[\w\-]+',
-        pol_reads = '[\w\-]+',
-        hap = '[h12un\-]+',
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = 14336,

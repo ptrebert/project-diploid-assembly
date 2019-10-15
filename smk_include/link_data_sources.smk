@@ -1,14 +1,14 @@
 
 localrules: link_hgsvc_sequel2_ccs_fastq_data, link_hgsvc_sequel2_ccs_bam_data
 
-rule link_hgsvc_sequel2_ccs_fastq_data:
+checkpoint link_hgsvc_sequel2_ccs_fastq_data:
     output:
         HG00731 = expand('input/fastq/partial/parts/HG00731_hgsvc_pbsq2-ccs.part{num}.fastq.gz',
                             num=list(range(1, 6))),
         HG00732 = expand('input/fastq/partial/parts/HG00732_hgsvc_pbsq2-ccs.part{num}.fastq.gz',
                             num=list(range(1, 7))),
         HG00733 = expand('input/fastq/partial/parts/HG00733_hgsvc_pbsq2-ccs.part{num}.fastq.gz',
-                            num=list(range(1, 7)))
+                            num=list(range(1, 8)))
     run:
         if config['run_env'] == 'denbi_tu':
             base_input = '/mnt/vol/gridshare/data/PUR_trio_Pacbio-Sequel2'
@@ -61,14 +61,14 @@ rule link_hgsvc_sequel2_ccs_fastq_data:
                     os.symlink(source_file, target_file)
 
 
-rule link_hgsvc_sequel2_ccs_bam_data:
+checkpoint link_hgsvc_sequel2_ccs_bam_data:
     output:
         HG00731 = expand('input/bam/partial/parts/HG00731_hgsvc_pbsq2-ccs.part{num}.pbn.bam',
                             num=list(range(1, 6))),
         HG00732 = expand('input/bam/partial/parts/HG00732_hgsvc_pbsq2-ccs.part{num}.pbn.bam',
                             num=list(range(1, 7))),
         HG00733 = expand('input/bam/partial/parts/HG00733_hgsvc_pbsq2-ccs.part{num}.pbn.bam',
-                            num=list(range(1, 7)))
+                            num=list(range(1, 8)))
     run:
         if config['run_env'] == 'denbi_tu':
             base_input = '/mnt/vol/gridshare/data/PUR_trio_Pacbio-Sequel2'

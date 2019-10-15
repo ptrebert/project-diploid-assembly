@@ -118,17 +118,17 @@ rule canonical_dga_merge_tag_groups:
     hap_reads = FASTQ file to be used for haplotype reconstruction
     """
     input:
-        hap = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.h{hap}.fastq.gz',
+        hap = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.h{haplotype}.fastq.gz',
         un = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.un.fastq.gz',
     output:
-        'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.h{hap}-un.fastq.gz',
+        'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.h{haplotype}-un.fastq.gz',
     wildcard_constraints:
-        hap = '(1|2)'
+        haplotype = '(1|2)'
     shell:
         'cat {input.hap} {input.un} > {output}'
 
 
-rule canonical_dga_assemble_haplotypes_layout:
+rule canonical_dga_assemble_haplotypes_wtdbg_layout:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     hap_reads = FASTQ file to be used for haplotype reconstruction
@@ -136,13 +136,11 @@ rule canonical_dga_assemble_haplotypes_layout:
     input:
         fastq = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.{hap}.fastq.gz',
     output:
-        layout = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/layout/{hap_reads}.{hap}.ctg.lay.gz',
-    wildcard_constraints:
-        haplotype = '[h12\-un]+'
+        layout = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/layout/wtdbg2/{hap_reads}.{hap}.ctg.lay.gz',
     log:
-        'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.{hap}.layout.log',
+        'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/wtdbg2/{hap_reads}.{hap}.layout.log',
     benchmark:
-        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.{hap}.layout.rsrc',
+        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/wtdbg2/{hap_reads}.{hap}.layout.rsrc',
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 6144,
@@ -160,15 +158,13 @@ rule canonical_dga_assemble_haplotypes_consensus:
     hap_reads = FASTQ file to be used for haplotype reconstruction
     """
     input:
-        layout = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/layout/{hap_reads}.{hap}.ctg.lay.gz',
+        layout = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/layout/wtdbg2/{hap_reads}.{hap}.ctg.lay.gz',
     output:
-        'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}.{hap}.fasta',
-    wildcard_constraints:
-        hap = '[h12\-un]+'
+        'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-wtdbg.{hap}.fasta',
     log:
-        'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}.{hap}.log',
+        'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-wtdbg.{hap}.log',
     benchmark:
-        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}.{hap}.rsrc',
+        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-wtdbg.{hap}.rsrc',
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 384,

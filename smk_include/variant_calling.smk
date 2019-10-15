@@ -41,10 +41,6 @@ rule compute_uniform_coverage_regions:
         'log/output/alignments/reads_to_reference/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.log'
     benchmark:
         'run/output/alignments/reads_to_reference/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.rsrc'
-    wildcard_constraints:
-        vc_reads = '[\w\-]+',
-        reference = '[\w\-]+',
-        sequence = '\w+'
     params:
         num_regions = 128,
         script_dir = config['script_dir']
@@ -75,12 +71,8 @@ rule call_variants_freebayes_parallel:
         'log/output/variant_calls/freebayes/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.parallel.log'
     benchmark:
         'run/output/variant_calls/freebayes/{reference}/split_by_seq/norm/{vc_reads}.{sequence}.rsrc'
-    wildcard_constraints:
-        vc_reads = '[\w\-]+',
-        reference = '[\w\-]+',
-        sequence = '\w+'
     params:
-        timeout = 2700,  # timeout in seconds
+        timeout = config['freebayes_timeout_sec'],
         script_dir = config['script_dir']
     threads: config['num_cpu_medium']
     resources:
@@ -153,10 +145,6 @@ rule quality_filter_variant_calls:
         'log/output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_qual_type/{vc_reads}.{sequence}.log'
     benchmark:
         'run/output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_qual_type/{vc_reads}.{sequence}.rsrc'
-    wildcard_constraints:
-        vc_reads = '[\w\-]+',
-        reference = '[\w\-]+',
-        sequence = '\w+'
     run:
         exec = "bcftools filter"
         exec += " --include \'QUAL>=10\' {input.vcf}"
@@ -252,8 +240,6 @@ rule extract_heterozygous_variants:
         vcf = 'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_{filter_type}/{vc_reads}.{sequence}.vcf',
     output:
         'output/variant_calls/{var_caller}/{reference}/split_by_seq/filter_{filter_type}/{vc_reads}.{sequence}.het-only.vcf',
-    wildcard_constraints:
-        vc_reads = '[\w\-]+'
     shell:
         'bcftools view --genotype het --output-type v --output-file {output} {input.vcf}'
 
@@ -284,11 +270,5 @@ rule merge_sequence_vcf_files:
         vcf_files = collect_sequence_vcf_files
     output:
         'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf',
-    wildcard_constraints:
-        var_caller = '(freebayes|longshot)',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        dp = '[0-9]+',
-        gq = '[0-9]+'
     shell:
         'bcftools concat --output {output} --output-type v {input.vcf_files}'

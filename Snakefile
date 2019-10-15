@@ -5,6 +5,31 @@ include: 'smk_include/results_parents.smk'
 
 localrules: master
 
+# Global wildcard constraints for consistent naming
+wildcard_constraints:
+    # Reference genome or assembly
+    reference = '[A-Za-z0-9_\-]+',
+    # STS = STrand-Seq reads used for clustering and integrative phasing
+    sts_reads = '[A-Za-z0-9_\-]+',
+    # VC = variant calling, read set used for variant calling
+    vc_reads = '[A-Za-z0-9_\-]+',
+    # HAP = haplotype, read set that is tagged and split by haplotype
+    hap_reads = '[A-Za-z0-9_\-]+',
+    # POL = polishing, read set used for polishing (aligned against contigs to be polished)
+    pol_reads = '[A-Za-z0-9_\-]',
+    # allowed variant callers
+    var_caller = '(freebayes|longshot|deepvar)',
+    # allowed assembly tools
+    assembler = '(wtdbg|canu|flye|pereg)'
+    # GQ / DP = genotype quality / depth at position
+    gq = '[0-9]+',
+    dp = '[0-9]+',
+    # haplotype identifier
+    hap = '[h12un\-]+',
+    # sequence = chromosome, contig, cluster etc.
+    sequence = '[A-Za-z0-9]+'
+
+
 rule master:
     input:
         # this triggers a checkpoint
@@ -14,7 +39,6 @@ rule master:
                 bioproject=['PRJEB12849']),
         rules.master_results_child.input,
         rules.master_results_parents.input
-
 
     message: 'Executing ALL'
 

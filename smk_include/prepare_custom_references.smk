@@ -32,9 +32,9 @@ rule compute_wtdbg_squashed_assembly_consensus:
     input:
         layout = 'references/assemblies/squashed_layout/wtdbg2/{sample}/{sample}.ctg.lay.gz'
     output:
-        squashed_assembly = 'references/assemblies/{sample}_sqa.fasta'
-    log: 'log/references/assemblies/{sample}_sqa.consensus.log'
-    benchmark: 'run/references/assemblies/{sample}_sqa.consensus.rsrc'
+        squashed_assembly = 'references/assemblies/{sample}_sqa-wtdbg.fasta'
+    log: 'log/references/assemblies/{sample}_sqa-wtdbg.consensus.log'
+    benchmark: 'run/references/assemblies/{sample}_sqa-wtdbg.consensus.rsrc'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 384,
@@ -45,14 +45,14 @@ rule compute_wtdbg_squashed_assembly_consensus:
 
 rule filter_squashed_assembly_by_size:
     input:
-        'references/assemblies/{sample}_{assembly_type}.fasta'
+        'references/assemblies/{sample}_{assembly_type}-{assembler}.fasta'
     output:
-        fasta = 'references/assemblies/{sample}_{assembly_type}-100kb.fasta',
-        stats = 'output/statistics/assemblies/{sample}_{assembly_type}-100kb.stats.tsv'
+        fasta = 'references/assemblies/{sample}_{assembly_type}-{assembler}-100kb.fasta',
+        stats = 'output/statistics/assemblies/{sample}_{assembly_type}-{assembler}-100kb.stats.tsv'
     log:
-        'log/references/assemblies/{sample}_{assembly_type}-100kb.log'
+        'log/references/assemblies/{sample}_{assembly_type}-{assembler}-100kb.log'
     wildcard_constraints:
-        assembly_type = '(sqa|clustV[0-9])'
+        assembly_type = '(sqa|scV[0-9])',
     params:
         scriptdir = config['script_dir'],
         min_contig_size = config['min_contig_size'],
@@ -245,9 +245,6 @@ rule run_saarclust_assembly_clustering:
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192
-    wildcard_constraints:
-        reference = '[\w\-]+',
-        sts_reads = '[\w\-]+'
     params:
         script_dir = config['script_dir'],
         bam_folder = lambda wildcards, input: os.path.dirname(input.bam[0])
@@ -258,11 +255,11 @@ rule run_saarclust_assembly_clustering:
 def collect_clustered_fasta_sequences(wildcards):
     """
     """
-    # if this lookup fails, input seems not to be a squashed assembly
-    sqa_reference = wildcards.reference + '_sqa'
-    strandseq_reads = config['strandseq_to_assembly'][sqa_reference]
+    strandseq_reads = config['strandseq_to_assembly'][wildcards.reference]
 
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(reference=sqa_reference).output[0]
+    sqa_assembly = wildcards.reference + '_sqa-' + wildcards.assembler
+
+    seq_output_dir = checkpoints.create_assembly_sequence_files.get(reference=wildcards.sqa_assembly).output[0]
     checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
     saarclust_output_dir = 'output/saarclust/results/{reference}/{sts_reads}/clustered_assembly/{sequence}.fasta'
@@ -277,13 +274,11 @@ def collect_clustered_fasta_sequences(wildcards):
     return sorted(cluster_fasta)
 
 
-rule merge_fasta_clusters:
+rule merge_reference_fasta_clusters:
     input:
         fasta = collect_clustered_fasta_sequences
     output:
-        expand('references/assemblies/{{reference}}_clustV{version}.fasta',
+        expand('references/assemblies/{{reference}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
-    wildcard_constraints:
-        reference = '[\w\-]+'
     shell:
         'cat {input} > {output}'

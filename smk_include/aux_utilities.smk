@@ -105,8 +105,6 @@ checkpoint create_assembly_sequence_files:
         'references/assemblies/{reference}.fasta.fai'
     output:
         directory('references/assemblies/{reference}/sequences')
-    wildcard_constraints:
-        reference = '[\-\w]+'
     run:
         output_dir = output[0]
         os.makedirs(output_dir, exist_ok=True)

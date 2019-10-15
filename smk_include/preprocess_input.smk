@@ -8,14 +8,13 @@ localrules: master_preprocess_input
 rule master_preprocess_input:
     input:
         rules.master_handle_data_download.input,
-        rules.ex_nihilo_input_injections.output
 
 
 def collect_fastq_input_parts(wildcards):
 
+    linked_input = checkpoints.link_hgsvc_sequel2_ccs_fastq_data.get().output
+
     base_path = 'input/fastq/partial/parts'
-    if not os.path.isdir(base_path):
-        return []
 
     sample = wildcards.sample
 
@@ -23,9 +22,6 @@ def collect_fastq_input_parts(wildcards):
     relevant_parts = list(filter(lambda x: sample in x and x.endswith('fastq.gz'), all_part_files))
 
     relevant_parts = [os.path.join(base_path, f) for f in relevant_parts]
-
-    if len(relevant_parts) == 0:
-        raise RuntimeError('Empty input')
 
     return sorted(relevant_parts)
 
@@ -89,9 +85,9 @@ rule merge_strandseq_libraries:
 
 def collect_pacbio_bam_input_parts(wildcards):
 
+    linked_input = checkpoints.link_hgsvc_sequel2_ccs_bam_data.get().output
+
     base_path = 'input/bam/partial/parts'
-    if not os.path.isdir(base_path):
-        return []
 
     sample = wildcards.sample
 
@@ -99,9 +95,6 @@ def collect_pacbio_bam_input_parts(wildcards):
     relevant_parts = list(filter(lambda x: sample in x and x.endswith('pbn.bam'), all_part_files))
 
     relevant_parts = [os.path.join(base_path, f) for f in relevant_parts]
-
-    if len(relevant_parts) == 0:
-        raise RuntimeError('Empty input')
 
     return sorted(relevant_parts)
 
