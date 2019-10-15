@@ -138,12 +138,6 @@ rule run_strandphaser:
     resources:
         mem_per_cpu_mb = 256,
         mem_total_mb = config['num_cpu_high'] * 256
-    wildcard_constraints:
-        gq = '[0-9]+',
-        dp = '[0-9]+',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        sts_reads = '[\w\-]+'
     params:
         input_dir = lambda wildcards, input: os.path.dirname(input.bams[0]),
         output_dir = lambda wildcards, output: os.path.dirname(output.cfg),
@@ -178,13 +172,6 @@ rule strandseq_dga_phase_variants:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/split_by_seq/{hap_reads}.{sequence}.phased.log'
     benchmark:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/split_by_seq/{hap_reads}.{sequence}.phased.rsrc'
-    wildcard_constraints:
-        var_caller = '(freebayes|longshot)',
-        gq = '[0-9]+',
-        dp = '[0-9]+',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        sts_reads = '[\w\-]+'
     shell:
         'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} ' \
             ' {input.vcf} {input.bam} {input.sts_phased} 2> {log} ' \
@@ -219,13 +206,6 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
         vcf_files = sdga_collect_sequence_phased_vcf_files
     output:
         'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf'
-    wildcard_constraints:
-        gq = '[0-9]+',
-        dp = '[0-9]+',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        sts_reads = '[\w\-]+',
-        hap_reads = '[\w\-]+'
     shell:
         'bcftools concat --output {output} --output-type v {input.vcf_files}'
 
@@ -246,9 +226,9 @@ rule strandseq_dga_haplo_tagging:
         bam = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagged.sam.bam',
         tags = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.tsv',
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagging.log',
+        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagging.fq.log',
     benchmark:
-        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagging.rsrc',
+        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tagging.fq.rsrc',
     conda:
         config['conda_env_whsplit']
     shell:
@@ -270,9 +250,9 @@ rule strandseq_dga_haplo_splitting:
         un = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.un.fastq.gz',
         hist = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.rlen-hist.tsv'
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.log',
+        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.fq.log',
     benchmark:
-        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.rsrc',
+        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.fq.rsrc',
     conda:
         config['conda_env_whsplit']
     wildcard_constraints:
@@ -332,13 +312,6 @@ rule strandseq_dga_haplo_splitting_pacbio_native:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.pbn.rsrc',
     conda:
         config['conda_env_whsplit']
-    wildcard_constraints:
-        gq = '[0-9]+',
-        dp = '[0-9]+',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        sts_reads = '[\w\-]+',
-        hap_reads = '[\w\-]+'
     shell:
         "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.pbn_bam} {input.tags} &> {log}"
 
@@ -350,14 +323,14 @@ rule strandseq_dga_merge_tag_groups_pacbio_native:
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        hap = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{hap}.pbn.bam',
+        hap = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{haplotype}.pbn.bam',
         un = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.un.pbn.bam',
     output:
-        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{hap}-un.pbn.bam',
+        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{haplotype}-un.pbn.bam',
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{hap}-un.pbn.mrg.log',
+        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{haplotype}-un.pbn.mrg.log',
     wildcard_constraints:
-        hap = '(1|2)'
+        haplotype = '(1|2)'
     shell:
         'bamtools merge -in {input.hap} -in {input.un} -out {output} &> {log}'
 
@@ -414,8 +387,6 @@ rule strandseq_dga_assemble_haplotypes_wtdbg_consensus:
         layout = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/layout/wtdbg2/{hap_reads}.{hap}.ctg.lay.gz',
     output:
         'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-wtdbg.{hap}.fasta',
-    wildcard_constraints:
-        hap = '[h12\-un]+'
     log:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-wtdbg.{hap}.log',
     benchmark:
@@ -424,13 +395,5 @@ rule strandseq_dga_assemble_haplotypes_wtdbg_consensus:
     resources:
         mem_per_cpu_mb = 384,
         mem_total_mb = 12288
-    wildcard_constraints:
-        gq = '[0-9]+',
-        dp = '[0-9]+',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        sts_reads = '[\w\-]+',
-        hap_reads = '[\w\-]+',
-        hap = '[h12un\-]+'
     shell:
         'wtpoa-cns -t {threads} -i {input.layout} -o {output} &> {log}'
