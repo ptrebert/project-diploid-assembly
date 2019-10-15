@@ -11,6 +11,35 @@ rule master_strandseq_dga:
     input:
 
 
+def collect_strandseq_alignments(wildcards):
+    """
+    """
+    individual, project, platform_spec = wildcards.sts_reads.split('_')[:3]
+    platform, spec = platform_spec.split('-')
+    try:
+        bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads]
+    except KeyError:
+        bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads.rsplit('_', 1)[0]]
+
+    requests_dir = checkpoints.create_bioproject_download_requests.get(individual=individual, bioproject=bioproject).output[0]
+
+    search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_{run_id}_1.request')
+
+    checkpoint_wildcards = glob_wildcards(search_path)
+
+    bam_files = expand(
+        'output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/final/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
+        reference=wildcards.reference,
+        individual=individual,
+        bioproject=bioproject,
+        project=project,
+        platform=platform,
+        lib_id=checkpoint_wildcards.lib_id,
+        run_id=checkpoint_wildcards.run_id,
+        ext=['', '.bai'])
+    return sorted(bam_files)
+
+
 rule install_rlib_breakpointr:
     input:
         'output/check_files/R_setup/saarclust.ok'
