@@ -1,6 +1,11 @@
 
 include: 'smk_include/handle_data_download.smk'
 include: 'smk_include/prepare_custom_references.smk'
+include: 'smk_include/canonical_dga.smk'
+include: 'smk_include/strandseq_dga.smk'
+include: 'smk_include/arrow_polishing.smk'
+include: 'smk_include/racon_polishing.smk'
+include: 'smk_include/eval_known_reference.smk'
 include: 'smk_include/results_child.smk'
 include: 'smk_include/results_parents.smk'
 
