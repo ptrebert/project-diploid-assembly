@@ -42,9 +42,6 @@ rule master:
     input:
         # this triggers a checkpoint
         # for downloading the strand-seq data
-        expand('input/fastq/strand-seq/{individual}_{bioproject}/requests',
-                individual=['HG00733', 'HG00732', 'HG00731'],
-                bioproject=['PRJEB12849']),
         rules.master_results_child.input,
         rules.master_results_parents.input
 
