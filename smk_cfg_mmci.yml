@@ -2,13 +2,10 @@
 notify: True
 notify_email: pebert@mpi-inf.mpg.de
 
-#script_dir: /home/pebert/work/code/github/project-diploid-assembly/scripts
-script_dir: /mnt/vol/gridshare/user/code/project-diploid-assembly/scripts
+script_dir: /home/pebert/work/code/github/project-diploid-assembly/scripts
 
-#data_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/input_data_sources.json
-data_sources: /mnt/vol/gridshare/user/code/project-diploid-assembly/annotation/input_data_sources.json
-#reference_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/reference_data_sources.json
-reference_sources: /mnt/vol/gridshare/user/code/project-diploid-assembly/annotation/reference_data_sources.json
+data_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/input_data_sources.json
+reference_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/reference_data_sources.json
 
 ref_cache_folder: references/cache
 
@@ -33,10 +30,10 @@ git_commit_version: 3
 conda_env_pbtools: "../environment/conda/conda_pbtools.yml"
 conda_env_whsplit: "../environment/conda/wh_split.yml"
 
-run_env: denbi_tu
-num_cpu_high: 36
-num_cpu_medium: 12
-num_cpu_low: 6
+run_env: beegfs
+num_cpu_high: 40
+num_cpu_medium: 16
+num_cpu_low: 8
 
 # System-specific binaries for tools requiring certain
 # CPU instruction sets - otherwise, just give name of

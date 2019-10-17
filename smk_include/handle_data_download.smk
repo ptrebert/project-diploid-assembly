@@ -54,12 +54,14 @@ rule create_input_data_download_request:
                 _ = req_file.write(md5 + '\n')
     # end of rule
 
-
 rule download_bioproject_metadata:
     output:
         'input/bioprojects/{bioproject}.tsv'
     run:
-        load_url = 'https://www.ebi.ac.uk/ena/portal/api/filereport?accession='
+        # This URL to be a common point of failure every couple of weeks,
+        # can't really change that - maybe save bioproject report file in
+        # repo when pipeline is stable
+        load_url = 'https://www.ebi.ac.uk/ena/data/warehouse/filereport?accession='
         load_url += '{accession}'
         load_url += '&result=read_run&fields='
         load_url += 'study_accession,sample_accession,secondary_sample_accession'
