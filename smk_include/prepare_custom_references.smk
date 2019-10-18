@@ -160,35 +160,6 @@ rule install_rlib_saarclust:
         'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {output}'
 
 
-def collect_strandseq_alignments(wildcards):
-    """
-    """
-    individual, project, platform_spec = wildcards.sts_reads.split('_')[:3]
-    platform, spec = platform_spec.split('-')
-    try:
-        bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads]
-    except KeyError:
-        bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads.rsplit('_', 1)[0]]
-
-    requests_dir = checkpoints.create_bioproject_download_requests.get(individual=individual, bioproject=bioproject).output[0]
-
-    search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_{run_id}_1.request')
-
-    checkpoint_wildcards = glob_wildcards(search_path)
-
-    bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/final/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
-        reference=wildcards.reference,
-        individual=individual,
-        bioproject=bioproject,
-        project=project,
-        platform=platform,
-        lib_id=checkpoint_wildcards.lib_id,
-        run_id=checkpoint_wildcards.run_id,
-        ext=['', '.bai'])
-    return sorted(bam_files)
-
-
 rule write_saarclust_config_file:
     input:
         setup_ok = 'output/check_files/R_setup/saarclust.ok',
@@ -197,8 +168,8 @@ rule write_saarclust_config_file:
         cfg = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.config'
     params:
         min_contig_size = config['min_contig_size'],
-        step_size = lambda wildcards: config['saarclust_step_size'][wildcards.reference],
-        zlimit = lambda wildcards: config['saarclust_z_limit'][wildcards.reference]
+        step_size = lambda wildcards: config['saarclust_step_size'][wildcards.reference.rsplit('-', 1)[0]],
+        zlimit = lambda wildcards: config['saarclust_z_limit'][wildcards.reference.rsplit('-', 1)[0]]
     run:
 
         config_rows = [
@@ -226,11 +197,10 @@ rule write_saarclust_config_file:
             _ = dump.write('\n'.join(config_rows) + '\n')
 
 
-rule run_saarclust_assembly_clustering:
+checkpoint run_saarclust_assembly_clustering:
     input:
         cfg = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.config',
         bam = collect_strandseq_alignments,
-        seq_files = collect_assembly_sequence_files
     output:
         directory('output/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
         directory('output/saarclust/results/{reference}/{sts_reads}/data'),
@@ -257,16 +227,14 @@ def collect_clustered_fasta_sequences(wildcards):
 
     sqa_assembly = wildcards.reference + '_sqa-' + wildcards.assembler
 
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(reference=sqa_assembly).output[0]
+    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).output[0]
     checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
-    saarclust_output_dir = 'output/saarclust/results/{reference}/{sts_reads}/clustered_assembly/{sequence}.fasta'
-
     cluster_fasta = expand(
-        saarclust_output_dir,
+        'output/saarclust/results/{reference}/{sts_reads}/clustered_assembly/{sequence}.fasta',
         reference=sqa_assembly,
         sts_reads=strandseq_reads,
-        cluster_id=checkpoint_wildcards.sequence
+        sequence=checkpoint_wildcards.sequence
         )
 
     return sorted(cluster_fasta)
