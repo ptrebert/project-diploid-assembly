@@ -2,6 +2,7 @@
 include: 'smk_include/handle_data_download.smk'
 include: 'smk_include/preprocess_references.smk'
 include: 'smk_include/prepare_custom_references.smk'
+include: 'smk_include/statistics_input_data.smk'
 include: 'smk_include/variant_calling.smk'
 include: 'smk_include/canonical_dga.smk'
 include: 'smk_include/strandseq_dga.smk'
@@ -40,8 +41,6 @@ wildcard_constraints:
 
 rule master:
     input:
-        # this triggers a checkpoint
-        # for downloading the strand-seq data
         rules.master_results_child.input,
         rules.master_results_parents.input
 
