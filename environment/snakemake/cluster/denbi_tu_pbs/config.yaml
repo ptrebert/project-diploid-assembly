@@ -7,7 +7,7 @@ local-cores: 2
 jobs: 200
 latency-wait: 1
 keep-going: True
-rerun-incomplete: False
+rerun-incomplete: True
 restart-times: 1
 default-resources:
   - mem_per_cpu_mb=2048
