@@ -54,7 +54,8 @@ def make_log_useful(log_path, status):
     my_env = dict(os.environ)
     with open(log_path, 'a') as logfile:
         _ = logfile.write('\n===[{}]===\n'.format(status))
-        _ = logfile.write('Host: {}\n'.format(my_env.get('HOSTNAME', 'N/A')))
+        _ = logfile.write('Host: {}\n'.format(my_env.get('HOST', 'N/A')))
+        _ = logfile.write('Hostname: {}\n'.format(my_env.get('HOSTNAME', 'N/A')))
         _ = logfile.write('Display: {}\n'.format(my_env.get('DISPLAY', 'N/A')))
         _ = logfile.write('Shell: {}\n'.format(my_env.get('SHELL', 'N/A')))
         _ = logfile.write('Terminal: {}\n'.format(my_env.get('TERM', 'N/A')))
