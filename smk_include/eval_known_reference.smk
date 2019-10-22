@@ -13,6 +13,13 @@ rule master_eval_known_reference:
     input:
 
 
+rule download_quast_busco_databases:
+    output:
+        'output/check_files/quast-lg/busco_db_download.ok'
+    shell:
+        'quast-download-busco &> {output}'
+
+
 rule compute_assembly_delta_reference_squashed:
     input:
         known_ref = 'references/assemblies/{known}.fasta',
@@ -35,6 +42,7 @@ rule compute_assembly_delta_reference_squashed:
 
 rule quast_analysis_reference_squashed:
     input:
+        dl_chk = 'output/check_files/quast-lg/busco_db_download.ok',
         known_ref = 'references/assemblies/{known}.fasta',
         custom_ref = 'references/assemblies/{reference}.fasta',
         genes = 'references/downloads/{genemodel}.gff3.gz'
@@ -89,6 +97,7 @@ rule quast_analysis_reference_canonical_haploid_assembly:
     hap_reads = FASTQ file to be used for haplotype reconstruction
     """
     input:
+        dl_chk = 'output/check_files/quast-lg/busco_db_download.ok',
         known_ref = 'references/assemblies/{known}.fasta',
         haploid_assm = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta',
         genes = 'references/downloads/{genemodel}.gff3.gz'
@@ -143,6 +152,7 @@ rule quast_analysis_reference_strandseq_haploid_assembly:
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
+        dl_chk = 'output/check_files/quast-lg/busco_db_download.ok',
         known_ref = 'references/assemblies/{known}.fasta',
         haploid_assm = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta',
         genes = 'references/downloads/{genemodel}.gff3.gz'
@@ -174,6 +184,7 @@ rule quast_analysis_reference_strandseq_polished_haploid_assembly:
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
+        dl_chk = 'output/check_files/quast-lg/busco_db_download.ok',
         known_ref = 'references/assemblies/{known}.fasta',
         haploid_assm = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.{polisher}.fasta',
         genes = 'references/downloads/{genemodel}.gff3.gz'
