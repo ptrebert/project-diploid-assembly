@@ -87,3 +87,27 @@ rule master_results_child:
                 known_ref=['GRCh38_GCA_p13'],
                 genemodel=['GRCh38_GENCODEv31_basic']
                 ),
+
+        expand('output/plotting/statistics/fastq_haplosplit/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf',
+                approach=['strandseq'],
+                var_caller=['freebayes'],
+                gq=config['filter_vcf_gq']['freebayes'],
+                dp=config['filter_vcf_dp']['freebayes'],
+                reference=['HG00733_hgsvc_pbsq2-ccs_scV3-wtdbg'],
+                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+                ),
+
+        expand('output/plotting/statistics/fastq_haplosplit/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf',
+                approach=['strandseq'],
+                var_caller=['freebayes'],
+                gq=config['filter_vcf_gq']['freebayes'],
+                dp=config['filter_vcf_dp']['freebayes'],
+                reference=['HG00733_sra_pbsq1-clr_scV3-wtdbg'],
+                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+                )
