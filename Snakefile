@@ -16,6 +16,8 @@ localrules: master
 
 # Global wildcard constraints for consistent naming
 wildcard_constraints:
+    # Approach = Strand-seq DGA, or canonical w/o Strand-seq information
+    approach = '(strandseq|canonical)',
     # Reference genome or assembly
     reference = '[A-Za-z0-9_\-]+',
     # STS = STrand-Seq reads used for clustering and integrative phasing
