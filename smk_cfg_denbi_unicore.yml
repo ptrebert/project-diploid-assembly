@@ -2,10 +2,10 @@
 notify: False
 notify_email: pebert@mpi-inf.mpg.de
 
-script_dir: /mnt/vol/gridshare/user/code/project-diploid-assembly/scripts
+script_dir: /beeond/user/code/project-diploid-assembly/scripts
 
-data_sources: /mnt/vol/gridshare/user/code/project-diploid-assembly/annotation/input_data_sources.json
-reference_sources: /mnt/vol/gridshare/user/code/project-diploid-assembly/annotation/reference_data_sources.json
+data_sources: /beeond/code/project-diploid-assembly/annotation/input_data_sources.json
+reference_sources: /beeond/user/code/project-diploid-assembly/annotation/reference_data_sources.json
 
 ref_cache_folder: references/cache
 
@@ -30,7 +30,8 @@ git_commit_version: 3
 conda_env_pbtools: "../environment/conda/conda_pbtools.yml"
 conda_env_whsplit: "../environment/conda/wh_split.yml"
 
-run_env: denbi_tu
+run_env: beeond
+link_base_input: /beeond/data/hgsvc/eichler_lab/PUR_trio_Pacbio-Sequel2
 num_cpu_high: 36
 num_cpu_medium: 12
 num_cpu_low: 6

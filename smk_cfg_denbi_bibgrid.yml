@@ -30,7 +30,8 @@ git_commit_version: 3
 conda_env_pbtools: "../environment/conda/conda_pbtools.yml"
 conda_env_whsplit: "../environment/conda/wh_split.yml"
 
-run_env: denbi_tu
+run_env: ext4nfs
+link_base_input: /mnt/vol/gridshare/data/PUR_trio_Pacbio-Sequel2
 num_cpu_high: 36
 num_cpu_medium: 12
 num_cpu_low: 6

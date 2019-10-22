@@ -10,12 +10,7 @@ checkpoint link_hgsvc_sequel2_ccs_fastq_data:
         HG00733 = expand('input/fastq/partial/parts/HG00733_hgsvc_pbsq2-ccs.part{num}.fastq.gz',
                             num=list(range(1, 8)))
     run:
-        if config['run_env'] == 'denbi_tu':
-            base_input = '/mnt/vol/gridshare/data/PUR_trio_Pacbio-Sequel2'
-        elif config['run_env'] == 'beegfs':
-            base_input = '/TM_beegfs/data_share/incoming/hgsvc/eichler_lab/PUR_trio_Pacbio-Sequel2'
-        else:
-            raise ValueError('run_env unknown, no base directory configured')
+        base_input = config['link_base_input']
 
         hg00731_files = [
             'HG00731_20190925_EEE_m54329U_190528_231241.Q20.fastq.gz',
@@ -70,12 +65,7 @@ checkpoint link_hgsvc_sequel2_ccs_bam_data:
         HG00733 = expand('input/bam/partial/parts/HG00733_hgsvc_pbsq2-ccs.part{num}.pbn.bam',
                             num=list(range(1, 8)))
     run:
-        if config['run_env'] == 'denbi_tu':
-            base_input = '/mnt/vol/gridshare/data/PUR_trio_Pacbio-Sequel2'
-        elif config['run_env'] == 'beegfs':
-            base_input = '/TM_beegfs/data_share/incoming/hgsvc/eichler_lab/PUR_trio_Pacbio-Sequel2'
-        else:
-            raise ValueError('run_env unknown, no base directory configured')
+        base_input = config['link_base_input']
 
         hg00731_files = [
             'HG00731_20190925_EEE_m54329U_190528_231241.ccs.bam',

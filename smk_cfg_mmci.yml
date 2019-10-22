@@ -31,6 +31,7 @@ conda_env_pbtools: "../environment/conda/conda_pbtools.yml"
 conda_env_whsplit: "../environment/conda/wh_split.yml"
 
 run_env: beegfs
+link_base_input: /TM_beegfs/data_share/incoming/hgsvc/eichler_lab/PUR_trio_Pacbio-Sequel2
 num_cpu_high: 40
 num_cpu_medium: 16
 num_cpu_low: 8
