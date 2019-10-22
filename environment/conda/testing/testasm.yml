@@ -1,0 +1,10 @@
+name: testasm
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - Python=3.6.*
+  - pip=19.2.3
+  - flye=2.6
+  - raven-assembler=0.0.1
