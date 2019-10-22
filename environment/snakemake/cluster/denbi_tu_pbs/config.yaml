@@ -1,0 +1,14 @@
+# Default runtime profile for deNBI Tuebingen infrastructure / SLURM cluster
+
+directory: /beeond/projects/diploid-assembly
+cluster: " qsub -V -d /beeond/projects/diploid-assembly -l nodes=1:ppn={cluster.cores},mem={cluster.mem_mb}M -N {cluster.name} -o {cluster.output} -e {cluster.error}"
+cluster-config: /beeond/user/code/project-diploid-assembly/environment/snakemake/cluster/denbi_tu_pbs/denbi_cluster.json
+local-cores: 2
+jobs: 200
+latency-wait: 1
+keep-going: True
+rerun-incomplete: False
+restart-times: 1
+default-resources:
+  - mem_per_cpu_mb=2048
+  - mem_total_mb=4096

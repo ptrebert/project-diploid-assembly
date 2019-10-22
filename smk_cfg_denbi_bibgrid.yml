@@ -1,5 +1,5 @@
 
-notify: True
+notify: False
 notify_email: pebert@mpi-inf.mpg.de
 
 script_dir: /mnt/vol/gridshare/user/code/project-diploid-assembly/scripts

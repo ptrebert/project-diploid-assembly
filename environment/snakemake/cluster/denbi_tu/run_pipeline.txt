@@ -1,1 +1,0 @@
-snakemake --configfile snake_config.yml --profile environment/snakemake/cluster/denbi_tu --nolock

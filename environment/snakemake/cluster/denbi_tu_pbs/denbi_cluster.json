@@ -1,0 +1,10 @@
+{
+  "__default__":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/{jobid}_{rule}.stderr"
+  }
+}
