@@ -152,8 +152,11 @@ def enumerate_file_parts(file_groups, cargs, logger):
             key = os.path.join(local_path, file_prefix + '.part' + str(part_num))
             full_local_path = key + '.' + file_ext
             assert key not in output, 'Duplicate key: {}\n\n{}\n'.format(key, file_groups)
+            remote_path = os.path.join(cargs.server, rf)
+            if not remote_path.startswith('ftp://'):
+                remote_path = 'ftp://' + remote_path
             output[key] = {
-                "remote_path": rf,
+                "remote_path": remote_path,
                 "local_path": full_local_path
             }
     logger.debug('Prepared annotation for {} file splits'.format(len(output)))
