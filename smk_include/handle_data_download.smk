@@ -16,12 +16,6 @@ localrules: master_handle_data_download, \
 rule master_handle_data_download:
     input:
         rules.master_link_data_sources.output,
-        expand('input/fastq/partial/parts/{sample}.part{partnum}.fastq.gz',
-                sample=['HG00733_hpg_ontpm-ul'],
-                partnum=[1, 2, 3]),
-        expand('input/bam/partial/parts/{sample}.part{partnum}.pbn.bam',
-                sample=['HG00733_sra_pbsq1-clr'],
-                partnum=list(range(1, 29))),
 
 
 rule collect_remote_hgsvc_hg00514_pacbio:
