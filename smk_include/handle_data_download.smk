@@ -280,9 +280,33 @@ rule handle_partial_fastq_download_request:
     # end of rule
 
 
+def complete_fastq_samples_mock_merger(wildcards):
+    """
+    This mock-like function exists because Snakemake
+    seems to fail recognizing a checkpoint as rule
+    dependency if there is no "aggregate" input funtion that
+    explicitly calls a "get" on the checkpoint output.
+    So, here it is...
+    """
+    subfolder = 'fastq/complete'
+
+    requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder).output[0]
+
+    base_path = os.path.join('input', subfolder)
+    request_path = os.path.join(base_path, 'requests')
+
+    sample = wildcards.sample
+
+    req_file_path = os.path.join(request_path, sample + '.request')
+    assert os.path.isfile(req_file_path), 'Path not file after checkpoint execution: {}'.format(req_file_path)
+
+    return req_file_path
+
+
 rule handle_complete_fastq_download_request:
     input:
-        'input/fastq/complete/requests/{sample}.request'
+        complete_fastq_samples_mock_merger
+        #'input/fastq/complete/requests/{sample}.request'
     output:
         'input/fastq/complete/{sample}_1000.fastq.gz'
     wildcard_constraints:
