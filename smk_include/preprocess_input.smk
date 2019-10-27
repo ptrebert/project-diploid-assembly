@@ -2,7 +2,10 @@
 include: 'handle_data_download.smk'
 include: 'link_data_sources.smk'
 
-localrules: master_preprocess_input
+localrules: master_preprocess_input, \
+            merge_fastq_input_parts, \
+            merge_strandseq_libraries, \
+            merge_pacbio_native_bams
 
 
 rule master_preprocess_input:
@@ -38,6 +41,7 @@ rule merge_fastq_input_parts:
         sample = '(' + '|'.join(config['partial_samples']) + ')'
     log:
         'log/input/fastq/complete/{sample}_1000.merge.log'
+    threads: config['num_cpu_local']
     shell:
         'cat {input} > {output} 2> {log}'
 
@@ -113,6 +117,7 @@ rule merge_pacbio_native_bams:
         'log/input/bam/complete/{sample}_1000.mrg.log'
     benchmark:
         'run/input/bam/complete/{sample}_1000.mrg.rsrc'
+    threads: config['num_cpu_local']
     params:
         input_list = lambda wildcards, input: ' -in ' + ' -in '.join(input)
     shell:

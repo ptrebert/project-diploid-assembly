@@ -5,7 +5,8 @@ include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'run_alignments.smk'
 
-localrules: master_variant_calling
+localrules: master_variant_calling, \
+            merge_sequence_vcf_files
 
 rule master_variant_calling:
     input:
@@ -270,5 +271,6 @@ rule merge_sequence_vcf_files:
         vcf_files = collect_sequence_vcf_files
     output:
         'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf',
+    threads: config['num_cpu_local']
     shell:
         'bcftools concat --output {output} --output-type v {input.vcf_files}'

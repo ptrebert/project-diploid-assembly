@@ -33,6 +33,8 @@ conda_env_whsplit: "../environment/conda/wh_split.yml"
 num_cpu_high: 48
 num_cpu_medium: 12
 num_cpu_low: 6
+# this is needed for cluster environments / head node
+num_cpu_local: 2
 
 # System-specific binaries for tools requiring certain
 # CPU instruction sets - otherwise, just give name of

@@ -5,7 +5,8 @@ include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'variant_calling.smk'
 
-localrules: master_strandseq_dga
+localrules: master_strandseq_dga, \
+            strandseq_dga_merge_sequence_phased_vcf_files
 
 rule master_strandseq_dga:
     input:
@@ -206,6 +207,7 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
         vcf_files = sdga_collect_sequence_phased_vcf_files
     output:
         'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf'
+    threads: config['num_cpu_local']
     shell:
         'bcftools concat --output {output} --output-type v {input.vcf_files}'
 
@@ -255,13 +257,6 @@ rule strandseq_dga_haplo_splitting:
         'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.splitting.fq.rsrc',
     conda:
         config['conda_env_whsplit']
-    wildcard_constraints:
-        gq = '[0-9]+',
-        dp = '[0-9]+',
-        reference = '[\w\-]+',
-        vc_reads = '[\w\-]+',
-        sts_reads = '[\w\-]+',
-        hap_reads = '[\w\-]+'
     shell:
         "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
 

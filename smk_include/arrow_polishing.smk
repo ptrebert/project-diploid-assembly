@@ -4,6 +4,9 @@ include: 'strandseq_dga.smk'
 include: 'aux_utilities.smk'
 include: 'run_alignments.smk'
 
+localrules: merge_arrow_polished_sequence_splits
+
+
 checkpoint create_haploid_assembly_sequence_files:
     input:
         'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta.fai'
@@ -71,6 +74,7 @@ rule merge_arrow_polished_sequence_splits:
         'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.arrow-p1.fasta'
     log:
         'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.arrow-p1.log'
+    threads: config['num_cpu_local']
     resources:
         mem_per_cpu_mb = 4096
     run:

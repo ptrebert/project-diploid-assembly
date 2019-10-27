@@ -5,7 +5,7 @@ include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'variant_calling.smk'
 
-localrules: master_canonical_dga
+localrules: master_canonical_dga, canonical_dga_merge_sequence_phased_vcf_files
 
 rule master_canonical_dga:
     input:
@@ -61,6 +61,7 @@ rule canonical_dga_merge_sequence_phased_vcf_files:
         vcf_files = cdga_collect_sequence_phased_vcf_files
     output:
         'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.phased.vcf'
+    threads: config['num_cpu_local']
     shell:
         'bcftools concat --output {output} --output-type v {input.vcf_files}'
 

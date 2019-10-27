@@ -3,7 +3,10 @@ include: 'aux_utilities.smk'
 include: 'preprocess_input.smk'
 include: 'run_alignments.smk'
 
-localrules: master_prepare_custom_references, install_rlib_saarclust
+localrules: master_prepare_custom_references, \
+            install_rlib_saarclust, \
+            merge_mono_dinucleotide_fraction, \
+            merge_reference_fasta_clusters
 
 rule master_prepare_custom_references:
     input:
@@ -118,7 +121,7 @@ rule merge_mono_dinucleotide_fraction:
         'run/output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
     wildcard_constraints:
         lib_id = '[A-Z0-9]+'
-    threads: config['num_cpu_low']
+    threads: config['num_cpu_local']
     shell:
         'samtools merge -@ {threads} -O BAM {output} {input.nuc_files} &> {log}'
 
@@ -248,5 +251,6 @@ rule merge_reference_fasta_clusters:
     output:
         expand('references/assemblies/{{reference}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
+    threads: config['num_cpu_local']
     shell:
         'cat {input} > {output}'
