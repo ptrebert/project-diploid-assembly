@@ -215,9 +215,10 @@ checkpoint run_saarclust_assembly_clustering:
         mem_total_mb = 8192
     params:
         script_dir = config['script_dir'],
-        bam_folder = lambda wildcards, input: os.path.dirname(input.bam[0])
+        bam_folder = lambda wildcards, input: os.path.dirname(input.bam[0]),
+        out_folder = lambda wildcards, output: os.path.dirname(output[3])
     shell:
-        '{params.script_dir}/run_saarclust.R {input.cfg} {params.bam_folder} {output} &> {log}'
+        '{params.script_dir}/run_saarclust.R {input.cfg} {params.bam_folder} {params.out_folder} &> {log}'
 
 
 def collect_clustered_fasta_sequences(wildcards):
@@ -227,6 +228,7 @@ def collect_clustered_fasta_sequences(wildcards):
 
     sqa_assembly = wildcards.reference + '_sqa-' + wildcards.assembler
 
+    # this output folder is the /clustered_assembly subfolder
     seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).output[0]
     checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
