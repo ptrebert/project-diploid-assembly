@@ -8,51 +8,134 @@ CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
 CMD_DL_UNCOMPRESSED_SINGLE = 'wget --quiet -O /dev/stdout {remote_path} 2>> {{log}} | gzip > {{output}}'
 
 localrules: master_handle_data_download, \
-            create_input_data_download_request, \
+            create_input_data_download_requests, \
             download_bioproject_metadata, \
             create_bioproject_download_requests
 
 
 rule master_handle_data_download:
     input:
-        rules.link_hgsvc_sequel2_ccs_fastq_data.output,
-        rules.link_hgsvc_sequel2_ccs_bam_data.output,
-        expand('input/fastq/partial/parts/{sample}.part{partnum}.fastq.gz',
-                sample=['HG00733_hpg_ontpm-ul'],
-                partnum=[1, 2, 3]),
-        expand('input/bam/partial/parts/{sample}.part{partnum}.pbn.bam',
-                sample=['HG00733_sra_pbsq1-clr'],
-                partnum=list(range(1, 29))),
+        rules.master_link_data_sources.output,
 
 
-
-rule create_input_data_download_request:
+rule collect_remote_hgsvc_hg00514_pacbio:
     output:
-        'input/{subfolder}/{sample}.request'
+        'input/data_sources/hgsvc_hg00514_pacbio.json'
+    params:
+        script_dir = config['script_dir'],
+        server = 'ftp.1000genomes.ebi.ac.uk',
+        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20190508_HG00514_PacBioSequel2/',
+        collect = ' fastq.gz bam ',
+        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
+        bam_format = ' --assume-pacbio-native ',
+        file_infix = ' hgsvc_pbsq2- '
+    log:
+        'log/input/data_sources/hgsvc_hg00514_pacbio.log'
+    shell:
+        '{params.script_dir}/scan_remote_path.py --debug ' \
+            ' --server {params.server} --ftp-path {params.remote_path} ' \
+            ' --collect-files {params.collect} --sort-files {params.sort} ' \
+            ' {params.bam_format} --file-infix {params.file_infix}' \
+            ' --output {output} &> {log}'
+
+
+rule collect_remote_hgsvc_pur_trio_pacbio:
+    output:
+        'input/data_sources/hgsvc_pur-trio_pacbio.json'
+    params:
+        script_dir = config['script_dir'],
+        server = 'ftp.1000genomes.ebi.ac.uk',
+        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20190925_PUR_PacBio_HiFi/',
+        collect = ' fastq.gz bam ',
+        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
+        bam_format = ' --assume-pacbio-native ',
+        file_infix = ' hgsvc_pbsq2- '
+    log:
+        'log/input/data_sources/hgsvc_pur-trio_pacbio.log'
+    shell:
+        '{params.script_dir}/scan_remote_path.py --debug ' \
+            ' --server {params.server} --ftp-path {params.remote_path} ' \
+            ' --collect-files {params.collect} --sort-files {params.sort} ' \
+            ' {params.bam_format} --file-infix {params.file_infix}' \
+            ' --output {output} &> {log}'
+
+
+rule collect_remote_hgsvc_yri_trio_pacbio:
+    output:
+        'input/data_sources/hgsvc_yri-trio_pacbio.json'
+    params:
+        script_dir = config['script_dir'],
+        server = 'ftp.1000genomes.ebi.ac.uk',
+        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191005_YRI_PacBio_HiFi/',
+        collect = ' fastq.gz bam ',
+        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
+        bam_format = ' --assume-pacbio-native ',
+        file_infix = ' hgsvc_pbsq2- '
+    log:
+        'log/input/data_sources/hgsvc_yri-trio_pacbio.log'
+    shell:
+        '{params.script_dir}/scan_remote_path.py --debug ' \
+            ' --server {params.server} --ftp-path {params.remote_path} ' \
+            ' --collect-files {params.collect} --sort-files {params.sort} ' \
+            ' {params.bam_format} --file-infix {params.file_infix}' \
+            ' --output {output} &> {log}'
+
+
+checkpoint create_input_data_download_requests:
+    input:
+        'input/data_sources/hgsvc_hg00514_pacbio.json',
+        'input/data_sources/hgsvc_pur-trio_pacbio.json',
+        'input/data_sources/hgsvc_yri-trio_pacbio.json'
+    output:
+        directory('input/{subfolder}/requests')
     wildcard_constraints:
         subfolder = '(f|b)[a-z\/]+'
     run:
         import json as json
+        import sys as sys
+        import collections as col
 
-        data_sources_path = config['data_sources']
-        assert os.path.isfile(data_sources_path), 'No data sources configured'
-
-        with open(data_sources_path, 'r') as annotation:
-            sources = json.load(annotation)
-
-        file_info = sources[wildcards.sample]
-
+        all_data_sources = list(input)
         try:
-            md5 = file_info['md5']
+            manual_annotation = config['data_sources']
+            assert os.path.isfile(manual_annotation), 'No data sources found at path: {}'.format(manual_annotation)
+            all_data_sources.append(manual_annotation)
         except KeyError:
-            md5 = 'no_md5'
+            sys.stderr.write('\nWarning: no manually annotated data sources identified in config\n')
 
-        if not os.path.isfile(output[0]):
-            with open(output[0], 'w') as req_file:
-                _ = req_file.write(file_info['remote_path'] + '\n')
-                _ = req_file.write(file_info['local_path'] + '\n')
-                _ = req_file.write(md5 + '\n')
+        complete_sources = dict()
+        check_key_dups = col.Counter()
+
+        for annotation in all_data_sources:
+            with open(annotation, 'r') as paths:
+                obj = json.load(paths)
+                check_key_dups.update(list(obj.keys()))
+                complete_sources.update(obj)
+
+        count_keys = check_key_dups.most_common()
+        if count_keys[0][1] > 1:
+            raise ValueError('Duplicate keys in data sources annotation: {}'.format(count_keys[0]))
+
+        os.makedirs(output[0], exist_ok=True)
+        prefix = os.path.split(output[0])[0]
+        os.makedirs(prefix, exist_ok=True)
+
+        for key, file_infos in complete_sources.items():
+            if key.startswith(prefix):
+                file_prefix = os.path.split(key)[1]
+                req_file_path = os.path.join(output[0], file_prefix + '.request')
+                try:
+                    md5 = file_infos['md5']
+                except KeyError:
+                    md5 = 'no_md5'
+                if os.path.isfile(req_file_path):
+                    continue
+                with open(req_file_path, 'w') as req_file:
+                    _ = req_file.write(file_infos['remote_path'] + '\n')
+                    _ = req_file.write(file_infos['local_path'] + '\n')
+                    _ = req_file.write(md5 + '\n')
     # end of rule
+
 
 rule download_bioproject_metadata:
     output:
@@ -161,7 +244,7 @@ rule handle_strandseq_download_requests:
 
 rule handle_partial_fastq_download_request:
     input:
-        'input/fastq/partial/{split_type}/{sample_split}.request'
+        'input/fastq/partial/{split_type}/requests/{sample_split}.request'
     output:
         'input/fastq/partial/{split_type}/{sample_split}.fastq.gz'
     log:
@@ -191,9 +274,33 @@ rule handle_partial_fastq_download_request:
     # end of rule
 
 
+def complete_fastq_samples_mock_merger(wildcards):
+    """
+    This mock-like function exists because Snakemake
+    seems to fail recognizing a checkpoint as rule
+    dependency if there is no "aggregate" input funtion that
+    explicitly calls a "get" on the checkpoint output.
+    So, here it is...
+    """
+    subfolder = 'fastq/complete'
+
+    requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder).output[0]
+
+    base_path = os.path.join('input', subfolder)
+    request_path = os.path.join(base_path, 'requests')
+
+    sample = wildcards.sample
+
+    req_file_path = os.path.join(request_path, sample + '.request')
+    assert os.path.isfile(req_file_path), 'Path not file after checkpoint execution: {}'.format(req_file_path)
+
+    return req_file_path
+
+
 rule handle_complete_fastq_download_request:
     input:
-        'input/fastq/complete/{sample}.request'
+        complete_fastq_samples_mock_merger
+        #'input/fastq/complete/requests/{sample}.request'
     output:
         'input/fastq/complete/{sample}_1000.fastq.gz'
     wildcard_constraints:
@@ -225,7 +332,7 @@ rule handle_complete_fastq_download_request:
 
 rule handle_partial_pbn_bam_download_request:
     input:
-        'input/bam/partial/{split_type}/{sample_split}.request'
+        'input/bam/partial/{split_type}/requests/{sample_split}.request'
     output:
         'input/bam/partial/{split_type}/{sample_split}.pbn.bam'
     log:

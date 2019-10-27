@@ -12,16 +12,19 @@ rule master_preprocess_input:
 
 def collect_fastq_input_parts(wildcards):
 
-    linked_input = checkpoints.link_hgsvc_sequel2_ccs_fastq_data.get().output
+    subfolder = 'fastq/partial/parts'
 
-    base_path = 'input/fastq/partial/parts'
+    requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder).output[0]
+
+    base_path = os.path.join('input', subfolder)
+    request_path = os.path.join(base_path, 'requests')
 
     sample = wildcards.sample
 
-    all_part_files = os.listdir(base_path)
-    relevant_parts = list(filter(lambda x: sample in x and x.endswith('fastq.gz'), all_part_files))
+    all_part_files = os.listdir(request_path)
+    relevant_parts = list(filter(lambda x: x.startswith(sample) and x.endswith('request'), all_part_files))
 
-    relevant_parts = [os.path.join(base_path, f) for f in relevant_parts]
+    relevant_parts = [os.path.join(base_path, f.replace('request', 'fastq.gz')) for f in relevant_parts]
 
     return sorted(relevant_parts)
 
@@ -85,17 +88,19 @@ rule merge_strandseq_libraries:
 
 def collect_pacbio_bam_input_parts(wildcards):
 
-    linked_input = checkpoints.link_hgsvc_sequel2_ccs_bam_data.get().output
+    subfolder = 'bam/partial/parts'
 
-    base_path = 'input/bam/partial/parts'
+    requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder).output[0]
+
+    base_path = os.path.join('input', subfolder)
+    request_path = os.path.join(base_path, 'requests')
 
     sample = wildcards.sample
 
-    all_part_files = os.listdir(base_path)
-    relevant_parts = list(filter(lambda x: sample in x and x.endswith('pbn.bam'), all_part_files))
+    all_part_files = os.listdir(request_path)
+    relevant_parts = list(filter(lambda x: x.startswith(sample) and x.endswith('request'), all_part_files))
 
-    relevant_parts = [os.path.join(base_path, f) for f in relevant_parts]
-
+    relevant_parts = [os.path.join(base_path, f.replace('request', 'pbn.bam')) for f in relevant_parts]
     return sorted(relevant_parts)
 
 
