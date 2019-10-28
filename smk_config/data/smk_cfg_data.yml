@@ -1,0 +1,130 @@
+
+# === Software setup settings ===
+# Specify git commits for SaaRclust
+# and StrandPhaseR setup
+git_commit_saarclust: 3bb6bc0
+git_commit_strandphaser: e8913f3
+# arbitrarily tying a version number
+# to the git commits to avoid additional
+# wildcards - increment this number when
+# git commits are changed!
+git_commit_version: 3
+
+samples:
+  - HG00733_hpg_ontpm-ul
+  - HG00733_sra_pbsq1-clr
+  - HG00733_hgsvc_pbsq2-ccs
+  - HG00732_hgsvc_pbsq2-ccs
+  - HG00731_hgsvc_pbsq2-ccs
+
+individuals:
+  - HG00733
+  - HG00732
+  - HG00731
+  - HG002
+
+# needed for wildcard constraints
+# to manage download and merging
+# of initial input data
+complete_samples:
+  - HG00733_sra_pbsq1-clr
+
+partial_samples:
+  - HG00733_hpg_ontpm-ul
+  - HG00733_hgsvc_pbsq2-ccs
+  - HG00732_hgsvc_pbsq2-ccs
+  - HG00731_hgsvc_pbsq2-ccs
+
+strandseq_samples:
+  - HG00733_1kg_il25k-npe
+  - HG00732_1kg_il25k-npe
+  - HG00731_1kg_il25k-npe
+
+# This is evidence of a design glitch:
+# here, manually associate strand-seq
+# datasets with long read datasets
+# for the SaaRclust step to avoid
+# having to carry around the sts_reads
+# wildcard for clustered assemblies
+# throughout the rest of the pipeline
+strandseq_to_assembly:
+  HG00733_sra_pbsq1-clr: HG00733_1kg_il25k-npe_sseg
+  HG00731_hgsvc_pbsq2-ccs: HG00731_1kg_il25k-npe_sseg
+  HG00732_hgsvc_pbsq2-ccs: HG00732_1kg_il25k-npe_sseg
+  HG00733_hgsvc_pbsq2-ccs: HG00733_1kg_il25k-npe_sseg
+
+strandseq_to_bioproject:
+  HG00733_1kg_il25k-npe: PRJEB12849
+  HG00732_1kg_il25k-npe: PRJEB12849
+  HG00731_1kg_il25k-npe: PRJEB12849
+
+# SaaRclust parameter sets
+# to obtain 24 clusters
+min_contig_size: 100000
+
+saarclust_z_limit:
+  HG00733_sra_pbsq1-clr_sqa: 3.5
+  HG00731_hgsvc_pbsq2-ccs_sqa: 3
+  HG00732_hgsvc_pbsq2-ccs_sqa: 3
+  HG00733_hgsvc_pbsq2-ccs_sqa: 3.5
+
+saarclust_step_size:
+  HG00733_sra_pbsq1-clr_sqa: 0
+  HG00731_hgsvc_pbsq2-ccs_sqa: 50000
+  HG00732_hgsvc_pbsq2-ccs_sqa: 50000
+  HG00733_hgsvc_pbsq2-ccs_sqa: 0
+
+# === Parameter presets for alignment tools ===
+wtdbg2_presets:
+  HG00733_hpg_ontpm-ul: ont
+  HG00733_sra_pbsq1-clr: sq
+  HG00733_hgsvc_pbsq2-ccs: ccs
+  HG00732_hgsvc_pbsq2-ccs: ccs
+  HG00731_hgsvc_pbsq2-ccs: ccs
+
+pbmm2_presets:
+  HG00733_sra_pbsq1-clr: SUBREAD
+  HG00733_hgsvc_pbsq2-ccs: CCS
+  HG00732_hgsvc_pbsq2-ccs: CCS
+  HG00731_hgsvc_pbsq2-ccs: CCS
+  HG002_pbio_pbsq2-clr: SUBREAD
+
+# VARIANT CALLING
+# Postprocessing parameters
+filter_vcf_gq:
+  freebayes: 100
+
+filter_vcf_dp:
+  freebayes: 50
+
+freebayes_timeout_sec: 3600
+
+# main chromosomes to be used
+# for known references for main
+# pipeline steps (i.e., everything
+# before evaluation)
+main_chromosomes:
+  - chr1
+  - chr2
+  - chr3
+  - chr4
+  - chr5
+  - chr6
+  - chr7
+  - chr8
+  - chr9
+  - chr10
+  - chr11
+  - chr12
+  - chr13
+  - chr14
+  - chr15
+  - chr16
+  - chr17
+  - chr18
+  - chr19
+  - chr20
+  - chr21
+  - chr22
+  - chrX
+  - chrY
