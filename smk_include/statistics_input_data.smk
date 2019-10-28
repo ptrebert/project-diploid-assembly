@@ -58,11 +58,11 @@ rule plot_fastq_input_statistics:
 
 rule compute_statistics_haplosplit_fastq:
     input:
-        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.fastq.gz'
+        'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.fastq.gz'
     output:
-        'output/statistics/fastq_haplosplit/stat_dumps/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pck'
-    log: 'log/output/statistics/fastq_haplosplit/stat_dumps/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.log'
-    benchmark: 'run/output/statistics/fastq_haplosplit/stat_dumps/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.rsrc'
+        'output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pck'
+    log: 'log/output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.log'
+    benchmark: 'run/output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.rsrc'
     threads: config['num_cpu_low']
     params:
         script_dir = config['script_dir']
@@ -73,9 +73,9 @@ rule compute_statistics_haplosplit_fastq:
 
 rule plot_fastq_haplosplit_statistics:
     input:
-        'output/statistics/fastq_haplosplit/stat_dumps/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pck'
+        'output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pck'
     output:
-        'output/plotting/statistics/fastq_haplosplit/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf'
+        'output/plotting/statistics/fastq_haplosplit/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf'
     params:
         script_dir = config['script_dir'],
         lower_bound = 7000

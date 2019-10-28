@@ -84,8 +84,6 @@ rule canonical_dga_haplo_tagging:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.tagging.log',
     benchmark:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.tagging.rsrc',
-    conda:
-        config['conda_env_whsplit']
     shell:
         "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
 
@@ -107,8 +105,6 @@ rule canonical_dga_haplo_splitting:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.splitting.log',
     benchmark:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.splitting.rsrc',
-    conda:
-        config['conda_env_whsplit']
     shell:
         "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
 

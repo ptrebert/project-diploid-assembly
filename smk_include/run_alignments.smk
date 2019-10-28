@@ -4,7 +4,8 @@ include: 'preprocess_input.smk'
 include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'canonical_dga.smk'
-include: 'strandseq_dga.smk'
+include: 'strandseq_dga_joint.smk'
+include: 'strandseq_dga_split.smk'
 
 localrules: master_run_alignments
 
@@ -116,14 +117,14 @@ rule racon_strandseq_polish_alignment_pass1:
     pol_reads = FASTQ file used for Racon contig polishing
     """
     input:
-        reads = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.fastq.gz',
-        contigs = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
+        reads = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.fastq.gz',
+        contigs = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
     output:
-        sam = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.psort.sam',
+        sam = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.psort.sam',
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.log'
+        'log/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.log'
     benchmark:
-        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.rsrc'
+        'run/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}-{assembler}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}-{assembler}.{hap}.racon-p1.rsrc'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 768,
@@ -161,14 +162,14 @@ rule racon_strandseq_polish_alignment_pass1:
 
 rule pbmm2_strandseq_polish_alignment_pass1:
     input:
-        reads = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.pbn.bam',
-        contigs = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
+        reads = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.pbn.bam',
+        contigs = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
     output:
-        bam = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.arrow-p1.psort.pbn.bam',
+        bam = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.arrow-p1.psort.pbn.bam',
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.arrow-p1.log',
+        'log/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.arrow-p1.log',
     benchmark:
-        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.arrow-p1.rsrc'
+        'run/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{sample}-{assembler}.{hap}.arrow-p1.rsrc'
     conda:
         config['conda_env_pbtools']
     threads: config['num_cpu_high']

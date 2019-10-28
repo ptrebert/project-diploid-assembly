@@ -1,6 +1,7 @@
 
 include: 'canonical_dga.smk'
-include: 'strandseq_dga.smk'
+include: 'strandseq_dga_joint.smk'
+include: 'strandseq_dga_split.smk'
 include: 'aux_utilities.smk'
 include: 'run_alignments.smk'
 
@@ -9,9 +10,9 @@ localrules: merge_arrow_polished_sequence_splits
 
 checkpoint create_haploid_assembly_sequence_files:
     input:
-        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta.fai'
+        'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta.fai'
     output:
-        directory('output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}/sequences')
+        directory('output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}/sequences')
     run:
         output_dir = output[0]
         os.makedirs(output_dir, exist_ok=True)
@@ -25,17 +26,17 @@ checkpoint create_haploid_assembly_sequence_files:
 
 rule arrow_contig_polishing_pass1:
     input:
-        contigs = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta',
-        contig_index = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta.fai',
-        alignments = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.arrow-p1.psort.pbn.bam',
-        aln_index = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.arrow-p1.psort.pbn.bam.pbi',
-        sequence_file = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}/sequences/{sequence}.seq'
+        contigs = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta',
+        contig_index = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}.fasta.fai',
+        alignments = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.arrow-p1.psort.pbn.bam',
+        aln_index = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.arrow-p1.psort.pbn.bam.pbi',
+        sequence_file = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}.{hap}/sequences/{sequence}.seq'
     output:
-        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/split_by_sequence/{hap_reads}.{hap}.arrow-p1.{sequence}.fasta'
+        'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/split_by_sequence/{hap_reads}.{hap}.arrow-p1.{sequence}.fasta'
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/split_by_sequence/{hap_reads}.{hap}.arrow-p1.{sequence}.log'
+        'log/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/split_by_sequence/{hap_reads}.{hap}.arrow-p1.{sequence}.log'
     benchmark:
-        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/split_by_sequence/{hap_reads}.{hap}.arrow-p1.{sequence}.rsrc'
+        'run/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/split_by_sequence/{hap_reads}.{hap}.arrow-p1.{sequence}.rsrc'
     conda:
         config['conda_env_pbtools']
     threads: config['num_cpu_medium']
@@ -53,7 +54,7 @@ def collect_polished_splits(wildcards):
 
     checkpoint_output = checkpoints.create_haploid_assembly_sequence_files.get(**wildcards).output[0]
 
-    split_files = expand('output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/split_by_sequence/{hap_reads}.{hap}.arrow-p1.{sequence}.fasta',
+    split_files = expand('output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/split_by_sequence/{hap_reads}.{hap}.arrow-p1.{sequence}.fasta',
                             var_caller=wildcards.var_caller,
                             gq=wildcards.gq,
                             dp=wildcards.dp,
@@ -71,9 +72,9 @@ rule merge_arrow_polished_sequence_splits:
     input:
         collect_polished_splits
     output:
-        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.arrow-p1.fasta'
+        'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.arrow-p1.fasta'
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.arrow-p1.log'
+        'log/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}.{hap}.arrow-p1.log'
     threads: config['num_cpu_local']
     resources:
         mem_per_cpu_mb = 4096

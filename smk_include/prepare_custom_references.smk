@@ -5,6 +5,7 @@ include: 'run_alignments.smk'
 
 localrules: master_prepare_custom_references, \
             install_rlib_saarclust, \
+            write_saarclust_config_file, \
             merge_mono_dinucleotide_fraction, \
             merge_reference_fasta_clusters
 
@@ -164,51 +165,60 @@ rule install_rlib_saarclust:
 
 
 rule write_saarclust_config_file:
+    """
+    As long as aggregate-style input functions downstream of
+    checkpoints are problematic in a cluster environment,
+    avoid complications by making the config writing local
+    (aggregate should work), and explicitly write a file
+    containing just the input folder for StrandPhaseR
+    """
     input:
         setup_ok = 'output/check_files/R_setup/saarclust.ok',
         reference = 'references/assemblies/{reference}.fasta',
+        bam = collect_strandseq_alignments
     output:
-        cfg = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.config'
+        cfg = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.config',
+        input_dir = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.input',
     params:
         min_contig_size = config['min_contig_size'],
-        step_size = lambda wildcards: config['saarclust_step_size'][wildcards.reference.rsplit('-', 1)[0]],
-        zlimit = lambda wildcards: config['saarclust_z_limit'][wildcards.reference.rsplit('-', 1)[0]]
+        bin_size = config['bin_size'],
+        step_size = config['step_size']
     run:
 
         config_rows = [
             '[SaaRclust]',
             'min.contig.size = ' + str(params.min_contig_size),
+            'bin.size = ' + str(params.bin_size),
+            'step.size = ' + str(params.step_size),
             'pairedReads = TRUE',
-            'bin.size = ' + str(params.min_contig_size),
             'store.data.obj = TRUE',
             'reuse.data.obj = TRUE',
             'num.clusters = 100',
-            'alpha = 0.1',
-            'best.prob = 1',
-            'prob.th = 0',
-            'ord.method = "TSP"',
+            'bin.method = "dynamic"',
             'assembly.fasta = "' + input.reference + '"',
-            'concat.fasta = TRUE',
-            'z.limit = ' + str(params.zlimit),
-            'remove.always.WC = FALSE'
+            'concat.fasta = FALSE',
+            'remove.always.WC = FALSE',
+            'mask.regions = FALSE'
         ]
-
-        if int(params.step_size) > 0:
-            config_rows.append('step.size = ' + str(params.step_size))
 
         with open(output.cfg, 'w') as dump:
             _ = dump.write('\n'.join(config_rows) + '\n')
+
+        outfolder = os.path.dirname(input.bam[0])
+        assert os.path.isdir(outfolder), 'Invalid output folder / strand-seq alignments: {}'.format(outfolder)
+        with open(output.input_dir, 'w') as dump:
+            _ = dump.write(outfolder + '\n')
 
 
 checkpoint run_saarclust_assembly_clustering:
     input:
         cfg = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.config',
-        bam = collect_strandseq_alignments,
+        dir = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.input',
     output:
-        directory('output/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
-        directory('output/saarclust/results/{reference}/{sts_reads}/data'),
-        directory('output/saarclust/results/{reference}/{sts_reads}/plots'),
-        'output/saarclust/results/{reference}/{sts_reads}/SaaRclust.config'
+        dir_fasta = directory('output/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
+        dir_data = directory('output/saarclust/results/{reference}/{sts_reads}/data'),
+        dir_plots = directory('output/saarclust/results/{reference}/{sts_reads}/plots'),
+        cfg = 'output/saarclust/results/{reference}/{sts_reads}/SaaRclust.config',
     log:
         'log/output/saarclust/results/{reference}/{sts_reads}/saarclust.log'
     benchmark:
@@ -218,10 +228,15 @@ checkpoint run_saarclust_assembly_clustering:
         mem_total_mb = 8192
     params:
         script_dir = config['script_dir'],
-        bam_folder = lambda wildcards, input: os.path.dirname(input.bam[0]),
         out_folder = lambda wildcards, output: os.path.dirname(output[3])
-    shell:
-        '{params.script_dir}/run_saarclust.R {input.cfg} {params.bam_folder} {params.out_folder} &> {log}'
+    run:
+        with open(input.dir) as info:
+            input_folder = info.readline().strip()
+
+        exec = '{params.script_dir}/run_saarclust.R {input.cfg}'
+        exec += ' {} '.format(input_folder)
+        exec += '{params.out_folder} &> {log}'
+        shell(exec)
 
 
 def collect_clustered_fasta_sequences(wildcards):

@@ -1,6 +1,7 @@
 
 include: 'canonical_dga.smk'
-include: 'strandseq_dga.smk'
+include: 'strandseq_dga_joint.smk'
+include: 'strandseq_dga_split.smk'
 include: 'arrow_polishing.smk'
 include: 'racon_polishing.smk'
 include: 'eval_known_reference.smk'
@@ -31,8 +32,8 @@ rule master_results_child:
 
         expand('output/evaluation/known_reference/quastlg_busco/{reference}.{known_ref}.{genemodel}/report.pdf',
                 reference=[
-                    'HG00733_hgsvc_pbsq2-ccs_scV3-wtdbg',
-                    'HG00733_sra_pbsq1-clr_scV3-wtdbg',
+                    'HG00733_hgsvc_pbsq2-ccs_scV{}-wtdbg'.format(config['git_commit_version']),
+                    'HG00733_sra_pbsq1-clr_scV{}-wtdbg'.format(config['git_commit_version']),
                     'HG00733_hgsvc_pbsq2-ccs_sqa-wtdbg',
                     'HG00733_sra_pbsq1-clr_sqa-wtdbg',
                 ],
@@ -40,12 +41,12 @@ rule master_results_child:
                 genemodel=['GRCh38_GENCODEv31_basic']
                 ),
 
-        expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
+        expand('output/evaluation/known_reference/quastlg_busco/strandseq.split.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
                 var_caller=['freebayes'],
                 assembler=['wtdbg'],
                 gq=config['filter_vcf_gq']['freebayes'],
                 dp=config['filter_vcf_dp']['freebayes'],
-                reference=['HG00733_sra_pbsq1-clr_scV3-wtdbg'],
+                reference=['HG00733_sra_pbsq1-clr_scV{}-wtdbg'.format(config['git_commit_version'])],
                 vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                 hap_reads=['HG00733_sra_pbsq1-clr_1000'],
                 sts_reads=['HG00733_1kg_il25k-npe_sseq'],
@@ -56,12 +57,12 @@ rule master_results_child:
                 genemodel=['GRCh38_GENCODEv31_basic']
                 ),
 
-        expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
+        expand('output/evaluation/known_reference/quastlg_busco/strandseq.split.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
                 var_caller=['freebayes'],
                 assembler=['wtdbg'],
                 gq=config['filter_vcf_gq']['freebayes'],
                 dp=config['filter_vcf_dp']['freebayes'],
-                reference=['HG00733_sra_pbsq1-clr_scV3-wtdbg'],
+                reference=['HG00733_sra_pbsq1-clr_scV{}-wtdbg'.format(config['git_commit_version'])],
                 vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                 hap_reads=['HG00733_sra_pbsq1-clr_1000'],
                 sts_reads=['HG00733_1kg_il25k-npe_sseq'],
@@ -72,12 +73,12 @@ rule master_results_child:
                 genemodel=['GRCh38_GENCODEv31_basic']
                 ),
 
-        expand('output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
+        expand('output/evaluation/known_reference/quastlg_busco/strandseq.split.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known_ref}.{genemodel}/report.pdf',
                 var_caller=['freebayes'],
                 assembler=['wtdbg'],
                 gq=config['filter_vcf_gq']['freebayes'],
                 dp=config['filter_vcf_dp']['freebayes'],
-                reference=['HG00733_hgsvc_pbsq2-ccs_scV3-wtdbg'],
+                reference=['HG00733_hgsvc_pbsq2-ccs_scV{}-wtdbg'.format(config['git_commit_version'])],
                 vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                 hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                 sts_reads=['HG00733_1kg_il25k-npe_sseq'],
@@ -88,24 +89,24 @@ rule master_results_child:
                 genemodel=['GRCh38_GENCODEv31_basic']
                 ),
 
-        expand('output/plotting/statistics/fastq_haplosplit/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf',
+        expand('output/plotting/statistics/fastq_haplosplit/{approach}_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf',
                 approach=['strandseq'],
                 var_caller=['freebayes'],
                 gq=config['filter_vcf_gq']['freebayes'],
                 dp=config['filter_vcf_dp']['freebayes'],
-                reference=['HG00733_hgsvc_pbsq2-ccs_scV3-wtdbg'],
+                reference=['HG00733_hgsvc_pbsq2-ccs_scV{}-wtdbg'.format(config['git_commit_version'])],
                 vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                 hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                 sts_reads=['HG00733_1kg_il25k-npe_sseq'],
                 hap=['h1-un', 'h2-un', 'h1', 'h2']
                 ),
 
-        expand('output/plotting/statistics/fastq_haplosplit/{approach}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf',
+        expand('output/plotting/statistics/fastq_haplosplit/{approach}_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf',
                 approach=['strandseq'],
                 var_caller=['freebayes'],
                 gq=config['filter_vcf_gq']['freebayes'],
                 dp=config['filter_vcf_dp']['freebayes'],
-                reference=['HG00733_sra_pbsq1-clr_scV3-wtdbg'],
+                reference=['HG00733_sra_pbsq1-clr_scV{}-wtdbg'.format(config['git_commit_version'])],
                 vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                 hap_reads=['HG00733_sra_pbsq1-clr_1000'],
                 sts_reads=['HG00733_1kg_il25k-npe_sseq'],

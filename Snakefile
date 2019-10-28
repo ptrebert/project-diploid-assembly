@@ -5,7 +5,8 @@ include: 'smk_include/prepare_custom_references.smk'
 include: 'smk_include/statistics_input_data.smk'
 include: 'smk_include/variant_calling.smk'
 include: 'smk_include/canonical_dga.smk'
-include: 'smk_include/strandseq_dga.smk'
+include: 'smk_include/strandseq_dga_joint.smk'
+include: 'smk_include/strandseq_dga_split.smk'
 include: 'smk_include/arrow_polishing.smk'
 include: 'smk_include/racon_polishing.smk'
 include: 'smk_include/eval_known_reference.smk'
@@ -18,6 +19,8 @@ localrules: master
 wildcard_constraints:
     # Approach = Strand-seq DGA, or canonical w/o Strand-seq information
     approach = '(strandseq|canonical)',
+    # For Strand-seq DGA, possible to proceed in a per-haplotype/per-cluster fashion
+    strategy = '(joint|split)',
     # Reference genome or assembly
     reference = '[A-Za-z0-9_\-]+',
     # STS = STrand-Seq reads used for clustering and integrative phasing
@@ -69,7 +72,7 @@ onsuccess:
     make_log_useful(log, 'SUCCESS')
     import socket
     host = socket.gethostname()
-    if config['notify'] and 'bibigrid' not in host:
+    if config['notify']:
         shell('mail -s "[Snakemake] DGA - SUCCESS" {} < {{log}}'.format(config['notify_email']))
 
 
@@ -77,5 +80,5 @@ onerror:
     make_log_useful(log, 'ERROR')
     import socket
     host = socket.gethostname()
-    if config['notify'] and 'bibigrid' not in host:
+    if config['notify']:
         shell('mail -s "[Snakemake] DGA - ERRROR" {} < {{log}}'.format(config['notify_email']))

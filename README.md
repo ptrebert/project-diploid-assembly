@@ -19,7 +19,7 @@ installed as part of the pipeline workflow).
     - various profiles are stored under `environment/snakemake`, either for individual servers, or
       for compute clusters with job schedulers SGE, SLURM, or PBS/TORQUE
     - adapt the values for the maximal available number of CPU cores available in your environment
-      in the Snakemake config file (prefix `smk_cfg_`)
+      in the Snakemake config file (prefix `smk_config/run_env/smk_cfg_`)
     - all resource-intensive jobs should be annotated with resource requirements. You likely need
       this info to write a proper cluster config: `mem_total_mb` and `mem_per_cpu_mb`,
       depending on whether you need to specify total amount of memory or memory per CPU core.

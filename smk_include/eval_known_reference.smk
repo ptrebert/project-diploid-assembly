@@ -3,7 +3,8 @@ include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'variant_calling.smk'
 include: 'canonical_dga.smk'
-include: 'strandseq_dga.smk'
+include: 'strandseq_dga_joint.smk'
+include: 'strandseq_dga_split.smk'
 include: 'racon_polishing.smk'
 include: 'arrow_polishing.smk'
 
@@ -130,13 +131,13 @@ rule compute_assembly_delta_reference_strandseq_haploid_assembly:
     """
     input:
         known_ref = 'references/assemblies/{known}.fasta',
-        haploid_assm = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
+        haploid_assm = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
     output:
-        delta = 'output/evaluation/known_reference/mummer/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}-{assembler}.{hap}.delta',
+        delta = 'output/evaluation/known_reference/mummer/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}-{assembler}.{hap}.delta',
     log:
-        'log/output/evaluation/known_reference/mummer/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}-{assembler}.{hap}.log',
+        'log/output/evaluation/known_reference/mummer/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}-{assembler}.{hap}.log',
     benchmark:
-        'run/output/evaluation/known_reference/mummer/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}-{assembler}.{hap}.rsrc',
+        'run/output/evaluation/known_reference/mummer/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap}.{known}/{known}_vs_{hap_reads}-{assembler}.{hap}.rsrc',
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = 6144,
@@ -154,15 +155,15 @@ rule quast_analysis_reference_strandseq_haploid_assembly:
     input:
         dl_chk = 'output/check_files/quast-lg/busco_db_download.ok',
         known_ref = 'references/assemblies/{known}.fasta',
-        haploid_assm = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta',
+        haploid_assm = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta',
         genes = 'references/downloads/{genemodel}.gff3.gz'
     output:
-        pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{hap}.{known}.{genemodel}/report.pdf',
-        html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{hap}.{known}.{genemodel}/icarus.html'
+        pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{hap}.{known}.{genemodel}/report.pdf',
+        html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{hap}.{known}.{genemodel}/icarus.html'
     log:
-        'log/output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{hap}.{known}.{genemodel}/run.log',
+        'log/output/evaluation/known_reference/quastlg_busco/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{hap}.{known}.{genemodel}/run.log',
     benchmark:
-        'run/output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{hap}.{known}.{genemodel}/run.rsrc',
+        'run/output/evaluation/known_reference/quastlg_busco/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{hap}.{known}.{genemodel}/run.rsrc',
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = 6144,
@@ -186,15 +187,15 @@ rule quast_analysis_reference_strandseq_polished_haploid_assembly:
     input:
         dl_chk = 'output/check_files/quast-lg/busco_db_download.ok',
         known_ref = 'references/assemblies/{known}.fasta',
-        haploid_assm = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.{polisher}.fasta',
+        haploid_assm = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.{polisher}.fasta',
         genes = 'references/downloads/{genemodel}.gff3.gz'
     output:
-        pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
-        html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/icarus.html'
+        pdf_report = 'output/evaluation/known_reference/quastlg_busco/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/report.pdf',
+        html_icarus = 'output/evaluation/known_reference/quastlg_busco/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/icarus.html'
     log:
-        'log/output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/run.log',
+        'log/output/evaluation/known_reference/quastlg_busco/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/run.log',
     benchmark:
-        'run/output/evaluation/known_reference/quastlg_busco/strandseq.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/run.rsrc',
+        'run/output/evaluation/known_reference/quastlg_busco/strandseq.{strategy}.{var_caller}_GQ{gq}_DP{dp}.{reference}.{vc_reads}.{sts_reads}.{hap_reads}.{assembler}.{pol_reads}.{polisher}.{hap}.{known}.{genemodel}/run.rsrc',
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = 6144,

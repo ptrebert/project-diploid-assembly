@@ -1,19 +1,20 @@
 
 include: 'canonical_dga.smk'
-include: 'strandseq_dga.smk'
+include: 'strandseq_dga_joint.smk'
+include: 'strandseq_dga_split.smk'
 include: 'run_alignments.smk'
 
 rule racon_contig_polishing_pass1:
     input:
-        use_for_correct = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.fastq.gz',
-        alignments = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.racon-p1.psort.sam',
-        target_seqs = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
+        use_for_correct = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}.{hap}.fastq.gz',
+        alignments = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/alignments/{hap_reads}/{pol_reads}_map-to_{reference}.{hap}.racon-p1.psort.sam',
+        target_seqs = 'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/consensus/{hap_reads}-{assembler}.{hap}.fasta'
     output:
-        'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.racon-p1.fasta'
+        'output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.racon-p1.fasta'
     log:
-        'log/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.racon-p1.log'
+        'log/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.racon-p1.log'
     benchmark:
-        'run/output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.racon-p1.rsrc'
+        'run/output/diploid_assembly/strandseq_{strategy}/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/{hap_reads}-{assembler}.{hap}.racon-p1.rsrc'
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = 14336,
