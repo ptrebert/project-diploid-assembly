@@ -45,3 +45,22 @@ z.limit  =  3
 remove.always.WC  =  FALSE 
 
 ```
+
+Update sent by David via e-mail on 2019-10-27
+
+```
+scaffoldDenovoAssembly(bamfolder = ...,
+                       outputfolder = "...",
+                       store.data.obj = TRUE,
+                       reuse.data.obj = TRUE,
+                       pairedEndReads = TRUE,
+                       bin.size = 100000,
+                       step.size = 50000,
+                       bin.method = 'dynamic',
+                       min.contig.size = 100000,
+                       assembly.fasta = assembly.fasta,
+                       concat.fasta = FALSE,
+                       num.clusters = 100,
+                       remove.always.WC = TRUE,
+                       mask.regions = FALSE)
+```
