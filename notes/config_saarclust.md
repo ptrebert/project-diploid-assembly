@@ -64,3 +64,23 @@ scaffoldDenovoAssembly(bamfolder = ...,
                        remove.always.WC = TRUE,
                        mask.regions = FALSE)
 ```
+
+Update sent by David via e-mail on 2019-10-31
+
+```
+scaffoldDenovoAssembly(bamfolder = bamfolder,
+                       outputfolder = "...",
+                       store.data.obj = TRUE,
+                       reuse.data.obj = TRUE,
+                       pairedEndReads = TRUE,
+                       bin.size = 500000,
+                       step.size = 50000,
+                       prob.th = 0.5,
+                       bin.method = 'dynamic',
+                       min.contig.size = 100000,
+                       assembly.fasta = assembly.fasta,
+                       concat.fasta = FALSE,
+                       num.clusters = 100,
+                       remove.always.WC = TRUE,
+                       mask.regions = FALSE)
+```
