@@ -56,6 +56,23 @@ rule plot_fastq_input_statistics:
         shell(exec)
 
 
+rule filter_squashed_assembly_by_size:
+    input:
+        'references/assemblies/{sample}_sqa-{assembler}.fasta'
+    output:
+        fasta = 'references/assemblies/filtered/{sample}_sqa-{assembler}-100kb.fasta',
+        stats = 'output/statistics/assemblies/{sample}_sqa-{assembler}-100kb.stats.tsv'
+    log:
+        'log/references/assemblies/{sample}_sqa-{assembler}-100kb.log'
+    params:
+        scriptdir = config['script_dir'],
+        min_contig_size = config['min_contig_size'],
+    shell:
+        '{params.scriptdir}/filter_squashed_assembly.py --debug --input-fasta {input}' \
+            ' --output-fasta {output.fasta} --output-metrics {output.stats}' \
+            ' --min-size {params.min_contig_size} &> {log}'
+
+
 rule compute_statistics_haplosplit_fastq:
     input:
         'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.fastq.gz'
