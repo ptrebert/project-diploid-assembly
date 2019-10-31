@@ -2,10 +2,10 @@
 
 directory: /scratch/bioinf/projects/diploid-genome-assembly/pebert
 cores: 48
-latency-wait: 5
+latency-wait: 2
 keep-going: True
-rerun-incomplete: True
-restart-times: 1
+rerun-incomplete: False
+restart-times: 0
 resources:
   mem_total_mb=1520432
 # resource memory: ~1.4 TB
