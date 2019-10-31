@@ -7,6 +7,15 @@ include: 'variant_calling.smk'
 
 localrules: master_canonical_dga, canonical_dga_merge_sequence_phased_vcf_files
 
+
+"""
+Components:
+vc_reads = FASTQ file used for variant calling relative to reference
+hap_reads = FASTQ file to be used for haplotype reconstruction
+"""
+PATH_STRANDSEQ_DGA_SPLIT = 'diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}'
+
+
 rule master_canonical_dga:
     input:
 

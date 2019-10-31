@@ -10,6 +10,16 @@ localrules: master_strandseq_dga_split, \
             strandseq_dga_split_merge_readsets, \
             strandseq_dga_split_merge_sequences
 
+
+"""
+Components:
+vc_reads = FASTQ file used for variant calling relative to reference
+hap_reads = FASTQ file to be used for haplotype reconstruction
+sts_reads = FASTQ file used for strand-seq phasing
+"""
+PATH_STRANDSEQ_DGA_SPLIT = 'diploid_assembly/strandseq_split/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}'
+
+
 rule master_strandseq_dga_split:
     input:
 

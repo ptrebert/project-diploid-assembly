@@ -8,16 +8,20 @@ include: 'variant_calling.smk'
 
 localrules: master_strandseq_dga_joint
 
+"""
+Components:
+vc_reads = FASTQ file used for variant calling relative to reference
+hap_reads = FASTQ file to be used for haplotype reconstruction
+sts_reads = FASTQ file used for strand-seq phasing
+"""
+PATH_STRANDSEQ_DGA_JOINT = 'diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}'
+
+
 rule master_strandseq_dga_joint:
     input:
 
 
 rule strandseq_dga_joint_haplo_tagging:
-    """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
-    """
     input:
         vcf = 'output/integrative_phasing/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf.bgz',
         tbi = 'output/integrative_phasing/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf.bgz.tbi',
@@ -36,11 +40,6 @@ rule strandseq_dga_joint_haplo_tagging:
 
 
 rule strandseq_dga_joint_haplo_splitting:
-    """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
-    """
     input:
         fastq = 'input/fastq/complete/{hap_reads}.fastq.gz',
         tags = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.fq.tsv',
@@ -58,11 +57,6 @@ rule strandseq_dga_joint_haplo_splitting:
 
 
 rule strandseq_dga_joint_haplo_tagging_pacbio_native:
-    """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
-    """
     input:
         vcf = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf.bgz',
         tbi = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf.bgz.tbi',
@@ -81,11 +75,6 @@ rule strandseq_dga_joint_haplo_tagging_pacbio_native:
 
 
 rule strandseq_dga_joint_haplo_splitting_pacbio_native:
-    """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
-    """
     input:
         pbn_bam = 'input/bam/complete/{hap_reads}.pbn.bam',
         pbn_idx = 'input/bam/complete/{hap_reads}.pbn.bam.bai',
@@ -104,11 +93,6 @@ rule strandseq_dga_joint_haplo_splitting_pacbio_native:
 
 
 rule strandseq_dga_joint_merge_tag_groups_pacbio_native:
-    """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
-    """
     input:
         hap = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{haplotype}.pbn.bam',
         un = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.un.pbn.bam',
@@ -123,11 +107,6 @@ rule strandseq_dga_joint_merge_tag_groups_pacbio_native:
 
 
 rule strandseq_dga_joint_merge_tag_groups:
-    """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
-    """
     input:
         hap = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.h{haplotype}.fastq.gz',
         un = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.un.fastq.gz',
@@ -140,11 +119,6 @@ rule strandseq_dga_joint_merge_tag_groups:
 
 
 rule strandseq_dga_joint_assemble_haplotypes_wtdbg_layout:
-    """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
-    """
     input:
         fastq = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.fastq.gz',
     output:
@@ -165,11 +139,6 @@ rule strandseq_dga_joint_assemble_haplotypes_wtdbg_layout:
 
 
 rule strandseq_dga_joint_assemble_haplotypes_wtdbg_consensus:
-    """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
-    """
     input:
         layout = 'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/layout/wtdbg2/{hap_reads}.{hap}.ctg.lay.gz',
     output:
