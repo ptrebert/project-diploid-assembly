@@ -22,9 +22,11 @@ dependencies:
   - bamtools=2.5.1
   - bedtools=2.29.0
   - bcftools=1.9
+  - fastqc=0.11.8
   - freebayes=1.3.1
   - longshot=v0.3.5
   - wtdbg=2.5
+  - flye=2.6
   - racon=1.4.7
   - pbgzip
   - pigz=2.4
