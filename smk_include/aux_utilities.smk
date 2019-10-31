@@ -181,3 +181,57 @@ def collect_strandseq_alignments(wildcards):
         run_id=checkpoint_wildcards.run_id,
         ext=['', '.bai'])
     return sorted(bam_files)
+
+
+def load_preset_file(wildcards, input):
+    """
+    Save load for parameters from files that do not
+    exist during a dry run, leading to a FileNotFoundError
+    raised by Snakemake. Replaces construct
+
+    params:
+        preset = lambda wildcards, input: open(input.preset).read().strip()
+
+    with
+
+    params:
+        preset = load_preset_file
+
+    """
+    if not hasattr(input, 'preset'):
+        raise AttributeError('Input does not have a "preset" attribute: {}'.format(input))
+    file_path = input.preset
+    if not os.path.isfile(file_path):
+        preset = 'PRESET-DRY-RUN'
+    else:
+        with open(file_path, 'r') as dump:
+            preset = dump.read().strip()
+    return preset
+
+
+def load_fofn_file(input, prefix='', sep=' '):
+    """
+    Save load for list of filenames from a file that
+    does not exist during a dry run, leading to a
+    FileNotFoundError raised by Snakemake.
+
+    Replaces construct
+
+    params:
+        preset = lambda wildcards, input: open(input.fofn).read().strip()
+
+    with
+
+    params:
+        preset = lambda wildcards, input: load_fofn_file(input, prefix_string, separator_string)
+    """
+    if not hasattr(input, 'fofn'):
+        raise AttributeError('Input does not have "fofn" attribute: {}'.format(input))
+    file_path = input.fofn
+    if not os.path.isfile(file_path):
+        file_list = ['FOFN-DRY-RUN']
+    else:
+        with open(file_path, 'r') as dump:
+            file_list = sorted([l.strip() for l in dump.readlines()])
+    file_list = prefix + sep.join(file_list)
+    return file_list
