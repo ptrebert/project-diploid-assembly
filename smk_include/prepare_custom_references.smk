@@ -1,6 +1,7 @@
 
 include: 'aux_utilities.smk'
 include: 'preprocess_input.smk'
+include: 'run_assemblies.smk'
 include: 'run_alignments.smk'
 
 localrules: master_prepare_custom_references, \
@@ -12,65 +13,6 @@ localrules: master_prepare_custom_references, \
 rule master_prepare_custom_references:
     input:
 
-
-rule compute_wtdbg_squashed_assembly_layout:
-    input:
-        fastq = 'input/fastq/complete/{sample}_1000.fastq.gz'
-    output:
-        layout = 'references/assemblies/squashed_layout/wtdbg2/{sample}/{sample}.ctg.lay.gz',
-    log: 'log/references/assemblies/squashed_layout/wtdbg2/{sample}.layout.log',
-    benchmark: 'run/references/assemblies/squashed_layout/wtdbg2/{sample}.layout.rsrc',
-    threads: config['num_cpu_high']
-    resources:
-        mem_per_cpu_mb = 6144,
-        mem_total_mb = 409600
-    params:
-        param_preset = lambda wildcards: config['wtdbg2_presets'][wildcards.sample],
-        out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0]
-    shell:
-        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g3g -t {threads}' \
-            ' -o {params.out_prefix} &> {log}'
-
-
-rule compute_wtdbg_squashed_assembly_consensus:
-    input:
-        layout = 'references/assemblies/squashed_layout/wtdbg2/{sample}/{sample}.ctg.lay.gz'
-    output:
-        squashed_assembly = 'references/assemblies/{sample}_sqa-wtdbg.fasta'
-    log: 'log/references/assemblies/{sample}_sqa-wtdbg.consensus.log'
-    benchmark: 'run/references/assemblies/{sample}_sqa-wtdbg.consensus.rsrc'
-    threads: config['num_cpu_high']
-    resources:
-        mem_per_cpu_mb = 384,
-        mem_total_mb = 12288
-    shell:
-        'wtpoa-cns -t {threads} -i {input.layout} -o {output.squashed_assembly} &> {log}'
-
-
-rule filter_squashed_assembly_by_size:
-    input:
-        'references/assemblies/{sample}_{assembly_type}-{assembler}.fasta'
-    output:
-        fasta = 'references/assemblies/{sample}_{assembly_type}-{assembler}-100kb.fasta',
-        stats = 'output/statistics/assemblies/{sample}_{assembly_type}-{assembler}-100kb.stats.tsv'
-    log:
-        'log/references/assemblies/{sample}_{assembly_type}-{assembler}-100kb.log'
-    wildcard_constraints:
-        assembly_type = '(sqa|scV[0-9])',
-    params:
-        scriptdir = config['script_dir'],
-        min_contig_size = config['min_contig_size'],
-    shell:
-        '{params.scriptdir}/filter_squashed_assembly.py --debug --input-fasta {input}' \
-            ' --output-fasta {output.fasta} --output-metrics {output.stats}' \
-            ' --min-size {params.min_contig_size} &> {log}'
-
-# =================================
-# ====== STRAND_SEQ PART ==========
-# =================================
-# Below this point: SaarClust step
-# cluster squashed assembly contigs
-# based on strand-seq information
 
 def collect_strandseq_merge_files(wildcards):
     """
@@ -156,7 +98,7 @@ rule mark_duplicate_reads_strandseq:
 
 rule install_rlib_saarclust:
     output:
-         'output/check_files/R_setup/saarclust.ok'
+         'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_saarclust']
@@ -173,7 +115,7 @@ rule write_saarclust_config_file:
     containing just the input folder for StrandPhaseR
     """
     input:
-        setup_ok = 'output/check_files/R_setup/saarclust.ok',
+        setup_ok = 'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']),
         reference = 'references/assemblies/{reference}.fasta',
         bam = collect_strandseq_alignments
     output:
@@ -182,7 +124,8 @@ rule write_saarclust_config_file:
     params:
         min_contig_size = config['min_contig_size'],
         bin_size = config['bin_size'],
-        step_size = config['step_size']
+        step_size = config['step_size'],
+        prob_threshold = config['prob_threshold']
     run:
 
         config_rows = [
@@ -190,6 +133,7 @@ rule write_saarclust_config_file:
             'min.contig.size = ' + str(params.min_contig_size),
             'bin.size = ' + str(params.bin_size),
             'step.size = ' + str(params.step_size),
+            'prob.th = ' + str(params.prob_threshold),
             'pairedReads = TRUE',
             'store.data.obj = TRUE',
             'reuse.data.obj = TRUE',
@@ -197,7 +141,7 @@ rule write_saarclust_config_file:
             'bin.method = "dynamic"',
             'assembly.fasta = "' + input.reference + '"',
             'concat.fasta = FALSE',
-            'remove.always.WC = FALSE',
+            'remove.always.WC = TRUE',
             'mask.regions = FALSE'
         ]
 

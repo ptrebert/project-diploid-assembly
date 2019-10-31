@@ -2,7 +2,7 @@
 # === Software setup settings ===
 # Specify git commits for SaaRclust
 # and StrandPhaseR setup
-git_commit_saarclust: 69f394c
+git_commit_saarclust: 9728496
 git_commit_strandphaser: e8913f3
 # arbitrarily tying a version number
 # to the git commits to avoid additional
@@ -61,17 +61,11 @@ strandseq_to_bioproject:
 # SaaRclust parameter sets
 # goal is to obtain 24 clusters
 min_contig_size: 100000
-bin_size: 100000
+bin_size: 500000
 step_size: 50000
+prob_threshold: 0.5
 
 # === Parameter presets for alignment tools ===
-wtdbg2_presets:
-  HG00733_hpg_ontpm-ul: ont
-  HG00733_sra_pbsq1-clr: sq
-  HG00733_hgsvc_pbsq2-ccs: ccs
-  HG00732_hgsvc_pbsq2-ccs: ccs
-  HG00731_hgsvc_pbsq2-ccs: ccs
-
 pbmm2_presets:
   HG00733_sra_pbsq1-clr: SUBREAD
   HG00733_hgsvc_pbsq2-ccs: CCS

@@ -7,6 +7,8 @@ include: 'variant_calling.smk'
 
 localrules: master_integrative_phasing, \
             strandseq_dga_merge_sequence_phased_vcf_files, \
+            install_rlib_breakpointr, \
+            install_rlib_strandphaser, \
             write_breakpointr_config_file, \
             write_strandphaser_config_file
 
@@ -16,7 +18,7 @@ rule master_integrative_phasing:
 
 rule install_rlib_breakpointr:
     input:
-        'output/check_files/R_setup/saarclust.ok'
+        'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
     output:
          'output/check_files/R_setup/breakpointr.ok'
     params:
@@ -29,7 +31,7 @@ rule install_rlib_strandphaser:
     input:
         'output/check_files/R_setup/breakpointr.ok'
     output:
-         'output/check_files/R_setup/strandphaser.ok'
+         'output/check_files/R_setup/strandphaser_ver-{}.ok'.format(config['git_commit_strandphaser'])
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_strandphaser']
@@ -118,7 +120,7 @@ rule write_strandphaser_config_file:
     containing just the input folder for StrandPhaseR
     """
     input:
-        setup_ok = 'output/check_files/R_setup/strandphaser.ok',
+        setup_ok = 'output/check_files/R_setup/strandphaser_ver-{}.ok'.format(config['git_commit_strandphaser']),
         reference = 'references/assemblies/{reference}.fasta',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
