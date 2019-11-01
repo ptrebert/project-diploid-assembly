@@ -138,7 +138,7 @@ rule write_saarclust_config_file:
             'store.data.obj = TRUE',
             'reuse.data.obj = TRUE',
             'num.clusters = 100',
-            'bin.method = "dynamic"',
+            'bin.method = "fixed"',
             'assembly.fasta = "' + input.reference + '"',
             'concat.fasta = FALSE',
             'remove.always.WC = TRUE',
