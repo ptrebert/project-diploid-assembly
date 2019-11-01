@@ -1,5 +1,9 @@
 #!/usr/bin/env Rscript
 
+if (is.element('SaaRclust', installed.packages()[,1])) {
+    remove.packages('SaaRclust')
+}
+
 args = commandArgs(trailingOnly=TRUE)
 
 git.commit = args[1]
