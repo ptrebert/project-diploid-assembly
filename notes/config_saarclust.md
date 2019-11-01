@@ -84,3 +84,25 @@ scaffoldDenovoAssembly(bamfolder = bamfolder,
                        remove.always.WC = TRUE,
                        mask.regions = FALSE)
 ```
+
+Update sent by David via e-mail on 2019-11-01
+Based on comment in e-mail and below name of output folder,
+switch to "fixed" binning strategy
+
+```
+scaffoldDenovoAssembly(bamfolder = bamfolder,
+                       outputfolder = "[...]/HG00733/SaaRclust_results_fixed500K_probTh0.5",
+                       store.data.obj = TRUE,
+                       reuse.data.obj = TRUE,
+                       pairedEndReads = TRUE,
+                       bin.size = 500000,
+                       step.size = 50000,
+                       prob.th=0.5,
+                       bin.method = 'dynamic', (<-- switch to fixed)
+                       min.contig.size = 100000,
+                       assembly.fasta = assembly.fasta,
+                       concat.fasta = FALSE,
+                       num.clusters = 100,
+                       remove.always.WC = TRUE,
+                       mask.regions = FALSE)
+```
