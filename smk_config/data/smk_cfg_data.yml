@@ -65,14 +65,6 @@ bin_size: 500000
 step_size: 50000
 prob_threshold: 0.5
 
-# === Parameter presets for alignment tools ===
-pbmm2_presets:
-  HG00733_sra_pbsq1-clr: SUBREAD
-  HG00733_hgsvc_pbsq2-ccs: CCS
-  HG00732_hgsvc_pbsq2-ccs: CCS
-  HG00731_hgsvc_pbsq2-ccs: CCS
-  HG002_pbio_pbsq2-clr: SUBREAD
-
 # VARIANT CALLING
 # Postprocessing parameters
 filter_vcf_gq:
