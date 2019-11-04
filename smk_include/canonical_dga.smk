@@ -13,7 +13,7 @@ Components:
 vc_reads = FASTQ file used for variant calling relative to reference
 hap_reads = FASTQ file to be used for haplotype reconstruction
 """
-PATH_STRANDSEQ_DGA_SPLIT = 'diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}'
+PATH_CANONICAL_DGA = 'diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}'
 
 
 rule master_canonical_dga:
