@@ -201,8 +201,8 @@ rule run_integrative_phasing:
         tbi = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf.bgz.tbi',
         bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam',
         bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
-        fasta = reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        seq_info = reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+        fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
+        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
         sts_phased = rules.run_strandphaser.output.vcf
     output:
         vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/splits/{hap_reads}.{sequence}.phased.vcf'
