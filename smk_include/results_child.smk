@@ -8,8 +8,10 @@ include: 'eval_known_reference.smk'
 include: 'eval_variant_calls.smk'
 
 localrules: master_results_child, \
-            create_child_clr_ref_assemblies, \
-            create_child_ccs_ref_assemblies
+            create_child_clr_sqa_assemblies, \
+            create_child_ccs_sqa_assemblies, \
+            create_child_clr_clust_assemblies, \
+            create_child_ccs_clust_assemblies
 
 
 CLR_ASSM_733_WTDBG = 'HG00733_sra_pbsq1-clr_scV{}-wtdbg'.format(config['git_commit_version'])

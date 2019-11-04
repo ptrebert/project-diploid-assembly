@@ -8,7 +8,8 @@ include: 'eval_known_reference.smk'
 include: 'eval_variant_calls.smk'
 
 localrules: master_results_parents, \
-            create_parents_ccs_assemblies
+            create_parents_ccs_sqa_assemblies, \
+            create_parents_ccs_clust_assemblies
 
 
 CCS_ASSM_732_WTDBG = 'HG00732_hgsvc_pbsq2-ccs_scV{}-wtdbg'.format(config['git_commit_version'])
