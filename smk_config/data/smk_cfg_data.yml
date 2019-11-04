@@ -2,7 +2,7 @@
 # === Software setup settings ===
 # Specify git commits for SaaRclust
 # and StrandPhaseR setup
-git_commit_saarclust: 0a32b6a
+git_commit_saarclust: 00f767f
 git_commit_strandphaser: e8913f3
 # arbitrarily tying a version number
 # to the git commits to avoid additional
@@ -39,19 +39,6 @@ strandseq_samples:
   - HG00733_1kg_il25k-npe
   - HG00732_1kg_il25k-npe
   - HG00731_1kg_il25k-npe
-
-# This is evidence of a design glitch:
-# here, manually associate strand-seq
-# datasets with long read datasets
-# for the SaaRclust step to avoid
-# having to carry around the sts_reads
-# wildcard for clustered assemblies
-# throughout the rest of the pipeline
-strandseq_to_assembly:
-  HG00733_sra_pbsq1-clr: HG00733_1kg_il25k-npe_sseg
-  HG00731_hgsvc_pbsq2-ccs: HG00731_1kg_il25k-npe_sseg
-  HG00732_hgsvc_pbsq2-ccs: HG00732_1kg_il25k-npe_sseg
-  HG00733_hgsvc_pbsq2-ccs: HG00733_1kg_il25k-npe_sseg
 
 strandseq_to_bioproject:
   HG00733_1kg_il25k-npe: PRJEB12849
