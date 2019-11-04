@@ -34,8 +34,15 @@ rule create_parents_ccs_clust_assemblies:
         expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/reference_assembly/clustered/{sts_reads}/{reference}/report.pdf',
                 known_ref=['GRCh38_GCA_p13'],
                 genemodel=['GRCh38_GENCODEv31_basic'],
-                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
-                reference=CCS_ASSM_PARENTS
+                sts_reads=['HG00732_1kg_il25k-npe_sseq'],
+                reference=[CCS_ASSM_732_WTDBG, CCS_ASSM_732_FLYE]
+                ),
+
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/reference_assembly/clustered/{sts_reads}/{reference}/report.pdf',
+                known_ref=['GRCh38_GCA_p13'],
+                genemodel=['GRCh38_GENCODEv31_basic'],
+                sts_reads=['HG00731_1kg_il25k-npe_sseq'],
+                reference=[CCS_ASSM_731_WTDBG, CCS_ASSM_731_FLYE]
                 )
 
 
