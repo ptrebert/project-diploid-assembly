@@ -123,7 +123,7 @@ rule bwa_strandseq_to_reference_alignment:
         mate2 = 'input/fastq/strand-seq/{individual}_{bioproject}/{individual}_{sample_id}_2.fastq.gz',
         ref_index = 'output/reference_assembly/squashed/bwa_index/{reference}.bwt',
     output:
-        bam = temp('output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/aln/{individual}_{sample_id}.filt.sam.bam')
+        bam = 'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/aln/{individual}_{sample_id}.filt.sam.bam'
     log:
         bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{sample_id}.bwa.log',
         samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{sample_id}.samtools.log',
