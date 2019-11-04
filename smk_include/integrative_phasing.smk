@@ -22,7 +22,7 @@ rule master_integrative_phasing:
 
 rule install_rlib_breakpointr:
     input:
-        rules.install_rlib_saarclust.output.check
+        'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
     output:
          check = 'output/check_files/R_setup/breakpointr.ok'
     params:
