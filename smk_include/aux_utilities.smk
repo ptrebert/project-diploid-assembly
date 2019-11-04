@@ -10,9 +10,9 @@ rule compute_md5_checksum:
 
 rule samtools_index_cram_alignment:
     input:
-        cram = '{filepath}'
+        cram = '{filepath}.cram'
     output:
-        crai = '{filepath}.crai'
+        crai = '{filepath}.cram.crai'
     threads: config['num_cpu_low']
     shell:
         "samtools index -@ {threads} {input.cram}"
@@ -30,9 +30,9 @@ rule samtools_index_bam_alignment:
 
 rule pb_bamtools_index_bam_alignment:
     input:
-        pbn_bam = '{filepath}'
+        pbn_bam = '{filepath}.pbn.bam'
     output:
-        pbi = '{filepath}.pbi'
+        pbi = '{filepath}.pbn.bam.pbi'
     conda:
         config['conda_env_pbtools']
     shell:
@@ -102,9 +102,9 @@ rule bcftools_index_bgzipped_file:
 
 checkpoint create_assembly_sequence_files:
     input:
-        'references/assemblies/{reference}.fasta.fai'
+        '{folder_path}/{reference}.fasta.fai'
     output:
-        directory('references/assemblies/{reference}/sequences')
+        directory('{folder_path}/{reference}/sequences')
     run:
         output_dir = output[0]
         os.makedirs(output_dir, exist_ok=True)
@@ -116,30 +116,19 @@ checkpoint create_assembly_sequence_files:
                     _ = dump.write(line)
 
 
-def collect_assembly_sequence_files(wildcards):
-    """
-    """
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(reference=wildcards.reference).output[0]
-
-    checkpoint_wildcards = glob_wildcards(seq_output_dir, '{sequence}.seq')
-
-    return expand(os.path.join(seq_output_dir, '{sequence}.seq'),
-                    sequence=checkpoint_wildcards.sequence)
-
-
 rule generate_bwa_index:
     input:
-        reference = 'references/assemblies/{reference}.fasta'
+        reference = '{folder_path}/{reference}.fasta'
     output:
-        'references/assemblies/bwa_index/{reference}.amb',
-        'references/assemblies/bwa_index/{reference}.ann',
-        'references/assemblies/bwa_index/{reference}.bwt',
-        'references/assemblies/bwa_index/{reference}.pac',
-        'references/assemblies/bwa_index/{reference}.sa'
+        '{folder_path}/bwa_index/{reference}.amb',
+        '{folder_path}/bwa_index/{reference}.ann',
+        '{folder_path}/bwa_index/{reference}.bwt',
+        '{folder_path}/bwa_index/{reference}.pac',
+        '{folder_path}/bwa_index/{reference}.sa'
     log:
-        'log/references/assemblies/bwa_index/{reference}.log'
+        'log/{folder_path}/bwa_index/{reference}.log'
     benchmark:
-        'run/references/assemblies/bwa_index/{reference}.rsrc'
+        'run/{folder_path}/bwa_index/{reference}.rsrc'
     resources:
         mem_per_cpu_mb = 6144,
         mem_total_mb = 6144
@@ -171,7 +160,7 @@ def collect_strandseq_alignments(wildcards):
         # assume squashed assembly
         reference = wildcards.sample + '_sqa-' + wildcards.assembler
     bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/final/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
+        'output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
         reference=wildcards.reference,
         individual=individual,
         bioproject=bioproject,
@@ -235,3 +224,22 @@ def load_fofn_file(input, prefix='', sep=' '):
             file_list = sorted([l.strip() for l in dump.readlines()])
     file_list = prefix + sep.join(file_list)
     return file_list
+
+
+def load_seq_length_file(wildcards, input):
+    """
+    Follows same idea as two function above
+    """
+    if not hasattr(input, 'seq_info'):
+        raise AttributeError('Input does not have "seq_info" attribute: {}'.format(input))
+    file_path = input.seq_info
+    if not os.path.isfile(file_path):
+        seq_len = 'SEQLEN-DRY-RUN'
+    else:
+        with open(file_path, 'r') as info:
+            seq_len = info.readline().split()[1]
+            try:
+                _ = int(seq_len)
+            except ValueError:
+                raise AssertionError('Extracted seq. length is not an integer: {} / {}'.format(seq_len, file_path))
+    return seq_len
