@@ -63,9 +63,18 @@ rule write_strandseq_merge_fofn:
     output:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
     run:
+        potential_log = os.path.join('log', output.fofn.replace('.fofn', '.log'))
+        os.makedirs(os.path.dirname(potential_log), exist_ok=True)
+
         with open(output.fofn, 'w') as dump:
             for file_path in input.bams:
-                assert os.path.isfile(file_path), 'Invalid path to strandseq merge BAM file: {}'.format(file_path)
+                if not os.path.isfile(file_path):
+                    with open(potential_log, 'w') as error_log:
+                        _ = error_log.write('Invalid path to merge BAM file: {}\n'.format(file_path))
+                        _ = error_log.write('Input BAMS: {}\n'.format(input.bams))
+                        _ = error_log.write('Type: {}\n'.format(type(input.bams)))
+                        raise AssertionError('Invalid path to merge BAMs: {}\n'.format(potential_log))
+
                 _ = dump.write(file_path + '\n')
 
 
@@ -227,9 +236,17 @@ rule write_reference_fasta_clusters_fofn:
     output:
        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
     run:
+        potential_log = os.path.join('log', output.fofn.replace('.fofn', '.log'))
+        os.makedirs(os.path.dirname(potential_log), exist_ok=True)
+
         with open(output[0], 'w') as dump:
             for file_path in sorted(input.fasta):
-                assert os.path.isfile(file_path), 'Invalid path to cluster fasta file: {}'.format(file_path)
+                if not os.path.isfile(file_path):
+                    with open(potential_log, 'w') as error_log:
+                        _ = error_log.write('Invalid path to merge FASTA file: {}\n'.format(file_path))
+                        _ = error_log.write('Input BAMS: {}\n'.format(input.bams))
+                        _ = error_log.write('Type: {}\n'.format(type(input.bams)))
+                        raise AssertionError('Invalid path to merge FASTA: {}\n'.format(potential_log))
                 _ = dump.write(file_path + '\n')
 
 

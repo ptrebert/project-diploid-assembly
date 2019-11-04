@@ -229,8 +229,8 @@ rule compute_flye_haploid_assembly:
 
 rule compute_wtdbg_haploid_split_assembly_layout:
     input:
-        fastq = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/splits/{hap_reads}.{hap}.{sequence}.fastq.gz',
-        preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/splits/{hap_reads}.{hap}.{sequence}.preset.wtdbg',
+        fastq = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
+        preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.preset.wtdbg',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq'
     output:
         layout = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.{sequence}/{hap_reads}.{hap}.ctg.lay.gz',
@@ -257,9 +257,9 @@ rule compute_wtdbg_haploid_split_assembly_consensus:
     input:
         layout = rules.compute_wtdbg_haploid_split_assembly_layout.output.layout
     output:
-        haploid_assembly = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/splits/{hap_reads}-wtdbg.{hap}.{sequence}.fasta'
-    log: 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/splits/{hap_reads}.{hap}.{sequence}.wtdbg.log'
-    benchmark: 'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/splits/{hap_reads}.{hap}.{sequence}.wtdbg.rsrc'
+        haploid_assembly = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-wtdbg.{hap}.{sequence}.fasta'
+    log: 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.wtdbg.log'
+    benchmark: 'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.wtdbg.rsrc'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 384,
@@ -270,8 +270,8 @@ rule compute_wtdbg_haploid_split_assembly_consensus:
 
 rule compute_flye_haploid_split_assembly:
     input:
-        fastq = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/splits/{hap_reads}.{hap}.{sequence}.fastq.gz',
-        preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/splits/{hap_reads}.{hap}.{sequence}.preset.flye',
+        fastq = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
+        preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.preset.flye',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq'
     output:
         layout = directory('output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/00-assembly'),
@@ -284,9 +284,9 @@ rule compute_flye_haploid_split_assembly:
         assm_info = 'output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/assembly_info.txt',
         run_params = 'output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/params.json',
         assm_source = 'output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/assembly.fasta',
-        assembly = 'output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/splits/{hap_reads}-flye.{hap}.{sequence}.fasta',
-    log: 'log/output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/splits/{hap_reads}.{hap}.{sequence}.flye.log'
-    benchmark: 'run/output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/splits/{hap_reads}.{hap}.{sequence}.flye.rsrc'
+        assembly = 'output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-flye.{hap}.{sequence}.fasta',
+    log: 'log/output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.flye.log'
+    benchmark: 'run/output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.flye.rsrc'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = int(1048576 / int(config['num_cpu_high'])),
