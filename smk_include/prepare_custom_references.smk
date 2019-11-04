@@ -5,13 +5,23 @@ include: 'run_assemblies.smk'
 include: 'run_alignments.smk'
 
 localrules: master_prepare_custom_references, \
-            install_rlib_saarclust, \
             write_saarclust_config_file, \
-            merge_mono_dinucleotide_fraction, \
-            merge_reference_fasta_clusters
+            write_strandseq_merge_fofn, \
+            write_reference_fasta_clusters_fofn
+
 
 rule master_prepare_custom_references:
     input:
+
+
+rule install_rlib_saarclust:
+    output:
+         'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
+    params:
+        script_dir = config['script_dir'],
+        version = config['git_commit_saarclust']
+    shell:
+        'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {output}'
 
 
 def collect_strandseq_merge_files(wildcards):
@@ -32,7 +42,7 @@ def collect_strandseq_merge_files(wildcards):
     checkpoint_wildcards = glob_wildcards(search_path)
 
     bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/{individual}_{project}_{spec}_{lib_id}_{run_id}.filt.sam.bam',
+        'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/aln/{individual}_{project}_{spec}_{lib_id}_{run_id}.filt.sam.bam',
         zip,
         reference=[wildcards.reference, wildcards.reference],
         individual=[individual, individual],
@@ -47,6 +57,18 @@ def collect_strandseq_merge_files(wildcards):
     return sorted(bam_files)
 
 
+rule write_strandseq_merge_fofn:
+    input:
+        bams = collect_strandseq_merge_files
+    output:
+        fofn = 'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
+    run:
+        with open(output.fofn, 'w') as dump:
+            for file_path in input.bams:
+                assert os.path.isfile(file_path), 'Invalid path to strandseq merge BAM file: {}'.format(file_path)
+                _ = dump.write(file_path + '\n')
+
+
 rule merge_mono_dinucleotide_fraction:
     """
     This rule is likely quite specific
@@ -55,55 +77,52 @@ rule merge_mono_dinucleotide_fraction:
     different input data
     """
     input:
-        nuc_files = collect_strandseq_merge_files
+        fofn = rules.write_strandseq_merge_fofn.output.fofn
     output:
-        temp('output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.sam.bam')
+        temp('output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.sam.bam')
     log:
-        'log/output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
+        'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}.{individual}.{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
-    wildcard_constraints:
-        lib_id = '[A-Z0-9]+'
-    threads: config['num_cpu_local']
+        'run/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
+    threads: config['num_cpu_low']
+    params:
+        merge_files = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'samtools merge -@ {threads} -O BAM {output} {input.nuc_files} &> {log}'
+        'samtools merge -@ {threads} -O BAM {output} {params.merge_files} &> {log}'
 
 
 rule samtools_position_sort_strandseq_reads:
+    """
+    Since Strand-seq alignments are small, make dedicated
+    samtools sort rule with lower resource requirements
+    """
     input:
-        'output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.sam.bam'
+        '{folder_path}/temp/mrg/{sample}.mrg.sam.bam'
     output:
-        temp('output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.psort.sam.bam')
+        temp('{folder_path}/temp/sort/{sample}.mrg.psort.sam.bam')
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = 2048,
-        mem_total_mb = config['num_cpu_low'] * 2048
+        mem_per_cpu_mb = 512,
+        mem_total_mb = config['num_cpu_low'] * 512
     shell:
         'samtools sort -m {resources.mem_per_cpu_mb}M --threads {threads} -o {output} {input}'
 
 
 rule mark_duplicate_reads_strandseq:
     input:
-        'output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.psort.sam.bam'
+        rules.samtools_position_sort_strandseq_reads.output[0]
     output:
-        'output/alignments/strandseq_to_reference/{subfolder}/final/{sample}.mrg.psort.mdup.sam.bam'
+        '{folder_path}/{sample}.mrg.psort.mdup.sam.bam'
     log:
-        'log/output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.psort.mdup.log'
+        'log/{folder_path}/{sample}.mrg.psort.mdup.log'
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{subfolder}/{sample}.mrg.psort.mdup.rsrc'
+        'run/{folder_path}/{sample}.mrg.psort.mdup.rsrc'
     threads: config['num_cpu_low']
+    resources:
+            mem_per_cpu_mb = 512,
+            mem_total_mb = config['num_cpu_low'] * 512
     shell:
-        'sambamba markdup -t {threads} {input} {output} &> {log}'
-
-
-rule install_rlib_saarclust:
-    output:
-         'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
-    params:
-        script_dir = config['script_dir'],
-        version = config['git_commit_saarclust']
-    shell:
-        'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {output}'
+        'sambamba markdup -t {threads} --overflow-list-size 600000 {input} {output} &> {log}'
 
 
 rule write_saarclust_config_file:
@@ -116,18 +135,18 @@ rule write_saarclust_config_file:
     """
     input:
         setup_ok = 'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']),
-        reference = 'references/assemblies/{reference}.fasta',
-        bam = collect_strandseq_alignments
+        reference = 'output/reference_assembly/squashed/{reference}.fasta',
+        strandseq_reads = 'input/fastq/complete/{sts_reads}.fastq.gz',
+        bam = collect_strandseq_alignments  # from module aux_utilities
     output:
-        cfg = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.config',
-        input_dir = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.input',
+        cfg = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sts_reads}/saarclust.config',
+        input_dir = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sts_reads}/saarclust.input'
     params:
         min_contig_size = config['min_contig_size'],
         bin_size = config['bin_size'],
         step_size = config['step_size'],
         prob_threshold = config['prob_threshold']
     run:
-
         config_rows = [
             '[SaaRclust]',
             'min.contig.size = ' + str(params.min_contig_size),
@@ -138,9 +157,9 @@ rule write_saarclust_config_file:
             'store.data.obj = TRUE',
             'reuse.data.obj = TRUE',
             'num.clusters = 100',
-            'bin.method = "fixed"',
+            'bin.method = "dynamic"',
             'assembly.fasta = "' + input.reference + '"',
-            'concat.fasta = FALSE',
+            'concat.fasta = TRUE',
             'remove.always.WC = TRUE',
             'mask.regions = FALSE'
         ]
@@ -156,46 +175,41 @@ rule write_saarclust_config_file:
 
 checkpoint run_saarclust_assembly_clustering:
     input:
-        cfg = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.config',
-        dir = 'output/saarclust/config_files/{reference}/{sts_reads}/saarclust.input',
+        cfg = rules.write_saarclust_config_file.output.cfg,
+        fofn = rules.write_saarclust_config_file.output.input_dir
     output:
-        dir_fasta = directory('output/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
-        dir_data = directory('output/saarclust/results/{reference}/{sts_reads}/data'),
-        dir_plots = directory('output/saarclust/results/{reference}/{sts_reads}/plots'),
-        cfg = 'output/saarclust/results/{reference}/{sts_reads}/SaaRclust.config',
+        'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.config',
+        dir_fasta = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
+        dir_data = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/data'),
+        dir_plots = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/plots'),
+        cfg = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/SaaRclust.config',
     log:
-        'log/output/saarclust/results/{reference}/{sts_reads}/saarclust.log'
+        'log/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.log'
     benchmark:
-        'run/output/saarclust/results/{reference}/{sts_reads}/saarclust.run'
+        'run/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.run'
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192
     params:
         script_dir = config['script_dir'],
-        out_folder = lambda wildcards, output: os.path.dirname(output[3])
-    run:
-        with open(input.dir) as info:
-            input_folder = info.readline().strip()
-
-        exec = '{params.script_dir}/run_saarclust.R {input.cfg}'
-        exec += ' {} '.format(input_folder)
-        exec += '{params.out_folder} &> {log}'
-        shell(exec)
+        out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
+        in_folder = lambda wildcards, input: load_fofn_file(input)
+    shell:
+        '{params.script_dir}/run_saarclust.R {input.cfg} {params.in_folder} {params.out_folder} &> {log}'
 
 
 def collect_clustered_fasta_sequences(wildcards):
     """
     """
-    strandseq_reads = config['strandseq_to_assembly'][wildcards.reference]
-
-    sqa_assembly = wildcards.reference + '_sqa-' + wildcards.assembler
+    strandseq_reads = wildcards.sts_reads
+    sqa_assembly = wildcards.reference
 
     # this output folder is the /clustered_assembly subfolder
-    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).output[0]
+    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).dir_fasta
     checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
     cluster_fasta = expand(
-        'output/saarclust/results/{reference}/{sts_reads}/clustered_assembly/{sequence}.fasta',
+        os.path.join(seq_output_dir, '{sequence}.seq'),
         reference=sqa_assembly,
         sts_reads=strandseq_reads,
         sequence=checkpoint_wildcards.sequence
@@ -204,12 +218,28 @@ def collect_clustered_fasta_sequences(wildcards):
     return sorted(cluster_fasta)
 
 
-rule merge_reference_fasta_clusters:
+rule write_reference_fasta_clusters_fofn:
+    """
+    Local rule with minimal overhead - properly collect checkpoint output
+    """
     input:
         fasta = collect_clustered_fasta_sequences
     output:
-        expand('references/assemblies/{{reference}}_scV{version}-{{assembler}}.fasta',
+       fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
+    run:
+        with open(output[0], 'w') as dump:
+            for file_path in sorted(input.fasta):
+                assert os.path.isfile(file_path), 'Invalid path to cluster fasta file: {}'.format(file_path)
+                _ = dump.write(file_path + '\n')
+
+
+rule merge_reference_fasta_clusters:
+    input:
+        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sample}_sqa-{assembler}.clusters.fofn'
+    output:
+        expand('output/reference_assembly/clustered/{{sts_reads}}/{{sample}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
-    threads: config['num_cpu_local']
+    params:
+        fasta_clusters = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'cat {input} > {output}'
+        'cat {params.fasta_clusters} > {output}'
