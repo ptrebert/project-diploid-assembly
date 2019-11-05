@@ -63,6 +63,10 @@ rule write_breakpointr_config_file:
     params:
         bp_cpu = config['num_cpu_high']
     run:
+        # following same example as merge strand-seq BAMs in module prepare_custom_references
+        bam_files = collect_strandseq_alignments(wildcards)
+        outfolder = os.path.dirname(bam_files[0])
+
         config_rows = [
             '[General]',
             'numCPU = ' + str(params.bp_cpu),  # due to a bug in breakpointr, this value has to be repeated on the CLI
@@ -82,8 +86,6 @@ rule write_breakpointr_config_file:
         with open(output.cfg, 'w') as dump:
             _ = dump.write('\n'.join(config_rows) + '\n')
 
-        outfolder = os.path.dirname(input.bam[0])
-        assert os.path.isdir(outfolder), 'BreakpointR: invalid output folder / strand-seq alignments: {}'.format(outfolder)
         with open(output.input_dir, 'w') as dump:
             _ = dump.write(outfolder + '\n')
 
@@ -91,7 +93,7 @@ rule write_breakpointr_config_file:
 rule run_breakpointr:
     input:
         cfg = rules.write_breakpointr_config_file.output.cfg,
-        dir = rules.write_breakpointr_config_file.output.input_dir
+        fofn = rules.write_breakpointr_config_file.output.input_dir
     output:
         wc_reg = 'output/integrative_phasing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
         cfg = 'output/integrative_phasing/breakpointr/{reference}/{sts_reads}/run/breakpointR.config',
@@ -106,7 +108,7 @@ rule run_breakpointr:
         'run/output/integrative_phasing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output[0]),
-        input_dir = lambda wildcards, input: open(input.dir).readline().strip(),
+        input_dir = lambda wildcards, input: load_fofn_file(input),
         script_dir = config['script_dir']
     threads: config['num_cpu_high']
     resources:
@@ -136,6 +138,10 @@ rule write_strandphaser_config_file:
     params:
         sp_cpu = config['num_cpu_high']
     run:
+        # following same example as merge strand-seq BAMs in module prepare_custom_references
+        bam_files = collect_strandseq_alignments(wildcards)
+        outfolder = os.path.dirname(bam_files[0])
+
         config_rows = [
             '[General]',
             'numCPU = ' + str(params.sp_cpu),
@@ -152,8 +158,6 @@ rule write_strandphaser_config_file:
         with open(output.cfg, 'w') as dump:
             _ = dump.write('\n'.join(config_rows) + '\n')
 
-        outfolder = os.path.dirname(input.bam[0])
-        assert os.path.isdir(outfolder), 'StrandPhaseR: invalid output folder / strand-seq alignments: {}'.format(outfolder)
         with open(output.input_dir, 'w') as dump:
             _ = dump.write(outfolder + '\n')
 
@@ -161,7 +165,7 @@ rule write_strandphaser_config_file:
 rule run_strandphaser:
     input:
         cfg = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.config',
-        dir = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.input',
+        fofn = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.input',
         wc_regions = 'output/integrative_phasing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
         variant_calls = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf'
     output:
@@ -182,7 +186,7 @@ rule run_strandphaser:
         mem_per_cpu_mb = 256,
         mem_total_mb = config['num_cpu_high'] * 256
     params:
-        input_dir = lambda wildcards, input: open(input.dir).readline().strip(),
+        input_dir = lambda wildcards, input: load_fofn_file(input),
         output_dir = lambda wildcards, output: os.path.dirname(output.cfg),
         individual = lambda wildcards: wildcards.sts_reads.split('_')[0],
         script_dir = config['script_dir']
@@ -246,17 +250,17 @@ rule write_phased_vcf_splits_fofn:
     output:
         fofn = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.fofn'
     run:
-        potential_log = os.path.join('log', output.fofn.replace('.fofn', '.log'))
-        os.makedirs(os.path.dirname(potential_log), exist_ok=True)
+        # follow same example as merge strand-seq BAMs in module prepare_custom_references
+        vcf_files = intphase_collect_phased_vcf_split_files(wildcards)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(input.splits):
+            for file_path in sorted(vcf_files):
                 if not os.path.isfile(file_path):
-                    with open(potential_log, 'w') as error_log:
-                        _ = error_log.write('Invalid path to merge VCF split file: {}\n'.format(file_path))
-                        _ = error_log.write('Input BAMS: {}\n'.format(input.bams))
-                        _ = error_log.write('Type: {}\n'.format(type(input.bams)))
-                        raise AssertionError('Invalid path to merge VCF split: {}\n'.format(potential_log))
+                    if os.path.isdir(file_path):
+                        # this is definitely wrong
+                        raise AssertionError('Expected file path for VCF split merge, but received directory: {}'.format(file_path))
+                    import sys
+                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
 
 

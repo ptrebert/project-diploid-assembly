@@ -52,9 +52,7 @@ def collect_strandseq_merge_files(wildcards):
         lib_id=[lib_id, lib_id],
         run_id=checkpoint_wildcards.run_id)
 
-    assert len(bam_files) == 2, 'Missing merge partner: {}'.format(bam_files)
-
-    return sorted(bam_files)
+    return bam_files
 
 
 rule write_strandseq_merge_fofn:
@@ -62,19 +60,19 @@ rule write_strandseq_merge_fofn:
         bams = collect_strandseq_merge_files
     output:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
-    log:
-        'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn.log'
     run:
         bam_files = collect_strandseq_merge_files(wildcards)
-        with open(output.fofn, 'w') as dump:
-            for file_path in bam_files:
-                if not os.path.isfile(file_path):
-                    with open(log[0], 'w') as error_log:
-                        _ = error_log.write('Invalid path to merge BAM file: {}\n'.format(file_path))
-                        _ = error_log.write('Input BAMS: {}\n'.format(bam_files))
-                        _ = error_log.write('Type: {}\n'.format(type(bam_files)))
-                        raise AssertionError('Invalid path to merge BAMs - see log: {}\n'.format(log[0]))
+        if len(bam_files) != 2:
+            raise AssertionError('Missing merge partner for strand-seq BAM files: {}'.format(bam_files))
 
+        with open(output.fofn, 'w') as dump:
+            for file_path in sorted(bam_files):
+                if not os.path.isfile(file_path):
+                    if os.path.isdir(file_path):
+                        # this is definitely wrong
+                        raise AssertionError('Expected file path for strand-seq BAM merge, but received directory: {}'.format(file_path))
+                    import sys
+                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
 
 
@@ -156,6 +154,10 @@ rule write_saarclust_config_file:
         step_size = config['step_size'],
         prob_threshold = config['prob_threshold']
     run:
+        # following same example as merge strand-seq BAMs above
+        bam_files = collect_strandseq_alignments(wildcards)
+        outfolder = os.path.dirname(bam_files[0])
+
         config_rows = [
             '[SaaRclust]',
             'min.contig.size = ' + str(params.min_contig_size),
@@ -176,8 +178,6 @@ rule write_saarclust_config_file:
         with open(output.cfg, 'w') as dump:
             _ = dump.write('\n'.join(config_rows) + '\n')
 
-        outfolder = os.path.dirname(input.bam[0])
-        assert os.path.isdir(outfolder), 'Invalid output folder / strand-seq alignments: {}'.format(outfolder)
         with open(output.input_dir, 'w') as dump:
             _ = dump.write(outfolder + '\n')
 
@@ -236,17 +236,17 @@ rule write_reference_fasta_clusters_fofn:
     output:
        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
     run:
-        potential_log = os.path.join('log', output.fofn.replace('.fofn', '.log'))
-        os.makedirs(os.path.dirname(potential_log), exist_ok=True)
+        # following example as above for merge strand-seq BAM files
+        fasta_files = collect_clustered_fasta_sequences(wildcards)
 
-        with open(output[0], 'w') as dump:
-            for file_path in sorted(input.fasta):
+        with open(output.fofn, 'w') as dump:
+            for file_path in sorted(fasta_files):
                 if not os.path.isfile(file_path):
-                    with open(potential_log, 'w') as error_log:
-                        _ = error_log.write('Invalid path to merge FASTA file: {}\n'.format(file_path))
-                        _ = error_log.write('Input BAMS: {}\n'.format(input.bams))
-                        _ = error_log.write('Type: {}\n'.format(type(input.bams)))
-                        raise AssertionError('Invalid path to merge FASTA: {}\n'.format(potential_log))
+                    if os.path.isdir(file_path):
+                        # this is definitely wrong
+                        raise AssertionError('Expected file path for strand-seq BAM merge, but received directory: {}'.format(file_path))
+                    import sys
+                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
 
 
