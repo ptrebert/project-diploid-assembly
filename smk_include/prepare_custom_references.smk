@@ -188,7 +188,6 @@ checkpoint run_saarclust_assembly_clustering:
         cfg = rules.write_saarclust_config_file.output.cfg,
         fofn = rules.write_saarclust_config_file.output.input_dir
     output:
-        'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.config',
         dir_fasta = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
         dir_data = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/data'),
         dir_plots = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/plots'),
