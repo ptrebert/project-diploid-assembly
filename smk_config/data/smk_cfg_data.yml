@@ -48,8 +48,8 @@ strandseq_to_bioproject:
 # SaaRclust parameter sets
 # goal is to obtain 24 clusters
 min_contig_size: 100000
-bin_size: 500000
-step_size: 50000
+bin_size: 100000
+step_size: 100000
 prob_threshold: 0.5
 
 # VARIANT CALLING
