@@ -167,7 +167,6 @@ def collect_strandseq_alignments(wildcards):
         project=project,
         platform=platform,
         lib_id=checkpoint_wildcards.lib_id,
-        run_id=checkpoint_wildcards.run_id,
         ext=['', '.bai'])
     return sorted(bam_files)
 

@@ -62,14 +62,13 @@ rule write_strandseq_merge_fofn:
         bams = collect_strandseq_merge_files
     output:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
+    log:
+        'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn.log'
     run:
-        potential_log = os.path.join('log', output.fofn.replace('.fofn', '.log'))
-        os.makedirs(os.path.dirname(potential_log), exist_ok=True)
-
         with open(output.fofn, 'w') as dump:
             for file_path in input.bams:
                 if not os.path.isfile(file_path):
-                    with open(potential_log, 'w') as error_log:
+                    with open(log[0], 'w') as error_log:
                         _ = error_log.write('Invalid path to merge BAM file: {}\n'.format(file_path))
                         _ = error_log.write('Input BAMS: {}\n'.format(input.bams))
                         _ = error_log.write('Type: {}\n'.format(type(input.bams)))
@@ -90,9 +89,9 @@ rule merge_mono_dinucleotide_fraction:
     output:
         temp('output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.sam.bam')
     log:
-        'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
+        'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
+        'run/output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
     threads: config['num_cpu_low']
     params:
         merge_files = lambda wildcards, input: load_fofn_file(input)
