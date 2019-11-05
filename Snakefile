@@ -42,10 +42,14 @@ wildcard_constraints:
     # GQ / DP = genotype quality / depth at position
     gq = '[0-9]+',
     dp = '[0-9]+',
+    qual = '[0-9]+',
     # haplotype identifier
     hap = '[h12un\-]+',
     # sequence = chromosome, contig, cluster etc.
     sequence = '[A-Za-z0-9]+',
+    # For files that may or may not be just a split (chrom, contig etc.)
+    # of the complete file, can carry a qualifier after the "hap"
+    split = '(^$|^\.[A-Za-z0-9]+)',
     # Some generic constraints to enforce a more consistent naming scheme
     folder_path = '[A-Za-z0-9\-_\/]+',  # note: "." is NOT allowed in a folder path
     file_name = '[A-Za-z0-9\-_\.]+',

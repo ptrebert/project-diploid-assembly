@@ -13,7 +13,7 @@ localrules: master_integrative_phasing, \
             write_strandphaser_config_file
 
 
-PATH_INTEGRATIVE_PHASING = '{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}'
+PATH_INTEGRATIVE_PHASING = '{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}'
 
 
 rule master_integrative_phasing:
@@ -201,8 +201,8 @@ rule run_strandphaser:
 
 rule run_integrative_phasing:
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf.bgz',
-        tbi = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf.bgz.tbi',
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf.bgz',
+        tbi = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf.bgz.tbi',
         bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam',
         bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
         fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
@@ -258,7 +258,7 @@ rule write_phased_vcf_splits_fofn:
                 if not os.path.isfile(file_path):
                     if os.path.isdir(file_path):
                         # this is definitely wrong
-                        raise AssertionError('Expected file path for VCF split merge, but received directory: {}'.format(file_path))
+                        raise AssertionError('Expected file path for INTPHASE VCF split merge, but received directory: {}'.format(file_path))
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
