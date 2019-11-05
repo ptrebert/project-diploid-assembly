@@ -6,7 +6,8 @@ include: 'prepare_custom_references.smk'
 include: 'run_alignments.smk'
 
 localrules: master_variant_calling, \
-            merge_sequence_vcf_files
+            write_intermediate_vcf_splits, \
+            write_final_vcf_splits
 
 rule master_variant_calling:
     input:

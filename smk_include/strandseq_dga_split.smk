@@ -16,7 +16,7 @@ vc_reads = FASTQ file used for variant calling relative to reference
 hap_reads = FASTQ file to be used for haplotype reconstruction
 sts_reads = FASTQ file used for strand-seq phasing
 """
-PATH_STRANDSEQ_DGA_SPLIT = 'diploid_assembly/strandseq_split/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}'
+PATH_STRANDSEQ_DGA_SPLIT = 'diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}'
 PATH_STRANDSEQ_DGA_SPLIT_PROTECTED = PATH_STRANDSEQ_DGA_SPLIT.replace('{', '{{').replace('}', '}}')
 
 
@@ -31,10 +31,10 @@ rule strandseq_dga_split_haplo_tagging:
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        vcf = 'output/integrative_phasing/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf.bgz',
-        tbi = 'output/integrative_phasing/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.sam.bam',
-        bai = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz',
+        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz.tbi',
+        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam',
+        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
         fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
     output:
@@ -59,10 +59,10 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     input:
         vcf = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/{hap_reads}.phased.vcf.bgz',
         tbi = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/{hap_reads}.phased.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.pbn.bam',
-        bai = 'output/alignments/reads_to_reference/{hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
-        fasta = 'references/assemblies/{reference}.fasta',
-        seq_info = 'references/assemblies/{reference}/sequences/{sequence}.seq',
+        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam',
+        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
+        fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
+        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
     output:
         bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagged.pbn.bam',
         tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tags.pbn.tsv',
@@ -180,7 +180,7 @@ def collect_assembled_sequence_files(wildcards):
 
     checkpoint_wildcards = glob_wildcards(seq_output_dir, '{sequence}.seq')
 
-    seq_files = expand('output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
+    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
                         var_caller=wildcards.var_caller,
                         gq=wildcards.gq,
                         dp=wildcards.dp,
@@ -198,7 +198,7 @@ rule write_assembled_fasta_clusters_fofn:
     input:
         cluster_fastas = collect_assembled_sequence_files
     output:
-        fofn = 'output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fofn',
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fofn',
     run:
         # follow same example as merge strand-seq BAMs in module prepare_custom_references
         fasta_files = collect_assembled_sequence_files(wildcards)
@@ -218,9 +218,9 @@ rule strandseq_dga_split_merge_sequences:
     """
     """
     input:
-        fofn = 'output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fofn'
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fofn'
     output:
-         'output' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fasta'
+         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fasta'
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
     shell:

@@ -2,6 +2,7 @@
 include: 'canonical_dga.smk'
 include: 'strandseq_dga_joint.smk'
 include: 'strandseq_dga_split.smk'
+include: 'integrative_phasing.smk'
 include: 'arrow_polishing.smk'
 include: 'racon_polishing.smk'
 include: 'eval_known_reference.smk'
@@ -59,6 +60,57 @@ rule create_child_ccs_clust_assemblies:
                 )
 
 
+rule perform_child_pure_clr_sdga:
+    input:
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}/report.pdf',
+                known_ref=['GRCh38_GCA_p13'],
+                genemodel=['GRCh38_GENCODEv31_basic'],
+                var_caller=['longshot'],
+                qual=config['filter_vcf_qual'],
+                gq=config['filter_vcf_gq'],
+                reference=CLR_ASSM_733,
+                vc_reads=['HG00733_sra_pbsq1-clr_1000'],
+                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+                assembler=['flye', 'wtdbg'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+               )
+
+
+rule perform_child_pure_ccs_sdga:
+    input:
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}/report.pdf',
+                known_ref=['GRCh38_GCA_p13'],
+                genemodel=['GRCh38_GENCODEv31_basic'],
+                var_caller=['freebayes'],
+                qual=config['filter_vcf_qual'],
+                gq=config['filter_vcf_gq'],
+                reference=CCS_ASSM_733,
+                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                assembler=['flye', 'wtdbg'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+               )
+
+
+rule perform_child_mixed_clr_sdga:
+    input:
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}/report.pdf',
+                known_ref=['GRCh38_GCA_p13'],
+                genemodel=['GRCh38_GENCODEv31_basic'],
+                var_caller=['freebayes'],
+                qual=config['filter_vcf_qual'],
+                gq=config['filter_vcf_gq'],
+                reference=CLR_ASSM_733_WTDBG,
+                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+                assembler=['wtdbg', 'flye'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+               )
+
+
 rule master_results_child:
     """
     Available datasets for child individuals:
@@ -77,6 +129,9 @@ rule master_results_child:
         rules.create_child_ccs_sqa_assemblies.input,
         rules.create_child_clr_clust_assemblies.input,
         rules.create_child_ccs_clust_assemblies.input,
+        rules.perform_child_pure_clr_sdga.input,
+        rules.perform_child_pure_ccs_sdga.input,
+        rules.perform_child_mixed_clr_sdga.input
 
 
 
