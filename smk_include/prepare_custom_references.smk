@@ -143,6 +143,7 @@ rule write_saarclust_config_file:
     input:
         setup_ok = 'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']),
         reference = 'output/reference_assembly/squashed/{reference}.fasta',
+        ref_idx = 'output/reference_assembly/squashed/{reference}.fasta.fai',
         strandseq_reads = 'input/fastq/complete/{sts_reads}.fastq.gz',
         bam = collect_strandseq_alignments  # from module aux_utilities
     output:
