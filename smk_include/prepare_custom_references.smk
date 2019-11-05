@@ -65,13 +65,14 @@ rule write_strandseq_merge_fofn:
     log:
         'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn.log'
     run:
+        bam_files = collect_strandseq_merge_files(wildcards)
         with open(output.fofn, 'w') as dump:
-            for file_path in input.bams:
+            for file_path in bam_files:
                 if not os.path.isfile(file_path):
                     with open(log[0], 'w') as error_log:
                         _ = error_log.write('Invalid path to merge BAM file: {}\n'.format(file_path))
-                        _ = error_log.write('Input BAMS: {}\n'.format(input.bams))
-                        _ = error_log.write('Type: {}\n'.format(type(input.bams)))
+                        _ = error_log.write('Input BAMS: {}\n'.format(bam_files))
+                        _ = error_log.write('Type: {}\n'.format(type(bam_files)))
                         raise AssertionError('Invalid path to merge BAMs - see log: {}\n'.format(log[0]))
 
                 _ = dump.write(file_path + '\n')
