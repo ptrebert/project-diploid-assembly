@@ -72,7 +72,7 @@ rule write_strandseq_merge_fofn:
                         _ = error_log.write('Invalid path to merge BAM file: {}\n'.format(file_path))
                         _ = error_log.write('Input BAMS: {}\n'.format(input.bams))
                         _ = error_log.write('Type: {}\n'.format(type(input.bams)))
-                        raise AssertionError('Invalid path to merge BAMs: {}\n'.format(potential_log))
+                        raise AssertionError('Invalid path to merge BAMs - see log: {}\n'.format(log[0]))
 
                 _ = dump.write(file_path + '\n')
 
