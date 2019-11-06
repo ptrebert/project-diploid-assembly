@@ -50,7 +50,7 @@ strandseq_to_bioproject:
 min_contig_size: 100000
 bin_size: 100000
 step_size: 100000
-prob_threshold: 0.5
+prob_threshold: 0.25
 
 # VARIANT CALLING
 # Postprocessing parameters
