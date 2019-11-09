@@ -20,4 +20,6 @@ strandPhaseR(
     exportVCF=sample.individual
 )
 
+warnings()
+
 quit(save='no')
