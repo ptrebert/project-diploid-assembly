@@ -120,11 +120,11 @@ rule generate_bwa_index:
     input:
         reference = '{folder_path}/{reference}.fasta'
     output:
-        '{folder_path}/bwa_index/{reference}.amb',
-        '{folder_path}/bwa_index/{reference}.ann',
-        '{folder_path}/bwa_index/{reference}.bwt',
-        '{folder_path}/bwa_index/{reference}.pac',
-        '{folder_path}/bwa_index/{reference}.sa'
+        '{folder_path}/{reference}/bwa_index/{reference}.amb',
+        '{folder_path}/{reference}/bwa_index/{reference}.ann',
+        '{folder_path}/{reference}/bwa_index/{reference}.bwt',
+        '{folder_path}/{reference}/bwa_index/{reference}.pac',
+        '{folder_path}/{reference}/bwa_index/{reference}.sa'
     log:
         'log/{folder_path}/bwa_index/{reference}.log'
     benchmark:
@@ -159,11 +159,22 @@ def collect_strandseq_alignments(wildcards):
     else:
         # assume squashed assembly
         reference = wildcards.sample + '_sqa-' + wildcards.assembler
+
+    # (SaaR)-clustered assemblies are defined relative to a strand-seq dataset,
+    # whereas squashed assemblies are defined relative to a bioproject (design glitch)
+    ref_type = None
+    if '_sqa' in reference:
+        ref_type = bioproject
+    elif '_scV' in reference:
+        ref_type = wildcards.sts_reads
+    else:
+        raise ValueError('Could not determine type of reference: {}'.format(wildcards))
+
     bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
+        'output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
         reference=wildcards.reference,
         individual=individual,
-        bioproject=bioproject,
+        ref_type=ref_type,
         project=project,
         platform=platform,
         lib_id=checkpoint_wildcards.lib_id,
@@ -194,6 +205,7 @@ def load_preset_file(wildcards, input):
     else:
         with open(file_path, 'r') as dump:
             preset = dump.read().strip()
+            assert preset, 'Empty preset file: {}'.format(file_path)
     return preset
 
 
@@ -221,6 +233,7 @@ def load_fofn_file(input, prefix='', sep=' '):
     else:
         with open(file_path, 'r') as dump:
             file_list = sorted([l.strip() for l in dump.readlines()])
+            assert file_list, 'Empty fofn file: {}'.format(file_path)
     file_list = prefix + sep.join(file_list)
     return file_list
 
