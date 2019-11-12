@@ -97,7 +97,7 @@ rule compute_wtdbg_squashed_assembly_consensus:
     input:
         layout = rules.compute_wtdbg_squashed_assembly_layout.output.layout
     output:
-        squashed_assembly = 'output/reference_assembly/squashed/{sample}_sqa-wtdbg.fasta'
+        squashed_assembly = protected('output/reference_assembly/squashed/{sample}_sqa-wtdbg.fasta')
     log: 'log/output/reference_assembly/squashed/{sample}_sqa-wtdbg.consensus.log'
     benchmark: 'run/output/reference_assembly/squashed/{sample}_sqa-wtdbg.consensus.rsrc'
     threads: config['num_cpu_high']
@@ -126,7 +126,7 @@ rule compute_flye_squashed_assembly:
         assm_info = 'output/reference_assembly/squashed/layout/flye/{sample}/assembly_info.txt',
         run_params = 'output/reference_assembly/squashed/layout/flye/{sample}/params.json',
         assm_source = 'output/reference_assembly/squashed/layout/flye/{sample}/assembly.fasta',
-        assembly = 'output/reference_assembly/squashed/{sample}_sqa-flye.fasta',
+        assembly = protected('output/reference_assembly/squashed/{sample}_sqa-flye.fasta'),
     log: 'log/output/reference_assembly/squashed/{sample}_sqa-flye.layout.log',
     benchmark: 'run/output/reference_assembly/squashed/{sample}_sqa-flye.layout.rsrc',
     threads: config['num_cpu_high']
