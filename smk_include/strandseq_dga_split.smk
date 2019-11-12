@@ -5,6 +5,8 @@ include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'integrative_phasing.smk'
 include: 'variant_calling.smk'
+include: 'run_assemblies.smk'
+include: 'run_alignments.smk'
 
 localrules: master_strandseq_dga_split, \
             write_assembled_fasta_clusters_fofn
@@ -45,7 +47,7 @@ rule strandseq_dga_split_haplo_tagging:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.fq.rsrc',
     shell:
-        'whatshap --debug haplotag --regions {sequence} --output {output.bam} ' \
+        'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} ' \
             '--reference {input.fasta} --output-haplotag-list {output.tags} ' \
             '{input.vcf} {input.bam} &> {log}'
 
@@ -57,8 +59,8 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        vcf = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/{hap_reads}.phased.vcf.bgz',
-        tbi = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/{hap_reads}.phased.vcf.bgz.tbi',
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz',
+        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz.tbi',
         bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam',
         bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
         fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
@@ -71,7 +73,7 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.pbn.rsrc',
     shell:
-        'whatshap --debug haplotag --regions {sequence} --output {output.bam} ' \
+        'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} ' \
             '--reference {input.fasta} --output-haplotag-list {output.tags} ' \
             '{input.vcf} {input.bam} &> {log}'
 
@@ -177,13 +179,12 @@ def collect_assembled_sequence_files(wildcards):
     reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
     seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                     reference=wildcards.reference).output[0]
+    checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
-    checkpoint_wildcards = glob_wildcards(seq_output_dir, '{sequence}.seq')
-
-    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
+    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/split/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
                         var_caller=wildcards.var_caller,
                         gq=wildcards.gq,
-                        dp=wildcards.dp,
+                        qual=wildcards.qual,
                         reference=wildcards.reference,
                         vc_reads=wildcards.vc_reads,
                         sts_reads=wildcards.sts_reads,
@@ -225,35 +226,3 @@ rule strandseq_dga_split_merge_sequences:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
     shell:
         'cat {params.cluster_fastas} > {output}'
-
-
-# def collect_sequence_readsets(wildcards):
-#     """
-#     """
-#     seq_output_dir = checkpoints.create_assembly_sequence_files.get(reference=wildcards.reference).output[0]
-#
-#     checkpoint_wildcards = glob_wildcards(seq_output_dir, '{sequence}.seq')
-#
-#     seq_files = expand('output/diploid_assembly/strandseq_split/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/split_by_seq/{hap_reads}.{hap}.{sequence}.fastq.gz',
-#                         var_caller=wildcards.var_caller,
-#                         gq=wildcards.gq,
-#                         dp=wildcards.dp,
-#                         reference=wildcards.reference,
-#                         vc_reads=wildcards.vc_reads,
-#                         sts_reads=wildcards.sts_reads,
-#                         hap_reads=wildcards.hap_reads,
-#                         assembler=wildcards.assembler,
-#                         hap=wildcards.hap,
-#                         sequence=checkpoint_wildcards.sequence)
-#     return sorted(seq_files)
-#
-#
-# rule strandseq_dga_split_merge_readsets:
-#     """
-#     """
-#     input:
-#         sequence_readsets = collect_sequence_readsets
-#     output:
-#         'output/diploid_assembly/strandseq_split/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.fastq.gz',
-#     shell:
-#         'cat {input} > {output}'
