@@ -33,6 +33,14 @@ def collect_strandseq_merge_files(wildcards):
     project = wildcards.project
     lib_id = wildcards.lib_id
 
+    # This lookup is necessary when a (SaaR)-clustered assembly is processed,
+    # because in this case the "sts_reads" wildcard is being used together
+    # with the assembly name
+    if bioproject.endswith('_sseq'):
+        sts_reads = bioproject
+        sts_lookup = sts_reads.rsplit('_', 1)[0]
+        bioproject = config['strandseq_to_bioproject'][sts_lookup]
+
     requests_dir = checkpoints.create_bioproject_download_requests.get(individual=individual, bioproject=bioproject).output[0]
 
     search_pattern = '_'.join([individual, project, '{spec}', lib_id, '{run_id}', '1'])
@@ -182,16 +190,23 @@ rule write_saarclust_config_file:
         with open(output.input_dir, 'w') as dump:
             _ = dump.write(outfolder + '\n')
 
+# === DEBUG ====
+# SaaRclust is currently detected as failing by Snakemake for unclear
+# reasons; since the behavior cannot be reproduced on the command line,
+# manually generated SaaRclust output has to be copied in the appropriate
+# place
+# To protect this manually generated output, the SaaRclust checkpoint produces
+# protected output, and the subsequent merge operations use ancient()
 
 checkpoint run_saarclust_assembly_clustering:
     input:
-        cfg = rules.write_saarclust_config_file.output.cfg,
-        fofn = rules.write_saarclust_config_file.output.input_dir
+        cfg = ancient(rules.write_saarclust_config_file.output.cfg),
+        fofn = ancient(rules.write_saarclust_config_file.output.input_dir)
     output:
-        dir_fasta = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
-        dir_data = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/data'),
-        dir_plots = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/plots'),
-        cfg = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/SaaRclust.config',
+        dir_fasta = protected(directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/clustered_assembly')),
+        dir_data = protected(directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/data')),
+        dir_plots = protected(directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/plots')),
+        cfg = protected('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/SaaRclust.config'),
     log:
         'log/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.log'
     benchmark:
@@ -204,7 +219,9 @@ checkpoint run_saarclust_assembly_clustering:
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
         in_folder = lambda wildcards, input: load_fofn_file(input)
     shell:
-        '{params.script_dir}/run_saarclust.R {input.cfg} {params.in_folder} {params.out_folder} &> {log}'
+        '{params.script_dir}/run_saarclust.R {input.cfg} {params.in_folder} {params.out_folder} &> {log} ' \
+            ' && echo "SaaRclust success" &>> {log} ' \
+            ' || echo "SaaRclust fail" &>> {log}'
 
 
 def collect_clustered_fasta_sequences(wildcards):
@@ -214,15 +231,15 @@ def collect_clustered_fasta_sequences(wildcards):
     sqa_assembly = wildcards.reference
 
     # this output folder is the /clustered_assembly subfolder
-    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).dir_fasta
-    checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
+    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).output.dir_fasta
+    checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.fasta'))
 
     cluster_fasta = expand(
-        os.path.join(seq_output_dir, '{sequence}.seq'),
+        os.path.join(seq_output_dir, '{sequence}.fasta'),
         reference=sqa_assembly,
         sts_reads=strandseq_reads,
         sequence=checkpoint_wildcards.sequence
-        )
+    )
 
     return sorted(cluster_fasta)
 
@@ -232,7 +249,7 @@ rule write_reference_fasta_clusters_fofn:
     Local rule with minimal overhead - properly collect checkpoint output
     """
     input:
-        fasta = collect_clustered_fasta_sequences
+        fasta = ancient(collect_clustered_fasta_sequences)
     output:
        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
     run:
@@ -252,7 +269,7 @@ rule write_reference_fasta_clusters_fofn:
 
 rule merge_reference_fasta_clusters:
     input:
-        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sample}_sqa-{assembler}.clusters.fofn'
+        fofn = ancient('output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sample}_sqa-{assembler}.clusters.fofn')
     output:
         expand('output/reference_assembly/clustered/{{sts_reads}}/{{sample}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
