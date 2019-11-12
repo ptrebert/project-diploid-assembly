@@ -6,7 +6,6 @@ include: 'prepare_custom_references.smk'
 include: 'variant_calling.smk'
 
 localrules: master_integrative_phasing, \
-            strandseq_dga_merge_sequence_phased_vcf_files, \
             install_rlib_breakpointr, \
             install_rlib_strandphaser, \
             write_breakpointr_config_file, \
@@ -107,7 +106,7 @@ rule run_breakpointr:
     benchmark:
         'run/output/integrative_phasing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
     params:
-        output_dir = lambda wildcards, output: os.path.dirname(output[0]),
+        output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
         input_dir = lambda wildcards, input: load_fofn_file(input),
         script_dir = config['script_dir']
     threads: config['num_cpu_high']
@@ -167,7 +166,7 @@ rule run_strandphaser:
         cfg = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.config',
         fofn = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.input',
         wc_regions = 'output/integrative_phasing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
-        variant_calls = 'output/variant_calls/{var_caller}/{reference}/final_GQ{gq}_DP{dp}/{vc_reads}.final.vcf'
+        variant_calls = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf'
     output:
         browser = directory('output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/run/browserFiles'),
         data = directory('output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/run/data'),
@@ -235,7 +234,7 @@ def intphase_collect_phased_vcf_split_files(wildcards):
         var_caller=wildcards.var_caller,
         reference=wildcards.reference,
         gq=wildcards.gq,
-        dp=wildcards.dp,
+        qual=wildcards.qual,
         vc_reads=wildcards.vc_reads,
         sts_reads=wildcards.sts_reads,
         hap_reads=wildcards.hap_reads,
@@ -273,3 +272,13 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
         merge_files = lambda wildcards, input: load_fofn_file(input)
     shell:
         'bcftools concat --output {output} --output-type v {params.merge_files}'
+
+
+rule compute_phased_vcf_stats:
+    input:
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz',
+        idx = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz.tbi'
+    output:
+        stats = 'output/statistics/variant_calls/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.snps.phased.vcf.stats'
+    shell:
+        'bcftools stats {input.vcf} > {output.stats}'
