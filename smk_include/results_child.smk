@@ -77,7 +77,7 @@ rule child_733_pure_clr_split_sdga:
                ),
 
         expand('output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snps.QUAL{qual}.GQ{gq}.vcf.stats',
-                var_caller=['freebayes'],
+                var_caller=['longshot'],
                 qual=config['filter_vcf_qual'],
                 gq=config['filter_vcf_gq'],
                 reference=CLR_ASSM_733,
@@ -86,7 +86,7 @@ rule child_733_pure_clr_split_sdga:
                ),
 
         expand('output/statistics/variant_calls/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.snps.phased.vcf.stats',
-                var_caller=['freebayes'],
+                var_caller=['longshot'],
                 qual=config['filter_vcf_qual'],
                 gq=config['filter_vcf_gq'],
                 reference=CLR_ASSM_733,
