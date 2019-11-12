@@ -2,15 +2,11 @@
 include: 'handle_data_download.smk'
 include: 'link_data_sources.smk'
 
-localrules: master_preprocess_input, \
-            merge_fastq_input_parts, \
-            merge_strandseq_libraries, \
-            merge_pacbio_native_bams
+localrules: master_preprocess_input
 
 
 rule master_preprocess_input:
     input:
-        rules.master_handle_data_download.input,
 
 
 def collect_fastq_input_parts(wildcards):
@@ -85,8 +81,9 @@ rule merge_strandseq_libraries:
         'input/fastq/complete/{sample}_sseq.fastq.gz'
     message: 'Creating strand-seq mock file'
     run:
+        fastq_files = collect_strandseq_libraries(wildcards)
         with open(output[0], 'w') as dump:
-            for fastq in sorted(input):
+            for fastq in sorted(fastq_files):
                 dump.write(fastq + '\n')
 
 
