@@ -117,18 +117,112 @@ rule pbmm2_reads_to_reference_alignment:
             ' {input.reference} {input.reads} {output.bam} &> {log}'
 
 
+def determine_ref_type(wildcards):
+
+    sts_to_bio = config['strandseq_to_bioproject']
+    bio_to_sts = dict((v, k) for k, v in config['strandseq_to_bioproject'].items() if k.startswith(wildcards.individual))
+
+    ref_type = None
+    bioproject = None
+    sts_reads = None
+
+    if hasattr(wildcards, 'reference'):
+        if '_sqa' in wildcards.reference:
+            ref_type = 'squashed'
+        elif '_scV' in wildcards.reference:
+            ref_type = 'clustered'
+        else:
+            raise ValueError('Cannot determine ref type: {}'.format(wildcards))
+
+    if hasattr(wildcards, 'bioproject'):
+        if wildcards.bioproject.endswith('_sseq'):
+            sts_reads = wildcards.bioproject
+            sts_lookup = sts_reads.rsplit('_', 1)[0]
+            bioproject = sts_to_bio[sts_lookup]
+            if ref_type is None:
+                ref_type = 'clustered'
+        else:
+            bioproject = wildcards.bioproject
+            sts_reads = bio_to_sts[bioproject]
+            if ref_type is None:
+                ref_type = 'squashed'
+
+    elif hasattr(wildcards, 'ref_type'):
+        if wildcards.ref_type in bio_to_sts:
+            bioproject = wildcards.ref_type
+            sts_reads = bio_to_sts[bioproject]
+            if ref_type is None:
+                ref_type = 'squashed'
+        elif wildcards.ref_type in sts_to_bio:
+            bioproject = sts_to_bio[wildcards.ref_type]
+            sts_reads = wildcards.ref_type
+            if ref_type is None:
+                ref_type = 'clustered'
+        elif wildcards.ref_type.rsplit('_', 1)[0] in sts_to_bio:
+            sts_reads = wildcards.ref_type.rsplit('_', 1)[0]
+            bioproject = sts_to_bio[sts_reads]
+            if ref_type is None:
+                ref_type = 'clustered'
+        else:
+            raise ValueError('Unexpected ref_type: {}'.format(wildcards))
+
+    assert ref_type is not None, 'Could not determine ref type: {}'.format(wildcards)
+    assert bioproject is not None, 'Could not determine ref type: {}'.format(wildcards)
+    assert sts_reads is not None, 'Could not determine ref type: {}'.format(wildcards)
+
+    if not sts_reads.endswith('_sseq'):
+        sts_reads += '_sseq'
+
+    return ref_type, bioproject, sts_reads
+
+
+def select_strand_seq_mate1(wildcards):
+
+    ref_type, bioproject, sts_reads = determine_ref_type(wildcards)
+    mate = 'input/fastq/strand-seq/{}_{}/{}_{}_1.fastq.gz'.format(
+        wildcards.individual,
+        bioproject,
+        wildcards.individual,
+        wildcards.sample_id
+        )
+    return mate
+
+
+def select_strand_seq_mate2(wildcards):
+
+    ref_type, bioproject, sts_reads = determine_ref_type(wildcards)
+    mate = 'input/fastq/strand-seq/{}_{}/{}_{}_2.fastq.gz'.format(
+        wildcards.individual,
+        bioproject,
+        wildcards.individual,
+        wildcards.sample_id
+        )
+    return mate
+
+
+def select_bwa_index(wildcards):
+    ref_type, bioproject, sts_reads = determine_ref_type(wildcards)
+    if ref_type == 'squashed':
+        idx = 'output/reference_assembly/squashed/{}/bwa_index/{}.bwt'.format(wildcards.reference, wildcards.reference)
+    elif ref_type == 'clustered':
+        idx = 'output/reference_assembly/clustered/{}/{}/bwa_index/{}.bwt'.format(sts_reads, wildcards.reference, wildcards.reference)
+    else:
+        raise ValueError('Unexpected reference type: {} / {}'.format(ref_type, wildcards))
+    return idx
+
+
 rule bwa_strandseq_to_reference_alignment:
     input:
-        mate1 = 'input/fastq/strand-seq/{individual}_{bioproject}/{individual}_{sample_id}_1.fastq.gz',
-        mate2 = 'input/fastq/strand-seq/{individual}_{bioproject}/{individual}_{sample_id}_2.fastq.gz',
-        ref_index = 'output/reference_assembly/squashed/bwa_index/{reference}.bwt',
+        mate1 = select_strand_seq_mate1,
+        mate2 = select_strand_seq_mate2,
+        ref_index = select_bwa_index
     output:
-        bam = 'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/aln/{individual}_{sample_id}.filt.sam.bam'
+        bam = 'output/alignments/strandseq_to_reference/{reference}/{ref_type}/temp/aln/{individual}_{sample_id}.filt.sam.bam'
     log:
-        bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{sample_id}.bwa.log',
-        samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{sample_id}.samtools.log',
+        bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{sample_id}.bwa.log',
+        samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{sample_id}.samtools.log',
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{sample_id}.rsrc'
+        'run/output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{sample_id}.rsrc'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = 2048,
@@ -150,17 +244,15 @@ rule minimap_racon_polish_alignment_pass1:
     pol_reads = FASTQ file used for Racon contig polishing
     """
     input:
-        reads = 'output/diploid_assembly/{folder_path}/draft/haploid_fastq/{subfolder}{readset}.fastq.gz',
-        preset = 'output/diploid_assembly/{folder_path}/draft/haploid_fastq/{subfolder}{readset}.preset.minimap',
-        contigs = 'output/diploid_assembly/{folder_path}/draft/haploid_fasta/{subfolder}{assembly}.fasta',
+        reads = 'output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pol_reads}.{hap}{split}.fastq.gz',
+        preset = 'output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pol_reads}.{hap}{split}.preset.minimap',
+        contigs = 'output/diploid_assembly/{folder_path}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}{split}.fasta',
     output:
-        sam = 'output/diploid_assembly/{folder_path}/polishing/alignments/{subfolder}{readset}_map-to_{assembly}.racon-p1.psort.sam',
+        sam = 'output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.racon-p1.psort.sam',
     log:
-        'log/output/diploid_assembly/{folder_path}/polishing/alignments/{subfolder}{readset}_map-to_{assembly}.racon-p1.psort.log',
+        'log/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.racon-p1.log',
     benchmark:
-        'run/output/diploid_assembly/{folder_path}/polishing/alignments/{subfolder}{readset}_map-to_{assembly}.racon-p1.psort.rsrc',
-    wildcard_constraints:
-        subfolder = '(^$|splits\/)'
+        'run/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.racon-p1.rsrc',
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = 768,
@@ -176,17 +268,15 @@ rule minimap_racon_polish_alignment_pass1:
 
 rule pbmm2_arrow_polish_alignment_pass1:
     input:
-        reads = 'output/diploid_assembly/{folder_path}/draft/haploid_bam/{subfolder}{readset}.pbn.bam',
-        preset = 'output/diploid_assembly/{folder_path}/draft/haploid_bam/{subfolder}{readset}.preset.pbmm2',
-        contigs = 'output/diploid_assembly/{folder_path}/draft/haploid_fasta/{subfolder}{assembly}.fasta',
+        reads = 'output/diploid_assembly/{folder_path}/draft/haploid_bam/{pol_reads}.{hap}{split}.pbn.bam',
+        preset = 'output/diploid_assembly/{folder_path}/draft/haploid_bam/{pol_reads}.{hap}{split}.preset.pbmm2',
+        contigs = 'output/diploid_assembly/{folder_path}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}{split}.fasta',
     output:
-        bam = 'output/diploid_assembly/{folder_path}/polishing/alignments/{subfolder}{readset}_map-to_{assembly}.arrow-p1.psort.pbn.bam',
+        bam = 'output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.arrow-p1.psort.pbn.bam',
     log:
-        'log/output/diploid_assembly/{folder_path}/polishing/alignments/{subfolder}{readset}_map-to_{assembly}.arrow-p1.psort.log',
+        'log/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.arrow-p1.psort.log',
     benchmark:
-        'run/output/diploid_assembly/{folder_path}/polishing/alignments/{subfolder}{readset}_map-to_{assembly}.arrow-p1.psort.rsrc',
-    wildcard_constraints:
-        subfolder = '(^$|splits\/)'
+        'run/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.arrow-p1.psort.rsrc',
     conda:
         config['conda_env_pbtools']
     threads: config['num_cpu_high']
