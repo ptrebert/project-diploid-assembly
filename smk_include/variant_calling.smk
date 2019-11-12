@@ -67,7 +67,7 @@ rule call_variants_freebayes_parallel:
         aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
         ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
-        ref_regions = rules.compute_uniform_coverage_regions.output[0]
+        ref_regions = 'output/alignments/reads_to_reference/clustered/{sts_reads}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.regions'
     output:
         'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.vcf'
     log:
@@ -212,11 +212,11 @@ rule intersect_original_retyped_variant_calls:
         retyped_vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf.bgz',
         retyped_tbi = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf.bgz.tbi',
     output:
-        uniq_original = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0000.vcf'),
-        uniq_retyped = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0001.vcf'),
-        shared_original = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf'),
-        shared_retyped = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0003.vcf'),
-        desc = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/README.txt'),
+        uniq_original = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0000.vcf',
+        uniq_retyped = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0001.vcf',
+        shared_original = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf',
+        shared_retyped = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0003.vcf',
+        desc = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/README.txt',
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/50-intersect-GQ{gq}/{vc_reads}.{sequence}.isect.log'
     params:
@@ -282,10 +282,11 @@ rule merge_final_vcf_splits:
 
 rule compute_final_vcf_stats:
     input:
+        im_stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snps.QUAL{qual}.vcf.stats',
         vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf.bgz',
         idx = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf.bgz.tbi',
     output:
-        stats = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/stats/{vc_reads}.snps.QUAL{qual}.GQ{gq}.vcf.stats'
+        stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snps.QUAL{qual}.GQ{gq}.vcf.stats'
     shell:
         'bcftools stats {input.vcf} > {output.stats}'
 
@@ -351,25 +352,6 @@ rule compute_intermediate_vcf_stats:
         vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snps.vcf.bgz',
         idx = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snps.vcf.bgz.tbi',
     output:
-        stats = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/stats/{vc_reads}.snps.QUAL{qual}.vcf.stats'
+        stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snps.QUAL{qual}.vcf.stats'
     shell:
         'bcftools stats {input.vcf} > {output.stats}'
-
-
-# Deprecated rule...
-#rule depth_filter_intersected_variant_calls:
-#    """
-#    vc_reads = FASTQ file used for variant calling relative to reference
-#    """
-#    input:
-#        'output/variant_calls/{var_caller}/{reference}/split_by_seq/intersect_original_retyped-GQ_{gq}/{vc_reads}.{sequence}.isect.vcf'
-#    output:
-#        'output/variant_calls/{var_caller}/{reference}/split_by_seq/final_GQ{gq}_DP{dp}/{vc_reads}.{sequence}.final.vcf'
-#    log:
-#        'log/output/variant_calls/{var_caller}/{reference}/split_by_seq/final_GQ{gq}_DP{dp}/{vc_reads}.{sequence}.final.log'
-#    benchmark:
-#        'run/output/variant_calls/{var_caller}/{reference}/split_by_seq/final_GQ{gq}_DP{dp}/{vc_reads}.{sequence}.final.rsrc'
-#    shell:
-#        # TODO: find out why longshot has depth not as FORMAT field
-#        "bcftools filter --exclude \'INFO/DP>{wildcards.dp}\' --output-type v --output {output} {input} &> {log}"
-
