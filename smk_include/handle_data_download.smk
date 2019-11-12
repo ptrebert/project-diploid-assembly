@@ -89,7 +89,7 @@ checkpoint create_input_data_download_requests:
     output:
         directory('input/{subfolder}/requests')
     wildcard_constraints:
-        subfolder = '(f|b)[a-z\/]+'
+        subfolder = '(fastq|bam)/(complete|partial)[a-z/]*'
     run:
         import json as json
         import sys as sys
