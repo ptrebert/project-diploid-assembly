@@ -69,11 +69,11 @@ rule call_variants_freebayes_parallel:
         ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
         ref_regions = 'output/alignments/reads_to_reference/clustered/{sts_reads}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.regions'
     output:
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/freebayes/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/freebayes/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.rsrc'
+        'run/output/variant_calls/freebayes/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.rsrc'
     params:
         timeout = config['freebayes_timeout_sec'],
         script_dir = config['script_dir']
@@ -97,11 +97,11 @@ rule call_variants_longshot:
         ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
     output:
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/00-raw/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/longshot/{reference}/{sts_reads}/temp/00-raw/splits/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/00-raw/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/longshot/{reference}/{sts_reads}/temp/00-raw/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/00-raw/splits/{vc_reads}.{sequence}.rsrc'
+        'run/output/variant_calls/longshot/{reference}/{sts_reads}/temp/00-raw/splits/{vc_reads}.{sequence}.rsrc'
     params:
         individual = lambda wildcards: wildcards.vc_reads.split('_')[0]
     resources:
@@ -123,11 +123,11 @@ rule normalize_longshot_vcf:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/00-raw/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/longshot/{reference}/{sts_reads}/temp/00-raw/splits/{vc_reads}.{sequence}.vcf'
     output:
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/longshot/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/longshot/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.log'
     params:
         script_dir = config['script_dir']
     shell:
