@@ -57,11 +57,25 @@ rule parent_731_pure_ccs_split_sdga:
                 var_caller=['freebayes'],
                 qual=config['filter_vcf_qual'],
                 gq=config['filter_vcf_gq'],
-                reference=[CCS_ASSM_731_FLYE, CCS_ASSM_731_WTDBG],
+                reference=[CCS_ASSM_731_FLYE],
                 vc_reads=['HG00731_hgsvc_pbsq2-ccs_1000'],
                 sts_reads=['HG00731_1kg_il25k-npe_sseq'],
                 hap_reads=['HG00731_hgsvc_pbsq2-ccs_1000'],
-                assembler=['flye', 'wtdbg'],
+                assembler=['flye'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+               ),
+
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}/report.pdf',
+                known_ref=['GRCh38_GCA_p13'],
+                genemodel=['GRCh38_GENCODEv31_basic'],
+                var_caller=['freebayes'],
+                qual=config['filter_vcf_qual'],
+                gq=config['filter_vcf_gq'],
+                reference=[CCS_ASSM_731_WTDBG],
+                vc_reads=['HG00731_hgsvc_pbsq2-ccs_1000'],
+                sts_reads=['HG00731_1kg_il25k-npe_sseq'],
+                hap_reads=['HG00731_hgsvc_pbsq2-ccs_1000'],
+                assembler=['wtdbg'],
                 hap=['h1-un', 'h2-un', 'h1', 'h2']
                ),
 
@@ -83,6 +97,7 @@ rule parent_731_pure_ccs_split_sdga:
                 sts_reads=['HG00731_1kg_il25k-npe_sseq'],
                 hap_reads=['HG00731_hgsvc_pbsq2-ccs_1000']
                )
+    priority: 1000
 
 
 rule parent_732_pure_ccs_split_sdga:
@@ -93,11 +108,25 @@ rule parent_732_pure_ccs_split_sdga:
                 var_caller=['freebayes'],
                 qual=config['filter_vcf_qual'],
                 gq=config['filter_vcf_gq'],
-                reference=[CCS_ASSM_732_FLYE, CCS_ASSM_732_WTDBG],
+                reference=[CCS_ASSM_732_FLYE],
                 vc_reads=['HG00732_hgsvc_pbsq2-ccs_1000'],
                 sts_reads=['HG00732_1kg_il25k-npe_sseq'],
                 hap_reads=['HG00732_hgsvc_pbsq2-ccs_1000'],
-                assembler=['flye', 'wtdbg'],
+                assembler=['flye'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+               ),
+
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}/report.pdf',
+                known_ref=['GRCh38_GCA_p13'],
+                genemodel=['GRCh38_GENCODEv31_basic'],
+                var_caller=['freebayes'],
+                qual=config['filter_vcf_qual'],
+                gq=config['filter_vcf_gq'],
+                reference=[CCS_ASSM_732_WTDBG],
+                vc_reads=['HG00732_hgsvc_pbsq2-ccs_1000'],
+                sts_reads=['HG00732_1kg_il25k-npe_sseq'],
+                hap_reads=['HG00732_hgsvc_pbsq2-ccs_1000'],
+                assembler=['wtdbg'],
                 hap=['h1-un', 'h2-un', 'h1', 'h2']
                ),
 
@@ -119,6 +148,7 @@ rule parent_732_pure_ccs_split_sdga:
                 sts_reads=['HG00732_1kg_il25k-npe_sseq'],
                 hap_reads=['HG00732_hgsvc_pbsq2-ccs_1000']
                )
+    priority: 1000
 
 
 rule master_results_parents:
