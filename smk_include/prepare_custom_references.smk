@@ -196,23 +196,16 @@ rule write_saarclust_config_file:
         with open(output.input_dir, 'w') as dump:
             _ = dump.write(outfolder + '\n')
 
-# === DEBUG ====
-# SaaRclust is currently detected as failing by Snakemake for unclear
-# reasons; since the behavior cannot be reproduced on the command line,
-# manually generated SaaRclust output has to be copied in the appropriate
-# place
-# To protect this manually generated output, the SaaRclust checkpoint produces
-# protected output, and the subsequent merge operations use ancient()
 
 checkpoint run_saarclust_assembly_clustering:
     input:
-        cfg = ancient(rules.write_saarclust_config_file.output.cfg),
-        fofn = ancient(rules.write_saarclust_config_file.output.input_dir)
+        cfg = rules.write_saarclust_config_file.output.cfg,
+        fofn = rules.write_saarclust_config_file.output.input_dir
     output:
-        dir_fasta = protected(directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/clustered_assembly')),
-        dir_data = protected(directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/data')),
-        dir_plots = protected(directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/plots')),
-        cfg = protected('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/SaaRclust.config'),
+        dir_fasta = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/clustered_assembly'),
+        dir_data = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/data'),
+        dir_plots = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/plots'),
+        cfg = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/SaaRclust.config',
     log:
         'log/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.log'
     benchmark:
@@ -256,7 +249,7 @@ rule write_reference_fasta_clusters_fofn:
     Local rule with minimal overhead - properly collect checkpoint output
     """
     input:
-        fasta = ancient(collect_clustered_fasta_sequences)
+        fasta = collect_clustered_fasta_sequences
     output:
         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
     resources:
@@ -279,7 +272,7 @@ rule write_reference_fasta_clusters_fofn:
 
 rule merge_reference_fasta_clusters:
     input:
-        fofn = ancient('output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sample}_sqa-{assembler}.clusters.fofn')
+        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sample}_sqa-{assembler}.clusters.fofn'
     output:
         expand('output/reference_assembly/clustered/{{sts_reads}}/{{sample}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
