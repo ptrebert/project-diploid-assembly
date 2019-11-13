@@ -23,7 +23,7 @@ def collect_fastq_input_parts(wildcards):
     checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
 
     fastq_parts = expand(
-        os.path.join(subfolder, sample + '.{part_num}.fastq.gz'),
+        os.path.join(base_path, sample + '.{part_num}.fastq.gz'),
         part_num=checkpoint_wildcards.part_num
     )
 
@@ -132,7 +132,7 @@ def collect_pacbio_bam_input_parts(wildcards):
     checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
 
     bam_parts = expand(
-        os.path.join(subfolder, sample + '.{part_num}.pbn.bam'),
+        os.path.join(base_path, sample + '.{part_num}.pbn.bam'),
         part_num=checkpoint_wildcards.part_num
     )
 
