@@ -91,8 +91,8 @@ rule call_variants_longshot:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        read_ref_aln = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
+        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
         ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
