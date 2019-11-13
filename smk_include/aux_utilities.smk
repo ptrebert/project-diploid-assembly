@@ -43,24 +43,24 @@ rule pb_bamtools_index_bam_alignment:
 
 rule samtools_convert_sam_to_bam:
     input:
-        sam = '{filepath}.sam'
+        sam = '{folder_path}.sam'
     output:
-        bam = '{filepath}.sam.bam'
+        bam = '{folder_path}.sam.bam'
     threads: config['num_cpu_low']
     benchmark:
-        'run/{filepath}.sam-convert.rsrc'
+        'run/{folder_path}.sam-convert.rsrc'
     shell:
         "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
 
 
 rule samtools_position_sort_bam_alignment:
     input:
-        unsorted_bam = '{filepath}.sam.bam'
+        unsorted_bam = '{folder_path}.sam.bam'
     output:
-        sorted_bam = '{filepath}.psort.sam.bam'
+        sorted_bam = '{folder_path}.psort.sam.bam'
     threads: config['num_cpu_low']
     benchmark:
-        'run/{filepath}.psort-bam.rsrc'
+        'run/{folder_path}.psort-bam.rsrc'
     resources:
         mem_per_cpu_mb = 20 * 1024,  # 20G per CPU
         mem_total_mb = config['num_cpu_low'] * (20 * 1024)
