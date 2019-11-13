@@ -7,10 +7,7 @@ CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
 
 CMD_DL_UNCOMPRESSED_SINGLE = 'wget --quiet -O /dev/stdout {remote_path} 2>> {{log}} | gzip > {{output}}'
 
-localrules: master_handle_data_download, \
-            create_input_data_download_requests, \
-            download_bioproject_metadata, \
-            create_bioproject_download_requests
+localrules: master_handle_data_download
 
 
 rule master_handle_data_download:
@@ -31,6 +28,9 @@ rule collect_remote_hgsvc_hg00514_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_hg00514_pacbio.log'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug ' \
             ' --server {params.server} --ftp-path {params.remote_path} ' \
@@ -52,6 +52,9 @@ rule collect_remote_hgsvc_pur_trio_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_pur-trio_pacbio.log'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug ' \
             ' --server {params.server} --ftp-path {params.remote_path} ' \
@@ -73,6 +76,9 @@ rule collect_remote_hgsvc_yri_trio_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_yri-trio_pacbio.log'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug ' \
             ' --server {params.server} --ftp-path {params.remote_path} ' \
@@ -88,6 +94,9 @@ checkpoint create_input_data_download_requests:
         'input/data_sources/hgsvc_yri-trio_pacbio.json'
     output:
         directory('input/{subfolder}/requests')
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     wildcard_constraints:
         subfolder = '(fastq|bam)/(complete|partial)[a-z/]*'
     run:
@@ -140,6 +149,9 @@ checkpoint create_input_data_download_requests:
 rule download_bioproject_metadata:
     output:
         'input/bioprojects/{bioproject}.tsv'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     run:
         # This URL to be a common point of failure every couple of weeks,
         # can't really change that - maybe save bioproject report file in
@@ -171,6 +183,9 @@ checkpoint create_bioproject_download_requests:
         directory('input/fastq/strand-seq/{individual}_{bioproject}/requests')
     log:
         'log/input/fastq/strand-seq/{individual}_{bioproject}.requests.log'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     run:
         import csv
 
@@ -220,6 +235,9 @@ rule handle_strandseq_download_requests:
     log:
         'log/input/fastq/strand-seq/{individual}_{sample}_{bioproject}_{run_id}.download.log'
     threads: 2
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 45
     run:
         with open(input[0], 'r') as req_file:
             remote_path = req_file.readline().strip()
@@ -308,6 +326,8 @@ rule handle_complete_fastq_download_request:
     log:
         'log/input/fastq/complete/{sample}.download.log'
     threads: 2  # compromise between wget and aria2c
+    resources:
+        runtime_hrs = 4
     run:
         with open(input[0], 'r') as req_file:
             remote_path = req_file.readline().strip()
@@ -340,6 +360,8 @@ rule handle_partial_pbn_bam_download_request:
     wildcard_constraints:
         split_type = '(parts|chunks)'
     threads: 2  # compromise between wget and aria2c
+    resources:
+        runtime_hrs = 3
     run:
         with open(input[0], 'r') as req_file:
             remote_path = req_file.readline().strip()
