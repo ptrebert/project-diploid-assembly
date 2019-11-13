@@ -33,6 +33,8 @@ rule pb_bamtools_index_bam_alignment:
         pbn_bam = '{filepath}.pbn.bam'
     output:
         pbi = '{filepath}.pbn.bam.pbi'
+    benchmark:
+        'run/{filepath}.create-pbi.rsrc'
     conda:
         config['conda_env_pbtools']
     shell:
@@ -44,9 +46,9 @@ rule samtools_convert_sam_to_bam:
         sam = '{filepath}.sam'
     output:
         bam = '{filepath}.sam.bam'
-    wildcard_constraints:
-        filepath = '[\w\-\/]+'
     threads: config['num_cpu_low']
+    benchmark:
+        'run/{filepath}.sam-convert.rsrc'
     shell:
         "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
 
@@ -56,21 +58,17 @@ rule samtools_position_sort_bam_alignment:
         unsorted_bam = '{filepath}.sam.bam'
     output:
         sorted_bam = '{filepath}.psort.sam.bam'
-    wildcard_constraints:
-        filepath = '[\w\-\/]+'
     threads: config['num_cpu_low']
+    benchmark:
+        'run/{filepath}.psort-bam.rsrc'
     resources:
         mem_per_cpu_mb = 20 * 1024,  # 20G per CPU
         mem_total_mb = config['num_cpu_low'] * (20 * 1024)
     params:
         mem_per_thread = '20G'
-    run:
-        exec = 'samtools sort'
-        exec += ' -m {params.mem_per_thread}'
-        exec += ' --threads {threads}'
-        exec += ' -o {output.sorted_bam}'
-        exec += ' {input.unsorted_bam}'
-        shell(exec)
+    shell:
+        'samtools sort -m {params.mem_per_thread} --threads {threads} ' \
+            '-o {output.sorted_bam} {input.unsorted_bam}'
 
 
 rule samtools_index_fasta:
