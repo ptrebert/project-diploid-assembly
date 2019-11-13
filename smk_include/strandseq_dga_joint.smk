@@ -34,7 +34,11 @@ rule strandseq_dga_joint_haplo_tagging:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.fq.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.fq.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.fq.rsrc'
+    resources:
+        runtime_hrs = 12,
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 4096
     shell:
         "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
 
@@ -51,7 +55,11 @@ rule strandseq_dga_joint_haplo_splitting:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.splitting.fq.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.splitting.fq.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.splitting.fq.rsrc'
+    resources:
+        runtime_hrs = 12,
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 4096
     shell:
         "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
 
@@ -69,7 +77,11 @@ rule strandseq_dga_joint_haplo_tagging_pacbio_native:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.pbn.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.pbn.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.pbn.rsrc'
+    resources:
+        runtime_hrs = 12,
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 4096
     shell:
         "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
 
@@ -88,6 +100,10 @@ rule strandseq_dga_joint_haplo_splitting_pacbio_native:
         'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.splitting.pbn.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.splitting.pbn.rsrc',
+    resources:
+        runtime_hrs = 12,
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 4096
     shell:
         "whatshap --debug split --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.pbn_bam} {input.tags} &> {log}"
 
@@ -100,6 +116,10 @@ rule strandseq_dga_joint_merge_tag_groups_pacbio_native:
         'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.pbn.bam',
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.pbn.mrg.log',
+    benchmark:
+        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.pbn.mrg.rsrc',
+    resources:
+        runtime_hrs = 3
     wildcard_constraints:
         haplotype = '(1|2)'
     shell:
@@ -111,7 +131,11 @@ rule strandseq_dga_joint_merge_tag_groups:
         hap = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}.fastq.gz',
         un = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.un.fastq.gz',
     output:
-        'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.fastq.gz',
+        'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.fastq.gz'
+    benchmark:
+        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.fq.mrg.rsrc',
+    resources:
+        runtime_hrs = 3
     wildcard_constraints:
         haplotype = '(1|2)'
     shell:

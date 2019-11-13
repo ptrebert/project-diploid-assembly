@@ -9,6 +9,7 @@ include: 'strandseq_dga_split.smk'
 
 localrules: master_run_alignments
 
+
 rule master_run_alignments:
     input:
 
@@ -18,6 +19,9 @@ rule derive_minimap_parameter_preset:
         '{filepath}.fastq.gz'
     output:
         '{filepath}.preset.minimap'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 5
     run:
         preset = ' -x '
         path, filename = os.path.split(input[0])
@@ -48,6 +52,9 @@ rule derive_pbmm2_parameter_preset:
         '{filepath}.pbn.bam'
     output:
         '{filepath}.preset.pbmm2'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 5
     run:
         filename = os.path.basename(input[0])
         tech_spec = filename.split('_')[2]
@@ -74,10 +81,11 @@ rule minimap_reads_to_reference_alignment:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.log'
     benchmark:
         'run/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.rsrc'
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = 2048,
-        mem_total_mb = 65536
+        mem_per_cpu_mb = int(49152 / config['num_cpu_max']),
+        mem_total_mb = 49152,
+        runtime_hrs = 3
     params:
         individual = lambda wildcards: wildcards.sample.split('_')[0],
         preset = load_preset_file
@@ -100,14 +108,15 @@ rule pbmm2_reads_to_reference_alignment:
         'run/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbn.rsrc'
     conda:
         config['conda_env_pbtools']
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = 3072,
-        mem_total_mb = 94208,
+        mem_per_cpu_mb = int(98304 / config['num_cpu_max']),
+        mem_total_mb = 98304,
+        runtime_hrs = 4
     params:
-        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
+        align_threads = config['num_cpu_max'] - config['num_cpu_low'],
         sort_threads = config['num_cpu_low'],
-        sort_memory_mb = 3072,  # also per thread
+        sort_memory_mb = int(98304 / config['num_cpu_max']),
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.sample.split('_')[0]
     shell:
@@ -225,8 +234,8 @@ rule bwa_strandseq_to_reference_alignment:
         'run/output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{sample_id}.rsrc'
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = 2048,
-        mem_total_mb = config['num_cpu_low'] * 2048
+        mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
+        mem_total_mb = 8192
     params:
         idx_prefix = lambda wildcards, input: input.ref_index.split('.')[0]
     shell:
@@ -253,10 +262,11 @@ rule minimap_racon_polish_alignment_pass1:
         'log/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.racon-p1.log',
     benchmark:
         'run/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.racon-p1.rsrc',
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = 768,
-        mem_total_mb = 25600
+        mem_per_cpu_mb = int(49152 / config['num_cpu_max']),
+        mem_total_mb = 49152,
+        runtime_hrs = 3
     params:
         individual = lambda wildcards: wildcards.readset.split('_')[0],
         preset = load_preset_file
@@ -279,14 +289,15 @@ rule pbmm2_arrow_polish_alignment_pass1:
         'run/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.arrow-p1.psort.rsrc',
     conda:
         config['conda_env_pbtools']
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = 3072,
-        mem_total_mb = 94208,
+        mem_per_cpu_mb = int(98304 / config['num_cpu_max']),
+        mem_total_mb = 98304,
+        runtime_hrs = 4
     params:
-        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
+        align_threads = config['num_cpu_max'] - config['num_cpu_low'],
         sort_threads = config['num_cpu_low'],
-        sort_memory_mb = 3072,  # also per thread
+        sort_memory_mb = int(98304 / config['num_cpu_max']),
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.readset.split('_')[0]
     shell:

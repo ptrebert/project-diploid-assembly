@@ -5,9 +5,8 @@ include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'run_alignments.smk'
 
-localrules: master_variant_calling, \
-            write_intermediate_vcf_splits, \
-            write_final_vcf_splits
+localrules: master_variant_calling
+
 
 rule master_variant_calling:
     input:
@@ -44,6 +43,9 @@ rule compute_uniform_coverage_regions:
         'log/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.log'
     benchmark:
         'run/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.rsrc'
+    resources:
+        mem_total_mb = 6144,
+        mem_per_cpu_mb = 6144
     params:
         num_regions = 128,
         script_dir = config['script_dir']
@@ -79,8 +81,9 @@ rule call_variants_freebayes_parallel:
         script_dir = config['script_dir']
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = 12288,
-        mem_total_mb = 393216  # memory consumption varies wildly!!! Replacing FreeBayes at some point would be nice...
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 if attempt == 1 else 16384 + attempt**attempt * 16384) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 16384 if attempt == 1 else 16384 + attempt**attempt * 16384,
+        runtime_hrs = 3
     shell:
         '{params.script_dir}/fb-parallel-timeout.sh {input.ref_regions} {threads} {params.timeout} {log}' \
             ' --use-best-n-alleles 4 -f {input.reference} {input.read_ref_aln} > {output}'
@@ -105,8 +108,8 @@ rule call_variants_longshot:
     params:
         individual = lambda wildcards: wildcards.vc_reads.split('_')[0]
     resources:
-        mem_per_cpu_mb = 16384,
-        mem_total_mb = 16384
+        mem_per_cpu_mb = 6144,
+        mem_total_mb = 6144
     shell:
         'longshot --no_haps --bam {input.read_ref_aln} ' \
             ' --ref {input.reference} --region {wildcards.sequence}' \
@@ -167,6 +170,10 @@ rule whatshap_regenotype_variant_calls:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.log'
     benchmark:
         'run/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.rsrc'
+    resources:
+        mem_per_cpu_mb = 4096,
+        mem_total_mb = 4096,
+        runtime_hrs = 6
     shell:
         'whatshap genotype --chromosome {wildcards.sequence} --reference {input.reference} --output {output} {input.vcf} {input.read_ref_aln} &> {log}'
 

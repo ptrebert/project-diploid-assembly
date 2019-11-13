@@ -8,8 +8,7 @@ include: 'variant_calling.smk'
 include: 'run_assemblies.smk'
 include: 'run_alignments.smk'
 
-localrules: master_strandseq_dga_split, \
-            write_assembled_fasta_clusters_fofn
+localrules: master_strandseq_dga_split
 
 
 """
@@ -45,7 +44,11 @@ rule strandseq_dga_split_haplo_tagging:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.fq.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.fq.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.fq.rsrc'
+    resources:
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 4096,
+        runtime_hrs = 12
     shell:
         'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} ' \
             '--reference {input.fasta} --output-haplotag-list {output.tags} ' \
@@ -71,7 +74,11 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.pbn.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.pbn.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.pbn.rsrc'
+    resources:
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 4096,
+        runtime_hrs = 12
     shell:
         'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} ' \
             '--reference {input.fasta} --output-haplotag-list {output.tags} ' \
@@ -98,7 +105,8 @@ rule strandseq_dga_split_haplo_splitting:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{sequence}.splitting.fq.rsrc',
     resources:
         mem_per_cpu_mb = 8192,
-        mem_total_mb = 8192
+        mem_total_mb = 8192,
+        runtime_hrs = 12
     shell:
         'whatshap --debug split --discard-unknown-reads --pigz ' \
             '--output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} ' \
@@ -126,7 +134,8 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.{sequence}.splitting.pbn.rsrc',
     resources:
         mem_per_cpu_mb = 8192,
-        mem_total_mb = 8192
+        mem_total_mb = 8192,
+        runtime_hrs = 12
     shell:
         'whatshap --debug split --discard-unknown-reads ' \
             '--output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} ' \
@@ -143,7 +152,9 @@ rule strandseq_dga_split_merge_tag_groups:
         hap = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}.{sequence}.fastq.gz',
         un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.un.{sequence}.fastq.gz',
     output:
-        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.{sequence}.fastq.gz',
+        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.{sequence}.fastq.gz'
+    benchmark:
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.{sequence}.fq.mrg.rsrc'
     wildcard_constraints:
         haplotype = '(1|2)'
     shell:
@@ -162,7 +173,9 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
     output:
         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.{sequence}.pbn.bam',
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.log',
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.log'
+    benchmark:
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.rsrc'
     wildcard_constraints:
         haplotype = '(1|2)'
     shell:
@@ -181,7 +194,7 @@ def collect_assembled_sequence_files(wildcards):
                                                                     reference=wildcards.reference).output[0]
     checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
-    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/split/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
+    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
                         var_caller=wildcards.var_caller,
                         gq=wildcards.gq,
                         qual=wildcards.qual,
@@ -200,6 +213,9 @@ rule write_assembled_fasta_clusters_fofn:
         cluster_fastas = collect_assembled_sequence_files
     output:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fofn',
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
     run:
         # follow same example as merge strand-seq BAMs in module prepare_custom_references
         fasta_files = collect_assembled_sequence_files(wildcards)
@@ -222,6 +238,9 @@ rule strandseq_dga_split_merge_sequences:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fofn'
     output:
          'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fasta'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 20
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
     shell:
