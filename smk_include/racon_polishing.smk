@@ -19,6 +19,7 @@ rule racon_contig_polishing_pass1:
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = 14336,
-        mem_total_mb = 172032
+        mem_total_mb = 172032,
+        runtime_hrs = 12
     shell:
         'racon --threads {threads} --include-unpolished {input.pol_reads} {input.alignments} {input.contigs} > {output} 2> {log}'
