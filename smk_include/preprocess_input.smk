@@ -20,26 +20,55 @@ def collect_fastq_input_parts(wildcards):
 
     sample = wildcards.sample
 
-    all_part_files = os.listdir(request_path)
-    relevant_parts = list(filter(lambda x: x.startswith(sample) and x.endswith('request'), all_part_files))
+    checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
 
-    relevant_parts = [os.path.join(base_path, f.replace('request', 'fastq.gz')) for f in relevant_parts]
+    fastq_parts = expand(
+        os.path.join(subfolder, sample + '.{part_num}.fastq.gz'),
+        part_num=checkpoint_wildcards.part_num
+    )
 
-    return sorted(relevant_parts)
+    return fastq_parts
+
+
+rule write_fastq_input_parts_fofn:
+    input:
+        collect_fastq_input_parts
+    output:
+        fofn = 'input/fastq/complete/{sample}_1000.fofn'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
+    wildcard_constraints:
+        sample = '(' + '|'.join(config['partial_samples']) + ')'
+    run:
+        fastq_parts = collect_fastq_input_parts(wildcards)
+
+        with open(output.fofn, 'w') as dump:
+            for file_path in sorted(fastq_parts):
+                if not os.path.isfile(file_path):
+                    if os.path.isdir(file_path):
+                        # this is definitely wrong
+                        raise AssertionError('Expected file path for FASTQ merge part, but received directory: {}'.format(file_path))
+                    import sys
+                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+                _ = dump.write(file_path + '\n')
 
 
 rule merge_fastq_input_parts:
     input:
-        collect_fastq_input_parts
+        fofn = 'input/fastq/complete/{sample}_1000.fofn'
     output:
         'input/fastq/complete/{sample}_1000.fastq.gz'
     wildcard_constraints:
         sample = '(' + '|'.join(config['partial_samples']) + ')'
     log:
         'log/input/fastq/complete/{sample}_1000.merge.log'
-    threads: config['num_cpu_local']
+    resources:
+        runtime_hrs = 4
+    params:
+        fastq_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'cat {input} > {output} 2> {log}'
+        'cat {params.fastq_parts} > {output} 2> {log}'
 
 
 def collect_strandseq_libraries(wildcards):
@@ -79,7 +108,9 @@ rule merge_strandseq_libraries:
         collect_strandseq_libraries
     output:
         'input/fastq/complete/{sample}_sseq.fastq.gz'
-    message: 'Creating strand-seq mock file'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
     run:
         fastq_files = collect_strandseq_libraries(wildcards)
         with open(output[0], 'w') as dump:
@@ -98,24 +129,52 @@ def collect_pacbio_bam_input_parts(wildcards):
 
     sample = wildcards.sample
 
-    all_part_files = os.listdir(request_path)
-    relevant_parts = list(filter(lambda x: x.startswith(sample) and x.endswith('request'), all_part_files))
+    checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
 
-    relevant_parts = [os.path.join(base_path, f.replace('request', 'pbn.bam')) for f in relevant_parts]
-    return sorted(relevant_parts)
+    bam_parts = expand(
+        os.path.join(subfolder, sample + '.{part_num}.pbn.bam'),
+        part_num=checkpoint_wildcards.part_num
+    )
+
+    return bam_parts
+
+
+rule write_bam_input_parts_fofn:
+    input:
+        collect_pacbio_bam_input_parts
+    output:
+        fofn = 'input/bam/complete/{sample}_1000.pbn.fofn'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
+    wildcard_constraints:
+        sample = '(' + '|'.join(config['partial_samples']) + ')'
+    run:
+        bam_parts = collect_pacbio_bam_input_parts(wildcards)
+
+        with open(output.fofn, 'w') as dump:
+            for file_path in sorted(bam_parts):
+                if not os.path.isfile(file_path):
+                    if os.path.isdir(file_path):
+                        # this is definitely wrong
+                        raise AssertionError('Expected file path for PBN-BAM merge part, but received directory: {}'.format(file_path))
+                    import sys
+                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+                _ = dump.write(file_path + '\n')
 
 
 rule merge_pacbio_native_bams:
     input:
-        collect_pacbio_bam_input_parts
+        fofn = 'input/bam/complete/{sample}_1000.pbn.fofn'
     output:
         'input/bam/complete/{sample}_1000.pbn.bam'
     log:
         'log/input/bam/complete/{sample}_1000.mrg.log'
     benchmark:
         'run/input/bam/complete/{sample}_1000.mrg.rsrc'
-    threads: config['num_cpu_local']
+    resources:
+        runtime_hrs = 16
     params:
-        input_list = lambda wildcards, input: ' -in ' + ' -in '.join(input)
+        bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
     shell:
-        'bamtools merge {params.input_list} -out {output}'
+        'bamtools merge {params.bam_parts} -out {output}'
