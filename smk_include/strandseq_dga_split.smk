@@ -245,3 +245,68 @@ rule strandseq_dga_split_merge_sequences:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
     shell:
         'cat {params.cluster_fastas} > {output}'
+
+
+def collect_polished_contigs(wildcards):
+
+    reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+    seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
+                                                                    reference=wildcards.reference).output[0]
+
+    checkpoint_wildcards = glob_wildcards(
+        os.path.join(seq_output_dir, '{sequence}.seq')
+        )
+
+    polished_contigs = expand(
+        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.{pol_pass}.fasta',
+        var_caller=wildcards.var_caller,
+        qual=wildcards.qual,
+        gq=wildcards.gq,
+        reference=wildcards.reference,
+        vc_reads=wildcards.vc_reads,
+        sts_reads=wildcards.sts_reads,
+        pol_reads=wildcards.pol_reads,
+        hap_reads=wildcards.hap_reads,
+        assembler=wildcards.assembler,
+        hap=wildcards.hap,
+        sequence=checkpoint_wildcards.sequence,
+        pol_pass=wildcards.pol_pass
+    )
+
+    return polished_contigs
+
+
+rule write_polished_contigs_fofn:
+    input:
+        contigs = collect_polished_contigs
+    output:
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
+    run:
+        contigs = sorted(collect_arrow_polished_contigs(wildcards))
+
+        with open(output.fofn, 'w') as dump:
+            for file_path in sorted(contigs):
+                if not os.path.isfile(file_path):
+                    if os.path.isdir(file_path):
+                        # this is definitely wrong
+                        raise AssertionError('Expected file path for Arrow polished FASTA, but received directory: {}'.format(file_path))
+                    import sys
+                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+                _ = dump.write(file_path + '\n')
+
+
+rule merge_polished_contigs:
+    input:
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
+    output:
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}.fasta'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 20
+    params:
+        polished_fastas = lambda wildcards, input: load_fofn_file(input)
+    shell:
+        'cat {params.polished_fastas} > {output}'
