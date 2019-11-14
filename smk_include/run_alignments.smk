@@ -120,7 +120,7 @@ rule pbmm2_reads_to_reference_alignment:
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.sample.split('_')[0]
     shell:
-        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory}M --no-bai ' \
+        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory_mb}M --no-bai ' \
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} ' \
             ' --preset {params.preset} --sample {params.individual} ' \
             ' {input.reference} {input.reads} {output.bam} &> {log}'
@@ -253,22 +253,22 @@ rule minimap_racon_polish_alignment_pass1:
     pol_reads = FASTQ file used for Racon contig polishing
     """
     input:
-        reads = 'output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pol_reads}.{hap}{split}.fastq.gz',
-        preset = 'output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pol_reads}.{hap}{split}.preset.minimap',
-        contigs = 'output/diploid_assembly/{folder_path}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}{split}.fasta',
+        reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.fastq.gz',
+        preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.preset.minimap',
+        contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
     output:
-        sam = 'output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.racon-p1.psort.sam',
+        sam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.psort.sam',
     log:
-        'log/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.racon-p1.log',
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.log',
     benchmark:
-        'run/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.racon-p1.rsrc',
-    threads: config['num_cpu_max']
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.rsrc',
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(49152 / config['num_cpu_max']),
-        mem_total_mb = 49152,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 12288 / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: attempt * 12288,
         runtime_hrs = 3
     params:
-        individual = lambda wildcards: wildcards.readset.split('_')[0],
+        individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
         preset = load_preset_file
     shell:
         'minimap2 -t {threads} {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" ' \
@@ -278,30 +278,29 @@ rule minimap_racon_polish_alignment_pass1:
 
 rule pbmm2_arrow_polish_alignment_pass1:
     input:
-        reads = 'output/diploid_assembly/{folder_path}/draft/haploid_bam/{pol_reads}.{hap}{split}.pbn.bam',
-        preset = 'output/diploid_assembly/{folder_path}/draft/haploid_bam/{pol_reads}.{hap}{split}.preset.pbmm2',
-        contigs = 'output/diploid_assembly/{folder_path}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}{split}.fasta',
+        reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pol_reads}.{hap}.{sequence}.pbn.bam',
+        preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pol_reads}.{hap}.{sequence}.preset.pbmm2',
+        contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
     output:
-        bam = 'output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.arrow-p1.psort.pbn.bam',
+        bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.pbn.bam',
     log:
-        'log/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.arrow-p1.psort.log',
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.log',
     benchmark:
-        'run/output/diploid_assembly/{folder_path}/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}{split}.arrow-p1.psort.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.rsrc',
     conda:
         config['conda_env_pbtools']
-    threads: config['num_cpu_max']
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(98304 / config['num_cpu_max']),
-        mem_total_mb = 98304,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 16384 / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: attempt * 16384,
         runtime_hrs = 4
     params:
-        align_threads = config['num_cpu_max'] - config['num_cpu_low'],
-        sort_threads = config['num_cpu_low'],
-        sort_memory_mb = int(98304 / config['num_cpu_max']),
+        align_threads = config['num_cpu_high'] - 2,
+        sort_threads = 2,
         preset = load_preset_file,
-        individual = lambda wildcards: wildcards.readset.split('_')[0]
+        individual = lambda wildcards: wildcards.hap_reads.split('_')[0]
     shell:
-        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory} --no-bai ' \
+        'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai ' \
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} ' \
-            ' --preset {params.param_preset} --sample {params.individual} ' \
+            ' --preset {params.preset} --sample {params.individual} ' \
             ' {input.contigs} {input.reads} {output.bam} &> {log}'
