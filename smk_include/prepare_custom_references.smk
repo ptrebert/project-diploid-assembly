@@ -13,7 +13,9 @@ rule master_prepare_custom_references:
 
 rule install_rlib_saarclust:
     output:
-         'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
+         touch('output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']))
+    log:
+        'output/check_files/R_setup/saarclust_ver-{}.log'.format(config['git_commit_saarclust'])
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_saarclust']
@@ -21,7 +23,7 @@ rule install_rlib_saarclust:
         runtime_hrs = 0,
         runtime_min = 30
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {output}'
+        'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {log}'
 
 
 def collect_strandseq_merge_files(wildcards):

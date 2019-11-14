@@ -19,21 +19,25 @@ rule install_rlib_breakpointr:
     input:
         'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
     output:
-         check = 'output/check_files/R_setup/breakpointr.ok'
+         check = touch('output/check_files/R_setup/breakpointr.ok')
+    log:
+        'output/check_files/R_setup/breakpointr.log'
     resources:
         runtime_hrs = 0,
         runtime_min = 30
     params:
         script_dir = config['script_dir']
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R &> {output}'
+        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R &> {log}'
 
 
 rule install_rlib_strandphaser:
     input:
         rules.install_rlib_breakpointr.output.check
     output:
-         check = 'output/check_files/R_setup/strandphaser_ver-{}.ok'.format(config['git_commit_strandphaser'])
+         check = touch('output/check_files/R_setup/strandphaser_ver-{}.ok'.format(config['git_commit_strandphaser']))
+    log:
+        'output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
     resources:
         runtime_hrs = 0,
         runtime_min = 30
