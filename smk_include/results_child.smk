@@ -109,7 +109,7 @@ rule child_733_pure_clr_split_sdga:
                 hap_reads=['HG00733_sra_pbsq1-clr_1000']
                ),
 
-        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.arrow-p1/report.pdf',
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}/report.pdf',
                 known_ref=['GRCh38_GCA_p13'],
                 genemodel=['GRCh38_GENCODEv31_basic'],
                 var_caller=['longshot'],
@@ -121,10 +121,11 @@ rule child_733_pure_clr_split_sdga:
                 hap_reads=['HG00733_sra_pbsq1-clr_1000'],
                 pol_reads=['HG00733_sra_pbsq1-clr_1000'],
                 assembler=['wtdbg'],
+                pol_pass=['arrow-p1'],
                 hap=['h1-un', 'h2-un', 'h1', 'h2']
                ),
 
-        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.arrow-p1/report.pdf',
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}/report.pdf',
                 known_ref=['GRCh38_GCA_p13'],
                 genemodel=['GRCh38_GENCODEv31_basic'],
                 var_caller=['longshot'],
@@ -136,6 +137,7 @@ rule child_733_pure_clr_split_sdga:
                 hap_reads=['HG00733_sra_pbsq1-clr_1000'],
                 pol_reads=['HG00733_sra_pbsq1-clr_1000'],
                 assembler=['flye'],
+                pol_pass=['arrow-p1'],
                 hap=['h1-un', 'h2-un', 'h1', 'h2']
                ),
 
@@ -189,7 +191,40 @@ rule child_733_pure_ccs_split_sdga:
                 vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                 sts_reads=['HG00733_1kg_il25k-npe_sseq'],
                 hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000']
-               )
+               ),
+
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}/report.pdf',
+                known_ref=['GRCh38_GCA_p13'],
+                genemodel=['GRCh38_GENCODEv31_basic'],
+                var_caller=['freebayes'],
+                qual=config['filter_vcf_qual'],
+                gq=config['filter_vcf_gq'],
+                reference=CCS_ASSM_733_WTDBG,
+                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                pol_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                assembler=['wtdbg'],
+                pol_pass=['racon-p1'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+               ),
+
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}/report.pdf',
+                known_ref=['GRCh38_GCA_p13'],
+                genemodel=['GRCh38_GENCODEv31_basic'],
+                var_caller=['freebayes'],
+                qual=config['filter_vcf_qual'],
+                gq=config['filter_vcf_gq'],
+                reference=CCS_ASSM_733_FLYE,
+                vc_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                pol_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
+                assembler=['flye'],
+                pol_pass=['racon-p1'],
+                hap=['h1-un', 'h2-un', 'h1', 'h2']
+               ),
+
     priority: 1000
 
 
@@ -224,7 +259,7 @@ rule child_733_mixed_clr_split_sdga:
                 hap=['h1-un', 'h2-un', 'h1', 'h2']
                ),
 
-        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.arrow-p1/report.pdf',
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}/report.pdf',
                 known_ref=['GRCh38_GCA_p13'],
                 genemodel=['GRCh38_GENCODEv31_basic'],
                 var_caller=['freebayes'],
@@ -236,10 +271,11 @@ rule child_733_mixed_clr_split_sdga:
                 hap_reads=['HG00733_sra_pbsq1-clr_1000'],
                 pol_reads=['HG00733_sra_pbsq1-clr_1000'],
                 assembler=['wtdbg'],
+                pol_pass=['arrow-p1'],
                 hap=['h1-un', 'h2-un', 'h1', 'h2']
                ),
 
-        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.arrow-p1/report.pdf',
+        expand('output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}/report.pdf',
                 known_ref=['GRCh38_GCA_p13'],
                 genemodel=['GRCh38_GENCODEv31_basic'],
                 var_caller=['freebayes'],
@@ -251,6 +287,7 @@ rule child_733_mixed_clr_split_sdga:
                 hap_reads=['HG00733_sra_pbsq1-clr_1000'],
                 pol_reads=['HG00733_sra_pbsq1-clr_1000'],
                 assembler=['flye'],
+                pol_pass=['arrow-p1'],
                 hap=['h1-un', 'h2-un', 'h1', 'h2']
                ),
 
