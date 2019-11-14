@@ -59,8 +59,6 @@ rule merge_fastq_input_parts:
         fofn = 'input/fastq/complete/{sample}_1000.fofn'
     output:
         'input/fastq/complete/{sample}_1000.fastq.gz'
-    wildcard_constraints:
-        sample = '(' + '|'.join(config['partial_samples']) + ')'
     log:
         'log/input/fastq/complete/{sample}_1000.merge.log'
     resources:
@@ -147,8 +145,6 @@ rule write_bam_input_parts_fofn:
     resources:
         runtime_hrs = 0,
         runtime_min = 10
-    wildcard_constraints:
-        sample = '(' + '|'.join(config['partial_samples']) + ')'
     run:
         bam_parts = collect_pacbio_bam_input_parts(wildcards)
 
