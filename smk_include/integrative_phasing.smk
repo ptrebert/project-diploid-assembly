@@ -24,7 +24,9 @@ rule install_rlib_breakpointr:
         'log/output/check_files/R_setup/breakpointr.log'
     resources:
         runtime_hrs = 0,
-        runtime_min = 30
+        runtime_min = 30,
+        mem_total_mb = 3072,
+        mem_per_cpu_mb = 3072
     params:
         script_dir = config['script_dir']
     shell:
@@ -40,7 +42,9 @@ rule install_rlib_strandphaser:
         'log/output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
     resources:
         runtime_hrs = 0,
-        runtime_min = 30
+        runtime_min = 30,
+        mem_total_mb = 3072,
+        mem_per_cpu_mb = 3072
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_strandphaser']
