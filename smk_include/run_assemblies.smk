@@ -81,8 +81,7 @@ rule compute_wtdbg_squashed_assembly_layout:
         layout = 'output/reference_assembly/squashed/layout/wtdbg2/{sample}/{sample}.ctg.lay.gz',
         aux = expand('output/reference_assembly/squashed/layout/wtdbg2/{{sample}}/{{sample}}.{ext}',
                       ext=['1.dot.gz', '1.nodes', '1.reads', '2.dot.gz', '3.dot.gz',
-                            'alignments.gz', 'binkmer', 'closed_bins', 'clps',
-                            'ctg.dot.gz', 'events', 'frg.dot.gz', 'frg.nodes', 'kmerdep'])
+                            'alignments.gz', 'ctg.dot.gz', 'events', 'frg.dot.gz', 'frg.nodes'])
     log: 'log/output/reference_assembly/squashed/layout/wtdbg2/{sample}_sqa-wtdbg.layout.log',
     benchmark: 'run/output/reference_assembly/squashed/layout/wtdbg2/{sample}_sqa-wtdbg.layout.rsrc',
     threads: config['num_cpu_max']
