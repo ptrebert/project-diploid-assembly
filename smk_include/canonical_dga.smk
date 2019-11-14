@@ -5,7 +5,7 @@ include: 'preprocess_references.smk'
 include: 'prepare_custom_references.smk'
 include: 'variant_calling.smk'
 
-localrules: master_canonical_dga, canonical_dga_merge_sequence_phased_vcf_files
+localrules: master_canonical_dga
 
 
 """
@@ -70,7 +70,6 @@ rule canonical_dga_merge_sequence_phased_vcf_files:
         vcf_files = cdga_collect_sequence_phased_vcf_files
     output:
         'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.phased.vcf'
-    threads: config['num_cpu_local']
     shell:
         'bcftools concat --output {output} --output-type v {input.vcf_files}'
 
@@ -147,7 +146,7 @@ rule canonical_dga_assemble_haplotypes_wtdbg_layout:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/wtdbg2/{hap_reads}.{hap}.layout.log',
     benchmark:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/wtdbg2/{hap_reads}.{hap}.layout.rsrc',
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = 6144,
         mem_total_mb = 409600
@@ -171,7 +170,7 @@ rule canonical_dga_assemble_haplotypes_consensus:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-wtdbg.{hap}.log',
     benchmark:
         'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-wtdbg.{hap}.rsrc',
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = 384,
         mem_total_mb = 12288

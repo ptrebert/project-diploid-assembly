@@ -1,0 +1,13 @@
+{
+  "__default__":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "/gpfs/project/ebertp/projects/rfdga/log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "/gpfs/project/ebertp/projects/rfdga/log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "account": "RFDGA",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
+  }
+}

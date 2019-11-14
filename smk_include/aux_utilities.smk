@@ -33,6 +33,8 @@ rule pb_bamtools_index_bam_alignment:
         pbn_bam = '{filepath}.pbn.bam'
     output:
         pbi = '{filepath}.pbn.bam.pbi'
+    benchmark:
+        'run/{filepath}.create-pbi.rsrc'
     conda:
         config['conda_env_pbtools']
     shell:
@@ -41,36 +43,32 @@ rule pb_bamtools_index_bam_alignment:
 
 rule samtools_convert_sam_to_bam:
     input:
-        sam = '{filepath}.sam'
+        sam = '{folder_path}.sam'
     output:
-        bam = '{filepath}.sam.bam'
-    wildcard_constraints:
-        filepath = '[\w\-\/]+'
+        bam = '{folder_path}.sam.bam'
     threads: config['num_cpu_low']
+    benchmark:
+        'run/{folder_path}.sam-convert.rsrc'
     shell:
         "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
 
 
 rule samtools_position_sort_bam_alignment:
     input:
-        unsorted_bam = '{filepath}.sam.bam'
+        unsorted_bam = '{folder_path}.sam.bam'
     output:
-        sorted_bam = '{filepath}.psort.sam.bam'
-    wildcard_constraints:
-        filepath = '[\w\-\/]+'
+        sorted_bam = '{folder_path}.psort.sam.bam'
     threads: config['num_cpu_low']
+    benchmark:
+        'run/{folder_path}.psort-bam.rsrc'
     resources:
         mem_per_cpu_mb = 20 * 1024,  # 20G per CPU
         mem_total_mb = config['num_cpu_low'] * (20 * 1024)
     params:
         mem_per_thread = '20G'
-    run:
-        exec = 'samtools sort'
-        exec += ' -m {params.mem_per_thread}'
-        exec += ' --threads {threads}'
-        exec += ' -o {output.sorted_bam}'
-        exec += ' {input.unsorted_bam}'
-        shell(exec)
+    shell:
+        'samtools sort -m {params.mem_per_thread} --threads {threads} ' \
+            '-o {output.sorted_bam} {input.unsorted_bam}'
 
 
 rule samtools_index_fasta:
@@ -120,11 +118,11 @@ rule generate_bwa_index:
     input:
         reference = '{folder_path}/{reference}.fasta'
     output:
-        '{folder_path}/bwa_index/{reference}.amb',
-        '{folder_path}/bwa_index/{reference}.ann',
-        '{folder_path}/bwa_index/{reference}.bwt',
-        '{folder_path}/bwa_index/{reference}.pac',
-        '{folder_path}/bwa_index/{reference}.sa'
+        '{folder_path}/{reference}/bwa_index/{reference}.amb',
+        '{folder_path}/{reference}/bwa_index/{reference}.ann',
+        '{folder_path}/{reference}/bwa_index/{reference}.bwt',
+        '{folder_path}/{reference}/bwa_index/{reference}.pac',
+        '{folder_path}/{reference}/bwa_index/{reference}.sa'
     log:
         'log/{folder_path}/bwa_index/{reference}.log'
     benchmark:
@@ -159,11 +157,22 @@ def collect_strandseq_alignments(wildcards):
     else:
         # assume squashed assembly
         reference = wildcards.sample + '_sqa-' + wildcards.assembler
+
+    # (SaaR)-clustered assemblies are defined relative to a strand-seq dataset,
+    # whereas squashed assemblies are defined relative to a bioproject (design glitch)
+    ref_type = None
+    if '_sqa' in reference:
+        ref_type = bioproject
+    elif '_scV' in reference:
+        ref_type = wildcards.sts_reads
+    else:
+        raise ValueError('Could not determine type of reference: {}'.format(wildcards))
+
     bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}/{bioproject}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
+        'output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
         reference=wildcards.reference,
         individual=individual,
-        bioproject=bioproject,
+        ref_type=ref_type,
         project=project,
         platform=platform,
         lib_id=checkpoint_wildcards.lib_id,
@@ -194,6 +203,7 @@ def load_preset_file(wildcards, input):
     else:
         with open(file_path, 'r') as dump:
             preset = dump.read().strip()
+            assert preset, 'Empty preset file: {}'.format(file_path)
     return preset
 
 
@@ -221,6 +231,7 @@ def load_fofn_file(input, prefix='', sep=' '):
     else:
         with open(file_path, 'r') as dump:
             file_list = sorted([l.strip() for l in dump.readlines()])
+            assert file_list, 'Empty fofn file: {}'.format(file_path)
     file_list = prefix + sep.join(file_list)
     return file_list
 

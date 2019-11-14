@@ -17,6 +17,9 @@ rule master_eval_known_reference:
 rule download_quast_busco_databases:
     output:
         'output/check_files/quast-lg/busco_db_download.ok'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     shell:
         'quast-download-busco &> {output}'
 
@@ -33,8 +36,9 @@ rule compute_delta_assembly_reference:
         'run/output/evaluation/mummer_delta/{known_ref}/{folder_path}/{file_name}.mummer.rsrc'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = 6144,
-        mem_total_mb = 65536
+        mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 24576,
+        runtime_hrs = 4
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.custom_ref} --delta={output.delta} &> {log}'
 
@@ -54,8 +58,9 @@ rule quast_analysis_assembly:
         'run/output/evaluation/quastlg_busco/{known_ref}-{genemodel}/{folder_path}/{file_name}/quast_run.rsrc',
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = 6144,
-        mem_total_mb = 65536
+        mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 24576,
+        runtime_hrs = 4
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100

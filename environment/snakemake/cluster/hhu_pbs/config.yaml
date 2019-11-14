@@ -1,0 +1,16 @@
+# Default runtime profile for HHU HILBERT infrastructure / PBS Professional
+
+directory: /gpfs/project/ebertp/projects/rfdga
+cluster: " qsub -v PATH=/gpfs/project/ebertp/software/conda/envs/dipassm/bin:/gpfs/project/ebertp/software/conda/condabin:/bin:/usr/bin:/usr/lpp/mmfs/bin -A {cluster.account} -l walltime={cluster.run_hrs}:{cluster.run_min}:00 -l select=1:ncpus={cluster.cores}:mem={cluster.mem_mb}mb -N {cluster.name} -o {cluster.output} -e {cluster.error}"
+cluster-config: /gpfs/project/ebertp/code/project-diploid-assembly/environment/snakemake/cluster/hhu_pbs/hilbert_cluster.json
+local-cores: 1
+jobs: 100
+latency-wait: 300
+keep-going: True
+rerun-incomplete: True
+restart-times: 3
+default-resources:
+  - mem_per_cpu_mb=1024
+  - mem_total_mb=1024
+  - runtime_hrs=1
+  - runtime_min=59

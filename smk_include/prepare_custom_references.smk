@@ -4,10 +4,7 @@ include: 'preprocess_input.smk'
 include: 'run_assemblies.smk'
 include: 'run_alignments.smk'
 
-localrules: master_prepare_custom_references, \
-            write_saarclust_config_file, \
-            write_strandseq_merge_fofn, \
-            write_reference_fasta_clusters_fofn
+localrules: master_prepare_custom_references
 
 
 rule master_prepare_custom_references:
@@ -20,6 +17,9 @@ rule install_rlib_saarclust:
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_saarclust']
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     shell:
         'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {output}'
 
@@ -32,6 +32,14 @@ def collect_strandseq_merge_files(wildcards):
     platform = wildcards.platform
     project = wildcards.project
     lib_id = wildcards.lib_id
+
+    # This lookup is necessary when a (SaaR)-clustered assembly is processed,
+    # because in this case the "sts_reads" wildcard is being used together
+    # with the assembly name
+    if bioproject.endswith('_sseq'):
+        sts_reads = bioproject
+        sts_lookup = sts_reads.rsplit('_', 1)[0]
+        bioproject = config['strandseq_to_bioproject'][sts_lookup]
 
     requests_dir = checkpoints.create_bioproject_download_requests.get(individual=individual, bioproject=bioproject).output[0]
 
@@ -60,6 +68,9 @@ rule write_strandseq_merge_fofn:
         bams = collect_strandseq_merge_files
     output:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
     run:
         bam_files = collect_strandseq_merge_files(wildcards)
         if len(bam_files) != 2:
@@ -126,8 +137,8 @@ rule mark_duplicate_reads_strandseq:
         'run/{folder_path}/{sample}.mrg.psort.mdup.rsrc'
     threads: config['num_cpu_low']
     resources:
-            mem_per_cpu_mb = 512,
-            mem_total_mb = config['num_cpu_low'] * 512
+        mem_per_cpu_mb = 512,
+        mem_total_mb = config['num_cpu_low'] * 512
     shell:
         'sambamba markdup -t {threads} --overflow-list-size 600000 {input} {output} &> {log}'
 
@@ -149,6 +160,9 @@ rule write_saarclust_config_file:
     output:
         cfg = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sts_reads}/saarclust.config',
         input_dir = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sts_reads}/saarclust.input'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
     params:
         min_contig_size = config['min_contig_size'],
         bin_size = config['bin_size'],
@@ -198,13 +212,16 @@ checkpoint run_saarclust_assembly_clustering:
         'run/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.run'
     resources:
         mem_per_cpu_mb = 8192,
-        mem_total_mb = 8192
+        mem_total_mb = 8192,
+        runtime_hrs = 3
     params:
         script_dir = config['script_dir'],
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
         in_folder = lambda wildcards, input: load_fofn_file(input)
     shell:
-        '{params.script_dir}/run_saarclust.R {input.cfg} {params.in_folder} {params.out_folder} &> {log}'
+        '{params.script_dir}/run_saarclust.R {input.cfg} {params.in_folder} {params.out_folder} &> {log} ' \
+            ' && echo "SaaRclust success" &>> {log} ' \
+            ' || echo "SaaRclust fail" &>> {log}'
 
 
 def collect_clustered_fasta_sequences(wildcards):
@@ -214,15 +231,15 @@ def collect_clustered_fasta_sequences(wildcards):
     sqa_assembly = wildcards.reference
 
     # this output folder is the /clustered_assembly subfolder
-    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).dir_fasta
-    checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
+    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).output.dir_fasta
+    checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.fasta'))
 
     cluster_fasta = expand(
-        os.path.join(seq_output_dir, '{sequence}.seq'),
+        os.path.join(seq_output_dir, '{sequence}.fasta'),
         reference=sqa_assembly,
         sts_reads=strandseq_reads,
         sequence=checkpoint_wildcards.sequence
-        )
+    )
 
     return sorted(cluster_fasta)
 
@@ -234,7 +251,10 @@ rule write_reference_fasta_clusters_fofn:
     input:
         fasta = collect_clustered_fasta_sequences
     output:
-       fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
+        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
     run:
         # following example as above for merge strand-seq BAM files
         fasta_files = collect_clustered_fasta_sequences(wildcards)
@@ -256,6 +276,9 @@ rule merge_reference_fasta_clusters:
     output:
         expand('output/reference_assembly/clustered/{{sts_reads}}/{{sample}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 30
     params:
         fasta_clusters = lambda wildcards, input: load_fofn_file(input)
     shell:

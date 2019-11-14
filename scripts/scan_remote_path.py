@@ -110,7 +110,7 @@ def annotate_remote_files(remote_files, cargs, logger):
         logger.debug('Extracted individual {} for file {}'.format(individual, name))
         if any([x in name.lower() for x in ['ccs', 'q20']]):
             tech = 'ccs'
-        elif any([x in name.lower() for x in ['clr', 'subreads']]):
+        elif any([x in name.lower() for x in ['clr']]):
             tech = 'clr'
         else:
             logger.warning('Skipping file {} - could not id seq. tech.'.format(name))

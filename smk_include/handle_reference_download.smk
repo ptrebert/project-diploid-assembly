@@ -5,7 +5,7 @@ CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
 
 CMD_DL_UNCOMPRESSED_SINGLE = 'wget --quiet -O /dev/stdout {remote_path} 2>> {{log}} | gzip > {{output}}'
 
-localrules: master_handle_reference_download, create_reference_download_request
+localrules: master_handle_reference_download
 
 rule master_handle_reference_download:
     input:
@@ -14,6 +14,9 @@ rule master_handle_reference_download:
 rule create_reference_download_request:
     output:
         'references/{subfolder}/{reference}.request'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
     run:
         import json as json
 

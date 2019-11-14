@@ -9,10 +9,10 @@ rule master_preprocess_references:
 
 rule normalize_reference_assembly_names:
     input:
-        'references/downloads/{ref_genome}.fa.gz'
+        'references/downloads/{known_ref}.fa.gz'
     output:
-        seq = 'references/assemblies/{ref_genome}.fasta',
-        table = 'references/assemblies/{ref_genome}.sizes'
+        seq = 'references/assemblies/{known_ref}.fasta',
+        table = 'references/assemblies/{known_ref}.sizes'
     wildcard_constraints:
         ref_genome = 'GRCh38_[USCENKGCAv97]+_[a-z13]+'
     run:

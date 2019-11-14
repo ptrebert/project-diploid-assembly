@@ -15,6 +15,10 @@ rule validate_complete_input_fastq:
     log: 'log/output/statistics/fastq_input/stat_dumps/{filename}.stats.log'
     benchmark: 'run/output/statistics/fastq_input/stat_dumps/{filename}.stats.rsrc'
     threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = 24576,  # dependent on chunk size and avg. read length
+        mem_per_cpu_mb = int(24576 / config['num_cpu_low']),
+        runtime_hrs=lambda wildcards: 1 if '-ccs' in wildcards.filename else 2
     params:
         script_dir = config['script_dir']
     shell:
@@ -78,9 +82,15 @@ rule compute_statistics_haplosplit_fastq:
         'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.fastq.gz'
     output:
         'output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pck'
-    log: 'log/output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.log'
-    benchmark: 'run/output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.rsrc'
+    log:
+        'log/output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.log'
+    benchmark:
+        'run/output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.rsrc'
     threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = 24576,  # dependent on chunk size and avg. read length
+        mem_per_cpu_mb = int(24576 / config['num_cpu_low']),
+        runtime_hrs=lambda wildcards: 1 if '-ccs' in wildcards.filename else 2
     params:
         script_dir = config['script_dir']
     shell:

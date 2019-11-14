@@ -2,13 +2,13 @@
 # === Software setup settings ===
 # Specify git commits for SaaRclust
 # and StrandPhaseR setup
-git_commit_saarclust: f87bf31
+git_commit_saarclust: ad36a06
 git_commit_strandphaser: e8913f3
 # arbitrarily tying a version number
 # to the git commits to avoid additional
 # wildcards - increment this number when
 # git commits are changed!
-git_commit_version: 4
+git_commit_version: 5
 
 samples:
   - HG00733_hpg_ontpm-ul
@@ -48,8 +48,8 @@ strandseq_to_bioproject:
 # SaaRclust parameter sets
 # goal is to obtain 24 clusters
 min_contig_size: 100000
-bin_size: 100000
-step_size: 100000
+bin_size: 200000
+step_size: 200000
 prob_threshold: 0.25
 
 # VARIANT CALLING
