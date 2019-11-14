@@ -32,7 +32,7 @@ dependencies:
   - pigz=2.4
   - drmaa=0.7.9
   - libxml2=2.9.9
-  - r-xml2=1.2.2
+  - r-xml=3.98_1.20
   - r-base<3.6
   - r-devtools=2.2.1
   - r-usethis=1.5.1
