@@ -104,7 +104,7 @@ rule compute_wtdbg_squashed_assembly_consensus:
         squashed_assembly = protected('output/reference_assembly/squashed/{sample}_sqa-wtdbg.fasta')
     log: 'log/output/reference_assembly/squashed/{sample}_sqa-wtdbg.consensus.log'
     benchmark: 'run/output/reference_assembly/squashed/{sample}_sqa-wtdbg.consensus.rsrc'
-    threads: config['num_cpu_max']
+    threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards: int((8192 if '-ccs' in wildcards.sample else 24576) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards: 8192 if '-ccs' in wildcards.sample else 24576,
@@ -187,7 +187,7 @@ rule compute_wtdbg_haploid_assembly_consensus:
     benchmark: 'run/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}.{hap}.wtdbg-consensus.rsrc'
     wildcard_constraints:
             variant = '(canonical|strandseq_joint)'
-    threads: config['num_cpu_max']
+    threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards: int((8192 if '-ccs' in wildcards.sample else 24576) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards: 8192 if '-ccs' in wildcards.sample else 24576,
