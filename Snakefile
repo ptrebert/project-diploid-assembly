@@ -39,6 +39,9 @@ wildcard_constraints:
     var_caller = '(freebayes|longshot|deepvar)',
     # allowed assembly tools
     assembler = '(wtdbg|canu|flye|pereg)',
+    # polisher
+    polisher = '(arrow|racon)',
+    pol_pass ='(arrow|racon)\-p[12]',
     # GQ / DP = genotype quality / depth at position
     gq = '[0-9]+',
     dp = '[0-9]+',
