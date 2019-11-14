@@ -49,7 +49,7 @@ rule install_rlib_strandphaser:
         script_dir = config['script_dir'],
         version = config['git_commit_strandphaser']
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R {params.version} &> {output}'
+        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R {params.version} &> {log}'
 
 
 rule write_breakpointr_config_file:
