@@ -21,7 +21,7 @@ rule install_rlib_breakpointr:
     output:
          check = touch('output/check_files/R_setup/breakpointr.ok')
     log:
-        'output/check_files/R_setup/breakpointr.log'
+        'log/output/check_files/R_setup/breakpointr.log'
     resources:
         runtime_hrs = 0,
         runtime_min = 30
@@ -37,7 +37,7 @@ rule install_rlib_strandphaser:
     output:
          check = touch('output/check_files/R_setup/strandphaser_ver-{}.ok'.format(config['git_commit_strandphaser']))
     log:
-        'output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
+        'log/output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
     resources:
         runtime_hrs = 0,
         runtime_min = 30
