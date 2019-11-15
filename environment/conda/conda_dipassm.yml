@@ -7,6 +7,7 @@ dependencies:
   - Python=3.6.*
   - pip=19.2.3
   - wget=1.19.4
+  - openssl=1.0.2r
   - numpy=1.17.1
   - matplotlib=3.1.1
   - Snakemake=5.7.4
@@ -43,6 +44,7 @@ dependencies:
   - r-doparallel=1.0.15
   - r-foreach=1.4.7
   - r-biocmanager=1.30.7
+  - bioconductor-rtracklayer=1.42.1
   - bioconductor-rhtslib=1.14.1
   - bioconductor-bamsignals=1.14.0
   - pip:
