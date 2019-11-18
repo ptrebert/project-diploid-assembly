@@ -146,7 +146,7 @@ rule filter_variant_calls_quality_biallelic_snps:
         tbi = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/10-norm/splits/{vc_reads}.{sequence}.vcf.bgz.tbi',
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta'
     output:
-        temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf')
+        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/temp/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.log'
     shell:
