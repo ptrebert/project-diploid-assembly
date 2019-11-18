@@ -249,9 +249,9 @@ rule compute_wtdbg_haploid_split_assembly_layout:
     benchmark: 'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.{sequence}.wtdbg-layout.rsrc',
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards: int((32768 if '-ccs' in wildcards.hap_reads else 65536) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards: 32768 if '-ccs' in wildcards.hap_reads else 65536,
-        runtime_hrs = lambda wildcards: 6 if '-ccs' in wildcards.hap_reads else 18
+        mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1 * attempt
     params:
         param_preset = load_preset_file,
         seq_len = load_seq_length_file,
@@ -270,9 +270,9 @@ rule compute_wtdbg_haploid_split_assembly_consensus:
     benchmark: 'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.wtdbg-consensus.rsrc'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards: int((4096 if '-ccs' in wildcards.hap_reads else 12288) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards: 4096 if '-ccs' in wildcards.hap_reads else 12288,
-        runtime_hrs = lambda wildcards: 1 if '-ccs' in wildcards.hap_reads else 6
+        mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1 * attempt
     shell:
         'wtpoa-cns -t {threads} -i {input.layout} -o {output.haploid_assembly} &> {log}'
 
@@ -298,9 +298,9 @@ rule compute_flye_haploid_split_assembly:
     benchmark: 'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.flye.rsrc'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards: int((139264 if '-ccs' in wildcards.hap_reads else 358400) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards: 139264 if '-ccs' in wildcards.hap_reads else 358400,
-        runtime_hrs = lambda wildcards: 15 if '-ccs' in wildcards.hap_reads else 64
+        mem_per_cpu_mb = lambda wildcards: int((24576 if '-ccs' in wildcards.hap_reads else 131072) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards: 24576 if '-ccs' in wildcards.hap_reads else 131072,
+        runtime_hrs = lambda wildcards: 0 if '-ccs' in wildcards.hap_reads else 5
     params:
         param_preset = load_preset_file,
         seq_len = load_seq_length_file,
