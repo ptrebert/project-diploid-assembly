@@ -15,13 +15,15 @@ rule install_rlib_saarclust:
     output:
          touch('output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']))
     log:
-        'output/check_files/R_setup/saarclust_ver-{}.log'.format(config['git_commit_saarclust'])
+        'log/output/check_files/R_setup/saarclust_ver-{}.log'.format(config['git_commit_saarclust'])
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_saarclust']
     resources:
         runtime_hrs = 0,
-        runtime_min = 30
+        runtime_min = 30,
+        mem_total_mb = 3072,
+        mem_per_cpu_mb = 3072
     shell:
         'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {log}'
 

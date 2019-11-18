@@ -21,10 +21,12 @@ rule install_rlib_breakpointr:
     output:
          check = touch('output/check_files/R_setup/breakpointr.ok')
     log:
-        'output/check_files/R_setup/breakpointr.log'
+        'log/output/check_files/R_setup/breakpointr.log'
     resources:
         runtime_hrs = 0,
-        runtime_min = 30
+        runtime_min = 30,
+        mem_total_mb = 3072,
+        mem_per_cpu_mb = 3072
     params:
         script_dir = config['script_dir']
     shell:
@@ -37,15 +39,17 @@ rule install_rlib_strandphaser:
     output:
          check = touch('output/check_files/R_setup/strandphaser_ver-{}.ok'.format(config['git_commit_strandphaser']))
     log:
-        'output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
+        'log/output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
     resources:
         runtime_hrs = 0,
-        runtime_min = 30
+        runtime_min = 30,
+        mem_total_mb = 3072,
+        mem_per_cpu_mb = 3072
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_strandphaser']
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R {params.version} &> {output}'
+        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R {params.version} &> {log}'
 
 
 rule write_breakpointr_config_file:
