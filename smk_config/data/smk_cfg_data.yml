@@ -2,8 +2,8 @@
 # === Software setup settings ===
 # Specify git commits for SaaRclust
 # and StrandPhaseR setup
-git_commit_saarclust: ad36a06
-git_commit_strandphaser: e8913f3
+git_commit_saarclust: 207f96d
+git_commit_strandphaser: acaf555
 # arbitrarily tying a version number
 # to the git commits to avoid additional
 # wildcards - increment this number when
