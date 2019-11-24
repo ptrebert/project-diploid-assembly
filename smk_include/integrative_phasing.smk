@@ -197,7 +197,7 @@ rule run_strandphaser:
         bcf = 'log/output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.concat.log',
     benchmark:
         'run/output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.rsrc'
-    threads: config['num_cpu_max']
+    threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = int(8192 / config['num_cpu_high']),
         mem_total_mb = 8192
