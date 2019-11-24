@@ -231,7 +231,7 @@ rule write_assembled_fasta_clusters_fofn:
                 _ = dump.write(file_path + '\n')
 
 
-rule strandseq_dga_split_merge_sequences:
+rule strandseq_dga_split_merge_assembled_cluster_fastas:
     """
     """
     input:
@@ -243,8 +243,18 @@ rule strandseq_dga_split_merge_sequences:
         runtime_min = 20
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
-    shell:
-        'cat {params.cluster_fastas} > {output}'
+    run:
+        import io
+        with open(output[0], 'w') as merged_fasta:
+            for fasta_file in params.cluster_fastas.split():
+                buffer = io.StringIO()
+                _, seq_id, _ = fasta_file.rsplit('.', 2)
+                with open(fasta_file, 'r') as single_fasta:
+                    for line in single_fasta:
+                        if line.startswith('>'):
+                            line = line.replace('>', '>{}_'.format(seq_id))
+                        buffer.write(line)
+                _ = merged_fasta.write(buffer.getvalue())
 
 
 def collect_polished_contigs(wildcards):
@@ -308,5 +318,15 @@ rule merge_polished_contigs:
         runtime_min = 20
     params:
         polished_fastas = lambda wildcards, input: load_fofn_file(input)
-    shell:
-        'cat {params.polished_fastas} > {output}'
+    run:
+        import io
+        with open(output[0], 'w') as merged_fasta:
+            for fasta_file in params.polished_fastas.split():
+                buffer = io.StringIO()
+                _, seq_id, _ = fasta_file.rsplit('.', 2)
+                with open(fasta_file, 'r') as single_fasta:
+                    for line in single_fasta:
+                        if line.startswith('>'):
+                            line = line.replace('>', '>{}_'.format(seq_id))
+                        buffer.write(line)
+                _ = merged_fasta.write(buffer.getvalue())
