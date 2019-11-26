@@ -326,7 +326,7 @@ rule merge_polished_contigs:
                 _, seq_id, _ = fasta_file.rsplit('.', 2)
                 with open(fasta_file, 'r') as single_fasta:
                     for line in single_fasta:
-                        if line.startswith('>'):
+                        if line.startswith('>') and seq_id not in line:
                             line = line.replace('>', '>{}_'.format(seq_id))
                         buffer.write(line)
                 _ = merged_fasta.write(buffer.getvalue())
