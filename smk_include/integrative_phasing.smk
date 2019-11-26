@@ -66,8 +66,8 @@ rule write_breakpointr_config_file:
         strandseq_reads = 'input/fastq/complete/{sts_reads}.fastq.gz',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
-        cfg = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/breakpointr.config',
-        input_dir = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/breakpointr.input',
+        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/breakpointr.config',
+        input_dir = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/breakpointr.input',
     threads: 1
     resources:
         runtime_hrs = 0,
@@ -107,17 +107,17 @@ rule run_breakpointr:
         cfg = rules.write_breakpointr_config_file.output.cfg,
         fofn = rules.write_breakpointr_config_file.output.input_dir
     output:
-        wc_reg = 'output/integrative_phasing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
-        cfg = 'output/integrative_phasing/breakpointr/{reference}/{sts_reads}/run/breakpointR.config',
-        rdme = 'output/integrative_phasing/breakpointr/{reference}/{sts_reads}/run/README.txt',
-        bps = directory('output/integrative_phasing/breakpointr/{reference}/{sts_reads}/run/breakpoints'),
-        bwf = directory('output/integrative_phasing/breakpointr/{reference}/{sts_reads}/run/browserfiles'),
-        data = directory('output/integrative_phasing/breakpointr/{reference}/{sts_reads}/run/data'),
-        plots = directory('output/integrative_phasing/breakpointr/{reference}/{sts_reads}/run/plots')
+        wc_reg = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
+        cfg = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/breakpointR.config',
+        rdme = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/README.txt',
+        bps = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/breakpoints'),
+        bwf = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/browserfiles'),
+        data = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/data'),
+        plots = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/plots')
     log:
-        'log/output/integrative_phasing/breakpointr/{reference}/{sts_reads}/breakpointr.log'
+        'log/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.log'
     benchmark:
-        'run/output/integrative_phasing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
+        'run/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
         input_dir = lambda wildcards, input: load_fofn_file(input),
@@ -145,8 +145,8 @@ rule write_strandphaser_config_file:
         strandseq_reads = 'input/fastq/complete/{sts_reads}.fastq.gz',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
-        cfg = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.config',
-        input_dir = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.input',
+        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.config',
+        input_dir = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.input',
     threads: 1
     resources:
         runtime_hrs = 0,
@@ -180,23 +180,21 @@ rule write_strandphaser_config_file:
 
 rule run_strandphaser:
     input:
-        cfg = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.config',
-        fofn = 'output/integrative_phasing/config_files/{reference}/{sts_reads}/strandphaser.input',
-        wc_regions = 'output/integrative_phasing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
+        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.config',
+        fofn = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.input',
+        wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
         variant_calls = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf'
     output:
-        browser = directory('output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/run/browserFiles'),
-        data = directory('output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/run/data'),
-        phased = directory('output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/run/Phased'),
-        maps = directory('output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/run/SingleCellHaps'),
-        vcf_dir = directory('output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/run/VCFfiles'),
-        cfg = 'output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/run/StrandPhaseR.config',
-        vcf = 'output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.vcf'
+        browser = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/browserFiles'),
+        data = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/data'),
+        phased = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/Phased'),
+        maps = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/SingleCellHaps'),
+        vcf_dir = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/VCFfiles'),
+        cfg = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/StrandPhaseR.config',
     log:
-        stp = 'log/output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.log',
-        bcf = 'log/output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.concat.log',
+        stp = 'log/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.log',
     benchmark:
-        'run/output/integrative_phasing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.rsrc'
+        'run/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.rsrc'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = int(8192 / config['num_cpu_high']),
@@ -209,13 +207,82 @@ rule run_strandphaser:
     shell:
         '{params.script_dir}/run_strandphaser.R {params.input_dir} {input.cfg} ' \
             ' {input.variant_calls} {input.wc_regions} ' \
-            ' {params.output_dir} {params.individual} &> {log.stp}' \
-            ' && ' \
-            ' bcftools concat --output {output.vcf} --output-type v `ls {output.vcf_dir}/*phased.vcf` ' \
-            ' &> {log.bcf}'
+            ' {params.output_dir} {params.individual} &> {log.stp}'
+
+
+rule normalize_strandphaser_output:
+    """
+    StrandPhaseR does not report unobserved alleles, which creates
+    incompatible VCF records for WhatsHap (records with missing genotype
+    will be ignored). Since, in our case, we assume all variants to be
+    het SNVs, simply complement if missing
+    """
+    input:
+        rules.run_strandphaser.output.vcf_dir
+    output:
+        norm_dir = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/strandphaser_norm'),
+        fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn'
+    resources:
+        mem_total_mb = 2048,
+        mem_per_cpu_mb = 2048,
+        runtime_hrs = 0
+    run:
+        import io
+        os.makedirs(output.norm_dir, exist_ok=True)
+
+        input_dir = input[0]
+        input_vcfs = [f for f in os.listdir(input_dir) if f.endswith('.vcf')]
+        norm_paths = []
+
+        gt_map = {'1|.': '1|0',
+                  '0|.': '0|1',
+                  '.|1': '0|1',
+                  '.|0': '1|0'}
+
+        for vcf_file in input_vcfs:
+            input_path = os.path.join(input_dir, vcf_file)
+            vcf_buffer = io.StringIO()
+            with open(input_path, 'r') as vcf:
+                for line in vcf:
+                    if not line.startswith('#'):
+                        columns = line.strip().split('\t')
+                        format_colum = columns[-2]
+                        value_column = columns[-1]
+                        assert format_colum.startswith('GT:'), \
+                            'Unexpected StrandPhaseR output format: {} / {}'.format(input_path, line.strip())
+                        values = value_column.split(':')
+                        values[0] = gt_map.get(values[0], values[0])
+                        value_column = ':'.join(values)
+                        columns[-1] = value_column
+                        line = '\t'.join(columns) + '\n'
+                    vcf_buffer.write(line)
+                output_path = os.path.join(output.norm_dir, vcf_file)
+                with open(output_path, 'w') as dump:
+                    _ = dump.write(vcf_buffer.getvalue())
+                norm_paths.append(output_path)
+
+        with open(output.fofn, 'w') as dump:
+            _ = dump.write('\n'.join(sorted(norm_paths)))
+
+
+rule merge_normalized_strandphaser_output:
+    input:
+        fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn'
+    output:
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf'
+    log:
+        'log/output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '.concat-phased.log'
+    shell:
+        'bcftools concat -f {input.fofn} --output-type v --output {output} &> {log}'
 
 
 rule run_integrative_phasing:
+    """
+    Why this complicated command line?
+    One of those "why-is-this-a-problem" situations; for some reason, Snakemake
+    does not recognize the output of the rule "normalize_strandphaser_output"
+    as the producer for the individual VCF splits. So, merge, and split again...
+    """
     input:
         vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf.bgz',
         tbi = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf.bgz.tbi',
@@ -223,19 +290,19 @@ rule run_integrative_phasing:
         bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
         fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
-        sts_phased = rules.run_strandphaser.output.vcf
+        spr_phased = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf'
     output:
-        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/splits/{hap_reads}.{sequence}.phased.vcf'
+        vcf = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.vcf'
     log:
-        'log/output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/splits/{hap_reads}.{sequence}.phased.log'
+        'log/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.log'
     benchmark:
-        'run/output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/splits/{hap_reads}.{sequence}.phased.rsrc'
+        'run/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.rsrc'
     resources:
         mem_per_cpu_mb = 2048,
         mem_total_mb = 2048
     shell:
         'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} ' \
-            ' {input.vcf} {input.bam} {input.sts_phased} 2> {log} ' \
+            ' {input.vcf} {input.bam} {input.spr_phased} 2> {log} ' \
             ' | egrep "^(#|{wildcards.sequence}\s)" > {output}'
 
 
@@ -250,7 +317,7 @@ def intphase_collect_phased_vcf_split_files(wildcards):
         )
 
     vcf_files = expand(
-        'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/splits/{hap_reads}.{sequence}.phased.vcf',
+        'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.vcf',
         var_caller=wildcards.var_caller,
         reference=wildcards.reference,
         gq=wildcards.gq,
@@ -267,7 +334,7 @@ rule write_phased_vcf_splits_fofn:
     input:
         splits = intphase_collect_phased_vcf_split_files
     output:
-        fofn = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.fofn'
+        fofn = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.fofn'
     resources:
         runtime_hrs = 0,
         runtime_min = 5
@@ -290,24 +357,41 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
     input:
         fofn = rules.write_phased_vcf_splits_fofn.output.fofn
     output:
-        'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf'
+        'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf'
     resources:
         runtime_hrs = 0,
         runtime_min = 30
-    params:
-        merge_files = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'bcftools concat --output {output} --output-type v {params.merge_files}'
+        'bcftools concat -f {input.fofn} --output {output} --output-type v'
 
 
-rule compute_phased_vcf_stats:
+rule compute_whatshap_phased_vcf_stats:
     input:
-        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz',
-        idx = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz.tbi'
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
+        idx = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi'
     output:
-        stats = 'output/statistics/variant_calls/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.snps.phased.vcf.stats'
+        bcf_stats = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.stats',
+        wh_stats_tsv = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.tsv',
+        wh_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.txt'
     resources:
-        runtime_hrs = 0,
-        runtime_min = 30
+        runtime_hrs = 0
     shell:
-        'bcftools stats {input.vcf} > {output.stats}'
+        'bcftools stats {input.vcf} > {output.bcf_stats} ' \
+            ' && ' \
+            'whatshap stats --tsv {output.wh_stats_tsv} {input.vcf} > {output.wh_stats_txt}'
+
+
+rule compute_strandphaser_phased_vcf_stats:
+    input:
+        vcf = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf.bgz',
+        idx = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf.bgz.tbi'
+    output:
+        bcf_stats = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.vcf.stats',
+        wh_stats_tsv = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.tsv',
+        wh_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.txt'
+    resources:
+        runtime_hrs = 0
+    shell:
+        'bcftools stats {input.vcf} > {output.bcf_stats} ' \
+            ' && ' \
+            'whatshap stats --tsv {output.wh_stats_tsv} {input.vcf} > {output.wh_stats_txt}'
