@@ -137,7 +137,7 @@ def select_bwa_index(wildcards):
         # non-haplotype resolved assembly / collapsed assembly
         idx = 'output/reference_assembly/non-hap-res/{}/bwa_index/{}.bwt'.format(wildcards.reference, wildcards.reference)
     elif '_scV{}-'.format(config['git_commit_version']) in wildcards.reference:
-        idx = 'output/reference_assembly/clustered/{}/{}/bwa_index/{}.bwt'.format(sts_reads, wildcards.reference, wildcards.reference)
+        idx = 'output/reference_assembly/clustered/{}/{}/bwa_index/{}.bwt'.format(wildcards.sts_reads, wildcards.reference, wildcards.reference)
     else:
         raise ValueError('Unexpected reference type: {} / {}'.format(wildcards.reference, wildcards))
     return idx
