@@ -8,7 +8,6 @@ dependencies:
   - pip=19.2.3
   - wget=1.19.4
   - openssl=1.0.2t
-  - singularity=3.0.1
   - numpy=1.17.1
   - matplotlib=3.1.1
   - Snakemake=5.8.1
