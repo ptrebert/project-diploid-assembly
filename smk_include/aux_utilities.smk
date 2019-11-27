@@ -165,11 +165,36 @@ rule no_singularity_mock_output:
         touch('output/check_files/environment/singularity.false')
 
 
+rule check_singularity_version:
+    output:
+        'output/check_files/environment/singularity_version.ok'
+    run:
+        import subprocess as sp
+
+        try:
+            sing_ver = sp.check_output('singularity --version',
+                                        stderr=sp.STDOUT,
+                                        shell=True)
+            sing_ver = sing_ver.decode('utf-8')
+            version_string = sing_ver.strip().split()[-1]
+            major, minor = version_string.split('.')[:2]
+            if int(major) >= 3 and int(minor) > 0:
+                with open(output[0], 'w') as dump:
+                    _ = dump.write(sing_ver)
+            else:
+                raise ValueError('Incompatible Singularity version (>3.0 required): {}'.format(sing_ver))
+        except sp.CalledProcessError as spe:
+            rc = spe.returncode
+            err_msg = str(spe.output)
+            raise ValueError('Could not determine Singularity version (>3.0 required): {} / {}'.format(rc, err_msg))
+
+
 rule singularity_pull_container:
     output:
-        'output/container/{hub}/{repo}/{tool}-{version}.simg'
+        'output/check_files/environment/singularity_version.ok',
+        'output/container/{hub}/{repo}/{tool}_{version}.sif'
     log:
-        'log/output/container/{hub}/{repo}/{tool}-{version}.pull.log'
+        'log/output/container/{hub}/{repo}/{tool}_{version}.pull.log'
     params:
         pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo)
     shell:
@@ -193,7 +218,7 @@ def collect_strandseq_alignments(wildcards):
         'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
         reference=wildcards.reference,
         individual=individual,
-        sts_reads=sts_reads,
+        sts_reads=wildcards.sts_reads,
         project=project,
         platform=platform,
         lib_id=checkpoint_wildcards.lib_id,

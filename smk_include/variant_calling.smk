@@ -139,7 +139,7 @@ rule normalize_longshot_vcf:
 
 rule call_variants_deepvariant:
     input:
-        container = 'output/container/docker/google/deepvariant-{}.simg'.format(config['deepvariant_version']),
+        container = 'output/container/docker/google/deepvariant_{}.sif'.format(config['deepvariant_version']),
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
         ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',

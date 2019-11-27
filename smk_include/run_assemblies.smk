@@ -168,7 +168,7 @@ rule write_peregrine_nonhapres_fofn:
 
 rule compute_peregrine_nonhapres_assembly:
     input:
-        container = 'output/container/docker/cschin/peregrine-{}.simg'.format(config['peregrine_version']),
+        container = 'output/container/docker/cschin/peregrine_{}.sif'.format(config['peregrine_version']),
         fofn = 'input/fastq/complete/{sample}.fofn'
     output:
         dir_seqdb = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/0-seqdb'),
