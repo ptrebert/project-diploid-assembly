@@ -18,7 +18,7 @@ rule master_handle_data_download:
 
 checkpoint create_input_data_download_requests:
     input:
-        rules.master_scrape_data_sources.output
+        rules.master_scrape_data_sources.input
     output:
         directory('input/{subfolder}/requests')
     resources:

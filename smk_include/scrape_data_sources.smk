@@ -2,7 +2,7 @@
 localrules: master_link_data_sources
 
 rule master_scrape_data_sources:
-    output:
+    input:
         'input/data_sources/hgsvc_hg00514_pacbio.json',
         'input/data_sources/hgsvc_hg00512_pacbio.json',
         'input/data_sources/hgsvc_hg00513_pacbio.json',
