@@ -52,7 +52,7 @@ def collect_strandseq_merge_files(wildcards):
         zip,
         reference=[wildcards.reference, wildcards.reference],
         individual=[individual, individual],
-        sts_reads=[sts_reads, sts_reads],
+        sts_reads=[wildcards.sts_reads, wildcards.sts_reads],
         project=[project, project],
         spec=checkpoint_wildcards.spec,
         lib_id=[lib_id, lib_id],
