@@ -35,10 +35,34 @@ rule pb_bamtools_index_bam_alignment:
         pbi = '{filepath}.pbn.bam.pbi'
     benchmark:
         'run/{filepath}.create-pbi.rsrc'
+    resources:
+        runtime_hrs = lambda wildcards: 0 if '.part' in wildcards.filepath else 2
     conda:
         config['conda_env_pbtools']
     shell:
         'pbindex {input}'
+
+
+rule pb_bam2x_dump_fastq:
+    input:
+        pbn_bam = 'input/bam/{folder_path}/{pbn_sample}{sample_type}.pbn.bam',
+        pbn_idx = 'input/bam/{folder_path}/{pbn_sample}{sample_type}.pbn.bam.pbi'
+    output:
+        'input/fastq/{folder_path}/{pbn_sample}{sample_type}.fastq.gz'
+    benchmark:
+        'run/bam/{folder_path}/{pbn_sample}{sample_type}.dump.rsrc'
+    wildcard_constraints:
+        pbn_sample = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')',
+        sample_type = '(_[0-9x]+|\.part[0-9]+)'
+    resources:
+        runtime_hrs = lambda wildcards, input: 1 if '.part' in input.pbn_bam else 4
+    conda:
+        config['conda_env_pbtools']
+    params:
+        out_prefix = lambda wildcards, output: output[0].rsplit('.', 2)[0]
+    shell:
+        'bam2fastq -c 5 -o {params.out_prefix} {input.pbn_bam}'
+
 
 
 rule samtools_convert_sam_to_bam:
@@ -136,43 +160,40 @@ rule generate_bwa_index:
         'bwa index -p {params.prefix} {input.reference} &> {log}'
 
 
+rule no_singularity_mock_output:
+    output:
+        touch('output/check_files/environment/singularity.false')
+
+
+rule singularity_pull_container:
+    output:
+        'output/container/{hub}/{repo}/{tool}-{version}.simg'
+    log:
+        'log/output/container/{hub}/{repo}/{tool}-{version}.pull.log'
+    params:
+        pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo)
+    shell:
+        'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull ' \
+            '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
+
+
 def collect_strandseq_alignments(wildcards):
     """
     """
     individual, project, platform_spec = wildcards.sts_reads.split('_')[:3]
     platform, spec = platform_spec.split('-')
-    try:
-        bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads]
-    except KeyError:
-        bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads.rsplit('_', 1)[0]]
 
-    requests_dir = checkpoints.create_bioproject_download_requests.get(individual=individual, bioproject=bioproject).output[0]
+    requests_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
 
     search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_{run_id}_1.request')
 
     checkpoint_wildcards = glob_wildcards(search_path)
 
-    if hasattr(wildcards, 'reference'):
-        reference = wildcards.reference
-    else:
-        # assume squashed assembly
-        reference = wildcards.sample + '_sqa-' + wildcards.assembler
-
-    # (SaaR)-clustered assemblies are defined relative to a strand-seq dataset,
-    # whereas squashed assemblies are defined relative to a bioproject (design glitch)
-    ref_type = None
-    if '_sqa' in reference:
-        ref_type = bioproject
-    elif '_scV' in reference:
-        ref_type = wildcards.sts_reads
-    else:
-        raise ValueError('Could not determine type of reference: {}'.format(wildcards))
-
     bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
+        'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
         reference=wildcards.reference,
         individual=individual,
-        ref_type=ref_type,
+        sts_reads=sts_reads,
         project=project,
         platform=platform,
         lib_id=checkpoint_wildcards.lib_id,
