@@ -10,10 +10,15 @@ include: 'eval_known_reference.smk'
 include: 'eval_variant_calls.smk'
 
 localrules: master_results_child, \
-            create_child_clr_sqa_assemblies, \
-            create_child_ccs_sqa_assemblies, \
+            create_child_clr_nhr_assemblies, \
+            create_child_ccs_nhr_assemblies, \
             create_child_clr_clust_assemblies, \
-            create_child_ccs_clust_assemblies
+            create_child_ccs_clust_assemblies, \
+            child_733_pure_ccs_variant_calling, \
+            child_733_pure_clr_variant_calling, \
+            child_733_pure_ccs_split_sdga, \
+            child_733_pure_clr_split_sdga, \
+            child_733_mixed_clr_split_sdga
 
 
 USE_SINGULARITY = bool(config['use_singularity'])

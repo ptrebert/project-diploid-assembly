@@ -9,8 +9,10 @@ include: 'eval_known_reference.smk'
 include: 'eval_variant_calls.smk'
 
 localrules: master_results_parents, \
-            parents_ccs_sqa_assemblies, \
+            parents_ccs_nhr_assemblies, \
             parents_ccs_clust_assemblies, \
+            parent_731_pure_ccs_variant_calling, \
+            parent_732_pure_ccs_variant_calling, \
             parent_731_pure_ccs_split_sdga, \
             parent_732_pure_ccs_split_sdga
 
