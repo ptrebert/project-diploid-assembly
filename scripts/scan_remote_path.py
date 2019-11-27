@@ -67,6 +67,15 @@ def parse_command_line():
         help="Assume that BAM files are in PacBio-native format (extension: pbn.bam)"
     )
     parser.add_argument(
+        "--assume-clr-subreads",
+        "-clr",
+        action="store_true",
+        default=False,
+        dest="clr_subreads",
+        help="If no CCS indicator (ccs/q20) is part of the filename, and the file is a "
+             "subreads file, then assume that it is a PacBio CLR dataset"
+    )
+    parser.add_argument(
         "--file-infix",
         "-in",
         type=str,
@@ -107,10 +116,14 @@ def annotate_remote_files(remote_files, cargs, logger):
             logger.warning('No individual identified for file: {}'.format(name))
             continue
         individual = mobj.group(0)
+        tech = None
         logger.debug('Extracted individual {} for file {}'.format(individual, name))
         if any([x in name.lower() for x in ['ccs', 'q20']]):
             tech = 'ccs'
         elif any([x in name.lower() for x in ['clr']]):
+            tech = 'clr'
+        elif tech is None and 'subreads' in name.lower() and cargs.clr_subreads:
+            # note: tech is None implies that this is not a CCS subreads file
             tech = 'clr'
         else:
             logger.warning('Skipping file {} - could not id seq. tech.'.format(name))
