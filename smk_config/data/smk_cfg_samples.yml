@@ -1,0 +1,50 @@
+
+# The following lists are needed
+# to process PacBio data correctly
+# where the PacBio native BAM format
+# (containing unaligned reads) is
+# needed. This is currently the case
+# for tools pbmm2/arrow and pbmm2/deepvariant
+complete_fastq_samples:
+  - empty
+
+complete_pbn_samples:
+  - empty
+
+partial_fastq_samples:
+  - HG00733_hpg_ontpm-ul
+
+partial_pbn_samples:
+  - HG00733_hgsvc_pbsq2-ccs
+  - HG00732_hgsvc_pbsq2-ccs
+  - HG00731_hgsvc_pbsq2-ccs
+  - HG00733_sra_pbsq1-clr
+  - HG00514_hgsvc_pbsq2-clr
+  - HG00514_hgsvc_pbsq2-ccs
+  - HG00513_hgsvc_pbsq2-ccs
+  - HG00512_hgsvc_pbsq2-ccs
+  - NA19240_hgsvc_pbsq2-ccs
+  - NA19239_hgsvc_pbsq2-ccs
+  - NA19238_hgsvc_pbsq2-ccs
+
+strandseq_samples:
+  - HG00733_1kg_il25k-npe_sseq
+  - HG00732_1kg_il25k-npe_sseq
+  - HG00731_1kg_il25k-npe_sseq
+  - HG00514_1kg_il25k-npe_sseq
+  - HG00513_1kg_il25k-npe_sseq
+  - HG00512_1kg_il25k-npe_sseq
+  - NA19240_1kg_il25k-npe_sseq
+  - NA19239_1kg_il25k-npe_sseq
+  - NA19238_1kg_il25k-npe_sseq
+
+strandseq_to_bioproject:
+  HG00733_1kg_il25k-npe_sseq: PRJEB12849
+  HG00732_1kg_il25k-npe_sseq: PRJEB12849
+  HG00731_1kg_il25k-npe_sseq: PRJEB12849
+  HG00514_1kg_il25k-npe_sseq: PRJEB12849
+  HG00513_1kg_il25k-npe_sseq: PRJEB12849
+  HG00512_1kg_il25k-npe_sseq: PRJEB12849
+  NA19240_1kg_il25k-npe_sseq: PRJEB12849
+  NA19239_1kg_il25k-npe_sseq: PRJEB12849
+  NA19238_1kg_il25k-npe_sseq: PRJEB12849
