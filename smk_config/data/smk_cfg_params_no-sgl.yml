@@ -10,40 +10,9 @@ git_commit_strandphaser: acaf555
 # git commits are changed!
 git_commit_version: 5
 
-samples:
-  - HG00733_hpg_ontpm-ul
-  - HG00733_sra_pbsq1-clr
-  - HG00733_hgsvc_pbsq2-ccs
-  - HG00732_hgsvc_pbsq2-ccs
-  - HG00731_hgsvc_pbsq2-ccs
-
-individuals:
-  - HG00733
-  - HG00732
-  - HG00731
-  - HG002
-
-# needed for wildcard constraints
-# to manage download and merging
-# of initial input data
-complete_samples:
-  - HG00733_sra_pbsq1-clr
-
-partial_samples:
-  - HG00733_hpg_ontpm-ul
-  - HG00733_hgsvc_pbsq2-ccs
-  - HG00732_hgsvc_pbsq2-ccs
-  - HG00731_hgsvc_pbsq2-ccs
-
-strandseq_samples:
-  - HG00733_1kg_il25k-npe
-  - HG00732_1kg_il25k-npe
-  - HG00731_1kg_il25k-npe
-
-strandseq_to_bioproject:
-  HG00733_1kg_il25k-npe: PRJEB12849
-  HG00732_1kg_il25k-npe: PRJEB12849
-  HG00731_1kg_il25k-npe: PRJEB12849
+use_singularity: True
+peregrine_version: 0.1.5.5
+deepvariant_version: 0.9.0
 
 # SaaRclust parameter sets
 # goal is to obtain 24 clusters

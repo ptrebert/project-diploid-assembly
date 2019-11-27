@@ -1,6 +1,8 @@
 
+include: 'smk_include/aux_utilities.smk'
 include: 'smk_include/handle_data_download.smk'
 include: 'smk_include/preprocess_references.smk'
+include: 'smk_include/preprocess_input.smk'
 include: 'smk_include/prepare_custom_references.smk'
 include: 'smk_include/collect_statistics.smk'
 include: 'smk_include/variant_calling.smk'
@@ -78,6 +80,11 @@ def make_log_useful(log_path, status):
                 if record == 0:
                     error_buffer.append('=== Recording ERROR entry')
                 record = 10
+                error_buffer.append(line.strip())
+            elif line.lower().startswith('[w::') or line.lower().startswith('[e::'):
+                if record == 0:
+                    error_buffer.append('=== Recording library stderr')
+                record = 3
                 error_buffer.append(line.strip())
             elif record > 0:
                 error_buffer.append(line.strip())
