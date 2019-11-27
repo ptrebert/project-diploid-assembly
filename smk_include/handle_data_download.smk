@@ -1,5 +1,6 @@
 
 include: 'link_data_sources.smk'
+include: 'scrape_data_sources.smk'
 
 CMD_DL_COMPRESSED_PARALLEL = 'aria2c --out={{output}} --file-allocation=none -s 4 -x 4 {remote_path} &>> {{log}}'
 
@@ -15,83 +16,9 @@ rule master_handle_data_download:
         rules.master_link_data_sources.output,
 
 
-rule collect_remote_hgsvc_hg00514_pacbio:
-    output:
-        'input/data_sources/hgsvc_hg00514_pacbio.json'
-    params:
-        script_dir = config['script_dir'],
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20190508_HG00514_PacBioSequel2/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_hg00514_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
-    shell:
-        '{params.script_dir}/scan_remote_path.py --debug ' \
-            ' --server {params.server} --ftp-path {params.remote_path} ' \
-            ' --collect-files {params.collect} --sort-files {params.sort} ' \
-            ' {params.bam_format} --file-infix {params.file_infix}' \
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_pur_trio_pacbio:
-    output:
-        'input/data_sources/hgsvc_pur-trio_pacbio.json'
-    params:
-        script_dir = config['script_dir'],
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20190925_PUR_PacBio_HiFi/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_pur-trio_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
-    shell:
-        '{params.script_dir}/scan_remote_path.py --debug ' \
-            ' --server {params.server} --ftp-path {params.remote_path} ' \
-            ' --collect-files {params.collect} --sort-files {params.sort} ' \
-            ' {params.bam_format} --file-infix {params.file_infix}' \
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_yri_trio_pacbio:
-    output:
-        'input/data_sources/hgsvc_yri-trio_pacbio.json'
-    params:
-        script_dir = config['script_dir'],
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191005_YRI_PacBio_HiFi/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_yri-trio_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
-    shell:
-        '{params.script_dir}/scan_remote_path.py --debug ' \
-            ' --server {params.server} --ftp-path {params.remote_path} ' \
-            ' --collect-files {params.collect} --sort-files {params.sort} ' \
-            ' {params.bam_format} --file-infix {params.file_infix}' \
-            ' --output {output} &> {log}'
-
-
 checkpoint create_input_data_download_requests:
     input:
-        'input/data_sources/hgsvc_hg00514_pacbio.json',
-        'input/data_sources/hgsvc_pur-trio_pacbio.json',
-        'input/data_sources/hgsvc_yri-trio_pacbio.json'
+        rules.master_scrape_data_sources.output
     output:
         directory('input/{subfolder}/requests')
     resources:
@@ -148,7 +75,7 @@ checkpoint create_input_data_download_requests:
 
 rule download_bioproject_metadata:
     output:
-        'input/bioprojects/{bioproject}.tsv'
+        'input/bioprojects/{sts_reads}.metadata.tsv'
     resources:
         runtime_hrs = 0,
         runtime_min = 30
@@ -168,7 +95,9 @@ rule download_bioproject_metadata:
         load_url += ',sample_alias,sample_title'
         load_url += '&format=tsv&download=txt'
 
-        tmp = load_url.format(**{'accession': wildcards.bioproject})
+        bioproject_accession = config['strandseq_to_bioproject'][wildcards.sts_reads]
+
+        tmp = load_url.format(**{'accession': bioproject_accession})
         if os.path.isfile(output[0]):
             exec = 'touch {output}'
         else:
@@ -178,25 +107,28 @@ rule download_bioproject_metadata:
 
 checkpoint create_bioproject_download_requests:
     input:
-        'input/bioprojects/{bioproject}.tsv'
+        'input/bioprojects/{sts_reads}.metadata.tsv'
     output:
-        directory('input/fastq/strand-seq/{individual}_{bioproject}/requests')
+        directory('input/fastq/strand-seq/{sts_reads}/requests')
     log:
-        'log/input/fastq/strand-seq/{individual}_{bioproject}.requests.log'
+        'log/input/fastq/strand-seq/{sts_reads}.requests.log'
     resources:
         runtime_hrs = 0,
         runtime_min = 30
     run:
         import csv
 
+        bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads]
+        individual = wildcards.sts_reads.split('_')[0]
+
         with open(log[0], 'w') as logfile:
-            annotator = get_bioproject_sample_annotator(wildcards.bioproject)
+            annotator = get_bioproject_sample_annotator(bioproject)
             with open(input[0], 'r') as table:
                 rows = csv.DictReader(table, delimiter='\t')
                 for row in rows:
-                    if wildcards.individual not in row['sample_alias']:
+                    if individual not in row['sample_alias']:
                         continue
-                    label = annotator(row, wildcards.individual)
+                    label = annotator(row, individual)
                     if label is None:
                         continue
                     _ = logfile.write('Processing data for sample {}\n'.format(label))
@@ -222,18 +154,17 @@ checkpoint create_bioproject_download_requests:
                         except Exception as err:
                             _ = logfile.write('Error: {}'.format(str(err)))
                             raise err
-            #pdb.set_trace()
             _ = logfile.write('Done - create_bioproject_download_requests')
     # end of rule
 
 
 rule handle_strandseq_download_requests:
     input:
-        'input/fastq/strand-seq/{individual}_{bioproject}/requests/{sample}_{run_id}.request'
+        'input/fastq/strand-seq/{sts_reads}/requests/{sample}_{run_id}.request'
     output:
-        'input/fastq/strand-seq/{individual}_{bioproject}/{sample}_{run_id}.fastq.gz'
+        'input/fastq/strand-seq/{sts_reads}/{sample}_{run_id}.fastq.gz'
     log:
-        'log/input/fastq/strand-seq/{individual}_{sample}_{bioproject}_{run_id}.download.log'
+        'log/input/fastq/strand-seq/{sts_reads}/{sample}_{run_id}.download.log'
     threads: 2
     resources:
         runtime_hrs = 0,
@@ -262,13 +193,14 @@ rule handle_strandseq_download_requests:
 
 rule handle_partial_fastq_download_request:
     input:
-        'input/fastq/partial/{split_type}/requests/{sample_split}.request'
+        'input/fastq/partial/{split_type}/requests/{req_sample}.{partnum}.request'
     output:
-        'input/fastq/partial/{split_type}/{sample_split}.fastq.gz'
+        'input/fastq/partial/{split_type}/{req_sample}.{partnum}.fastq.gz'
     log:
-        'log/input/fastq/partial/{split_type}/{sample_split}.download.log'
+        'log/input/fastq/partial/{split_type}/{req_sample}.{partnum}.download.log'
     wildcard_constraints:
-        split_type = '(parts|chunks)'
+        split_type = '(parts|chunks)',
+        req_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
     threads: 2  # compromise between wget and aria2c
     run:
         with open(input[0], 'r') as req_file:
@@ -307,7 +239,7 @@ def complete_fastq_samples_mock_merger(wildcards):
     base_path = os.path.join('input', subfolder)
     request_path = os.path.join(base_path, 'requests')
 
-    sample = wildcards.sample
+    sample = wildcards.req_sample
 
     req_file_path = os.path.join(request_path, sample + '.request')
     assert os.path.isfile(req_file_path), 'Path not file after checkpoint execution: {}'.format(req_file_path)
@@ -320,11 +252,11 @@ rule handle_complete_fastq_download_request:
         complete_fastq_samples_mock_merger
         #'input/fastq/complete/requests/{sample}.request'
     output:
-        'input/fastq/complete/{sample}_1000.fastq.gz'
+        'input/fastq/complete/{req_sample}_1000.fastq.gz'
     wildcard_constraints:
-        sample = '(' + '|'.join(config['complete_samples']) + ')'
+        req_sample = '(' + '|'.join(config['complete_fastq_samples']) + ')'
     log:
-        'log/input/fastq/complete/{sample}.download.log'
+        'log/input/fastq/complete/{req_sample}.download.log'
     threads: 2  # compromise between wget and aria2c
     resources:
         runtime_hrs = 4
@@ -352,13 +284,14 @@ rule handle_complete_fastq_download_request:
 
 rule handle_partial_pbn_bam_download_request:
     input:
-        'input/bam/partial/{split_type}/requests/{sample_split}.request'
+        'input/bam/partial/{split_type}/requests/{req_sample}.{partnum}.request'
     output:
-        'input/bam/partial/{split_type}/{sample_split}.pbn.bam'
+        'input/bam/partial/{split_type}/{req_sample}.{partnum}.pbn.bam'
     log:
-        'log/input/bam/partial/{split_type}/{sample_split}.download.log'
+        'log/input/bam/partial/{split_type}/{req_sample}.{partnum}.download.log'
     wildcard_constraints:
-        split_type = '(parts|chunks)'
+        split_type = '(parts|chunks)',
+        req_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
     threads: 2  # compromise between wget and aria2c
     resources:
         runtime_hrs = 3

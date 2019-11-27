@@ -18,7 +18,7 @@ def collect_fastq_input_parts(wildcards):
     base_path = os.path.join('input', subfolder)
     request_path = os.path.join(base_path, 'requests')
 
-    sample = wildcards.sample
+    sample = wildcards.mrg_sample
 
     checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
 
@@ -34,12 +34,12 @@ rule write_fastq_input_parts_fofn:
     input:
         collect_fastq_input_parts
     output:
-        fofn = 'input/fastq/complete/{sample}_1000.fofn'
+        fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
     resources:
         runtime_hrs = 0,
         runtime_min = 10
     wildcard_constraints:
-        sample = '(' + '|'.join(config['partial_samples']) + ')'
+        mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
     run:
         fastq_parts = collect_fastq_input_parts(wildcards)
 
@@ -56,64 +56,19 @@ rule write_fastq_input_parts_fofn:
 
 rule merge_fastq_input_parts:
     input:
-        fofn = 'input/fastq/complete/{sample}_1000.fofn'
+        fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
     output:
-        'input/fastq/complete/{sample}_1000.fastq.gz'
+        'input/fastq/complete/{mrg_sample}_1000.fastq.gz'
     log:
-        'log/input/fastq/complete/{sample}_1000.merge.log'
+        'log/input/fastq/complete/{mrg_sample}_1000.merge.log'
+    wildcard_constraints:
+        mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
     resources:
         runtime_hrs = 4
     params:
         fastq_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
         'cat {params.fastq_parts} > {output} 2> {log}'
-
-
-def collect_strandseq_libraries(wildcards):
-
-    sample = wildcards.sample
-    bioproject = config['strandseq_to_bioproject'][sample]
-    individual = sample.split('_')[0]
-
-    checkpoint_dir = checkpoints.create_bioproject_download_requests.get(individual=individual, bioproject=bioproject).output[0]
-
-    glob_pattern = os.path.join(checkpoint_dir, '{lib_id}.request')
-
-    checkpoint_wildcards = glob_wildcards(glob_pattern)
-
-    checkpoint_root = os.path.split(os.path.split(checkpoint_dir)[0])[0]
-    fastq_input = os.path.join(checkpoint_root, '{individual}_{bioproject}', '{lib_id}.fastq.gz')
-
-    fastq_files = expand(
-        fastq_input,
-        individual=individual,
-        bioproject=bioproject,
-        lib_id=checkpoint_wildcards.lib_id
-        )
-
-    return fastq_files
-
-
-rule merge_strandseq_libraries:
-    """
-    TODO
-    This creates a mock file for
-    the time being to keep the pipeline
-    in a coherent state while the strand-seq
-    steps are being implemented
-    """
-    input:
-        collect_strandseq_libraries
-    output:
-        'input/fastq/complete/{sample}_sseq.fastq.gz'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
-    run:
-        fastq_files = collect_strandseq_libraries(wildcards)
-        with open(output[0], 'w') as dump:
-            for fastq in sorted(fastq_files):
-                dump.write(fastq + '\n')
 
 
 def collect_pacbio_bam_input_parts(wildcards):
@@ -125,7 +80,7 @@ def collect_pacbio_bam_input_parts(wildcards):
     base_path = os.path.join('input', subfolder)
     request_path = os.path.join(base_path, 'requests')
 
-    sample = wildcards.sample
+    sample = wildcards.mrg_sample
 
     checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
 
@@ -141,7 +96,9 @@ rule write_bam_input_parts_fofn:
     input:
         collect_pacbio_bam_input_parts
     output:
-        fofn = 'input/bam/complete/{sample}_1000.pbn.fofn'
+        fofn = 'input/bam/complete/{mrg_sample}_1000.pbn.fofn'
+    wildcard_constraints:
+        mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
     resources:
         runtime_hrs = 0,
         runtime_min = 10
@@ -161,16 +118,58 @@ rule write_bam_input_parts_fofn:
 
 rule merge_pacbio_native_bams:
     input:
-        fofn = 'input/bam/complete/{sample}_1000.pbn.fofn'
+        fofn = 'input/bam/complete/{mrg_sample}_1000.pbn.fofn'
     output:
-        'input/bam/complete/{sample}_1000.pbn.bam'
+        'input/bam/complete/{mrg_sample}_1000.pbn.bam'
     log:
-        'log/input/bam/complete/{sample}_1000.mrg.log'
+        'log/input/bam/complete/{mrg_sample}_1000.mrg.log'
     benchmark:
-        'run/input/bam/complete/{sample}_1000.mrg.rsrc'
+        'run/input/bam/complete/{mrg_sample}_1000.mrg.rsrc'
+    wildcard_constraints:
+        mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
     resources:
         runtime_hrs = 16
     params:
         bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
     shell:
         'bamtools merge {params.bam_parts} -out {output}'
+
+
+
+def collect_strandseq_libraries(wildcards):
+
+    checkpoint_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
+
+    glob_pattern = os.path.join(checkpoint_dir, '{lib_id}.request')
+
+    checkpoint_wildcards = glob_wildcards(glob_pattern)
+
+    checkpoint_root = os.path.split(os.path.split(checkpoint_dir)[0])[0]
+    fastq_input = os.path.join(checkpoint_root, '{sts_reads}', '{lib_id}.fastq.gz')
+
+    fastq_files = expand(
+        fastq_input,
+        sts_reads=wildcards.sts_reads,
+        lib_id=checkpoint_wildcards.lib_id
+        )
+
+    return fastq_files
+
+
+rule merge_strandseq_libraries:
+    """
+    To have a simple way of incorporating the sts_reads
+    wildcard into the workflow, create this file listing
+    to be referred to downstream
+    """
+    input:
+        collect_strandseq_libraries
+    output:
+        'input/fastq/strand-seq/{sts_reads}.fofn'
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 10
+    run:
+        fastq_files = collect_strandseq_libraries(wildcards)
+        with open(output[0], 'w') as dump:
+            _ = dump.write('\n'.join(sorted(fastq_files)))

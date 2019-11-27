@@ -63,7 +63,7 @@ rule write_breakpointr_config_file:
     input:
         setup_ok = rules.install_rlib_breakpointr.output.check,
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        strandseq_reads = 'input/fastq/complete/{sts_reads}.fastq.gz',
+        strandseq_reads = 'input/fastq/strand-seq/{sts_reads}.fofn',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
         cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/breakpointr.config',
@@ -142,7 +142,7 @@ rule write_strandphaser_config_file:
     input:
         setup_ok = rules.install_rlib_strandphaser.output.check,
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        strandseq_reads = 'input/fastq/complete/{sts_reads}.fastq.gz',
+        strandseq_reads = 'input/fastq/strand-seq/{sts_reads}.fofn',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
         cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.config',
@@ -183,7 +183,7 @@ rule run_strandphaser:
         cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.config',
         fofn = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.input',
         wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
-        variant_calls = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snps.vcf'
+        variant_calls = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf'
     output:
         browser = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/browserFiles'),
         data = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/data'),
@@ -365,8 +365,27 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
         'bcftools concat -f {input.fofn} --output {output} --output-type v'
 
 
+rule compute_strandphaser_phased_vcf_stats:
+    input:
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf.bgz',
+        idx = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf.bgz.tbi'
+    output:
+        bcf_stats = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.vcf.stats',
+        spr_stats_tsv = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.tsv',
+        spr_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.txt'
+    resources:
+        runtime_hrs = 0
+    shell:
+        'bcftools stats {input.vcf} > {output.bcf_stats} ' \
+            ' && ' \
+            'whatshap stats --tsv {output.spr_stats_tsv} {input.vcf} > {output.spr_stats_txt}'
+
+
 rule compute_whatshap_phased_vcf_stats:
     input:
+        spr_bcf_stats = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.vcf.stats',
+        spr_stats_tsv = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.tsv',
+        spr_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.txt',
         vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
         idx = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi'
     output:
@@ -381,17 +400,3 @@ rule compute_whatshap_phased_vcf_stats:
             'whatshap stats --tsv {output.wh_stats_tsv} {input.vcf} > {output.wh_stats_txt}'
 
 
-rule compute_strandphaser_phased_vcf_stats:
-    input:
-        vcf = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf.bgz',
-        idx = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf.bgz.tbi'
-    output:
-        bcf_stats = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.vcf.stats',
-        wh_stats_tsv = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.tsv',
-        wh_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.txt'
-    resources:
-        runtime_hrs = 0
-    shell:
-        'bcftools stats {input.vcf} > {output.bcf_stats} ' \
-            ' && ' \
-            'whatshap stats --tsv {output.wh_stats_tsv} {input.vcf} > {output.wh_stats_txt}'

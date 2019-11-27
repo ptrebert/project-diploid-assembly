@@ -32,20 +32,14 @@ def collect_strandseq_merge_files(wildcards):
     """
     """
     individual = wildcards.individual
-    bioproject = wildcards.bioproject
     platform = wildcards.platform
     project = wildcards.project
     lib_id = wildcards.lib_id
 
-    # This lookup is necessary when a (SaaR)-clustered assembly is processed,
-    # because in this case the "sts_reads" wildcard is being used together
-    # with the assembly name
-    if bioproject.endswith('_sseq'):
-        sts_reads = bioproject
-        sts_lookup = sts_reads.rsplit('_', 1)[0]
-        bioproject = config['strandseq_to_bioproject'][sts_lookup]
+    assert individual in wildcards.reference and individual in wildcards.sts_reads, \
+        'Wrong reference / sts_reads match: {} / {}'.format(wildcards.reference, wildcards.sts_reads)
 
-    requests_dir = checkpoints.create_bioproject_download_requests.get(individual=individual, bioproject=bioproject).output[0]
+    requests_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
 
     search_pattern = '_'.join([individual, project, '{spec}', lib_id, '{run_id}', '1'])
 
@@ -54,11 +48,11 @@ def collect_strandseq_merge_files(wildcards):
     checkpoint_wildcards = glob_wildcards(search_path)
 
     bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/aln/{individual}_{project}_{spec}_{lib_id}_{run_id}.filt.sam.bam',
+        'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{individual}_{project}_{spec}_{lib_id}_{run_id}.filt.sam.bam',
         zip,
         reference=[wildcards.reference, wildcards.reference],
         individual=[individual, individual],
-        bioproject=[bioproject, bioproject],
+        sts_reads=[sts_reads, sts_reads],
         project=[project, project],
         spec=checkpoint_wildcards.spec,
         lib_id=[lib_id, lib_id],
@@ -71,7 +65,7 @@ rule write_strandseq_merge_fofn:
     input:
         bams = collect_strandseq_merge_files
     output:
-        fofn = 'output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
+        fofn = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
     resources:
         runtime_hrs = 0,
         runtime_min = 10
@@ -101,11 +95,11 @@ rule merge_mono_dinucleotide_fraction:
     input:
         fofn = rules.write_strandseq_merge_fofn.output.fofn
     output:
-        temp('output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.sam.bam')
+        temp('output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.sam.bam')
     log:
-        'log/output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
+        'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{bioproject}/temp/mrg{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
+        'run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
     threads: config['num_cpu_low']
     params:
         merge_files = lambda wildcards, input: load_fofn_file(input)
@@ -157,9 +151,9 @@ rule write_saarclust_config_file:
     """
     input:
         setup_ok = 'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']),
-        reference = 'output/reference_assembly/squashed/{reference}.fasta',
-        ref_idx = 'output/reference_assembly/squashed/{reference}.fasta.fai',
-        strandseq_reads = 'input/fastq/complete/{sts_reads}.fastq.gz',
+        reference = 'output/reference_assembly/non-hap-res/{reference}.fasta',
+        ref_idx = 'output/reference_assembly/non-hap-res/{reference}.fasta.fai',
+        strandseq_reads = 'input/fastq/strand-seq/{sts_reads}.fofn',
         bam = collect_strandseq_alignments  # from module aux_utilities
     output:
         cfg = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sts_reads}/saarclust.config',
@@ -276,7 +270,7 @@ rule write_reference_fasta_clusters_fofn:
 
 rule merge_reference_fasta_clusters:
     input:
-        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sample}_sqa-{assembler}.clusters.fofn'
+        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sample}_nhr-{assembler}.clusters.fofn'
     output:
         expand('output/reference_assembly/clustered/{{sts_reads}}/{{sample}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])

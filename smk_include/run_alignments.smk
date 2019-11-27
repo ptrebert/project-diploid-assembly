@@ -105,7 +105,7 @@ rule pbmm2_reads_to_reference_alignment:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbn.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbn.rsrc'
+        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbn.t{}.rsrc'.format(config['num_cpu_max'])
     conda:
         config['conda_env_pbtools']
     threads: config['num_cpu_max']
@@ -116,7 +116,7 @@ rule pbmm2_reads_to_reference_alignment:
     params:
         align_threads = config['num_cpu_max'] - config['num_cpu_low'],
         sort_threads = config['num_cpu_low'],
-        sort_memory_mb = int(98304 / config['num_cpu_max']),
+        sort_memory_mb = int((98304 / config['num_cpu_max']) * config['num_cpu_low']),
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.sample.split('_')[0]
     shell:
@@ -126,112 +126,36 @@ rule pbmm2_reads_to_reference_alignment:
             ' {input.reference} {input.reads} {output.bam} &> {log}'
 
 
-def determine_ref_type(wildcards):
-
-    sts_to_bio = config['strandseq_to_bioproject']
-    bio_to_sts = dict((v, k) for k, v in config['strandseq_to_bioproject'].items() if k.startswith(wildcards.individual))
-
-    ref_type = None
-    bioproject = None
-    sts_reads = None
-
-    if hasattr(wildcards, 'reference'):
-        if '_sqa' in wildcards.reference:
-            ref_type = 'squashed'
-        elif '_scV' in wildcards.reference:
-            ref_type = 'clustered'
-        else:
-            raise ValueError('Cannot determine ref type: {}'.format(wildcards))
-
-    if hasattr(wildcards, 'bioproject'):
-        if wildcards.bioproject.endswith('_sseq'):
-            sts_reads = wildcards.bioproject
-            sts_lookup = sts_reads.rsplit('_', 1)[0]
-            bioproject = sts_to_bio[sts_lookup]
-            if ref_type is None:
-                ref_type = 'clustered'
-        else:
-            bioproject = wildcards.bioproject
-            sts_reads = bio_to_sts[bioproject]
-            if ref_type is None:
-                ref_type = 'squashed'
-
-    elif hasattr(wildcards, 'ref_type'):
-        if wildcards.ref_type in bio_to_sts:
-            bioproject = wildcards.ref_type
-            sts_reads = bio_to_sts[bioproject]
-            if ref_type is None:
-                ref_type = 'squashed'
-        elif wildcards.ref_type in sts_to_bio:
-            bioproject = sts_to_bio[wildcards.ref_type]
-            sts_reads = wildcards.ref_type
-            if ref_type is None:
-                ref_type = 'clustered'
-        elif wildcards.ref_type.rsplit('_', 1)[0] in sts_to_bio:
-            sts_reads = wildcards.ref_type.rsplit('_', 1)[0]
-            bioproject = sts_to_bio[sts_reads]
-            if ref_type is None:
-                ref_type = 'clustered'
-        else:
-            raise ValueError('Unexpected ref_type: {}'.format(wildcards))
-
-    assert ref_type is not None, 'Could not determine ref type: {}'.format(wildcards)
-    assert bioproject is not None, 'Could not determine ref type: {}'.format(wildcards)
-    assert sts_reads is not None, 'Could not determine ref type: {}'.format(wildcards)
-
-    if not sts_reads.endswith('_sseq'):
-        sts_reads += '_sseq'
-
-    return ref_type, bioproject, sts_reads
-
-
-def select_strand_seq_mate1(wildcards):
-
-    ref_type, bioproject, sts_reads = determine_ref_type(wildcards)
-    mate = 'input/fastq/strand-seq/{}_{}/{}_{}_1.fastq.gz'.format(
-        wildcards.individual,
-        bioproject,
-        wildcards.individual,
-        wildcards.sample_id
-        )
-    return mate
-
-
-def select_strand_seq_mate2(wildcards):
-
-    ref_type, bioproject, sts_reads = determine_ref_type(wildcards)
-    mate = 'input/fastq/strand-seq/{}_{}/{}_{}_2.fastq.gz'.format(
-        wildcards.individual,
-        bioproject,
-        wildcards.individual,
-        wildcards.sample_id
-        )
-    return mate
-
-
 def select_bwa_index(wildcards):
-    ref_type, bioproject, sts_reads = determine_ref_type(wildcards)
-    if ref_type == 'squashed':
-        idx = 'output/reference_assembly/squashed/{}/bwa_index/{}.bwt'.format(wildcards.reference, wildcards.reference)
-    elif ref_type == 'clustered':
+
+    sts_individual = wildcards.sts_reads.split('_')[0]
+    ref_individual = wildcards.reference.split('_')[0]
+
+    assert sts_individual == ref_individual, 'Mixed individual match (bwa index): {}'.format(wildcards)
+
+    if '_nhr-' in wildcards.reference:
+        # non-haplotype resolved assembly / collapsed assembly
+        idx = 'output/reference_assembly/non-hap-res/{}/bwa_index/{}.bwt'.format(wildcards.reference, wildcards.reference)
+    elif '_scV{}-'.format(config['git_commit_version']) in wildcards.reference:
         idx = 'output/reference_assembly/clustered/{}/{}/bwa_index/{}.bwt'.format(sts_reads, wildcards.reference, wildcards.reference)
     else:
-        raise ValueError('Unexpected reference type: {} / {}'.format(ref_type, wildcards))
+        raise ValueError('Unexpected reference type: {} / {}'.format(wildcards.reference, wildcards))
     return idx
 
 
 rule bwa_strandseq_to_reference_alignment:
     input:
-        mate1 = select_strand_seq_mate1,
-        mate2 = select_strand_seq_mate2,
-        ref_index = select_bwa_index
+        mate1 = 'input/fastq/strand-seq/{sts_reads}/{individual}_{sample_id}_1.fastq.gz',
+        mate2 = 'input/fastq/strand-seq/{sts_reads}/{individual}_{sample_id}_2.fastq.gz',
+        ref_index = select_bwa_index,
+        sts_reads = 'input/fastq/strand-seq/{sts_reads}.fofn'
     output:
-        bam = 'output/alignments/strandseq_to_reference/{reference}/{ref_type}/temp/aln/{individual}_{sample_id}.filt.sam.bam'
+        bam = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{individual}_{sample_id}.filt.sam.bam'
     log:
-        bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{sample_id}.bwa.log',
-        samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{sample_id}.samtools.log',
+        bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.bwa.log',
+        samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.samtools.log',
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{ref_type}/{individual}_{sample_id}.rsrc'
+        'run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.rsrc'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
