@@ -10,7 +10,7 @@ git_commit_strandphaser: acaf555
 # git commits are changed!
 git_commit_version: 5
 
-use_singularity: False
+use_singularity: True
 peregrine_version: 0.1.5.5
 deepvariant_version: 0.9.0
 
