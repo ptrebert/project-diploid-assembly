@@ -190,8 +190,9 @@ rule check_singularity_version:
 
 
 rule singularity_pull_container:
+    input:
+        'output/check_files/environment/singularity_version.ok'
     output:
-        'output/check_files/environment/singularity_version.ok',
         'output/container/{hub}/{repo}/{tool}_{version}.sif'
     log:
         'log/output/container/{hub}/{repo}/{tool}_{version}.pull.log'
