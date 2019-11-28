@@ -5,7 +5,7 @@ cluster: " qsub -V -d /beeond/projects/diploid-assembly -l walltime={cluster.run
 cluster-config: /beeond/user/code/project-diploid-assembly/environment/snakemake/cluster/denbi_tu_pbs/denbi_cluster.json
 local-cores: 2
 jobs: 100
-latency-wait: 1
+latency-wait: 120
 keep-going: True
 rerun-incomplete: True
 restart-times: 1
