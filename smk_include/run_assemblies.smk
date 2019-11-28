@@ -82,8 +82,10 @@ rule compute_wtdbg_nonhapres_assembly_layout:
         aux = expand('output/reference_assembly/non-hap-res/layout/wtdbg2/{{sample}}/{{sample}}.{ext}',
                       ext=['1.dot.gz', '1.nodes', '1.reads', '2.dot.gz', '3.dot.gz',
                             'alignments.gz', 'ctg.dot.gz', 'events', 'frg.dot.gz', 'frg.nodes'])
-    log: 'log/output/reference_assembly/non-hap-res/layout/wtdbg2/{sample}_nhr-wtdbg.layout.log',
-    benchmark: 'run/output/reference_assembly/non-hap-res/layout/wtdbg2/{sample}_nhr-wtdbg.layout.rsrc',
+    log:
+        'log/output/reference_assembly/non-hap-res/layout/wtdbg2/{sample}_nhr-wtdbg.layout.log',
+    benchmark:
+        'run/output/reference_assembly/non-hap-res/layout/wtdbg2/{{sample}}_nhr-wtdbg.layout.t{}.rsrc'.format(config['num_cpu_max'])
     threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = lambda wildcards: int((163840 if '-ccs' in wildcards.sample else 393216) / config['num_cpu_max']),
@@ -102,8 +104,10 @@ rule compute_wtdbg_nonhapres_assembly_consensus:
         layout = rules.compute_wtdbg_nonhapres_assembly_layout.output.layout
     output:
         nhr_assembly = protected('output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.fasta')
-    log: 'log/output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.consensus.log'
-    benchmark: 'run/output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.consensus.rsrc'
+    log:
+        'log/output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.consensus.log'
+    benchmark:
+        'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-wtdbg.consensus.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards: int((8192 if '-ccs' in wildcards.sample else 24576) / config['num_cpu_max']),
@@ -186,7 +190,7 @@ rule compute_peregrine_nonhapres_assembly:
     resources:
         mem_per_cpu_mb = int(524288 / config['num_cpu_max']),
         mem_total_mb = 524288,
-        runtime_hrs = 2
+        runtime_hrs = 3
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
@@ -214,8 +218,10 @@ rule compute_wtdbg_haploid_assembly_layout:
                       ext=['1.dot.gz', '1.nodes', '1.reads', '2.dot.gz', '3.dot.gz',
                             'alignments.gz', 'ctg.dot.gz', 'frg.dot.gz', 'frg.nodes'
                           ])
-    log: 'log/output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.wtdbg-layout.log',
-    benchmark: 'run/output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.wtdbg-layout.rsrc',
+    log:
+        'log/output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.wtdbg-layout.log'
+    benchmark:
+        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_max'])
     wildcard_constraints:
         variant = '(canonical|strandseq_joint)'
     threads: config['num_cpu_max']
@@ -239,7 +245,7 @@ rule compute_wtdbg_haploid_assembly_consensus:
     log:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}.{hap}.wtdbg-consensus.log'
     benchmark:
-        'run/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}.{hap}.wtdbg-consensus.rsrc'
+        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_fasta/{{hap_reads}}.{{hap}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
     wildcard_constraints:
             variant = '(canonical|strandseq_joint)'
     threads: config['num_cpu_high']
@@ -270,7 +276,7 @@ rule compute_flye_haploid_assembly:
     log:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}.{hap}.flye.log'
     benchmark:
-        'run/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}.{hap}.flye.rsrc'
+        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_fasta/{{hap_reads}}.{{hap}}.flye.t{}.rsrc'.format(config['num_cpu_max'])
     wildcard_constraints:
             variant = '(canonical|strandseq_joint)'
     threads: config['num_cpu_max']
@@ -305,7 +311,7 @@ rule compute_wtdbg_haploid_split_assembly_layout:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.{sequence}.wtdbg-layout.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.{sequence}.wtdbg-layout.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_high']),
@@ -328,7 +334,7 @@ rule compute_wtdbg_haploid_split_assembly_consensus:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.wtdbg-consensus.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.wtdbg-consensus.rsrc'
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/haploid_fasta/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_high']),
@@ -358,7 +364,7 @@ rule compute_flye_haploid_split_assembly:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.flye.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.flye.rsrc'
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/haploid_fasta/{{hap_reads}}.{{hap}}.{{sequence}}.flye.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards: int((24576 if '-ccs' in wildcards.hap_reads else 131072) / config['num_cpu_high']),

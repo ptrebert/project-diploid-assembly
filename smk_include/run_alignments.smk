@@ -80,7 +80,7 @@ rule minimap_reads_to_reference_alignment:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.rsrc'
+        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.t{}.rsrc'.format(config['num_cpu_max'])
     threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = int(49152 / config['num_cpu_max']),
@@ -155,7 +155,7 @@ rule bwa_strandseq_to_reference_alignment:
         bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.bwa.log',
         samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.samtools.log',
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.rsrc'
+        'run/output/alignments/strandseq_to_reference/{{reference}}/{{sts_reads}}/{{individual}}_{{sample_id}}.t{}.rsrc'.format(config['num_cpu_low'])
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
@@ -185,7 +185,7 @@ rule minimap_racon_polish_alignment_pass1:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/polishing/alignments/{{pol_reads}}_map-to_{{hap_reads}}-{{assembler}}.{{hap}}.{{sequence}}.racon-p1.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 12288 / config['num_cpu_high']),
@@ -210,7 +210,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/polishing/alignments/{{pol_reads}}_map-to_{{hap_reads}}-{{assembler}}.{{hap}}.{{sequence}}.arrow-p1.psort.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         config['conda_env_pbtools']
     threads: config['num_cpu_high']
