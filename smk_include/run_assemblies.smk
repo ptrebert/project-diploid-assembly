@@ -180,26 +180,27 @@ rule compute_peregrine_nonhapres_assembly:
         dir_ovlp = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/2-ovlp'),
         dir_asm = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/3-asm'),
         dir_cns = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/4-cns'),
-        linked_asm = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/p_ctg_cns.fa'),
-        assm = directory('output/reference_assembly/non-hap-res/{sample}_nhr-pereg.fasta')
+        linked_asm = 'output/reference_assembly/non-hap-res/layout/peregrine/{sample}/p_ctg_cns.fa',
+        assm = 'output/reference_assembly/non-hap-res/{sample}_nhr-pereg.fasta'
     log:
-        'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.log'
+        pereg = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.log',
+        copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
     benchmark:
         'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-pereg.t{}.rsrc'.format(config['num_cpu_max'])
     threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = int(524288 / config['num_cpu_max']),
         mem_total_mb = 524288,
-        runtime_hrs = 3
+        runtime_hrs = 5
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
     shell:
         'yes yes | singularity run --bind {params.bind_folder}:/wd {input.container} ' \
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} ' \
-            ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log} ' \
+            ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} ' \
             ' && '
-            ' cp {output.linked_asm} {output.assm}'
+            ' cp {output.linked_asm} {output.assm} &> {log.copy}'
 
 
 ### ----- Below this point ------ ###
