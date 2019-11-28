@@ -36,7 +36,7 @@ rule pb_bamtools_index_bam_alignment:
     benchmark:
         'run/{filepath}.create-pbi.rsrc'
     resources:
-        runtime_hrs = lambda wildcards: 0 if '.part' in wildcards.filepath else 2
+        runtime_hrs = lambda wildcards: 0 if '.part' in wildcards.filepath else 1
     conda:
         config['conda_env_pbtools']
     shell:
@@ -49,19 +49,21 @@ rule pb_bam2x_dump_fastq:
         pbn_idx = 'input/bam/{folder_path}/{pbn_sample}{sample_type}.pbn.bam.pbi'
     output:
         'input/fastq/{folder_path}/{pbn_sample}{sample_type}.fastq.gz'
+    log:
+        'log/input/bam/{folder_path}/{pbn_sample}{sample_type}.dump.log'
     benchmark:
-        'run/bam/{folder_path}/{pbn_sample}{sample_type}.dump.rsrc'
+        'run/input/bam/{folder_path}/{pbn_sample}{sample_type}.dump.rsrc'
     wildcard_constraints:
         pbn_sample = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')',
         sample_type = '(_[0-9x]+|\.part[0-9]+)'
     resources:
-        runtime_hrs = lambda wildcards, input: 1 if '.part' in input.pbn_bam else 4
+        runtime_hrs = lambda wildcards, input: 1 if '.part' in input.pbn_bam else 6
     conda:
         config['conda_env_pbtools']
     params:
         out_prefix = lambda wildcards, output: output[0].rsplit('.', 2)[0]
     shell:
-        'bam2fastq -c 5 -o {params.out_prefix} {input.pbn_bam}'
+        'bam2fastq -c 5 -o {params.out_prefix} {input.pbn_bam} &> {log}'
 
 
 
