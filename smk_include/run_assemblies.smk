@@ -191,7 +191,7 @@ rule compute_peregrine_nonhapres_assembly:
     resources:
         mem_per_cpu_mb = int(524288 / config['num_cpu_max']),
         mem_total_mb = 524288,
-        runtime_hrs = 5
+        runtime_hrs = 20
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
