@@ -2,17 +2,17 @@
 notify: False
 notify_email: ebertp@hhu.de
 
-script_dir: /gpfs/project/ebertp/code/project-diploid-assembly/scripts
+script_dir: /home/pebert/work/code/github/project-diploid-assembly/scripts
 
-data_sources: /gpfs/project/ebertp/code/project-diploid-assembly/annotation/input_data_sources.json
-reference_sources: /gpfs/project/ebertp/code/project-diploid-assembly/annotation/reference_data_sources.json
+data_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/input_data_sources.json
+reference_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/reference_data_sources.json
 
 ref_cache_folder: references/cache
 
-num_cpu_max: 72
-num_cpu_high: 24
-num_cpu_medium: 12
-num_cpu_low: 6
+num_cpu_max: 4
+num_cpu_high: 3
+num_cpu_medium: 2
+num_cpu_low: 1
 
 
 # YAML Conda environments can only be used

@@ -1,11 +1,10 @@
 # Default runtime profile for TM infrastructure / D3 compute server
 
-directory: /scratch/bioinf/projects/diploid-genome-assembly/pebert
-cores: 48
-latency-wait: 2
+directory: /home/pebert/work/projects
+cores: 4
+latency-wait: 5
 keep-going: True
 rerun-incomplete: True
 restart-times: 0
 resources:
-  mem_total_mb=1520432
-# resource memory: ~1.4 TB
+  mem_total_mb=4194304
