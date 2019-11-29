@@ -1,11 +1,4 @@
 
-include: 'aux_utilities.smk'
-include: 'preprocess_input.smk'
-include: 'canonical_dga.smk'
-include: 'strandseq_dga_joint.smk'
-include: 'strandseq_dga_split.smk'
-
-
 rule derive_wtdbg_parameter_preset:
     input:
         '{filepath}.fastq.gz'
@@ -25,14 +18,14 @@ rule derive_wtdbg_parameter_preset:
             elif platform_spec.startswith('pbsq'):
                 preset = 'sq'
             else:
-                raise ValueError('Cannot handle PacBio platform spec: {threads} / {threads}'.format(file_name, platform_spec))
+                raise ValueError('Cannot handle PacBio platform spec: {} / {}'.format(file_name, platform_spec))
         elif platform_spec.startswith('ont'):
             preset = 'ont'
         else:
-            raise ValueError('Unexpected platform spec: {threads} / {threads}'.format(file_name, platform_spec))
+            raise ValueError('Unexpected platform spec: {} / {}'.format(file_name, platform_spec))
 
         if preset is None:
-            raise ValueError('wtdbg preset is None: {threads}'.format(input[0]))
+            raise ValueError('wtdbg preset is None: {}'.format(input[0]))
 
         with open(output[0], 'w') as dump:
             _ = dump.write(preset)
@@ -57,14 +50,14 @@ rule derive_flye_parameter_preset:
             elif 'clr' in platform_spec:
                 preset = '--pacbio-raw'
             else:
-                raise ValueError('Cannot handle PacBio platform spec: {threads} / {threads}'.format(file_name, platform_spec))
+                raise ValueError('Cannot handle PacBio platform spec: {} / {}'.format(file_name, platform_spec))
         elif platform_spec.startswith('ont'):
             preset = '--nano-raw'
         else:
-            raise ValueError('Unexpected platform spec: {threads} / {threads}'.format(file_name, platform_spec))
+            raise ValueError('Unexpected platform spec: {} / {}'.format(file_name, platform_spec))
 
         if preset is None:
-            raise ValueError('flye preset is None: {threads}'.format(input[0]))
+            raise ValueError('flye preset is None: {}'.format(input[0]))
 
         with open(output[0], 'w') as dump:
             _ = dump.write(preset)
@@ -171,6 +164,18 @@ rule write_peregrine_nonhapres_fofn:
 
 
 rule compute_peregrine_nonhapres_assembly:
+    """
+    Why this construct: (yes yes || true)
+    1) Peregrine is PacBio software, needs an explicit "yes" to the question
+        about the usage scenario (comm. vs. academic/non-comm.)
+    2) the command "yes" continues sending a "yes" into the singularity container for all eternity
+    3) as soon as Peregrine is done and exits, this leads to a broken pipe
+    4) a broken pipe (SIGPIPE) leads to a non-zero exit code for the whole command (specifically, 141)
+    5) since Snakemake does not report the exact exit code, one may waste a couple of hours looking
+        in the wrong direction for the source of the error...
+    6) the " || true" ensures that "yes" also returns 0 as exit code
+    7) this is safe-ish since errors from Peregrine (or cp) still signal a failure as desired
+    """
     input:
         container = 'output/container/docker/cschin/peregrine_{}.sif'.format(config['peregrine_version']),
         fofn = 'input/fastq/complete/{sample}.fofn'
@@ -196,7 +201,7 @@ rule compute_peregrine_nonhapres_assembly:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
     shell:
-        'yes yes | singularity run --bind {params.bind_folder}:/wd {input.container} ' \
+        '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} ' \
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} ' \
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} ' \
             ' && '
