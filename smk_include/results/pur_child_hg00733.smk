@@ -328,7 +328,7 @@ else:
         input:
             rules.no_singularity_mock_output.output
 
-    rule pur_child_mixed_clr_split_sdga:
+    rule pur_child_clrccs_split_sdga:
         input:
             rules.no_singularity_mock_output.output
 
