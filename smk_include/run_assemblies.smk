@@ -176,7 +176,7 @@ rule compute_peregrine_nonhapres_assembly:
         fofn = 'input/fastq/complete/{sample}.fofn'
     output:
         dir_seqdb = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/0-seqdb'),
-        dir_index = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/0-index'),
+        dir_index = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/1-index'),
         dir_ovlp = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/2-ovlp'),
         dir_asm = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/3-asm'),
         dir_cns = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/4-cns'),
