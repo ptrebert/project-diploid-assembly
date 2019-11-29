@@ -1,11 +1,4 @@
 
-include: 'aux_utilities.smk'
-include: 'preprocess_input.smk'
-include: 'preprocess_references.smk'
-include: 'prepare_custom_references.smk'
-include: 'integrative_phasing.smk'
-include: 'variant_calling.smk'
-
 localrules: master_strandseq_dga_joint
 
 """
@@ -23,8 +16,8 @@ rule master_strandseq_dga_joint:
 
 rule strandseq_dga_joint_haplo_tagging:
     input:
-        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz',
-        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz.tbi',
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
+        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi',
         bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam',
         bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
         fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
@@ -66,8 +59,8 @@ rule strandseq_dga_joint_haplo_splitting:
 
 rule strandseq_dga_joint_haplo_tagging_pacbio_native:
     input:
-        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz',
-        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.phased.vcf.bgz.tbi',
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
+        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi',
         bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam',
         bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
         fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',

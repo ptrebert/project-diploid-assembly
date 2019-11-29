@@ -1,13 +1,4 @@
 
-include: 'preprocess_references.smk'
-include: 'prepare_custom_references.smk'
-include: 'variant_calling.smk'
-include: 'canonical_dga.smk'
-include: 'strandseq_dga_joint.smk'
-include: 'strandseq_dga_split.smk'
-include: 'racon_polishing.smk'
-include: 'arrow_polishing.smk'
-
 localrules: master_eval_known_reference
 
 rule master_eval_known_reference:

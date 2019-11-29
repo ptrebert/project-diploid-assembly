@@ -1,6 +1,4 @@
 
-include: 'handle_reference_download.smk'
-
 localrules: master_preprocess_references
 
 rule master_preprocess_references:

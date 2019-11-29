@@ -1,9 +1,4 @@
 
-include: 'variant_calling.smk'
-include: 'canonical_dga.smk'
-include: 'strandseq_dga_joint.smk'
-include: 'strandseq_dga_split.smk'
-
 localrules: master_eval_variant_calls
 
 rule master_eval_variant_calls:

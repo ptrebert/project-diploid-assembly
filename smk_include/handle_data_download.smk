@@ -1,7 +1,4 @@
 
-include: 'link_data_sources.smk'
-include: 'scrape_data_sources.smk'
-
 CMD_DL_COMPRESSED_PARALLEL = 'aria2c --out={{output}} --file-allocation=none -s 4 -x 4 {remote_path} &>> {{log}}'
 
 CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'

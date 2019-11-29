@@ -1,6 +1,4 @@
 
-include: 'preprocess_input.smk'
-
 localrules: master_statistics_input_data
 
 rule master_statistics_input_data:

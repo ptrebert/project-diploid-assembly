@@ -1,19 +1,9 @@
 
-include: 'smk_include/aux_utilities.smk'
-include: 'smk_include/handle_data_download.smk'
-include: 'smk_include/preprocess_references.smk'
-include: 'smk_include/preprocess_input.smk'
-include: 'smk_include/prepare_custom_references.smk'
-include: 'smk_include/collect_statistics.smk'
-include: 'smk_include/variant_calling.smk'
-include: 'smk_include/canonical_dga.smk'
-include: 'smk_include/strandseq_dga_joint.smk'
-include: 'smk_include/strandseq_dga_split.smk'
-include: 'smk_include/arrow_polishing.smk'
-include: 'smk_include/racon_polishing.smk'
-include: 'smk_include/eval_known_reference.smk'
-include: 'smk_include/results_child.smk'
-include: 'smk_include/results_parents.smk'
+include: 'smk_include/module_includes.smk'
+
+include: 'smk_include/results/agg_pur_trio.smk'
+include: 'smk_include/results/agg_chs_trio.smk'
+include: 'smk_include/results/agg_yri_trio.smk'
 
 localrules: master
 
@@ -64,8 +54,9 @@ wildcard_constraints:
 
 rule master:
     input:
-        rules.master_results_child.input,
-        rules.master_results_parents.input
+        rules.run_pur_trio.input,
+        rules.run_chs_trio.input,
+        rules.run_yri_trio.input
 
     message: 'Executing ALL'
 

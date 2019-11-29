@@ -1,12 +1,4 @@
 
-include: 'aux_utilities.smk'
-include: 'preprocess_input.smk'
-include: 'preprocess_references.smk'
-include: 'prepare_custom_references.smk'
-include: 'canonical_dga.smk'
-include: 'strandseq_dga_joint.smk'
-include: 'strandseq_dga_split.smk'
-
 localrules: master_run_alignments
 
 

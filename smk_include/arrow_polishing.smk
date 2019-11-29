@@ -1,11 +1,4 @@
 
-include: 'canonical_dga.smk'
-include: 'strandseq_dga_joint.smk'
-include: 'strandseq_dga_split.smk'
-include: 'aux_utilities.smk'
-include: 'run_alignments.smk'
-
-
 rule arrow_contig_polishing_pass1:
     input:
         contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',

@@ -1,10 +1,4 @@
 
-include: 'aux_utilities.smk'
-include: 'preprocess_input.smk'
-include: 'preprocess_references.smk'
-include: 'prepare_custom_references.smk'
-include: 'run_alignments.smk'
-
 localrules: master_variant_calling
 
 

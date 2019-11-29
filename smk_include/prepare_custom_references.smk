@@ -1,9 +1,4 @@
 
-include: 'aux_utilities.smk'
-include: 'preprocess_input.smk'
-include: 'run_assemblies.smk'
-include: 'run_alignments.smk'
-
 localrules: master_prepare_custom_references
 
 
@@ -217,9 +212,7 @@ checkpoint run_saarclust_assembly_clustering:
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
         in_folder = lambda wildcards, input: load_fofn_file(input)
     shell:
-        '{params.script_dir}/run_saarclust.R {input.cfg} {params.in_folder} {params.out_folder} &> {log} ' \
-            ' && echo "SaaRclust success" &>> {log} ' \
-            ' || echo "SaaRclust fail" &>> {log}'
+        '{params.script_dir}/run_saarclust.R {input.cfg} {params.in_folder} {params.out_folder} &> {log} '
 
 
 def collect_clustered_fasta_sequences(wildcards):
