@@ -1,0 +1,3 @@
+# Execute in Snakefile folder
+
+snakemake --configfiles smk_config/data/smk_cfg_data.yml smk_config/run_env/smk_cfg_env-mmci.yml --profile environment/snakemake/server/d3compute --nolock --use-conda -n
