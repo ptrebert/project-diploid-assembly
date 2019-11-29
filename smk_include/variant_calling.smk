@@ -131,10 +131,50 @@ rule normalize_longshot_vcf:
         'output/variant_calls/longshot/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf'
     log:
         'log/output/variant_calls/longshot/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
-    params:
-        script_dir = config['script_dir']
-    shell:
-        '{params.script_dir}/norm_longshot_output.py --debug --input-vcf {input} --output-vcf {output} &> {log}'
+    resources:
+        mem_per_cpu_mb = 2048,
+        mem_total_mb = 2048,
+        runtime_hrs = 0
+    run:
+        import io
+        with open(log[0], 'w') as logfile:
+            _ = logfile.write('Processing longshot VCF from path: {}\n'.format(input[0]))
+
+            header_lines = 0
+            record_lines = 0
+
+            out_buffer = io.StringIO()
+            with open(input[0], 'r') as vcf_in:
+                for line in vcf_in:
+                    if line.startswith('##FORMAT=<ID=GQ,Number=1,Type=Float,'):
+                        header_lines += 1
+                        _ = logfile.write('Found GQ format field of type float\n')
+                        out_buffer.write('##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">\n')
+                    elif not line.startswith('#'):
+                        record_lines += 1
+                        cols = line.strip().split('\t')
+                        genotype_format = cols[-2].split(':')
+                        if not genotype_format[1] == 'GQ':
+                            _ = logfile.write('ERROR - approximate line number: {}\n'.format(header_lines + record_lines))
+                            _ = logfile.write('Unexpected FORMAT composition (GQ not at position 1): {}\n'.format(line.strip()))
+                            _ = logfile.write('ERROR - abort\n')
+                            raise ValueError('Unexpected FORMAT field, check log file: {}\n'.format(log[0]))
+                        genotype_values = cols[-1].split(':')
+                        genotype_values[1] = str(int(round(float(genotype_values[1]), 0)))
+                        genotype_values = ':'.join(genotype_values)
+                        new_line = '\t'.join(cols[:-1]) + '\t' + genotype_values
+                        out_buffer.write(new_line + '\n')
+                    else:
+                        header_lines += 1
+                        out_buffer.write(line)
+            _ = logfile.write('All lines of input VCF buffered (header: {} / records: {})\n'.format(header_lines, record_lines))
+
+            with open(output[0], 'w') as vcf_out:
+                _ = vcf_out.write(out_buffer.getvalues())
+
+            _ = logfile.write('Normalized longshot VCF record dumped to file: {}\n'.format(output[0]))
+            _ = logfile.write('Done')
+    # end of run block
 
 
 rule call_variants_deepvariant:
