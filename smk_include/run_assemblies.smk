@@ -185,7 +185,6 @@ rule compute_peregrine_nonhapres_assembly:
         dir_ovlp = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/2-ovlp'),
         dir_asm = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/3-asm'),
         dir_cns = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/4-cns'),
-        linked_asm = 'output/reference_assembly/non-hap-res/layout/peregrine/{sample}/p_ctg_cns.fa',
         assm = 'output/reference_assembly/non-hap-res/{sample}_nhr-pereg.fasta'
     log:
         pereg = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.log',
@@ -205,7 +204,7 @@ rule compute_peregrine_nonhapres_assembly:
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} ' \
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} ' \
             ' && '
-            ' cp {output.linked_asm} {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
 
 
 ### ----- Below this point ------ ###
