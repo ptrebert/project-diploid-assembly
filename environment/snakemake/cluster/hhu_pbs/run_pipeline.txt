@@ -1,1 +1,1 @@
-snakemake --configfiles smk_config/data/smk_cfg_data.yml smk_config/run_env/smk_cfg_env-hhu.yml --profile environment/snakemake/cluster/hhu_pbs/ --nolock --use-conda -n --debug-dag
+snakemake --configfiles smk_config/data/smk_cfg_params_no-sgl.yml smk_config/data/smk_cfg_samples.yml smk_config/run_env/smk_cfg_env-hhu.yml --profile environment/snakemake/cluster/hhu_pbs/ --nolock --use-conda -n
