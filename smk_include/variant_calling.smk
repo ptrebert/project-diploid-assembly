@@ -185,26 +185,23 @@ rule call_variants_deepvariant:
         aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.pbn.bam.bai'
     output:
         vcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf.bgz',
-        vcf_idx = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf.bgz.tbi',
         gvcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.gvcf.bgz',
-        gvcf_idx = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.gvcf.bgz.tbi',
-        report = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.visual_report.html'
     log:
         'log/output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_max'])
-    threads: config['num_cpu_max']
+        'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(393216 / config['num_cpu_max']),
+        mem_per_cpu_mb = int(393216 / config['num_cpu_high']),
         mem_total_mb = 393216,
-        runtime_hrs = 40
+        runtime_hrs = 1
     params:
         bind_folder = lambda wildcards: os.getcwd()
     shell:
         'singularity run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant ' \
             ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} ' \
             ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} ' \
-            ' --num_shards={threads} &> {log}'
+            ' --novcf_stats_report --num_shards={threads} &> {log}'
 
 
 rule filter_variant_calls_quality_biallelic_snps:
