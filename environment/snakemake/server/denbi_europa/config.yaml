@@ -1,6 +1,6 @@
 # Default runtime profile for deNBI Tuebingen infrastructure / single VM
 
-directory: /mnt/vol/atlantic/projects/diploid-assembly
+directory: /mnt/vol/quobyte/projects/diploid-assembly
 jobs: 36
 latency-wait: 300
 keep-going: True
