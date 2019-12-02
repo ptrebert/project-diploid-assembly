@@ -1,1 +1,1 @@
-snakemake --configfiles smk_config/data/smk_cfg_params_use-sgl.yml smk_config/data/smk_cfg_samples.yml smk_config/run_env/smk_cfg_env-unicore.yml --profile environment/snakemake/cluster/denbi_tu_pbs --nolock --use-conda
+snakemake --configfiles smk_config/data/smk_cfg_params_use-sgl.yml smk_config/data/smk_cfg_samples.yml smk_config/run_env/smk_cfg_env-valet.yml --profile environment/snakemake/cluster/denbi_tu_pbs --nolock --use-conda
