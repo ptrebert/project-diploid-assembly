@@ -188,8 +188,8 @@ rule call_variants_deepvariant:
         'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(1024 / config['num_cpu_high']),
-        mem_total_mb = 1024,
+        mem_per_cpu_mb = int(4096 / config['num_cpu_high']),
+        mem_total_mb = 4096,
         runtime_hrs = 1
     params:
         bind_folder = lambda wildcards: os.getcwd()
