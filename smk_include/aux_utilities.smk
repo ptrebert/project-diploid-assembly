@@ -73,6 +73,8 @@ rule samtools_convert_sam_to_bam:
     output:
         bam = '{folder_path}.sam.bam'
     threads: config['num_cpu_low']
+    resources:
+        runtime_hrs = 23
     benchmark:
         'run/{folder_path}.sam-convert.rsrc'
     shell:
