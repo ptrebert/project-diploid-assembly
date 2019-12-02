@@ -170,10 +170,6 @@ rule normalize_longshot_vcf:
             _ = logfile.write('Done')
     # end of run block
 
-# this is required because DeepVariant produces already
-# compressed VCF output
-ruleorder: call_variants_deepvariant > bcftools_index_bgzipped_file
-ruleorder: call_variants_deepvariant > bgzip_file_copy
 
 rule call_variants_deepvariant:
     input:
