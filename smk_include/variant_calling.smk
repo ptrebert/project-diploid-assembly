@@ -185,10 +185,10 @@ rule call_variants_deepvariant:
     log:
         'log/output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
-    threads: config['num_cpu_high']
+        'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_max'])
+    threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = int(4096 / config['num_cpu_high']),
+        mem_per_cpu_mb = int(4096 / config['num_cpu_max']),
         mem_total_mb = 4096,
         runtime_hrs = 1
     params:
