@@ -184,16 +184,16 @@ rule call_variants_deepvariant:
         read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.pbn.bam',
         aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.pbn.bam.bai'
     output:
-        vcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf.bgz',
-        gvcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.gvcf.bgz',
+        vcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf',
+        gvcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.gvcf',
     log:
         'log/output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
         'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(393216 / config['num_cpu_high']),
-        mem_total_mb = 393216,
+        mem_per_cpu_mb = int(1024 / config['num_cpu_high']),
+        mem_total_mb = 1024,
         runtime_hrs = 1
     params:
         bind_folder = lambda wildcards: os.getcwd()
