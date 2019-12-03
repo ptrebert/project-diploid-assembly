@@ -401,7 +401,7 @@ rule write_peregrine_haploid_split_fofn:
             _ = fofn.write(params.mount_point + '/' + input[0])
 
 
-rule compute_peregrine_nonhapres_assembly:
+rule compute_peregrine_haploid_split_assembly:
     """
     Why this construct: (yes yes || true)
     1) Peregrine is PacBio software, needs an explicit "yes" to the question
