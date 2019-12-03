@@ -2,12 +2,26 @@ name: dipassm
 channels:
   - conda-forge
   - bioconda
-  - r
 dependencies:
   - Python=3.6.*
   - pip=19.2.3
   - wget=1.19.4
   - openssl=1.0.2t
+  - gxx_impl_linux-64=7.3.0
+  - gxx_linux-64=7.3.0
+  - ld_impl_linux-64=2.33.1
+  - libblas=3.8.0
+  - libcblas=3.8.0
+  - liblapack=3.8.0
+  - libopenblas=0.3.6
+  - libgfortran-ng=7.3.0
+  - libgcc-ng=9.1.0
+  - libstdcxx-ng=9.1.0
+  - libxml2=2.9.9
+  - libcurl=7.64.0
+  - lp_solve=5.5.2.5
+  - openblas=0.3.6
+  - make=4.2.1
   - numpy=1.17.1
   - matplotlib=3.1.1
   - Snakemake=5.8.1
@@ -20,6 +34,7 @@ dependencies:
   - mummer4
   - busco=3.0.2
   - sambamba=0.6.6  # DO NOT UPDATE: github.com/biod/sambamba/issues/393
+  - htslib=1.9
   - samtools=1.9
   - bamtools=2.5.1
   - bedtools=2.29.0
@@ -34,21 +49,5 @@ dependencies:
   - pbgzip
   - pigz=2.4
   - drmaa=0.7.9
-  - libxml2=2.9.9
-  - r-xml=3.98_1.20
-  - r-lpsolve=5.6.13
-  - r-base<3.6
-  - r-devtools=2.2.1
-  - r-usethis=1.5.1
-  - r-withr=2.1.2
-  - r-igraph=1.2.4.1
-  - r-zoo=1.8_6
-  - r-cluster=2.1.0
-  - r-doparallel=1.0.15
-  - r-foreach=1.4.7
-  - r-biocmanager=1.30.7
-  - bioconductor-rtracklayer=1.42.1
-  - bioconductor-rhtslib=1.14.1
-  - bioconductor-bamsignals=1.14.0
   - pip:
     - git+https://bitbucket.org/whatshap/whatshap
