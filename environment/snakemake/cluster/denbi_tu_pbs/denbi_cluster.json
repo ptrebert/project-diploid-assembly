@@ -34,5 +34,32 @@
     "error": "log/cluster_jobs/{jobid}_{rule}.stderr",
     "run_hrs": "{resources.runtime_hrs}",
     "run_min": "{resources.runtime_min}"
+  },
+  "pb_bam2x_dump_haploid_fastq": {
+    "cores": "36",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/{jobid}_{rule}.stderr",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
+  },
+  "strandseq_dga_split_merge_tag_groups_pacbio_native": {
+    "cores": "36",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/{jobid}_{rule}.stderr",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
+  },
+  "strandseq_dga_split_haplo_tagging_pacbio_native": {
+    "cores": "36",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/{jobid}_{rule}.stderr",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
   }
 }
