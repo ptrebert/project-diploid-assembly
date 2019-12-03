@@ -11,12 +11,12 @@ rule install_rlib_saarclust:
          touch('output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']))
     log:
         'log/output/check_files/R_setup/saarclust_ver-{}.log'.format(config['git_commit_saarclust'])
+    conda:
+        config['conda_env_rdga']
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_saarclust']
     resources:
-        runtime_hrs = 0,
-        runtime_min = 30,
         mem_total_mb = 3072,
         mem_per_cpu_mb = 3072
     shell:
@@ -203,10 +203,12 @@ checkpoint run_saarclust_assembly_clustering:
         'log/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.log'
     benchmark:
         'run/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.run'
+    conda:
+        config['conda_env_rdga']
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192,
-        runtime_hrs = 3
+        runtime_hrs = 5
     params:
         script_dir = config['script_dir'],
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),

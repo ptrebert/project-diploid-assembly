@@ -16,9 +16,9 @@ rule install_rlib_breakpointr:
          check = touch('output/check_files/R_setup/breakpointr.ok')
     log:
         'log/output/check_files/R_setup/breakpointr.log'
+    conda:
+        config['conda_env_rdga']
     resources:
-        runtime_hrs = 0,
-        runtime_min = 30,
         mem_total_mb = 3072,
         mem_per_cpu_mb = 3072
     params:
@@ -34,9 +34,9 @@ rule install_rlib_strandphaser:
          check = touch('output/check_files/R_setup/strandphaser_ver-{}.ok'.format(config['git_commit_strandphaser']))
     log:
         'log/output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
+    conda:
+        config['conda_env_rdga']
     resources:
-        runtime_hrs = 0,
-        runtime_min = 30,
         mem_total_mb = 3072,
         mem_per_cpu_mb = 3072
     params:
@@ -112,6 +112,8 @@ rule run_breakpointr:
         'log/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.log'
     benchmark:
         'run/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
+    conda:
+        config['conda_env_rdga']
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
         input_dir = lambda wildcards, input: load_fofn_file(input),
@@ -120,7 +122,7 @@ rule run_breakpointr:
     resources:
         mem_per_cpu_mb = int(3072 / config['num_cpu_high']),
         mem_total_mb = 3072,
-        runtime_hrs = 5
+        runtime_hrs = 6
     shell:
         '{params.script_dir}/run_breakpointr.R {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'
 
@@ -189,10 +191,13 @@ rule run_strandphaser:
         stp = 'log/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.log',
     benchmark:
         'run/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.rsrc'
+    conda:
+        config['conda_env_rdga']
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = int(8192 / config['num_cpu_high']),
-        mem_total_mb = 8192
+        mem_total_mb = 8192,
+        runtime_hrs = 6
     params:
         input_dir = lambda wildcards, input: load_fofn_file(input),
         output_dir = lambda wildcards, output: os.path.dirname(output.cfg),
