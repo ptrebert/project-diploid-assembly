@@ -19,13 +19,13 @@ dependencies:
   - libgcc-ng=9.1.0
   - libstdcxx-ng=9.1.0
   - libxml2=2.9.9
+  - libcurl=7.64.0
   - lp_solve=5.5.2.5
   - openblas=0.3.6
   - make=4.2.1
   - htslib=1.9
   - r-base<3.6
   - r-curl=4.2
-  - libxml2=2.9.9
   - r-xml=3.98_1.20
   - r-devtools=2.2.1
   - r-usethis=1.5.1
