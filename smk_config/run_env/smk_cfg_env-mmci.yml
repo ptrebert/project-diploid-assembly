@@ -2,10 +2,10 @@
 notify: True
 notify_email: pebert@mpi-inf.mpg.de
 
-script_dir: /home/pebert/work/code/github/project-diploid-assembly/scripts
+script_dir: /scratch/bioinf/users/pebert/code/project-diploid-assembly/scripts
 
-data_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/input_data_sources.json
-reference_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/reference_data_sources.json
+data_sources: /scratch/bioinf/users/pebert/code/project-diploid-assembly/annotation/input_data_sources.json
+reference_sources: /scratch/bioinf/users/pebert/code/project-diploid-assembly/annotation/reference_data_sources.json
 
 ref_cache_folder: references/cache
 
