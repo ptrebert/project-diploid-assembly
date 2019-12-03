@@ -428,7 +428,7 @@ rule compute_peregrine_haploid_split_assembly:
         pereg = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.log',
         copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.t{}.rsrc'.format(config['num_cpu_max'])
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/haploid_fasta/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_max'])
     threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = int(131072 / config['num_cpu_max']),
