@@ -193,8 +193,8 @@ rule compute_peregrine_nonhapres_assembly:
         'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-pereg.t{}.rsrc'.format(config['num_cpu_max'])
     threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = int(524288 / config['num_cpu_max']),
-        mem_total_mb = 524288,
+        mem_per_cpu_mb = int(131072 / config['num_cpu_max']),
+        mem_total_mb = 131072,
         runtime_hrs = 20
     params:
         bind_folder = lambda wildcards: os.getcwd(),
@@ -384,3 +384,62 @@ rule compute_flye_haploid_split_assembly:
             ' --debug --out-dir {params.out_prefix} &> {log}' \
             ' && ' \
             'cp {output.assm_source} {output.assembly}'
+
+
+rule write_peregrine_haploid_split_fofn:
+    input:
+        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
+    output:
+        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fofn',
+    resources:
+        runtime_hrs = 0,
+        runtime_min = 5
+    params:
+        mount_point = '/wd'
+    run:
+        with open(output[0], 'w') as fofn:
+            _ = fofn.write(params.mount_point + '/' + input[0])
+
+
+rule compute_peregrine_nonhapres_assembly:
+    """
+    Why this construct: (yes yes || true)
+    1) Peregrine is PacBio software, needs an explicit "yes" to the question
+        about the usage scenario (comm. vs. academic/non-comm.)
+    2) the command "yes" continues sending a "yes" into the singularity container for all eternity
+    3) as soon as Peregrine is done and exits, this leads to a broken pipe
+    4) a broken pipe (SIGPIPE) leads to a non-zero exit code for the whole command (specifically, 141)
+    5) since Snakemake does not report the exact exit code, one may waste a couple of hours looking
+        in the wrong direction for the source of the error...
+    6) the " || true" ensures that "yes" also returns 0 as exit code
+    7) this is safe-ish since errors from Peregrine (or cp) still signal a failure as desired
+    """
+    input:
+        container = 'output/container/docker/cschin/peregrine_{}.sif'.format(config['peregrine_version']),
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fofn',
+    output:
+        dir_seqdb = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/0-seqdb'),
+        dir_index = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/1-index'),
+        dir_ovlp = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/2-ovlp'),
+        dir_asm = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/3-asm'),
+        dir_cns = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/4-cns'),
+        assm = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.fasta',
+    log:
+        pereg = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.log',
+        copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
+    benchmark:
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.t{}.rsrc'.format(config['num_cpu_max'])
+    threads: config['num_cpu_max']
+    resources:
+        mem_per_cpu_mb = int(131072 / config['num_cpu_max']),
+        mem_total_mb = 131072,
+        runtime_hrs = 20
+    params:
+        bind_folder = lambda wildcards: os.getcwd(),
+        out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
+    shell:
+        '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} ' \
+            ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} ' \
+            ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} ' \
+            ' && '
+            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'

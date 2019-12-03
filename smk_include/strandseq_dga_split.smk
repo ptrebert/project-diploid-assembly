@@ -19,23 +19,25 @@ rule master_strandseq_dga_split:
 rule strandseq_dga_split_haplo_tagging:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
+    fq_hap_reads = FASTQ file to be used for haplotype reconstruction
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
-        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam',
-        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{fq_hap_reads}.wh-phased.vcf.bgz',
+        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{fq_hap_reads}.wh-phased.vcf.bgz.tbi',
+        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{fq_hap_reads}_map-to_{reference}.psort.sam.bam',
+        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{fq_hap_reads}_map-to_{reference}.psort.sam.bam.bai',
         fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
     output:
-        bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagged.sam.bam',
-        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tags.fq.tsv',
+        bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.tagged.sam.bam',
+        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.tags.fq.tsv',
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.fq.log',
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.fq.tag.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.fq.rsrc'
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.fq.tag.rsrc'
+    wildcard_constraints:
+        fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
     resources:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096,
@@ -49,23 +51,25 @@ rule strandseq_dga_split_haplo_tagging:
 rule strandseq_dga_split_haplo_tagging_pacbio_native:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
+    pbn_hap_reads = PacBio native BAM file to be used for haplotype reconstruction
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
-        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam',
-        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
+        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{pbn_hap_reads}.wh-phased.vcf.bgz',
+        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{pbn_hap_reads}.wh-phased.vcf.bgz.tbi',
+        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{pbn_hap_reads}_map-to_{reference}.psort.pbn.bam',
+        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{pbn_hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
         fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
     output:
-        bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagged.pbn.bam',
-        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tags.pbn.tsv',
+        bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.tagged.pbn.bam',
+        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.tags.pbn.tsv',
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.pbn.log',
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.pbn.tag.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tagging.pbn.rsrc'
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.pbn.tag.rsrc'
+    wildcard_constraints:
+        pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096,
@@ -79,21 +83,23 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
 rule strandseq_dga_split_haplo_splitting:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
+    fq_hap_reads = FASTQ file to be used for haplotype reconstruction
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        fastq = 'input/fastq/complete/{hap_reads}.fastq.gz',
-        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tags.fq.tsv',
+        fastq = 'input/fastq/complete/{fq_hap_reads}.fastq.gz',
+        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.tags.fq.tsv',
     output:
-        h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h1.{sequence}.fastq.gz',
-        h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h2.{sequence}.fastq.gz',
-        un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.un.{sequence}.fastq.gz',
-        hist = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.rlen-hist.{sequence}.fq.tsv'
+        h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h1.{sequence}.fastq.gz',
+        h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h2.{sequence}.fastq.gz',
+        un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.un.{sequence}.fastq.gz',
+        hist = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.rlen-hist.{sequence}.fq.tsv'
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{sequence}.splitting.fq.log',
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.{sequence}.fq.split.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{sequence}.splitting.fq.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.{sequence}.fq.split.rsrc',
+    wildcard_constraints:
+        fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192,
@@ -107,22 +113,24 @@ rule strandseq_dga_split_haplo_splitting:
 rule strandseq_dga_split_haplo_splitting_pacbio_native:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
+    pbn_hap_reads = PacBio native BAM file to be used for haplotype reconstruction
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        pbn_bam = 'input/bam/complete/{hap_reads}.pbn.bam',
-        pbn_idx = 'input/bam/complete/{hap_reads}.pbn.bam.bai',
-        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tags.pbn.tsv',
+        pbn_bam = 'input/bam/complete/{pbn_hap_reads}.pbn.bam',
+        pbn_idx = 'input/bam/complete/{pbn_hap_reads}.pbn.bam.bai',
+        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.tags.pbn.tsv',
     output:
-        h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.h1.{sequence}.pbn.bam',
-        h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.h2.{sequence}.pbn.bam',
-        un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.un.{sequence}.pbn.bam',
-        hist = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.rlen-hist.{sequence}.pbn.tsv'
+        h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h1.{sequence}.pbn.bam',
+        h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h2.{sequence}.pbn.bam',
+        un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.un.{sequence}.pbn.bam',
+        hist = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.rlen-hist.{sequence}.pbn.tsv'
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.{sequence}.splitting.pbn.log',
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.{sequence}.pbn.split.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.{sequence}.splitting.pbn.rsrc',
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.{sequence}.pbn.split.rsrc',
+    wildcard_constraints:
+        pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192,
@@ -136,18 +144,19 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
 rule strandseq_dga_split_merge_tag_groups:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
+    fq_hap_reads = FASTQ file to be used for haplotype reconstruction
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        hap = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}.{sequence}.fastq.gz',
-        un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.un.{sequence}.fastq.gz',
+        hap = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}.{sequence}.fastq.gz',
+        un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.un.{sequence}.fastq.gz',
     output:
-        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.{sequence}.fastq.gz'
+        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}-un.{sequence}.fastq.gz'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.{sequence}.fq.mrg.rsrc'
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}-un.{sequence}.fq.mrg.rsrc'
     wildcard_constraints:
-        haplotype = '(1|2)'
+        haplotype = '(1|2)',
+        fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
     shell:
         'cat {input.hap} {input.un} > {output}'
 
@@ -155,20 +164,21 @@ rule strandseq_dga_split_merge_tag_groups:
 rule strandseq_dga_split_merge_tag_groups_pacbio_native:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = PacBio native BAM file to be used for haplotype reconstruction
+    pbn_hap_reads = PacBio native BAM file to be used for haplotype reconstruction
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        hap = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.h{haplotype}.{sequence}.pbn.bam',
-        un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.un.{sequence}.pbn.bam',
+        hap = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}.{sequence}.pbn.bam',
+        un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.un.{sequence}.pbn.bam',
     output:
-        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.{sequence}.pbn.bam',
+        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.bam',
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.log'
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.rsrc'
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.rsrc'
     wildcard_constraints:
-        haplotype = '(1|2)'
+        haplotype = '(1|2)',
+        pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     shell:
         'bamtools merge -in {input.hap} -in {input.un} -out {output} &> {log}'
 

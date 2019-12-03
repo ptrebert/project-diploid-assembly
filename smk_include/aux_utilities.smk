@@ -66,6 +66,28 @@ rule pb_bam2x_dump_fastq:
         'bam2fastq -c 5 -o {params.out_prefix} {input.pbn_bam} &> {log}'
 
 
+rule pb_bam2x_dump_haploid_fastq:
+    input:
+        pbn_bam = 'output/diploid_assembly/{folder_path}/draft/haploid_bam/{pbn_hap_reads}.{hap}.{sequence}.pbn.bam',
+        pbn_idx = 'output/diploid_assembly/{folder_path}/draft/haploid_bam/{pbn_hap_reads}.{hap}.{sequence}.pbn.bam.pbi',
+    output:
+        'output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pbn_hap_reads}.{hap}.{sequence}.fastq.gz',
+    log:
+        'log/output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pbn_hap_reads}.{hap}.{sequence}.dump.log',
+    benchmark:
+        'run/output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pbn_hap_reads}.{hap}.{sequence}.dump.rsrc',
+    wildcard_constraints:
+        pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
+    resources:
+        runtime_hrs = 4
+    conda:
+        config['conda_env_pbtools']
+    params:
+        out_prefix = lambda wildcards, output: output[0].rsplit('.', 2)[0]
+    shell:
+        'bam2fastq -c 5 -o {params.out_prefix} {input.pbn_bam} &> {log}'
+
+
 
 rule samtools_convert_sam_to_bam:
     input:
