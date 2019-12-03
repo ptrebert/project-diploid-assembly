@@ -7,7 +7,7 @@ rule master_scrape_data_sources:
         'input/data_sources/hgsvc_hg00512_pacbio.json',
         'input/data_sources/hgsvc_hg00513_pacbio.json',
         'input/data_sources/hgsvc_pur-trio_pacbio.json',
-        'input/data_sources/hgsvc_yri-trio_pacbio.json',
+        'input/data_sources/hgsvc_NA19240_pacbio.json',
 
 
 rule collect_remote_hgsvc_hg00514_pacbio:
@@ -107,9 +107,13 @@ rule collect_remote_hgsvc_pur_trio_pacbio:
             ' --output {output} &> {log}'
 
 
-rule collect_remote_hgsvc_yri_trio_pacbio:
+rule collect_remote_hgsvc_NA19240_pacbio:
+    """
+    Note: despite the naming of the remote folder,
+    it only contains CCS data for the YRI child
+    """
     output:
-        'input/data_sources/hgsvc_yri-trio_pacbio.json'
+        'input/data_sources/hgsvc_NA19240_pacbio.json'
     params:
         script_dir = config['script_dir'],
         server = 'ftp.1000genomes.ebi.ac.uk',
