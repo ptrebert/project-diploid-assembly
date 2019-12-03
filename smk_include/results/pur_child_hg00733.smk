@@ -9,7 +9,8 @@ localrules: run_pur_child,
             pur_child_clr_variant_calling,
             pur_child_ccs_variant_calling,
             pur_child_ccs_split_sdga,
-            pur_child_clr_split_sdga,
+            pur_child_clr_split_sdga_wtdbg,
+            pur_child_clr_split_sdga_flye,
             pur_child_clrccs_split_sdga
 
 USE_SINGULARITY = bool(config['use_singularity'])
@@ -123,7 +124,42 @@ rule pur_child_ccs_variant_calling:
 
 
 if not USE_SINGULARITY:
-    rule pur_child_clr_split_sdga:
+    rule pur_child_clr_split_sdga_wtdbg:
+        input:
+            expand(RESULT_SPLIT_DGA_DRAFT_QUAST_REPORT ,
+                    known_ref=KNOWN_REF,
+                    genemodel=GENEMODEL,
+                    var_caller=['longshot'],
+                    qual=config['filter_vcf_qual'],
+                    gq=config['filter_vcf_gq'],
+                    reference=CLR_ASSM_733_WTDBG,
+                    vc_reads=['HG00733_sra_pbsq1-clr_1000'],
+                    sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                    hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+                    assembler=['wtdbg'],
+                    hap=['h1-un', 'h2-un', 'h1', 'h2']
+                   ),
+
+            expand(RESULT_SPLIT_DGA_POLISHED_QUAST_REPORT,
+                    known_ref=KNOWN_REF,
+                    genemodel=GENEMODEL,
+                    var_caller=['longshot'],
+                    qual=config['filter_vcf_qual'],
+                    gq=config['filter_vcf_gq'],
+                    reference=CLR_ASSM_733_WTDBG,
+                    vc_reads=['HG00733_sra_pbsq1-clr_1000'],
+                    sts_reads=['HG00733_1kg_il25k-npe_sseq'],
+                    hap_reads=['HG00733_sra_pbsq1-clr_1000'],
+                    pol_reads=['HG00733_sra_pbsq1-clr_1000'],
+                    assembler=['wtdbg'],
+                    pol_pass=['arrow-p1'],
+                    hap=['h1-un', 'h2-un', 'h1', 'h2']
+                   ),
+
+        priority: 250
+
+
+    rule pur_child_clr_split_sdga_flye:
         input:
             expand(RESULT_SPLIT_DGA_DRAFT_QUAST_REPORT ,
                     known_ref=KNOWN_REF,
@@ -139,36 +175,6 @@ if not USE_SINGULARITY:
                     hap=['h1-un', 'h2-un', 'h1', 'h2']
                    ),
 
-            expand(RESULT_SPLIT_DGA_DRAFT_QUAST_REPORT ,
-                    known_ref=KNOWN_REF,
-                    genemodel=GENEMODEL,
-                    var_caller=['longshot'],
-                    qual=config['filter_vcf_qual'],
-                    gq=config['filter_vcf_gq'],
-                    reference=CLR_ASSM_733_WTDBG,
-                    vc_reads=['HG00733_sra_pbsq1-clr_1000'],
-                    sts_reads=['HG00733_1kg_il25k-npe_sseq'],
-                    hap_reads=['HG00733_sra_pbsq1-clr_1000'],
-                    assembler=['wtdbg'],
-                    hap=['h1-un', 'h2-un', 'h1', 'h2']
-                   ),
-
-            expand(RESULT_SPLIT_DGA_POLISHED_QUAST_REPORT,
-                    known_ref=KNOWN_REF,
-                    genemodel=GENEMODEL,
-                    var_caller=['longshot'],
-                    qual=config['filter_vcf_qual'],
-                    gq=config['filter_vcf_gq'],
-                    reference=CLR_ASSM_733_WTDBG,
-                    vc_reads=['HG00733_sra_pbsq1-clr_1000'],
-                    sts_reads=['HG00733_1kg_il25k-npe_sseq'],
-                    hap_reads=['HG00733_sra_pbsq1-clr_1000'],
-                    pol_reads=['HG00733_sra_pbsq1-clr_1000'],
-                    assembler=['wtdbg'],
-                    pol_pass=['arrow-p1'],
-                    hap=['h1-un', 'h2-un', 'h1', 'h2']
-                   ),
-
             expand(RESULT_SPLIT_DGA_POLISHED_QUAST_REPORT,
                     known_ref=KNOWN_REF,
                     genemodel=GENEMODEL,
@@ -185,7 +191,7 @@ if not USE_SINGULARITY:
                     hap=['h1-un', 'h2-un', 'h1', 'h2']
                    ),
 
-        priority: 250
+        priority: 500
 
 
     rule pur_child_ccs_split_sdga:
@@ -320,7 +326,11 @@ if not USE_SINGULARITY:
         priority: 100
 
 else:
-    rule pur_child_clr_split_sdga:
+    rule pur_child_clr_split_sdga_wtdbg:
+        input:
+            rules.no_singularity_mock_output.output
+
+    rule pur_child_clr_split_sdga_flye:
         input:
             rules.no_singularity_mock_output.output
 
@@ -372,5 +382,6 @@ rule run_pur_child:
         rules.pur_child_clr_variant_calling.input,
         rules.pur_child_ccs_variant_calling.input,
         rules.pur_child_ccs_split_sdga.input,
-        rules.pur_child_clr_split_sdga.input,
+        rules.pur_child_clr_split_sdga_wtdbg.input,
+        rules.pur_child_clr_split_sdga_flye.input,
         rules.pur_child_clrccs_split_sdga.input
