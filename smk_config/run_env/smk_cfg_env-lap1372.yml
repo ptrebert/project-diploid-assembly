@@ -23,4 +23,4 @@ num_cpu_low: 1
 # see: bitbucket.org/snakemake/snakemake/issues/1266/add-copy-option-for-conda-env
 # Replace .txt with .yml depending on system
 conda_env_pbtools: "../environment/conda/conda_pbtools.yml"
-conda_env_whsplit: "../environment/conda/wh_split.yml"
+conda_env_rdga: "../environment/conda/conda_rdga.yml"
