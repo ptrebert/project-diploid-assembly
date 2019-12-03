@@ -16,6 +16,7 @@ dependencies:
   - minimap2=2.17
   - pilon=1.23
   - quast=5.0.2
+  - augustus=3.3.3
   - mummer4
   - busco=3.0.2
   - sambamba=0.6.6  # DO NOT UPDATE: github.com/biod/sambamba/issues/393
@@ -35,6 +36,7 @@ dependencies:
   - drmaa=0.7.9
   - libxml2=2.9.9
   - r-xml=3.98_1.20
+  - r-lpsolve=5.6.13
   - r-base<3.6
   - r-devtools=2.2.1
   - r-usethis=1.5.1
