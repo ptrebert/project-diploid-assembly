@@ -6,7 +6,8 @@ if (is.element('breakpointR', installed.packages()[,1])) {
 
 BiocManager::install(c(
     "Rsamtools",
-    "breakpointR"
+    "breakpointR",
+    update=FALSE
 ))
 
 quit(save="no")
