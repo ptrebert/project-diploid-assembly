@@ -8,6 +8,7 @@ dependencies:
   - pip=19.2.3
   - wget=1.19.4
   - openssl=1.0.2t
+  - suitesparse=5.6.0=h717dc36_0  # for r-igraph
   - gxx_impl_linux-64=7.3.0
   - gxx_linux-64=7.3.0
   - ld_impl_linux-64=2.33.1
@@ -33,7 +34,7 @@ dependencies:
   - r-devtools=2.2.1
   - r-usethis=1.5.1
   - r-withr=2.1.2
-  - r-igraph=1.2.4.1
+  - r-igraph=1.2.4.1=r35h6786f55_2
   - r-zoo=1.8_6
   - r-cluster=2.1.0
   - r-doparallel=1.0.15
