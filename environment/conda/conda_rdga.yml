@@ -24,6 +24,9 @@ dependencies:
   - openblas=0.3.6
   - make=4.2.1
   - htslib=1.9
+  - quast=5.0.2
+  - augustus=3.3.3
+  - busco=3.0.2  # BUSCO has an R dependency -> move QUAST, BUSCO and Augustus to R env
   - r-base<3.6
   - r-curl=4.2
   - r-xml=3.98_1.20
