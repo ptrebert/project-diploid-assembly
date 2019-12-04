@@ -8,6 +8,11 @@ args = commandArgs(trailingOnly=TRUE)
 
 git.commit = args[1]
 
-devtools::install_git("git://github.com/daewoooo/StrandPhaseR.git", ref = git.commit)
+devtools::install_git(
+    "git://github.com/daewoooo/StrandPhaseR.git",
+    ref = git.commit,
+    dependencies=FALSE,
+    upgrade_dependencies=FALSE
+)
 
 quit(save="no")
