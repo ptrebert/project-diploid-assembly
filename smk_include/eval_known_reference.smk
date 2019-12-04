@@ -8,9 +8,8 @@ rule master_eval_known_reference:
 rule download_quast_busco_databases:
     output:
         'output/check_files/quast-lg/busco_db_download.ok'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
+    conda:
+        config['conda_env_rdga']
     shell:
         'quast-download-busco &> {output}'
 
@@ -24,7 +23,7 @@ rule compute_delta_assembly_reference:
     log:
         'log/output/evaluation/mummer_delta/{known_ref}/{folder_path}/{file_name}.mummer.log'
     benchmark:
-        'run/output/evaluation/mummer_delta/{known_ref}/{folder_path}/{file_name}.mummer.rsrc'
+        'run/output/evaluation/mummer_delta/{{known_ref}}/{{folder_path}}/{{file_name}}.mummer.t{}.rsrc'.format(config['num_cpu_medium'])
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
@@ -46,12 +45,14 @@ rule quast_analysis_assembly:
     log:
         'log/output/evaluation/quastlg_busco/{known_ref}-{genemodel}/{folder_path}/{file_name}/quast_run.log',
     benchmark:
-        'run/output/evaluation/quastlg_busco/{known_ref}-{genemodel}/{folder_path}/{file_name}/quast_run.rsrc',
+        'run/output/evaluation/quastlg_busco/{{known_ref}}-{{genemodel}}/{{folder_path}}/{{file_name}}/quast_run.t{}.rsrc'.format(config['num_cpu_medium'])
+    conda:
+        config['conda_env_rdga']
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 24576,
-        runtime_hrs = 4
+        runtime_hrs = 6
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100
