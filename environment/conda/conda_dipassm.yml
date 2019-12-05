@@ -31,6 +31,7 @@ dependencies:
   - mummer4
   - sambamba=0.6.6  # DO NOT UPDATE: github.com/biod/sambamba/issues/393
   - htslib=1.9
+  - dnaio=0.4.1
   - samtools=1.9
   - bamtools=2.5.1
   - bedtools=2.29.0
