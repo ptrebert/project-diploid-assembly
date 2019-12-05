@@ -180,16 +180,19 @@ rule minimap_racon_polish_alignment_pass1:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/polishing/alignments/{{pol_reads}}_map-to_{{hap_reads}}-{{assembler}}.{{hap}}.{{sequence}}.racon-p1.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 12288 / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: attempt * 12288,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 16384 / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: attempt * 16384,
+        mem_sort_mb = 4096,
         runtime_hrs = 3
     params:
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
-        preset = load_preset_file
+        preset = load_preset_file,
+        discard_flag = config['minimap_racon_aln_discard'],
+        min_qual = config['minimap_racon_aln_min_qual']
     shell:
-        'minimap2 -t {threads} {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" ' \
-            ' {input.contigs} {input.reads} 2> {log} | samtools sort | ' \
-            ' samtools view -q 10 -F0x704 /dev/stdin > {output.sam}'
+        'minimap2 -t {threads} -a {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" ' \
+            ' {input.contigs} {input.reads} 2> {log} | samtools sort -m {resources.mem_sort_mb}M | ' \
+            ' samtools view -q {params.min_qual} -F {params.discard_flag} /dev/stdin > {output.sam}'
 
 
 rule pbmm2_arrow_polish_alignment_pass1:
