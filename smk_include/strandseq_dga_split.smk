@@ -296,7 +296,7 @@ rule write_polished_contigs_fofn:
         runtime_hrs = 0,
         runtime_min = 10
     run:
-        contigs = sorted(collect_arrow_polished_contigs(wildcards))
+        contigs = sorted(collect_polished_contigs(wildcards))
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(contigs):
