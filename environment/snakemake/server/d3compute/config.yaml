@@ -1,6 +1,6 @@
 # Default runtime profile for TM infrastructure / D3 compute server
 
-#directory: /scratch/bioinf/projects/diploid-genome-assembly/pebert
+directory: /scratch/bioinf/projects/diploid-genome-assembly/pebert
 cores: 48
 latency-wait: 60
 keep-going: True
