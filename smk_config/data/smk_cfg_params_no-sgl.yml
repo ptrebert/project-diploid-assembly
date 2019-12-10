@@ -2,17 +2,20 @@
 # === Software setup settings ===
 # Specify git commits for SaaRclust
 # and StrandPhaseR setup
-git_commit_saarclust: c4ba82c
-git_commit_strandphaser: acaf555
+git_commit_saarclust: f4d963e
+git_commit_strandphaser: e608407
 # arbitrarily tying a version number
 # to the git commits to avoid additional
 # wildcards - increment this number when
 # git commits are changed!
-git_commit_version: 6
+git_commit_version: 7
 
 use_singularity: False
 peregrine_version: 0.1.5.5
 deepvariant_version: 0.9.0
+shasta_version: 0.3.0
+
+shasta_min_read_length: 30000
 
 # SaaRclust parameter sets
 # goal is to obtain 24 clusters
