@@ -351,7 +351,7 @@ else:
                     sts_reads=['HG00733_1kg_il25k-npe_sseq'],
                     hap_reads=['HG00733_hgsvc_pbsq2-ccs_1000'],
                     assembler=['pereg'],
-                    hap=['h1-un', 'h2-un', 'h1', 'h2', 'un']
+                    hap=['h1-un', 'h2-un', 'h1', 'h2']
                    ),
 
             expand(RESULT_SPLIT_DGA_POLISHED_QUAST_REPORT,
