@@ -8,6 +8,8 @@ rule master_scrape_data_sources:
         'input/data_sources/hgsvc_hg00513_pacbio.json',
         'input/data_sources/hgsvc_pur-trio_pacbio.json',
         'input/data_sources/hgsvc_NA19240_pacbio.json',
+        'input/data_sources/hgsvc_NA19239_pacbio.json',
+        'input/data_sources/hgsvc_NA19238_pacbio.json',
 
 
 rule collect_remote_hgsvc_hg00514_pacbio:
@@ -123,7 +125,7 @@ rule collect_remote_hgsvc_NA19240_pacbio:
         bam_format = ' --assume-pacbio-native ',
         file_infix = ' hgsvc_pbsq2- '
     log:
-        'log/input/data_sources/hgsvc_yri-trio_pacbio.log'
+        'log/input/data_sources/hgsvc_yri_NA19240_pacbio.log'
     resources:
         runtime_hrs = 0,
         runtime_min = 30
@@ -141,7 +143,7 @@ rule collect_remote_hgsvc_NA19238_pacbio:
     it only contains CCS data for the YRI child
     """
     output:
-        'input/data_sources/hgsvc_NA19240_pacbio.json'
+        'input/data_sources/hgsvc_NA19238_pacbio.json'
     params:
         script_dir = config['script_dir'],
         server = 'ftp.1000genomes.ebi.ac.uk',
@@ -151,7 +153,7 @@ rule collect_remote_hgsvc_NA19238_pacbio:
         bam_format = ' --assume-pacbio-native ',
         file_infix = ' hgsvc_pbsq2- '
     log:
-        'log/input/data_sources/hgsvc_yri-trio_pacbio.log'
+        'log/input/data_sources/hgsvc_yri_NA19238_pacbio.log'
     resources:
         runtime_hrs = 0,
         runtime_min = 30
@@ -169,7 +171,7 @@ rule collect_remote_hgsvc_NA19239_pacbio:
     it only contains CCS data for the YRI child
     """
     output:
-        'input/data_sources/hgsvc_NA19240_pacbio.json'
+        'input/data_sources/hgsvc_NA19239_pacbio.json'
     params:
         script_dir = config['script_dir'],
         server = 'ftp.1000genomes.ebi.ac.uk',
@@ -179,7 +181,7 @@ rule collect_remote_hgsvc_NA19239_pacbio:
         bam_format = ' --assume-pacbio-native ',
         file_infix = ' hgsvc_pbsq2- '
     log:
-        'log/input/data_sources/hgsvc_yri-trio_pacbio.log'
+        'log/input/data_sources/hgsvc_yri_NA19239_pacbio.log'
     resources:
         runtime_hrs = 0,
         runtime_min = 30
