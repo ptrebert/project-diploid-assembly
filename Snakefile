@@ -30,7 +30,7 @@ wildcard_constraints:
     # allowed variant callers
     var_caller = '(freebayes|longshot|deepvar)',
     # allowed assembly tools
-    assembler = '(wtdbg|canu|flye|pereg)',
+    assembler = '(wtdbg|canu|flye|pereg|shasta)',
     # polisher
     polisher = '(arrow|racon)',
     pol_pass ='(arrow|racon)\-p[12]',

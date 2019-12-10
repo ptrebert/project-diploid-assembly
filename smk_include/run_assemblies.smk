@@ -207,6 +207,49 @@ rule compute_peregrine_nonhapres_assembly:
             ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
 
 
+rule compute_shasta_nonhapres_assembly:
+    """
+    Non-haplotype resolved assembly = replaces known reference (such as hg38)
+    Note that for Shasta, the output directory MUST NOT exist at invocation time, which
+    is incompatible with Snakemake's default behavior - rm output dir before start...
+    """
+    input:
+        shasta_exec = 'output/check_files/environment/shasta_version.ok',
+        fasta = 'input/fasta/complete/{sample}.fasta',
+    output:
+        assm_files = expand('output/reference_assembly/non-hap-res/layout/shasta/{{sample}}/Assembly{assm_files}',
+                            assm_files=['-BothStrands.gfa', '.gfa', 'GraphChainLengthHistogram.csv',
+                                        'Graph-Final.dot', 'Summary.csv', 'Summary.html', 'Summary.json']
+                            ),
+        aux_files = expand('output/reference_assembly/non-hap-res/layout/shasta/{{sample}}/{aux_files}',
+                            aux_files=['Binned-ReadLengthHistogram.csv', 'MarkerGraphEdgeCoverageHistogram.csv',
+                                        'MarkerGraphVertexCoverageHistogram.csv', 'PalindromicReads.csv',
+                                        'ReadGraphComponents.csv', 'ReadLengthHistogram.csv', 'ReadSummary.csv'
+                                        'shasta.conf']
+                           ),
+        assm_source = 'output/reference_assembly/non-hap-res/layout/shasta/{sample}/Assembly.fasta',
+        assembly = protected('output/reference_assembly/non-hap-res/{sample}_nhr-shasta.fasta'),
+    log:
+        'log/output/reference_assembly/non-hap-res/{sample}_nhr-shasta.layout.log',
+    benchmark:
+        'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-shasta.layout.t{}.rsrc'.format(config['num_cpu_max'])
+    threads: config['num_cpu_max']
+    resources:
+        mem_per_cpu_mb = int(1433600 / config['num_cpu_max']),
+        mem_total_mb = 1433600,
+        runtime_hrs = 8
+    params:
+        min_read_length = config['shasta_min_read_length'],
+        out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
+    shell:
+        'rm -fd {params.out_prefix} && ' \
+        'shasta --input {input} --assemblyDirectory {params.out_prefix} --command assemble ' \
+            ' --memoryMode anonymous --memoryBacking 4K --threads {threads} ' \
+            ' --Reads.minReadLength {params.min_read_length} &> {log}' \
+            ' && ' \
+            'cp {output.assm_source} {output.assembly}'
+
+
 ### ----- Below this point ------ ###
 ### Haplotype-resolved assemblies ###
 
@@ -277,7 +320,7 @@ rule compute_flye_haploid_assembly:
         assm_info = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/assembly_info.txt',
         run_params = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/params.json',
         assm_source = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/assembly.fasta',
-        assembly = 'output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}-flye.{hap}.fasta',
+        assembly = protected('output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}-flye.{hap}.fasta'),
     log:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}.{hap}.flye.log'
     benchmark:
@@ -443,3 +486,45 @@ rule compute_peregrine_haploid_split_assembly:
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} ' \
             ' && '
             ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
+
+
+rule compute_shasta_haploid_split_assembly:
+    """
+    Note that for Shasta, the output directory MUST NOT exist at invocation time, which
+    is incompatible with Snakemake's default behavior - rm output dir before start...
+    """
+    input:
+        shasta_exec = 'output/check_files/environment/shasta_version.ok',
+        fasta = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta'
+    output:
+        assm_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/temp/layout/shasta/{{hap_reads}}.{{hap}}.{{sequence}}/Assembly{assm_files}',
+                            assm_files=['-BothStrands.gfa', '.gfa', 'GraphChainLengthHistogram.csv',
+                                        'Graph-Final.dot', 'Summary.csv', 'Summary.html', 'Summary.json']
+                            ),
+        aux_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/temp/layout/shasta/{{hap_reads}}.{{hap}}.{{sequence}}/{aux_files}',
+                            aux_files=['Binned-ReadLengthHistogram.csv', 'MarkerGraphEdgeCoverageHistogram.csv',
+                                        'MarkerGraphVertexCoverageHistogram.csv', 'PalindromicReads.csv',
+                                        'ReadGraphComponents.csv', 'ReadLengthHistogram.csv', 'ReadSummary.csv'
+                                        'shasta.conf']
+                           ),
+        assm_source = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/shasta/{hap_reads}.{hap}.{sequence}/Assembly.fasta',
+        assembly = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-shasta.{hap}.{sequence}.fasta',
+    log:
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-shasta.{hap}.{sequence}.log',
+    benchmark:
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-shasta.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_max'])
+    threads: config['num_cpu_max']
+    resources:
+        mem_per_cpu_mb = int(1433600 / config['num_cpu_max']),
+        mem_total_mb = 1433600,
+        runtime_hrs = 8
+    params:
+        min_read_length = config['shasta_min_read_length'],
+        out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
+    shell:
+        'rm -fd {params.out_prefix} && ' \
+        'shasta --input {input} --assemblyDirectory {params.out_prefix} --command assemble ' \
+            ' --memoryMode anonymous --memoryBacking 4K --threads {threads} ' \
+            ' --Reads.minReadLength {params.min_read_length} &> {log}' \
+            ' && ' \
+            'cp {output.assm_source} {output.assembly}'
