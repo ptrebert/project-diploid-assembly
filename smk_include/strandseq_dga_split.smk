@@ -195,7 +195,7 @@ def collect_assembled_sequence_files(wildcards):
                                                                     reference=wildcards.reference).output[0]
     checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
-    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
+    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
                         var_caller=wildcards.var_caller,
                         gq=wildcards.gq,
                         qual=wildcards.qual,
@@ -213,7 +213,7 @@ rule write_assembled_fasta_clusters_fofn:
     input:
         cluster_fastas = collect_assembled_sequence_files
     output:
-        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fofn',
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fofn',
     resources:
         runtime_hrs = 0,
         runtime_min = 10
@@ -236,9 +236,9 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
     """
     """
     input:
-        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fofn'
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fofn'
     output:
-         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.fasta'
+         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fasta'
     resources:
         runtime_hrs = 0,
         runtime_min = 20
@@ -269,7 +269,7 @@ def collect_polished_contigs(wildcards):
         )
 
     polished_contigs = expand(
-        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.{pol_pass}.fasta',
+        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.{pol_pass}.fasta',
         var_caller=wildcards.var_caller,
         qual=wildcards.qual,
         gq=wildcards.gq,
@@ -291,7 +291,7 @@ rule write_polished_contigs_fofn:
     input:
         contigs = collect_polished_contigs
     output:
-        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
     resources:
         runtime_hrs = 0,
         runtime_min = 10
@@ -311,9 +311,9 @@ rule write_polished_contigs_fofn:
 
 rule merge_polished_contigs:
     input:
-        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
     output:
-        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}.fasta'
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fasta'
     resources:
         runtime_hrs = 0,
         runtime_min = 20

@@ -246,11 +246,11 @@ rule compute_wtdbg_haploid_assembly_consensus:
     input:
         layout = rules.compute_wtdbg_haploid_assembly_layout.output.layout
     output:
-        haploid_assembly = 'output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}-wtdbg.{hap}.fasta'
+        haploid_assembly = 'output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}-wtdbg.{hap}.fasta'
     log:
-        'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}.{hap}.wtdbg-consensus.log'
+        'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}.{hap}.wtdbg-consensus.log'
     benchmark:
-        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_fasta/{{hap_reads}}.{{hap}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
+        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_assembly/{{hap_reads}}.{{hap}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
     wildcard_constraints:
             variant = '(canonical|strandseq_joint)'
     threads: config['num_cpu_high']
@@ -277,11 +277,11 @@ rule compute_flye_haploid_assembly:
         assm_info = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/assembly_info.txt',
         run_params = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/params.json',
         assm_source = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/assembly.fasta',
-        assembly = 'output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}-flye.{hap}.fasta',
+        assembly = 'output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}-flye.{hap}.fasta',
     log:
-        'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_fasta/{hap_reads}.{hap}.flye.log'
+        'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}.{hap}.flye.log'
     benchmark:
-        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_fasta/{{hap_reads}}.{{hap}}.flye.t{}.rsrc'.format(config['num_cpu_max'])
+        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_assembly/{{hap_reads}}.{{hap}}.flye.t{}.rsrc'.format(config['num_cpu_max'])
     wildcard_constraints:
             variant = '(canonical|strandseq_joint)'
     threads: config['num_cpu_max']
@@ -316,7 +316,7 @@ rule compute_wtdbg_haploid_split_assembly_layout:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.{sequence}.wtdbg-layout.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_high'])
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_high']),
@@ -335,11 +335,11 @@ rule compute_wtdbg_haploid_split_assembly_consensus:
     input:
         layout = rules.compute_wtdbg_haploid_split_assembly_layout.output.layout
     output:
-        haploid_assembly = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-wtdbg.{hap}.{sequence}.fasta'
+        haploid_assembly = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-wtdbg.{hap}.{sequence}.fasta'
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.wtdbg-consensus.log'
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}.{hap}.{sequence}.wtdbg-consensus.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/haploid_fasta/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_high']),
@@ -365,11 +365,11 @@ rule compute_flye_haploid_split_assembly:
         assm_info = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/assembly_info.txt',
         run_params = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/params.json',
         assm_source = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/assembly.fasta',
-        assembly = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-flye.{hap}.{sequence}.fasta',
+        assembly = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-flye.{hap}.{sequence}.fasta',
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.flye.log'
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}.{hap}.{sequence}.flye.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/haploid_fasta/{{hap_reads}}.{{hap}}.{{sequence}}.flye.t{}.rsrc'.format(config['num_cpu_high'])
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.flye.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards: int((24576 if '-ccs' in wildcards.hap_reads else 131072) / config['num_cpu_high']),
@@ -423,12 +423,12 @@ rule compute_peregrine_haploid_split_assembly:
         dir_ovlp = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/2-ovlp'),
         dir_asm = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/3-asm'),
         dir_cns = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/4-cns'),
-        assm = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.fasta',
+        assm = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.fasta',
     log:
-        pereg = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.log',
-        copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
+        pereg = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.log',
+        copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/haploid_fasta/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_max'])
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_max'])
     threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = int(131072 / config['num_cpu_max']),

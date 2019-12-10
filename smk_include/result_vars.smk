@@ -18,5 +18,5 @@ RESULT_VARIANT_CALL_STATS = 'output/statistics/variant_calls/{var_caller}/{refer
 # Includes statistics for StrandPhaseR stage, and final WhatsHap stage
 RESULT_PHASING_STATS = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.stats'
 
-RESULT_SPLIT_DGA_DRAFT_QUAST_REPORT = 'output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}/report.pdf'
-RESULT_SPLIT_DGA_POLISHED_QUAST_REPORT = 'output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_fasta/{hap_reads}-{assembler}.{hap}.{pol_pass}/report.pdf'
+RESULT_SPLIT_DGA_DRAFT_QUAST_REPORT = 'output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}/report.pdf'
+RESULT_SPLIT_DGA_POLISHED_QUAST_REPORT = 'output/evaluation/quastlg_busco/{known_ref}-{genemodel}/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}/report.pdf'
