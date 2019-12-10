@@ -17,7 +17,8 @@ USE_SINGULARITY = bool(config['use_singularity'])
 
 CLR_ASSM_514_WTDBG = 'HG00514_hgsvc_pbsq2-clr_1000_scV{}-wtdbg'.format(config['git_commit_version'])
 CLR_ASSM_514_FLYE = 'HG00514_hgsvc_pbsq2-clr_1000_scV{}-flye'.format(config['git_commit_version'])
-CLR_ASSM_514 = [CLR_ASSM_514_WTDBG, CLR_ASSM_514_FLYE]
+CLR_ASSM_514_SHASTA = 'HG00514_hgsvc_pbsq2-clr_1000_scV{}-shasta'.format(config['git_commit_version'])
+CLR_ASSM_514 = [CLR_ASSM_514_WTDBG, CLR_ASSM_514_FLYE, CLR_ASSM_514_SHASTA]
 
 CCS_ASSM_514_WTDBG = 'HG00514_hgsvc_pbsq2-ccs_1000_scV{}-wtdbg'.format(config['git_commit_version'])
 CCS_ASSM_514_FLYE = 'HG00514_hgsvc_pbsq2-ccs_1000_scV{}-flye'.format(config['git_commit_version'])
@@ -187,6 +188,41 @@ if not USE_SINGULARITY:
                     hap_reads=['HG00514_hgsvc_pbsq2-clr_1000'],
                     pol_reads=['HG00514_hgsvc_pbsq2-clr_1000'],
                     assembler=['flye'],
+                    pol_pass=['arrow-p1'],
+                    hap=['h1-un', 'h2-un', 'h1', 'h2']
+                   ),
+
+        priority: 500
+
+
+    rule chs_child_clr_split_sdga_shasta:
+        input:
+            expand(RESULT_SPLIT_DGA_DRAFT_QUAST_REPORT ,
+                    known_ref=KNOWN_REF,
+                    genemodel=GENEMODEL,
+                    var_caller=['longshot'],
+                    qual=config['filter_vcf_qual'],
+                    gq=config['filter_vcf_gq'],
+                    reference=CLR_ASSM_514_SHASTA,
+                    vc_reads=['HG00514_hgsvc_pbsq2-clr_1000'],
+                    sts_reads=['HG00514_1kg_il25k-npe_sseq'],
+                    hap_reads=['HG00514_hgsvc_pbsq2-clr_1000'],
+                    assembler=['shasta'],
+                    hap=['h1-un', 'h2-un', 'h1', 'h2']
+                   ),
+
+            expand(RESULT_SPLIT_DGA_POLISHED_QUAST_REPORT,
+                    known_ref=KNOWN_REF,
+                    genemodel=GENEMODEL,
+                    var_caller=['longshot'],
+                    qual=config['filter_vcf_qual'],
+                    gq=config['filter_vcf_gq'],
+                    reference=CLR_ASSM_514_SHASTA,
+                    vc_reads=['HG00514_hgsvc_pbsq2-clr_1000'],
+                    sts_reads=['HG00514_1kg_il25k-npe_sseq'],
+                    hap_reads=['HG00514_hgsvc_pbsq2-clr_1000'],
+                    pol_reads=['HG00514_hgsvc_pbsq2-clr_1000'],
+                    assembler=['shasta'],
                     pol_pass=['arrow-p1'],
                     hap=['h1-un', 'h2-un', 'h1', 'h2']
                    ),
