@@ -88,6 +88,55 @@ rule pb_bam2x_dump_haploid_fastq:
         'bam2fastq -c 5 -o {params.out_prefix} {input.pbn_bam} &> {log}'
 
 
+rule dump_shasta_fasta:
+    """
+    Despite the docs saying that (gzipped) fastq can be used
+    as input to Shasta, Shasta complains about it...
+    Dump to single-line (!) FASTA, only format that is accepted
+    (tested with v0.3.0)
+    """
+    input:
+        'input/fastq/complete/{file_name}.fastq.gz'
+    output:
+        'input/fasta/complete/{file_name}.fasta'
+    log:
+        'input/fastq/complete/{file_name}.fa-dump.log'
+    resources:
+        runtime_hrs = 8,
+        mem_total_mb = 10240,
+        mem_per_cpu_mb = 10240,
+    params:
+        script_dir = config['script_dir'],
+        buffer_limit = 8  # gigabyte
+    shell:
+        '{params.script_dir}/dump_shasta_fasta.py --debug --buffer-size {params.buffer_limit} ' \
+            ' --input-fq {input} --output-fa {output} &> {log}'
+
+
+rule dump_shasta_haploid_fasta:
+    """
+    Despite the docs saying that (gzipped) fastq can be used
+    as input to Shasta, Shasta complains about it...
+    Dump to single-line (!) FASTA, only format that is accepted
+    (tested with v0.3.0)
+    """
+    input:
+        '{file_path}/haploid_fastq/{file_name}.fastq.gz'
+    output:
+        '{file_path}/haploid_fasta/{file_name}.fasta'
+    log:
+        '{file_path}/haploid_fastq/{file_name}.fa-dump.log'
+    resources:
+        runtime_hrs = 4,
+        mem_total_mb = 6144,
+        mem_per_cpu_mb = 6144,
+    params:
+        script_dir = config['script_dir'],
+        buffer_limit = 4  # gigabyte
+    shell:
+        '{params.script_dir}/dump_shasta_fasta.py --debug --buffer-size {params.buffer_limit} ' \
+            ' --input-fq {input} --output-fa {output} &> {log}'
+
 
 rule samtools_convert_sam_to_bam:
     input:
