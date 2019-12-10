@@ -55,7 +55,7 @@ rule merge_fastq_input_parts:
     input:
         fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
     output:
-        'input/fastq/complete/{mrg_sample}_1000.fastq.gz'
+        protected('input/fastq/complete/{mrg_sample}_1000.fastq.gz')
     log:
         'log/input/fastq/complete/{mrg_sample}_1000.merge.log'
     wildcard_constraints:
@@ -117,7 +117,7 @@ rule merge_pacbio_native_bams:
     input:
         fofn = 'input/bam/complete/{mrg_sample}_1000.pbn.fofn'
     output:
-        'input/bam/complete/{mrg_sample}_1000.pbn.bam'
+        protected('input/bam/complete/{mrg_sample}_1000.pbn.bam')
     log:
         'log/input/bam/complete/{mrg_sample}_1000.mrg.log'
     benchmark:
