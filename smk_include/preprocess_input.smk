@@ -43,7 +43,7 @@ rule write_fastq_input_parts_fofn:
         fastq_parts = collect_fastq_input_parts(wildcards)
 
         with open(log[0], 'w') as logfile:
-        _ = logfile.write('{} FASTQ parts for merging\n'.format(len(fastq_parts)))
+            _ = logfile.write('{} FASTQ parts for merging\n'.format(len(fastq_parts)))
 
             with open(output.fofn, 'w') as dump:
                 for file_path in sorted(fastq_parts):
