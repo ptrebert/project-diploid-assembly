@@ -96,7 +96,7 @@ rule compute_wtdbg_nonhapres_assembly_consensus:
     input:
         layout = rules.compute_wtdbg_nonhapres_assembly_layout.output.layout
     output:
-        nhr_assembly = protected('output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.fasta')
+        nhr_assembly = 'output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.fasta'
     log:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.consensus.log'
     benchmark:
@@ -128,7 +128,7 @@ rule compute_flye_nonhapres_assembly:
         assm_info = 'output/reference_assembly/non-hap-res/layout/flye/{sample}/assembly_info.txt',
         run_params = 'output/reference_assembly/non-hap-res/layout/flye/{sample}/params.json',
         assm_source = 'output/reference_assembly/non-hap-res/layout/flye/{sample}/assembly.fasta',
-        assembly = protected('output/reference_assembly/non-hap-res/{sample}_nhr-flye.fasta'),
+        assembly = 'output/reference_assembly/non-hap-res/{sample}_nhr-flye.fasta'
     log:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-flye.layout.log',
     benchmark:
@@ -228,7 +228,7 @@ rule compute_shasta_nonhapres_assembly:
                                         'shasta.conf']
                            ),
         assm_source = 'output/reference_assembly/non-hap-res/layout/shasta/{sample}/Assembly.fasta',
-        assembly = protected('output/reference_assembly/non-hap-res/{sample}_nhr-shasta.fasta'),
+        assembly = 'output/reference_assembly/non-hap-res/{sample}_nhr-shasta.fasta'
     log:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-shasta.layout.log',
     benchmark:
@@ -320,7 +320,7 @@ rule compute_flye_haploid_assembly:
         assm_info = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/assembly_info.txt',
         run_params = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/params.json',
         assm_source = 'output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/flye/{hap_reads}.{hap}/assembly.fasta',
-        assembly = protected('output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}-flye.{hap}.fasta'),
+        assembly = 'output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}-flye.{hap}.fasta'
     log:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}.{hap}.flye.log'
     benchmark:

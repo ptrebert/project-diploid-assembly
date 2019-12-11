@@ -48,7 +48,7 @@ rule pb_bam2x_dump_fastq:
         pbn_bam = 'input/bam/{folder_path}/{pbn_sample}{sample_type}.pbn.bam',
         pbn_idx = 'input/bam/{folder_path}/{pbn_sample}{sample_type}.pbn.bam.pbi'
     output:
-        protected('input/fastq/{folder_path}/{pbn_sample}{sample_type}.fastq.gz')
+        'input/fastq/{folder_path}/{pbn_sample}{sample_type}.fastq.gz'
     log:
         'log/input/bam/{folder_path}/{pbn_sample}{sample_type}.dump.log'
     benchmark:
@@ -98,7 +98,7 @@ rule dump_shasta_fasta:
     input:
         'input/fastq/complete/{file_name}.fastq.gz'
     output:
-        protected('input/fasta/complete/{file_name}.fasta')
+        'input/fasta/complete/{file_name}.fasta'
     log:
         'log/input/fastq/complete/{file_name}.fa-dump.log'
     benchmark:
