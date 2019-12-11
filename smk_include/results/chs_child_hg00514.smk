@@ -11,6 +11,7 @@ localrules: run_chs_child,
             chs_child_ccs_split_sdga,
             chs_child_clr_split_sdga_wtdbg,
             chs_child_clr_split_sdga_flye,
+            chs_child_clr_split_sdga_shasta,
             chs_child_clrccs_split_sdga
 
 USE_SINGULARITY = bool(config['use_singularity'])
