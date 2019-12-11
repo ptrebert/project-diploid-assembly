@@ -163,9 +163,6 @@ rule handle_strandseq_download_requests:
     log:
         'log/input/fastq/strand-seq/{sts_reads}/{sample}_{run_id}.download.log'
     threads: 2
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 45
     run:
         with open(input[0], 'r') as req_file:
             remote_path = req_file.readline().strip()
@@ -199,6 +196,8 @@ rule handle_partial_fastq_download_request:
         split_type = '(parts|chunks)',
         req_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
     threads: 2  # compromise between wget and aria2c
+    resources:
+        runtime_hrs = 12
     run:
         with open(input[0], 'r') as req_file:
             remote_path = req_file.readline().strip()
@@ -256,7 +255,7 @@ rule handle_complete_fastq_download_request:
         'log/input/fastq/complete/{req_sample}.download.log'
     threads: 2  # compromise between wget and aria2c
     resources:
-        runtime_hrs = 4
+        runtime_hrs = 12
     run:
         with open(input[0], 'r') as req_file:
             remote_path = req_file.readline().strip()
@@ -291,7 +290,7 @@ rule handle_partial_pbn_bam_download_request:
         req_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
     threads: 2  # compromise between wget and aria2c
     resources:
-        runtime_hrs = 3
+        runtime_hrs = 12
     run:
         with open(input[0], 'r') as req_file:
             remote_path = req_file.readline().strip()
