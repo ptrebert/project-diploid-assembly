@@ -100,7 +100,9 @@ rule dump_shasta_fasta:
     output:
         protected('input/fasta/complete/{file_name}.fasta')
     log:
-        'input/fastq/complete/{file_name}.fa-dump.log'
+        'log/input/fastq/complete/{file_name}.fa-dump.log'
+    benchmark:
+        'run/input/fastq/complete/{file_name}.fa-dump.rsrc'
     resources:
         runtime_hrs = 8,
         mem_total_mb = 10240,
