@@ -162,6 +162,8 @@ rule handle_strandseq_download_requests:
         'input/fastq/strand-seq/{sts_reads}/{sample}_{run_id}.fastq.gz'
     log:
         'log/input/fastq/strand-seq/{sts_reads}/{sample}_{run_id}.download.log'
+    benchmark:
+        'run/input/fastq/strand-seq/{sts_reads}/{sample}_{run_id}.download.rsrc'
     threads: 2
     run:
         with open(input[0], 'r') as req_file:
@@ -192,6 +194,8 @@ rule handle_partial_fastq_download_request:
         'input/fastq/partial/{split_type}/{req_sample}.{partnum}.fastq.gz'
     log:
         'log/input/fastq/partial/{split_type}/{req_sample}.{partnum}.download.log'
+    benchmark:
+        'run/input/fastq/partial/{split_type}/{req_sample}.{partnum}.download.rsrc'
     wildcard_constraints:
         split_type = '(parts|chunks)',
         req_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
@@ -253,6 +257,8 @@ rule handle_complete_fastq_download_request:
         req_sample = '(' + '|'.join(config['complete_fastq_samples']) + ')'
     log:
         'log/input/fastq/complete/{req_sample}.download.log'
+    benchmark:
+        'run/input/fastq/complete/{req_sample}.download.rsrc'
     threads: 2  # compromise between wget and aria2c
     resources:
         runtime_hrs = 12
@@ -285,6 +291,8 @@ rule handle_partial_pbn_bam_download_request:
         'input/bam/partial/{split_type}/{req_sample}.{partnum}.pbn.bam'
     log:
         'log/input/bam/partial/{split_type}/{req_sample}.{partnum}.download.log'
+    benchmark:
+        'run/input/bam/partial/{split_type}/{req_sample}.{partnum}.download.rsrc'
     wildcard_constraints:
         split_type = '(parts|chunks)',
         req_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'

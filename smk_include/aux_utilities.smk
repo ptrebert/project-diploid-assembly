@@ -127,7 +127,9 @@ rule dump_shasta_haploid_fasta:
     output:
         '{file_path}/haploid_fasta/{file_name}.fasta'
     log:
-        '{file_path}/haploid_fastq/{file_name}.fa-dump.log'
+        'log/{file_path}/haploid_fastq/{file_name}.fa-dump.log'
+    benchmark:
+        'run/{file_path}/haploid_fastq/{file_name}.fa-dump.rsrc'
     resources:
         runtime_hrs = 4,
         mem_total_mb = 6144,
