@@ -45,20 +45,20 @@ rule write_fastq_input_parts_fofn:
         with open(log[0], 'w') as logfile:
         _ = logfile.write('{} FASTQ parts for merging\n'.format(len(fastq_parts)))
 
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(fastq_parts):
-                if not os.path.isfile(file_path):
-                    _ = logfile.write('Warning: path is not (yet) a file on the file system: {}\n'.format(file_path))
-                    if os.path.isdir(file_path):
-                        _ = logfile.write('Error: assumed file path is TRUE for directory: {}\n'.format(file_path))
-                        raise ValueError('Expected file path for PBN-BAM merge part, but received directory: {}'.format(file_path))
-                _ = dump.write(file_path + '\n')
-                records_written += 1
-        if records_written == 0:
-            _ = logfile.write('Error: 0 records written to fofn file: {}\n'.format(output.fofn))
-            os.unlink(output.fofn)
-        else:
-            _ = logfile.write('Completed: {} records written to fofn file: {}'.format(records_written, output.fofn))
+            with open(output.fofn, 'w') as dump:
+                for file_path in sorted(fastq_parts):
+                    if not os.path.isfile(file_path):
+                        _ = logfile.write('Warning: path is not (yet) a file on the file system: {}\n'.format(file_path))
+                        if os.path.isdir(file_path):
+                            _ = logfile.write('Error: assumed file path is TRUE for directory: {}\n'.format(file_path))
+                            raise ValueError('Expected file path for PBN-BAM merge part, but received directory: {}'.format(file_path))
+                    _ = dump.write(file_path + '\n')
+                    records_written += 1
+            if records_written == 0:
+                _ = logfile.write('Error: 0 records written to fofn file: {}\n'.format(output.fofn))
+                os.unlink(output.fofn)
+            else:
+                _ = logfile.write('Completed: {} records written to fofn file: {}'.format(records_written, output.fofn))
 
 
 rule merge_fastq_input_parts:
