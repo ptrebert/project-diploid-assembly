@@ -102,14 +102,20 @@ def annotate_remote_files(remote_files, cargs, logger):
     :return:
     """
     meta_files = ['readme', 'manifest']
+    aux_files = ['_stats', 'scraps', 'subreadset']
     match_individual = re.compile('[A-Z0-9]+')
     file_collector = col.defaultdict(list)
 
     for full_path in remote_files:
         path, name = os.path.split(full_path)
         if any([x in name.lower() for x in meta_files]):
+            logger.debug('>>> Skipping file (metadata): {}'.format(name))
+            continue
+        if any([x in name.lower() for x in aux_files]):
+            logger.debug('>>> Skipping file (tech./aux.): {}'.format(name))
             continue
         if not any([name.endswith(x) for x in cargs.collect_files]):
+            logger.debug('>>> Skipping file b/c of unmatched file extension: {}'.format(name))
             continue
         mobj = match_individual.match(name)
         if mobj is None:
@@ -124,10 +130,15 @@ def annotate_remote_files(remote_files, cargs, logger):
             tech = 'clr'
         elif tech is None and 'subreads' in name.lower() and cargs.clr_subreads:
             # note: tech is None implies that this is not a CCS subreads file
+            logger.warning('Assuming CLR/subreads file: {}'.format(name))
             tech = 'clr'
         else:
-            logger.warning('Skipping file {} - could not id seq. tech.'.format(name))
+            logger.warning('>>> Skipping file {} - could not id seq. tech.'.format(name))
             continue
+        if tech == 'ccs' and 'subreads' in name.lower():
+            logger.debug('>>> Skipping file (CCS/subreads): {}'.format(name))
+            continue
+        logger.debug('Accepted file: {}'.format(name))
         local_path = None
         file_ext = None
         for lp, ext in zip(cargs.sort_files, cargs.collect_files):
@@ -144,6 +155,7 @@ def annotate_remote_files(remote_files, cargs, logger):
         else:
             pass
         base_file_prefix = '_'.join([individual, cargs.infix + tech])
+        logger.debug('Adding file to collection: {}'.format(name))
         file_collector[(local_path, base_file_prefix, file_ext)].append(full_path)
     logger.debug('Identified {} different file groups'.format(len(file_collector)))
     return file_collector
