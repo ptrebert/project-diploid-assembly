@@ -29,18 +29,21 @@ def collect_fastq_input_parts(wildcards):
 
 rule write_fastq_input_parts_fofn:
     input:
+        'input/fastq/partial/parts/requests',
         collect_fastq_input_parts
     output:
         fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
     log:
-        'input/fastq/complete/{mrg_sample}_1000.fofn.log'
+        'log/input/fastq/complete/{mrg_sample}_1000.fofn.log'
     resources:
         runtime_hrs = 0,
         runtime_min = 10
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
     run:
+        import os
         fastq_parts = collect_fastq_input_parts(wildcards)
+        records_written = 0
 
         with open(log[0], 'w') as logfile:
             _ = logfile.write('{} FASTQ parts for merging\n'.format(len(fastq_parts)))
@@ -101,17 +104,19 @@ def collect_pacbio_bam_input_parts(wildcards):
 
 rule write_bam_input_parts_fofn:
     input:
+        'input/bam/partial/parts/requests',
         collect_pacbio_bam_input_parts
     output:
         fofn = 'input/bam/complete/{mrg_sample}_1000.pbn.fofn'
     log:
-        'input/bam/complete/{mrg_sample}_1000.pbn.fofn.log'
+        'log/input/bam/complete/{mrg_sample}_1000.pbn.fofn.log'
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
     resources:
         runtime_hrs = 0,
         runtime_min = 10
     run:
+        import os
         bam_parts = collect_pacbio_bam_input_parts(wildcards)
         records_written = 0
 
