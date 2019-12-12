@@ -13,6 +13,9 @@ rule normalize_reference_assembly_names:
         table = 'references/assemblies/{known_ref}.sizes'
     wildcard_constraints:
         ref_genome = 'GRCh38_[USCENKGCAv97]+_[a-z13]+'
+    resources:
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 4096
     run:
         import gzip as gzip
         import re
@@ -103,6 +106,9 @@ rule reduce_reference_to_main_chromosomes:
     output:
         red_ref = 'references/assemblies/hg38_{ref_id}.fasta',
         red_sizes = 'references/assemblies/hg38_{ref_id}.sizes'
+    resources:
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 4096
     run:
         chrom_set = config['main_chromosomes']
 
