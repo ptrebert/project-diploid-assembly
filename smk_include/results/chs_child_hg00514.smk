@@ -372,7 +372,35 @@ else:
 
     rule chs_child_ccs_split_sdga:
         input:
-            rules.no_singularity_mock_output.output
+            expand(RESULT_SPLIT_DGA_DRAFT_QUAST_REPORT ,
+                    known_ref=KNOWN_REF,
+                    genemodel=GENEMODEL,
+                    var_caller=CCS_VAR_CALLER,
+                    qual=config['filter_vcf_qual'],
+                    gq=config['filter_vcf_gq'],
+                    reference=CCS_ASSM_514_PEREG,
+                    vc_reads=['HG00514_hgsvc_pbsq2-ccs_1000'],
+                    sts_reads=['HG00514_1kg_il25k-npe_sseq'],
+                    hap_reads=['HG00514_hgsvc_pbsq2-ccs_1000'],
+                    assembler=['pereg'],
+                    hap=['h1-un', 'h2-un', 'h1', 'h2']
+                   ),
+
+            expand(RESULT_SPLIT_DGA_POLISHED_QUAST_REPORT,
+                    known_ref=KNOWN_REF,
+                    genemodel=GENEMODEL,
+                    var_caller=CCS_VAR_CALLER,
+                    qual=config['filter_vcf_qual'],
+                    gq=config['filter_vcf_gq'],
+                    reference=CCS_ASSM_514_PEREG,
+                    vc_reads=['HG00514_hgsvc_pbsq2-ccs_1000'],
+                    sts_reads=['HG00514_1kg_il25k-npe_sseq'],
+                    hap_reads=['HG00514_hgsvc_pbsq2-ccs_1000'],
+                    pol_reads=['HG00514_hgsvc_pbsq2-ccs_1000'],
+                    assembler=['pereg'],
+                    pol_pass=['racon-p1'],
+                    hap=['h1-un', 'h2-un', 'h1', 'h2']
+                   ),
 
     rule chs_child_clrccs_split_sdga:
         input:
