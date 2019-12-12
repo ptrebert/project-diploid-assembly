@@ -9,9 +9,7 @@ localrules: run_yri_trio
 rule run_yri_trio:
     input:
         rules.run_yri_child.input,
-        # turns out the FTP folder only contains CCS data
-        # for the child...
-        #rules.run_yri_father.input,
-        #rules.run_yri_mother.input,
+        rules.run_yri_father.input,
+        rules.run_yri_mother.input,
 
     message: 'Creating results for YRI family trio (high diversity population)'
