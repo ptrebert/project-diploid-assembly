@@ -105,8 +105,8 @@ rule strandseq_dga_split_haplo_splitting:
         mem_total_mb = 8192,
         runtime_hrs = 12
     shell:
-        'whatshap --debug split --discard-unknown-reads --pigz ' \
-            '--output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} ' \
+        'whatshap --debug split --discard-unknown-reads --pigz --only-largest-block '
+            '--output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} '
             '--read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}'
 
 
@@ -136,8 +136,8 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
         mem_total_mb = 8192,
         runtime_hrs = 12
     shell:
-        'whatshap --debug split --discard-unknown-reads ' \
-            '--output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} ' \
+        'whatshap --debug split --discard-unknown-reads --only-largest-block '
+            '--output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} '
             '--read-lengths-histogram {output.hist} {input.pbn_bam} {input.tags} &> {log}'
 
 
