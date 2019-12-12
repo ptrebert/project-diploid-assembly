@@ -371,6 +371,10 @@ else:
         input:
             rules.no_singularity_mock_output.output
 
+    rule pur_child_clr_split_sdga_shasta:
+        input:
+            rules.no_singularity_mock_output.output
+
     rule pur_child_clrccs_split_sdga:
         input:
             rules.no_singularity_mock_output.output
@@ -421,4 +425,5 @@ rule run_pur_child:
         rules.pur_child_ccs_split_sdga.input,
         rules.pur_child_clr_split_sdga_wtdbg.input,
         rules.pur_child_clr_split_sdga_flye.input,
+        rules.pur_child_clr_split_sdga_shasta.input,
         rules.pur_child_clrccs_split_sdga.input

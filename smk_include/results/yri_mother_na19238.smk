@@ -1,7 +1,7 @@
 
 include: '../result_vars.smk'
 
-localrules: run_yri_child,
+localrules: run_yri_mother,
             yri_mother_ccs_nhr_assemblies,
             yri_mother_ccs_clust_assemblies,
             yri_mother_ccs_variant_calling,

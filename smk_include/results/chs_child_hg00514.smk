@@ -418,4 +418,5 @@ rule run_chs_child:
         rules.chs_child_ccs_split_sdga.input,
         rules.chs_child_clr_split_sdga_wtdbg.input,
         rules.chs_child_clr_split_sdga_flye.input,
+        rules.chs_child_clr_split_sdga_shasta.input,
         rules.chs_child_clrccs_split_sdga.input
