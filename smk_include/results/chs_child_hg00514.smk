@@ -370,6 +370,10 @@ else:
         input:
             rules.no_singularity_mock_output.output
 
+    rule chs_child_clr_split_sdga_shasta:
+        input:
+            rules.no_singularity_mock_output.output
+
     rule chs_child_ccs_split_sdga:
         input:
             expand(RESULT_SPLIT_DGA_DRAFT_QUAST_REPORT ,
