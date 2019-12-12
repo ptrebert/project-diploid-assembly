@@ -7,8 +7,15 @@ import io as io
 import traceback as trb
 import argparse as argp
 
-
-import dnaio as dnaio
+try:
+    import dnaio as dnaio
+except ImportError:
+    sys.stderr.write('\nError - could not import dnaio module\n')
+    sys.stderr.write('Locations in sys.path\n')
+    for entry in sys.path:
+        sys.stderr.write('>>> "{}"\n'.format(entry))
+    sys.stderr.write('\n')
+    raise
 
 
 __doc__ = """
