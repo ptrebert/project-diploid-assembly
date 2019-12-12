@@ -23,6 +23,8 @@ rule samtools_index_bam_alignment:
         bam = '{filepath}'
     output:
         bai = '{filepath}.bai'
+    benchmark:
+        'run/{{filepath}}.idx-bai.t{}.rsrc'.format(config['num_cpu_low'])
     threads: config['num_cpu_low']
     shell:
         "samtools index -@ {threads} {input.bam}"
@@ -138,7 +140,7 @@ rule dump_shasta_haploid_fasta:
         script_dir = config['script_dir'],
         buffer_limit = 4  # gigabyte
     shell:
-        '{params.script_dir}/dump_shasta_fasta.py --debug --buffer-size {params.buffer_limit} ' \
+        '{params.script_dir}/dump_shasta_fasta.py --debug --buffer-size {params.buffer_limit} '
             ' --input-fq {input} --output-fa {output} &> {log}'
 
 
@@ -170,7 +172,7 @@ rule samtools_position_sort_bam_alignment:
     params:
         mem_per_thread = '20G'
     shell:
-        'samtools sort -m {params.mem_per_thread} --threads {threads} ' \
+        'samtools sort -m {params.mem_per_thread} --threads {threads} '
             '-o {output.sorted_bam} {input.unsorted_bam}'
 
 
@@ -278,7 +280,7 @@ rule singularity_pull_container:
     params:
         pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo)
     shell:
-        'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull ' \
+        'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull '
             '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
 
 
