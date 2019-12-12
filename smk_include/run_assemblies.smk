@@ -83,12 +83,12 @@ rule compute_wtdbg_nonhapres_assembly_layout:
     resources:
         mem_per_cpu_mb = lambda wildcards: int((163840 if '-ccs' in wildcards.sample else 393216) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards: 163840 if '-ccs' in wildcards.sample else 393216,
-        runtime_hrs = lambda wildcards: 12 if '-ccs' in wildcards.sample else 36
+        runtime_hrs = lambda wildcards: 16 if '-ccs' in wildcards.sample else 40
     params:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0]
     shell:
-        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g3g -t {threads}' \
+        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g3g -t {threads}'
             ' -o {params.out_prefix} &> {log}'
 
 
@@ -105,7 +105,7 @@ rule compute_wtdbg_nonhapres_assembly_consensus:
     resources:
         mem_per_cpu_mb = lambda wildcards: int((8192 if '-ccs' in wildcards.sample else 24576) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards: 8192 if '-ccs' in wildcards.sample else 24576,
-        runtime_hrs = lambda wildcards: 4 if '-ccs' in wildcards.sample else 12
+        runtime_hrs = lambda wildcards: 8 if '-ccs' in wildcards.sample else 20
     shell:
         'wtpoa-cns -t {threads} -i {input.layout} -o {output.nhr_assembly} &> {log}'
 
@@ -142,9 +142,9 @@ rule compute_flye_nonhapres_assembly:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
-        'flye {params.param_preset} {input.fastq} -g3g -t {threads}' \
-            ' --debug --out-dir {params.out_prefix} &> {log}' \
-            ' && ' \
+        'flye {params.param_preset} {input.fastq} -g3g -t {threads}'
+            ' --debug --out-dir {params.out_prefix} &> {log}'
+            ' && '
             'cp {output.assm_source} {output.assembly}'
 
 
@@ -200,9 +200,9 @@ rule compute_peregrine_nonhapres_assembly:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
     shell:
-        '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} ' \
-            ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} ' \
-            ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} ' \
+        '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
+            ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
+            ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
             ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
 
@@ -242,11 +242,11 @@ rule compute_shasta_nonhapres_assembly:
         min_read_length = config['shasta_min_read_length'],
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
-        'rm -fd {params.out_prefix} && ' \
-        'shasta --input {input} --assemblyDirectory {params.out_prefix} --command assemble ' \
-            ' --memoryMode anonymous --memoryBacking 4K --threads {threads} ' \
-            ' --Reads.minReadLength {params.min_read_length} &> {log}' \
-            ' && ' \
+        'rm -fd {params.out_prefix} && '
+        'shasta --input {input} --assemblyDirectory {params.out_prefix} --command assemble '
+            ' --memoryMode anonymous --memoryBacking 4K --threads {threads} '
+            ' --Reads.minReadLength {params.min_read_length} &> {log}'
+            ' && '
             'cp {output.assm_source} {output.assembly}'
 
 
@@ -281,7 +281,7 @@ rule compute_wtdbg_haploid_assembly_layout:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0]
     shell:
-        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g3g -t {threads}' \
+        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g3g -t {threads}'
             ' -o {params.out_prefix} &> {log}'
 
 
@@ -336,9 +336,9 @@ rule compute_flye_haploid_assembly:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
-        'flye {params.param_preset} {input.fastq} -g3g -t {threads}' \
-            ' --debug --out-dir {params.out_prefix} &> {log}' \
-            ' && ' \
+        'flye {params.param_preset} {input.fastq} -g3g -t {threads}'
+            ' --debug --out-dir {params.out_prefix} &> {log}'
+            ' && '
             'cp {output.assm_source} {output.assembly}'
 
 # Why do we need dedicated rules for computing the assemblies per haploid cluster/split?
@@ -370,7 +370,7 @@ rule compute_wtdbg_haploid_split_assembly_layout:
         seq_len = load_seq_length_file,
         out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0]
     shell:
-        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g {params.seq_len} -t {threads}' \
+        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g {params.seq_len} -t {threads}'
             ' -o {params.out_prefix} &> {log}'
 
 
@@ -423,9 +423,9 @@ rule compute_flye_haploid_split_assembly:
         seq_len = load_seq_length_file,
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
-        'flye {params.param_preset} {input.fastq} -g {params.seq_len} -t {threads}' \
-            ' --debug --out-dir {params.out_prefix} &> {log}' \
-            ' && ' \
+        'flye {params.param_preset} {input.fastq} -g {params.seq_len} -t {threads}'
+            ' --debug --out-dir {params.out_prefix} &> {log}'
+            ' && '
             'cp {output.assm_source} {output.assembly}'
 
 
@@ -481,9 +481,9 @@ rule compute_peregrine_haploid_split_assembly:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
     shell:
-        '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} ' \
-            ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} ' \
-            ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} ' \
+        '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
+            ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
+            ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
             ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
 
@@ -522,9 +522,9 @@ rule compute_shasta_haploid_split_assembly:
         min_read_length = config['shasta_min_read_length'],
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
-        'rm -fd {params.out_prefix} && ' \
-        'shasta --input {input} --assemblyDirectory {params.out_prefix} --command assemble ' \
-            ' --memoryMode anonymous --memoryBacking 4K --threads {threads} ' \
-            ' --Reads.minReadLength {params.min_read_length} &> {log}' \
-            ' && ' \
+        'rm -fd {params.out_prefix} && '
+        'shasta --input {input} --assemblyDirectory {params.out_prefix} --command assemble '
+            ' --memoryMode anonymous --memoryBacking 4K --threads {threads} '
+            ' --Reads.minReadLength {params.min_read_length} &> {log}'
+            ' && '
             'cp {output.assm_source} {output.assembly}'
