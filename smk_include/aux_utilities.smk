@@ -26,6 +26,8 @@ rule samtools_index_bam_alignment:
     benchmark:
         'run/{{filepath}}.idx-bai.t{}.rsrc'.format(config['num_cpu_low'])
     threads: config['num_cpu_low']
+    resources:
+        runtime_hrs = lambda wildcards: 12 if '.pbn.bam' in wildcards.filepath else 1
     shell:
         "samtools index -@ {threads} {input.bam}"
 
@@ -38,7 +40,7 @@ rule pb_bamtools_index_bam_alignment:
     benchmark:
         'run/{filepath}.create-pbi.rsrc'
     resources:
-        runtime_hrs = lambda wildcards: 0 if '.part' in wildcards.filepath else 1
+        runtime_hrs = lambda wildcards: 1 if '.part' in wildcards.filepath else 24
     conda:
         config['conda_env_pbtools']
     shell:

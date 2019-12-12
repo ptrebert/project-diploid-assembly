@@ -146,7 +146,7 @@ rule merge_pacbio_native_bams:
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
     resources:
-        runtime_hrs = 16
+        runtime_hrs = 48
     params:
         bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
     shell:
