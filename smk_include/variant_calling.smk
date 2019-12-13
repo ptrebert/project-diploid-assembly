@@ -79,7 +79,7 @@ rule call_variants_freebayes_parallel:
         mem_total_mb = lambda wildcards, attempt: 16384 if attempt == 1 else 16384 + attempt**attempt * 16384,
         runtime_hrs = 3
     shell:
-        '{params.script_dir}/fb-parallel-timeout.sh {input.ref_regions} {threads} {params.timeout} {log}' \
+        '{params.script_dir}/fb-parallel-timeout.sh {input.ref_regions} {threads} {params.timeout} {log}'
             ' --use-best-n-alleles 4 --strict-vcf -f {input.reference} {input.read_ref_aln} > {output}'
 
 
@@ -105,8 +105,8 @@ rule call_variants_longshot:
         mem_per_cpu_mb = 6144,
         mem_total_mb = 6144
     shell:
-        'longshot --no_haps --bam {input.read_ref_aln} ' \
-            ' --ref {input.reference} --region {wildcards.sequence}' \
+        'longshot --no_haps --bam {input.read_ref_aln} '
+            ' --ref {input.reference} --region {wildcards.sequence}'
              ' --sample_id {params.individual} --out {output} &> {log}'
 
 
@@ -164,7 +164,7 @@ rule normalize_longshot_vcf:
             _ = logfile.write('All lines of input VCF buffered (header: {} / records: {})\n'.format(header_lines, record_lines))
 
             with open(output[0], 'w') as vcf_out:
-                _ = vcf_out.write(out_buffer.getvalues())
+                _ = vcf_out.write(out_buffer.getvalue())
 
             _ = logfile.write('Normalized longshot VCF record dumped to file: {}\n'.format(output[0]))
             _ = logfile.write('Done')
@@ -202,9 +202,9 @@ rule call_variants_deepvariant:
         bind_folder = lambda wildcards: os.getcwd(),
         temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sts_reads, wildcards.vc_reads, wildcards.sequence)
     shell:
-        'singularity run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant ' \
-            ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} ' \
-            ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} ' \
+        'singularity run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant '
+            ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} '
+            ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} '
             ' --novcf_stats_report --intermediate_results_dir="{params.temp_dir}" --num_shards={threads} &> {log}'
 
 
@@ -221,8 +221,8 @@ rule filter_variant_calls_quality_biallelic_snps:
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.log'
     shell:
-        'bcftools filter --include "QUAL>={wildcards.qual}" {input.vcf} | ' \
-            'bcftools view -c 1 --types snps -m 2 -M 2 | ' \
+        'bcftools filter --include "QUAL>={wildcards.qual}" {input.vcf} | '
+            'bcftools view -c 1 --types snps -m 2 -M 2 | '
             'bcftools norm --fasta-ref {input.reference} --output {output} --output-type v &> {log}'
 
 
