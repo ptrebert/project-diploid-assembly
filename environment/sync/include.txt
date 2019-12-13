@@ -1,0 +1,9 @@
+*.fasta
+*.vcf.bgz
+*.vcf.bgz.tbi
+*stats
+*.pdf
+*.txt
+*.tsv
+*.log
+*.rsrc
