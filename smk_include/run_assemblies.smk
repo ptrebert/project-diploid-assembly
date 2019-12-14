@@ -512,12 +512,12 @@ rule compute_shasta_haploid_split_assembly:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-shasta.{hap}.{sequence}.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-shasta.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_max'])
-    threads: config['num_cpu_max']
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-shasta.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(1433600 / config['num_cpu_max']),
-        mem_total_mb = 1433600,
-        runtime_hrs = 8
+        mem_per_cpu_mb = int(262144 / config['num_cpu_high']),
+        mem_total_mb = 262144,
+        runtime_hrs = 2
     params:
         min_read_length = config['shasta_min_read_length'],
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
