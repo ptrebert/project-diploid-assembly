@@ -243,7 +243,7 @@ rule compute_shasta_nonhapres_assembly:
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
         'rm -fd {params.out_prefix} && '
-        'shasta --input {input} --assemblyDirectory {params.out_prefix} --command assemble '
+        'shasta --input {input.fasta} --assemblyDirectory {params.out_prefix} --command assemble '
             ' --memoryMode anonymous --memoryBacking 4K --threads {threads} '
             ' --Reads.minReadLength {params.min_read_length} &> {log}'
             ' && '
@@ -523,7 +523,7 @@ rule compute_shasta_haploid_split_assembly:
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
         'rm -fd {params.out_prefix} && '
-        'shasta --input {input} --assemblyDirectory {params.out_prefix} --command assemble '
+        'shasta --input {input.fasta} --assemblyDirectory {params.out_prefix} --command assemble '
             ' --memoryMode anonymous --memoryBacking 4K --threads {threads} '
             ' --Reads.minReadLength {params.min_read_length} &> {log}'
             ' && '
