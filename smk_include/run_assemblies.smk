@@ -504,7 +504,7 @@ rule compute_shasta_haploid_split_assembly:
         aux_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/temp/layout/shasta/{{hap_reads}}.{{hap}}.{{sequence}}/{aux_files}',
                             aux_files=['Binned-ReadLengthHistogram.csv', 'MarkerGraphEdgeCoverageHistogram.csv',
                                         'MarkerGraphVertexCoverageHistogram.csv', 'PalindromicReads.csv',
-                                        'ReadGraphComponents.csv', 'ReadLengthHistogram.csv', 'ReadSummary.csv'
+                                        'ReadGraphComponents.csv', 'ReadLengthHistogram.csv', 'ReadSummary.csv',
                                         'shasta.conf']
                            ),
         assm_source = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/shasta/{hap_reads}.{hap}.{sequence}/Assembly.fasta',
