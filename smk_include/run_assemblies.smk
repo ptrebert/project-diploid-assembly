@@ -224,7 +224,7 @@ rule compute_shasta_nonhapres_assembly:
         aux_files = expand('output/reference_assembly/non-hap-res/layout/shasta/{{sample}}/{aux_files}',
                             aux_files=['Binned-ReadLengthHistogram.csv', 'MarkerGraphEdgeCoverageHistogram.csv',
                                         'MarkerGraphVertexCoverageHistogram.csv', 'PalindromicReads.csv',
-                                        'ReadGraphComponents.csv', 'ReadLengthHistogram.csv', 'ReadSummary.csv'
+                                        'ReadGraphComponents.csv', 'ReadLengthHistogram.csv', 'ReadSummary.csv',
                                         'shasta.conf']
                            ),
         assm_source = 'output/reference_assembly/non-hap-res/layout/shasta/{sample}/Assembly.fasta',
