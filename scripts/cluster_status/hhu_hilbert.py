@@ -86,16 +86,16 @@ def parse_qstat_output(job_info):
                     raise ke
                 else:
                     job_status = simple_job_state
-                    log_info += '... Job determined as ' + job_status
-        elif 'Exit_status' in line:
-            exit_code = int(line.split()[-1])
-            if exit_code != 0 and job_status == 'done':
-                job_status = 'failed'
-            elif exit_code == 0 and job_status == 'done':
-                job_status = 'success'
-            else:
-                logger.error('Job has exit code {}, but not status done:')
-                raise RuntimeError('Job has exit code but not status done:')
+                    log_info += '... Job determined as ' + job_status + '\n'
+            if 'Exit_status' in line:
+                exit_code = int(line.split()[-1])
+                if exit_code != 0 and job_status == 'done':
+                    job_status = 'failed'
+                elif exit_code == 0 and job_status == 'done':
+                    job_status = 'success'
+                else:
+                    logger.error('Job has exit code {}, but not status done: {}'.format(exit_code, job_status))
+                    raise RuntimeError('Job has exit code but not status done')
         else:
             continue
     log_info += '\n'
@@ -134,7 +134,7 @@ except sp.CalledProcessError as cpe:
 logger.info('qstat call successful')
 
 job_status = parse_qstat_output(qstat_output)
-sys.stdout.write('\n{}\n'.format(job_status))
+sys.stdout.write('{}\n'.format(job_status))
 logger.info('=== Done job id: {}'.format(job_id))
 logging.shutdown()
 sys.exit(0)
