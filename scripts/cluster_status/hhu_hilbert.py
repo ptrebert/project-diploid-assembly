@@ -118,7 +118,7 @@ if mobj is None:
     raise ValueError('Malformed job id')
 
 num_job_id = mobj.group(0)
-
+job_status = 'failed'
 try:
     qstat_output = sp.check_output(
         'qstat -xf {}'.format(num_job_id),
@@ -126,15 +126,19 @@ try:
         shell=True,
         timeout=60
     )
-    qstat_output = qstat_output.decode('utf-8')
 except sp.CalledProcessError as cpe:
-    logger.error('qstat call failed: {} / {}'.format(cpe.returncode, cpe.output))
-    raise cpe
-
-logger.info('qstat call successful')
-
-job_status = parse_qstat_output(qstat_output)
-sys.stdout.write('{}\n'.format(job_status))
-logger.info('=== Done job id: {}'.format(job_id))
-logging.shutdown()
-sys.exit(0)
+    logger.error('qstat call failed: {} / {}'.format(cpe.returncode, cpe.output.decode('utf-8')))
+    if cpe.returncode == 153:
+        # job id no longer known to qstat, assume it was fine...
+        job_status = 'success'
+    else:
+        job_status = 'failed'
+else:
+    qstat_output = qstat_output.decode('utf-8')
+    logger.info('qstat call successful')
+    job_status = parse_qstat_output(qstat_output)
+finally:
+    sys.stdout.write('{}\n'.format(job_status))
+    logger.info('=== Done job id: {} / {}'.format(job_id, job_status))
+    logging.shutdown()
+    sys.exit(0)
