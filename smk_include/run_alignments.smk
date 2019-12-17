@@ -104,7 +104,7 @@ rule pbmm2_reads_to_reference_alignment:
     resources:
         mem_per_cpu_mb = int(98304 / config['num_cpu_max']),
         mem_total_mb = 98304,
-        runtime_hrs = 4
+        runtime_hrs = 23
     params:
         align_threads = config['num_cpu_max'] - config['num_cpu_low'],
         sort_threads = config['num_cpu_low'],

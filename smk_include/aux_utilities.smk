@@ -236,7 +236,8 @@ rule generate_bwa_index:
         'run/{folder_path}/bwa_index/{reference}.rsrc'
     resources:
         mem_per_cpu_mb = 6144,
-        mem_total_mb = 6144
+        mem_total_mb = 6144,
+        runtime_hrs = 3
     params:
         prefix = lambda wildcards, output: output[0].split('.')[0]
     shell:

@@ -208,7 +208,7 @@ checkpoint run_saarclust_assembly_clustering:
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192,
-        runtime_hrs = 5
+        runtime_hrs = 10
     params:
         script_dir = config['script_dir'],
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
