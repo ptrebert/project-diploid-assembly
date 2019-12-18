@@ -9,19 +9,16 @@ import traceback as trb
 import argparse as argp
 import pickle as pck
 import time as ti
-import re as re
-import functools as fnt
 import collections as col
 import multiprocessing as mp
 
 
 import numpy as np
 import pysam as pysam
+import dnaio as dnaio
 
 
-FASTQ_QUAL_ENCODING = """!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"""
-
-Read = col.namedtuple('Read', 'line seqid sequence separator qualities record')
+Read = col.namedtuple('Read', 'record_num name sequence')
 
 
 def parse_command_line():
@@ -45,7 +42,7 @@ def parse_command_line():
         required=True,
         dest="input",
         nargs='+',
-        help="Full path FASTQ read files (assumed to be gzip or bzip compressed) or BAM alignments.",
+        help="Full path FASTQ/FASTA read files (can be compressed) or BAM alignments.",
     )
     parser.add_argument(
         "--output",
@@ -57,31 +54,38 @@ def parse_command_line():
              " be created if they do not exist.",
     )
     parser.add_argument(
-        "--chunk-size",
-        '-cs',
-        type=int,
-        default=5000,
-        dest='chunksize',
-        help="Read this many reads that are then batch-processed by the worker pool."
-             " Default: 5000"
-    )
-    parser.add_argument(
-        "--validate",
-        "-val",
-        action="store_true",
-        default=False,
-        dest="validate",
-        help="Validate each individual read record in the FASTQ."
-             " This increases the runtime substantially. Default: False"
-    )
-    parser.add_argument(
-        "--read-alphabet",
-        "-ra",
+        "--summary-output",
+        "-so",
         type=str,
-        default=['A', 'C', 'G', 'T'],
-        dest="alphabet",
-        help="Specify the alphabet to use for validating the read sequences."
-             " Default: A C G T"
+        dest='summary_output',
+        default=None,
+        help="Full path to short summary output file listing the most important statistics. "
+             "Requires specifying the genome size for coverage computation. Default: none"
+    )
+    parser.add_argument(
+        "--buffer-size",
+        "-bs",
+        type=int,
+        default=1000000,
+        dest="buffer_size",
+        help="Store this many G+C values before updating the binned statistics. Default: 1 000 000"
+    )
+    mutgrp = parser.add_mutually_exclusive_group()
+    mutgrp.add_argument(
+        "--genome-size-file",
+        "-gsf",
+        type=str,
+        dest="size_file",
+        default=None,
+        help="Read genome size from this file (assumed: FASTA index), sum up all values in column 2."
+    )
+    mutgrp.add_argument(
+        "--genome-size",
+        "-gs",
+        type=int,
+        dest="genome_size",
+        default=0,
+        help="specify genome size (in bp). Default: 0"
     )
     parser.add_argument(
         "--num-cpu",
@@ -101,195 +105,160 @@ def compute_read_statistics(read):
     :param read:
     :return:
     """
-    length = len(read)
-    bases = col.Counter(read)
+    length = len(read.sequence)
+    bases = col.Counter(read.sequence)
     pct_gc = round((bases['G'] + bases['C']) / length, 3)
     return length, bases, pct_gc
 
 
-def validate_read_record(check_sequence, check_qualities, read):
+def read_sequence_length_file(fpath):
     """
-    :param read:
-    :param check_sequence:
-    :param check_qualities:
+    :param fpath: FASTA index (.fai file)
     :return:
     """
-    try:
-        assert len(read.seqid) > 0 and read.seqid[0] == '@', \
-            'LN {} --- malformed SEQID: {}'.format(read.line, read.seqid)
-        assert check_sequence(read.sequence) is not None, \
-            'LN {} --- sequence of read {} does not conform to specified alphabet'.format(read.line, read.seqid)
-        assert len(read.separator) > 0 and read.separator[0] == '+', \
-            'LN {} --- malformed separator line for SEQID: {}'.format(read.line, read.seqid)
-        assert check_qualities(read.qualities) is not None, \
-            'LN {} --- quality values of read {} do not adhere to FASTQ specification'.format(read.line, read.seqid)
-        assert len(read.sequence) == len(read.qualities), \
-            'LN {} --- sequence and qualities of different length'.format(read.line)
-    except AssertionError as ae:
-        ae.args += ('error_record', read.record)
-        raise
-    return compute_read_statistics(read.sequence)
+    total_length = 0
+    with open(fpath, 'r') as faidx:
+        for line in faidx:
+            if line.startswith('#'):
+                continue
+            seq_len = line.split()[1]
+            try:
+                seq_len = int(seq_len)
+                total_length += seq_len
+            except (ValueError, TypeError):
+                raise ValueError('Malformed (non-integer) sequence length '
+                                 'entry in file {}: {}'.format(fpath, line.strip()))
+    return total_length
 
 
-def read_sequence_records(fpath, chunk_size):
+def read_text_sequence_records(fpath):
     """
     :param fpath:
-    :param chunk_size:
     :return:
     """
-    chunk_buffer = [''] * chunk_size
-    line_num = 1
-    record = 0
-    with gz.open(fpath, 'rt', encoding='ascii') as fastq:
-        for line in fastq:
-            if not line.strip():
-                # simply skip over empty lines, though
-                # this could be an invalid record
-                continue
-            if line_num % 4 == 3:
-                # every third line ignoring empty lines
-                chunk_buffer[record] = line.strip()
-                record += 1
-                line_num += 1
-            else:
-                line_num += 1
-            if record == chunk_size:
-                yield chunk_buffer
-                record = 0
-                chunk_buffer = [''] * chunk_size
-    if record > 0:
-        yield chunk_buffer[:record]
+    with dnaio.open(fpath) as fastx:
+        for idx, record in enumerate(fastx, start=1):
+            rd = Read(record_num=idx,
+                      name=record.name,
+                      sequence=record.sequence
+                      )
+            yield rd
     return
 
 
-def read_complete_records(fpath, chunk_size):
+def read_bam_sequence_records(fpath):
     """
     :param fpath:
-    :param chunk_size:
     :return:
     """
-    chunk_buffer = [None] * chunk_size
-    line_num = 1
-    record = 0
-    record_is_active = False
-    active_record = None
-    read_buffer = ['', '', '', '', '', '']
-    with gz.open(fpath, 'rt', encoding='ascii') as fastq:
-        for ln, line in enumerate(fastq, start=1):
-            assert line.endswith('\n'), 'Line {} does not end with newline character'.format(ln)
-            if not line.strip() and record_is_active:
-                # empty line within active read record
-                # is not part of the FASTQ format specification
-                raise AssertionError('Empty line (line number {}) within read record {}'.format(ln, active_record))
-            elif not line.strip():
-                continue
-            else:
-                if line_num % 4 == 1:
-                    assert not record_is_active, \
-                        'Encountered new read at line {}, but previous one (SEQID {}) is still active'.format(ln, active_record)
-                    record_is_active = True
-                    active_record = line.strip()
-                    read_buffer[0] = str(ln)
-                    read_buffer[1] = active_record
-                    line_num += 1
-                elif 1 < line_num % 4 < 4:
-                    assert record_is_active, \
-                        'Inactive record (active SEQID {}) while still reading read information at line {}'.format(active_record, ln)
-                    remainder = line_num % 4
-                    read_buffer[remainder] = line.strip()
-                    line_num += 1
-                elif line_num % 4 == 0:
-                    assert record_is_active, \
-                        'Inactive record (active SEQID {}) while still reading read information at line {}'.format(active_record, ln)
-                    read_buffer[4] = line.strip()
-                    read_buffer[5] = str(record)
-                    chunk_buffer[record] = Read(*read_buffer)
-                    record += 1
-                    record_is_active = False
-                    read_buffer = ['', '', '', '', '', '']
-                    line_num += 1
-                    if record == chunk_size:
-                        yield chunk_buffer
-                        record = 0
-                        chunk_buffer = [None] * chunk_size
-                else:
-                    raise RuntimeError('This cannot happen (at line {}: {})'.format(ln, line.strip()))
-    if record > 0:
-        yield chunk_buffer[:record]
-    return
-
-
-def read_bam_sequence_records(fpath, chunk_size):
-    """
-    :param fpath:
-    :param chunk_size:
-    :return:
-    """
-    chunk_buffer = [''] * chunk_size
-    record = 0
     with pysam.AlignmentFile(fpath, 'rb', check_sq=False) as bam:
-        for alignment in bam:
-            chunk_buffer[record] = alignment.query_sequence
-            record += 1
-            if record == chunk_size:
-                yield chunk_buffer
-                chunk_buffer = [''] * chunk_size
-                record = 0
-    if record > 0:
-        yield chunk_buffer[:record]
+        for idx, record in enumerate(bam, start=1):
+            rd = Read(record_num=idx,
+                      name=record.query_name,
+                      sequence=record.query_sequence
+                      )
+            yield rd
     return
 
 
-def dump_error_records(active_chunk, record_num, dump_file):
+def assemble_file_processors(input_files, logger):
     """
-    :param active_chunk:
-    :param record_num:
-    :param dump_file:
-    :return:
     """
-    left_bound = max(0, record_num - 5)
-    right_bound = min(len(active_chunk), record_num + 5)
-    records_to_write = active_chunk[left_bound:right_bound]
-    with gz.open(dump_file, 'wt') as dump:
-        for rec in records_to_write:
-            _ = dump.write(rec.seqid + '\n')
-            _ = dump.write(rec.sequence + '\n')
-            _ = dump.write(rec.separator + '\n')
-            _ = dump.write(rec.qualities + '\n')
-    return
-
-
-def assemble_file_processors(input_files, validate, logger):
-    """
-    Quick and dirty - if several input file types should now
-    be supported, need to implement an OO approach...
-
-    :param fastq_input:
-    :param bam_input:
-    :param validate:
-    :return:
-    """
-    seq_re = re.compile("^[" + ''.join(cargs.alphabet) + "]+$")
-    qual_re = re.compile("^[" + re.escape(FASTQ_QUAL_ENCODING) + "]+$")
-    check_seq = seq_re.match
-    check_qual = qual_re.match
-
     file_paths, chunk_readers, read_processors = [], [], []
     for input_file in input_files:
         file_paths.append(input_file)
-        if '.fastq' in input_file and validate:
-            chunk_readers.append(read_complete_records)
-            read_processors.append(fnt.partial(validate_read_record, *(check_seq, check_qual)))
-        elif '.fastq' in input_file:
-            chunk_readers.append(read_sequence_records)
+        if any([x in input_file.lower() for x in ['.fastq', '.fq', '.fasta', '.fa']]):
+            logger.debug('Adding FASTQ/FASTA processor for file: {}'.format(os.path.basename(input_file)))
+            chunk_readers.append(read_text_sequence_records)
             read_processors.append(compute_read_statistics)
-        elif '.bam' in input_file:
+        elif '.bam' in input_file.lower():
             logger.debug('Adding BAM processors for file {}'.format(os.path.basename(input_file)))
             chunk_readers.append(read_bam_sequence_records)
             read_processors.append(compute_read_statistics)
         else:
             raise ValueError('Unrecognized input file format: {}'.format(input_file))
     return file_paths, chunk_readers, read_processors
+
+
+def get_total_genome_size(fpath, gsize):
+    """
+    :param fpath:
+    :param gsize:
+    :return:
+    """
+    if (fpath is None and gsize == 0) or (fpath is not None and gsize > 0):
+        raise ValueError('Summary output requires specifying genome size (either via file or via numeric value)')
+    total_length = gsize
+    if fpath is not None:
+        total_length = read_sequence_length_file(fpath)
+    return total_length
+
+
+def prepare_summary_statistics(length_stat, genome_size, num_reads):
+    """
+    :param length_stat:
+    :param genome_size:
+    :param num_reads:
+    :return:
+    """
+    unpacked = np.array(
+        [(l, length_stat[l]) for l in sorted(length_stat.keys(), reverse=True)],
+        dtype=np.int32
+    ).transpose()
+    # 0: read length
+    # 1: count/abundance
+
+    unpacked = np.vstack((unpacked, unpacked[0, ] * unpacked[1, ]))
+    # 2: coverage per length
+
+    # cumulative read abundance
+    cum_temp = unpacked[1, :].cumsum()
+    temp_selector = np.asarray((cum_temp / cum_temp.max()) <= 0.5)
+    median_read_length = unpacked[0, temp_selector].min()
+
+    # cumulative coverage - used again below
+    cum_temp = unpacked[2, :].cumsum()
+    total_seq_bp = cum_temp.max()
+    total_seq_giga_bp = round(total_seq_bp / 1e9, 2)
+    temp_selector = np.asarray((cum_temp / cum_temp.max()) <= 0.5)
+    n50_read_length = unpacked[0, temp_selector].min()
+
+    summary_stats = [
+        ('num_reads', num_reads),
+        ('total_seq_bp', total_seq_bp),
+        ('total_seq_Gbp', total_seq_giga_bp),
+        ('genome_size_bp', genome_size),
+        ('genome_size_Gbp', round(genome_size / 1e9, 2)),
+        ('read_length_min', unpacked[0, :].min()),
+        ('read_length_median', median_read_length)
+    ]
+
+    # compute average read length via (abundance) weighted average
+    avg_rlen = np.average(
+        unpacked[0, ],
+        weights=unpacked[1, ]
+    )
+
+    summary_stats.append(('read_length_mean', int(avg_rlen)))
+    summary_stats.append(('read_length_max', unpacked[0, ].max()))
+    summary_stats.append(('read_length_N50', n50_read_length))
+
+    total_cov = round(total_seq_bp / genome_size, 2)
+    summary_stats.append(('cov_total', total_cov))
+
+    cov_steps = [0, 1000] + list(range(5000, 55000, 5000))
+    if avg_rlen < 1000:
+        cov_steps = list(range(0, 325, 25))
+    for s in cov_steps:
+        temp_selector = np.asarray(unpacked[0, :] >= s)
+        try:
+            temp_cov = cum_temp[temp_selector].max()
+            temp_cov = round(temp_cov / genome_size, 2)
+        except ValueError:
+            temp_cov = 0
+        summary_stats.append(('cov_geq_{}'.format(s), temp_cov))
+
+    return summary_stats
 
 
 def main(logger, cargs):
@@ -300,7 +269,7 @@ def main(logger, cargs):
     """
     logger.debug("Starting computations")
 
-    file_paths, chunk_readers, read_processors = assemble_file_processors(cargs.input, cargs.validate, logger)
+    file_paths, chunk_readers, read_processors = assemble_file_processors(cargs.input, logger)
 
     len_stats = col.Counter()
     nuc_stats = col.Counter()
@@ -312,35 +281,46 @@ def main(logger, cargs):
     # adjust boundary to include 1
     gc_bins[-1] += 0.001
 
-    gc_buffer = np.zeros(cargs.chunksize, dtype=np.float16)
+    gc_buffer = np.zeros(cargs.buffer_size, dtype=np.float16)
+    gc_idx = 0
+
     with mp.Pool(cargs.numcpu) as pool:
         logger.debug('Initialized worker pool')
-        for input_file, chunk_reader, read_processor in zip(file_paths, chunk_readers, read_processors):
+        for input_file, input_reader, read_processor in zip(file_paths, chunk_readers, read_processors):
             logger.debug('Processing file {}'.format(input_file))
-            for chunk in chunk_reader(input_file, cargs.chunksize):
-                read_chunk_size = len(chunk)
-                logger.debug('Processing chunk of size {}'.format(read_chunk_size))
-                try:
-                    resit = pool.imap(read_processor, chunk)
-                    for idx, (l, n, c) in enumerate(resit):
-                        len_stats[l] += 1
-                        nuc_stats.update(n)
-                        gc_buffer[idx] = c
-                    logger.debug('Binning GC values')
-                    gc_stats.update(col.Counter(np.digitize(gc_buffer[:read_chunk_size], gc_bins, right=False)))
-                    read_count += (len(chunk))
-                except AssertionError as ae:
-                    if len(ae.args) != 3:
-                        raise
-                    else:
-                        msg = ae.args[0]
-                        const = ae.args[1]
-                        record_num = int(ae.args[2])
-                        logger.error('Found faulty read record: {} - {} - {}'.format(msg, const, record_num))
-                        dump_file = os.path.basename(input_file) + 'error'
-                        dump_path = os.path.join(os.path.dirname(input_file), dump_file)
-                        dump_error_records(chunk, record_num, dump_path)
-                        raise
+            resit = pool.imap(read_processor, input_reader(input_file))
+            for l, n, c in resit:
+                read_count += 1
+                len_stats[l] += 1
+                nuc_stats.update(n)
+                gc_buffer[gc_idx] = c
+                gc_idx += 1
+                if gc_idx == cargs.buffer_size:
+                    logger.debug('Buffer limit reached - binning GC values')
+                    gc_stats.update(col.Counter(np.digitize(gc_buffer, gc_bins, right=False)))
+                    gc_buffer = np.zeros(cargs.buffer_size, dtype=np.float16)
+                    gc_idx = 0
+                if read_count % 500000 == 0:
+                    logger.debug('Processed {} reads...'.format(read_count))
+            logger.debug('All reads processed (total: {})'.format(read_count))
+
+    if gc_idx != 0:
+        gc_stats.update(col.Counter(np.digitize(gc_buffer[:gc_idx], gc_bins, right=False)))
+
+    summary_stats = None
+    total_genome_size = -1
+    if cargs.summary_output is not None:
+        logger.debug('User requested summary output...')
+        total_genome_size = get_total_genome_size(cargs.size_file, cargs.genome_size)
+        gs_gbp = round(total_genome_size / 1e9, 2)
+        logger.debug('Total genome size set to: {} bp'.format(total_genome_size))
+        logger.debug('... human readable: {} Gbp'.format(gs_gbp))
+        summary_stats = prepare_summary_statistics(len_stats, total_genome_size, read_count)
+        logger.debug('Summary statistics computed')
+        os.makedirs(os.path.abspath(os.path.dirname(cargs.summary_output)), exist_ok=True)
+        with open(cargs.summary_output, 'w') as stats:
+            _ = stats.write('\n'.join(['\t'.join([k, str(v)]) for k, v in summary_stats]))
+        logger.debug('Summary statistics written to file {}'.format(cargs.summary_output))
 
     logger.debug('Done - processed {} reads'.format(read_count))
     gc_info_reads = sum(gc_stats.values())
@@ -349,9 +329,12 @@ def main(logger, cargs):
 
     os.makedirs(os.path.dirname(os.path.abspath(cargs.output)), exist_ok=True)
     dump = {'num_reads': read_count,
+            'genome_size': total_genome_size,
+            'genome_size_file': cargs.size_file,
             'gc_bins': gc_stats,
             'len_stats': len_stats,
             'nuc_stats': nuc_stats,
+            'summary': summary_stats,
             'timestamp': str(ti.ctime())}
     with open(cargs.output, 'wb') as stats_dump:
         _ = pck.dump(dump, stats_dump)
