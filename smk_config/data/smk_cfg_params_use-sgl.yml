@@ -31,6 +31,12 @@ filter_vcf_gq: 100
 
 freebayes_timeout_sec: 3600
 
+# not primary alignment || supplementary alignment
+bwa_strandseq_aln_discard: 2304
+
+# read unmapped || not primary alignment || failed QC || PCR dup
+minimap_readref_aln_discard: 1796
+
 # read unmapped || not primary alignment || failed QC || PCR dup
 minimap_racon_aln_discard: 1796  # same as 0x704
 minimap_racon_aln_min_qual: 10
