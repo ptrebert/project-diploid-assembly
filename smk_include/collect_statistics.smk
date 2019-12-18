@@ -6,23 +6,70 @@ rule master_statistics_input_data:
         []
 
 
-rule validate_complete_input_fastq:
+rule compute_statistics_complete_input_fastq:
     input:
-        'input/fastq/complete/{filename}.fastq.gz'
+        fastq = 'input/fastq/complete/{filename}.fastq.gz',
+        faidx = 'references/assemblies/hg38_GCA_p13.fasta.fai',
     output:
-        'output/statistics/fastq_input/stat_dumps/{filename}.stats.pck'
-    log: 'log/output/statistics/fastq_input/stat_dumps/{filename}.stats.log'
-    benchmark: 'run/output/statistics/fastq_input/stat_dumps/{filename}.stats.rsrc'
-    threads: config['num_cpu_low']
+        dump = 'output/statistics/stat_dumps/{filename}.fastq.pck',
+        summary = 'output/statistics/input_reads/{filename}.fastq.stats',
+    log: 'log/output/statistics/stat_dumps/{filename}.fastq.log',
+    benchmark: 'run/output/statistics/stat_dumps/{filename}.fastq.t2.rsrc'
+    threads: 2
     resources:
-        mem_total_mb = 24576,  # dependent on chunk size and avg. read length
-        mem_per_cpu_mb = int(24576 / config['num_cpu_low']),
-        runtime_hrs=lambda wildcards: 1 if '-ccs' in wildcards.filename else 2
+        runtime_hrs= 6,
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 2048,
     params:
         script_dir = config['script_dir']
     shell:
-        '{params.script_dir}/collect_read_stats.py --debug --input-files {input} --output {output}'
-            ' --chunk-size 250000 --validate --num-cpu {threads} &> {log}'
+        '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fastq} '
+        '--output {output.dump} --summary-output {output.summary} '
+        '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
+
+
+rule compute_statistics_complete_input_fasta:
+    input:
+        fasta = 'input/fasta/complete/{filename}.fasta',
+        faidx = 'references/assemblies/hg38_GCA_p13.fasta.fai',
+    output:
+        dump = 'output/statistics/stat_dumps/{filename}.fasta.pck',
+        summary = 'output/statistics/input_reads/{filename}.fasta.stats',
+    log: 'log/output/statistics/stat_dumps/{filename}.fasta.log',
+    benchmark: 'run/output/statistics/stat_dumps/{filename}.fasta.t2.rsrc'
+    threads: 2
+    resources:
+        runtime_hrs= 6,
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 2048,
+    params:
+        script_dir = config['script_dir']
+    shell:
+        '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fasta} '
+        '--output {output.dump} --summary-output {output.summary} '
+        '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
+
+
+rule compute_statistics_complete_input_bam:
+    input:
+        bam = 'input/bam/complete/{filename}.pbn.bam',
+        faidx = 'references/assemblies/hg38_GCA_p13.fasta.fai',
+    output:
+        dump = 'output/statistics/stat_dumps/{filename}.pbn.bam.pck',
+        summary = 'output/statistics/input_reads/{filename}.pbn.bam.stats',
+    log: 'log/output/statistics/stat_dumps/{filename}.pbn.bam.log',
+    benchmark: 'run/output/statistics/stat_dumps/{filename}.pbn.bam.t2.rsrc'
+    threads: 2
+    resources:
+        runtime_hrs= 6,
+        mem_total_mb = 4096,
+        mem_per_cpu_mb = 2048,
+    params:
+        script_dir = config['script_dir']
+    shell:
+        '{params.script_dir}/collect_read_stats.py --debug --input-files {input.bam} '
+        '--output {output.dump} --summary-output {output.summary} '
+        '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
 rule plot_fastq_input_statistics:
