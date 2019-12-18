@@ -66,8 +66,8 @@ rule minimap_reads_to_reference_alignment:
     output:
         'output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.psort.sam.bam'
     log:
-        'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.minimap.log'
-        'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.samtools.log'
+        minimap = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.minimap.log',
+        samtools = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.samtools.log'
     benchmark:
         'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.t{}.rsrc'.format(config['num_cpu_max'])
     threads: config['num_cpu_max']
