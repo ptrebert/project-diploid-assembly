@@ -4,6 +4,7 @@ localrules: master_prepare_custom_references
 
 rule master_prepare_custom_references:
     input:
+        []
 
 
 rule install_rlib_saarclust:
@@ -61,10 +62,8 @@ rule write_strandseq_merge_fofn:
         bams = collect_strandseq_merge_files
     output:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     run:
+        import os
         bam_files = collect_strandseq_merge_files(wildcards)
         if len(bam_files) != 2:
             raise AssertionError('Missing merge partner for strand-seq BAM files: {}'.format(bam_files))
@@ -153,15 +152,13 @@ rule write_saarclust_config_file:
     output:
         cfg = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sts_reads}/saarclust.config',
         input_dir = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sts_reads}/saarclust.input'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     params:
         min_contig_size = config['min_contig_size'],
         bin_size = config['bin_size'],
         step_size = config['step_size'],
         prob_threshold = config['prob_threshold']
     run:
+        import os
         # following same example as merge strand-seq BAMs above
         bam_files = collect_strandseq_alignments(wildcards)
         outfolder = os.path.dirname(bam_files[0])
@@ -208,7 +205,7 @@ checkpoint run_saarclust_assembly_clustering:
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192,
-        runtime_hrs = 10
+        runtime_hrs = 23
     params:
         script_dir = config['script_dir'],
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
@@ -245,10 +242,8 @@ rule write_reference_fasta_clusters_fofn:
         fasta = collect_clustered_fasta_sequences
     output:
         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     run:
+        import os
         # following example as above for merge strand-seq BAM files
         fasta_files = collect_clustered_fasta_sequences(wildcards)
 
@@ -269,9 +264,6 @@ rule merge_reference_fasta_clusters:
     output:
         expand('output/reference_assembly/clustered/{{sts_reads}}/{{sample}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     params:
         fasta_clusters = lambda wildcards, input: load_fofn_file(input)
     shell:

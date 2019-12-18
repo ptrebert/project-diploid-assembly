@@ -9,16 +9,15 @@ localrules: master_handle_reference_download
 
 rule master_handle_reference_download:
     input:
+        []
 
 
 rule create_reference_download_request:
     output:
         'references/{subfolder}/{reference}.request'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     run:
-        import json as json
+        import os
+        import json
 
         ref_sources_path = config['reference_sources']
         assert os.path.isfile(ref_sources_path), 'No reference sources configured'

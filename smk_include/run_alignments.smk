@@ -11,21 +11,19 @@ rule derive_minimap_parameter_preset:
         '{filepath}.fastq.gz'
     output:
         '{filepath}.preset.minimap'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 5
     run:
+        import os
         preset = ' -x '
         path, filename = os.path.split(input[0])
         tech_spec = filename.split('_')[2]
         if tech_spec.startswith('ont'):
-            preset += 'map-ont'
+            preset += 'map-ont --secondary=no'
         elif '-clr' in tech_spec:
             # as per recommendation in help
-            preset += 'map-pb -H '
+            preset += 'map-pb -H --secondary=no'
         elif '-ccs' in tech_spec:
             # https://github.com/lh3/minimap2/issues/325
-            preset += 'asm20'
+            preset += 'asm20 --secondary=no'
         else:
             raise ValueError('No minimap preset for file: {}'.format(filename))
 
@@ -44,10 +42,8 @@ rule derive_pbmm2_parameter_preset:
         '{filepath}.pbn.bam'
     output:
         '{filepath}.preset.pbmm2'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 5
     run:
+        import os
         filename = os.path.basename(input[0])
         tech_spec = filename.split('_')[2]
         preset = ''
@@ -68,23 +64,28 @@ rule minimap_reads_to_reference_alignment:
         preset = 'input/fastq/complete/{sample}.preset.minimap',
         reference = 'output/reference_assembly/{folder_path}/{reference}.fasta'
     output:
-        'output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.sam'
+        'output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.psort.sam.bam'
     log:
-        'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.log'
+        'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.minimap.log'
+        'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.samtools.log'
     benchmark:
         'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.t{}.rsrc'.format(config['num_cpu_max'])
     threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = int(49152 / config['num_cpu_max']),
-        mem_total_mb = 49152,
-        runtime_hrs = 3
+        mem_per_cpu_mb = int(65536 / config['num_cpu_max']),
+        mem_total_mb = 65536,
+        runtime_hrs = 71,
+        mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.sample.split('_')[0],
-        preset = load_preset_file
+        preset = load_preset_file,
+        discard_flag = config['minimap_readref_aln_discard']
     shell:
-        'minimap2 -t {threads} {params.preset} -a -o {output} ' \
-            '-R "@RG\\tID:1\\tSM:{params.individual}" ' \
-            '{input.reference} {input.reads} &> {log}'
+        'minimap2 -t {threads} {params.preset} -a '
+            '-R "@RG\\tID:1\\tSM:{params.individual}" '
+            '{input.reference} {input.reads} 2> {log.minimap} | '
+            'samtools sort -m {resources.mem_sort_mb}M | '
+            'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.samtools}'
 
 
 rule pbmm2_reads_to_reference_alignment:
@@ -104,7 +105,7 @@ rule pbmm2_reads_to_reference_alignment:
     resources:
         mem_per_cpu_mb = int(98304 / config['num_cpu_max']),
         mem_total_mb = 98304,
-        runtime_hrs = 23
+        runtime_hrs = 71
     params:
         align_threads = config['num_cpu_max'] - config['num_cpu_low'],
         sort_threads = config['num_cpu_low'],
@@ -112,9 +113,9 @@ rule pbmm2_reads_to_reference_alignment:
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.sample.split('_')[0]
     shell:
-        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory_mb}M --no-bai ' \
-            ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} ' \
-            ' --preset {params.preset} --sample {params.individual} ' \
+        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory_mb}M --no-bai '
+            ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
+            ' --preset {params.preset} --sample {params.individual} '
             ' {input.reference} {input.reads} {output.bam} &> {log}'
 
 
@@ -153,12 +154,13 @@ rule bwa_strandseq_to_reference_alignment:
         mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
         mem_total_mb = 8192
     params:
-        idx_prefix = lambda wildcards, input: input.ref_index.split('.')[0]
+        idx_prefix = lambda wildcards, input: input.ref_index.split('.')[0],
+        discard_flag = config['bwa_strandseq_aln_discard']
     shell:
-        'bwa mem -t {threads}' \
-            ' -R "@RG\\tID:{wildcards.individual}_{wildcards.sample_id}\\tPL:Illumina\\tSM:{wildcards.individual}"' \
-            ' -v 2 {params.idx_prefix} {input.mate1} {input.mate2} 2> {log.bwa} | ' \
-            ' samtools view -b -F 2304 /dev/stdin > {output.bam} 2> {log.samtools}'
+        'bwa mem -t {threads}'
+            ' -R "@RG\\tID:{wildcards.individual}_{wildcards.sample_id}\\tPL:Illumina\\tSM:{wildcards.individual}"'
+            ' -v 2 {params.idx_prefix} {input.mate1} {input.mate2} 2> {log.bwa} | '
+            ' samtools view -b -F {params.discard_flag} /dev/stdin > {output.bam} 2> {log.samtools}'
 
 
 rule minimap_racon_polish_alignment_pass1:
@@ -190,8 +192,8 @@ rule minimap_racon_polish_alignment_pass1:
         discard_flag = config['minimap_racon_aln_discard'],
         min_qual = config['minimap_racon_aln_min_qual']
     shell:
-        'minimap2 -t {threads} -a {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" ' \
-            ' {input.contigs} {input.reads} 2> {log} | samtools sort -m {resources.mem_sort_mb}M | ' \
+        'minimap2 -t {threads} -a {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" '
+            ' {input.contigs} {input.reads} 2> {log} | samtools sort -m {resources.mem_sort_mb}M | '
             ' samtools view -q {params.min_qual} -F {params.discard_flag} /dev/stdin > {output.sam}'
 
 
@@ -219,7 +221,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0]
     shell:
-        'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai ' \
-            ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} ' \
-            ' --preset {params.preset} --sample {params.individual} ' \
+        'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
+            ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
+            ' --preset {params.preset} --sample {params.individual} '
             ' {input.contigs} {input.reads} {output.bam} &> {log}'

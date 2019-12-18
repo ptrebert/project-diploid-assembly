@@ -18,12 +18,10 @@ checkpoint create_input_data_download_requests:
         rules.master_scrape_data_sources.input
     output:
         directory('input/{subfolder}/requests')
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     wildcard_constraints:
         subfolder = '(fastq|bam)/(complete|partial)[a-z/]*'
     run:
+        import os
         import json as json
         import sys as sys
         import collections as col
@@ -73,10 +71,8 @@ checkpoint create_input_data_download_requests:
 rule download_bioproject_metadata:
     output:
         'input/bioprojects/{sts_reads}.metadata.tsv'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     run:
+        import os
         # This URL to be a common point of failure every couple of weeks,
         # can't really change that - maybe save bioproject report file in
         # repo when pipeline is stable
@@ -95,11 +91,8 @@ rule download_bioproject_metadata:
         bioproject_accession = config['strandseq_to_bioproject'][wildcards.sts_reads]
 
         tmp = load_url.format(**{'accession': bioproject_accession})
-        if os.path.isfile(output[0]):
-            exec = 'touch {output}'
-        else:
-            exec = 'wget --quiet -O {{output}} "{}"'.format(tmp)
-        shell(exec)
+        dl_call = 'wget --quiet -O {{output}} "{}"'.format(tmp)
+        shell(dl_call)
 
 
 checkpoint create_bioproject_download_requests:
@@ -109,10 +102,8 @@ checkpoint create_bioproject_download_requests:
         directory('input/fastq/strand-seq/{sts_reads}/requests')
     log:
         'log/input/fastq/strand-seq/{sts_reads}.requests.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     run:
+        import os
         import csv
 
         bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads]
@@ -268,19 +259,19 @@ rule handle_complete_fastq_download_request:
             local_path = req_file.readline().strip()
 
         if remote_path.endswith('.gz'):
-            exec = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
+            dl_call = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
         else:
-            exec = CMD_DL_UNCOMPRESSED_SINGLE.format(**{'remote_path': remote_path})
+            dl_call = CMD_DL_UNCOMPRESSED_SINGLE.format(**{'remote_path': remote_path})
 
         if not os.path.isfile(output[0]):
             with open(log[0], 'w') as logfile:
                 _ = logfile.write('Handling download request' + '\n')
-                _ = logfile.write('CMD: {}'.format(exec) + '\n\n')
+                _ = logfile.write('CMD: {}'.format(dl_call) + '\n\n')
                 if local_path != output[0]:
                     _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
                     raise RuntimeError
 
-            shell(exec)
+            shell(dl_call)
     # end of rule
 
 
@@ -305,17 +296,17 @@ rule handle_partial_pbn_bam_download_request:
             local_path = req_file.readline().strip()
 
         assert remote_path.endswith('.bam') or remote_path.endswith('.bam.1'), 'No BAM as download request'
-        exec = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
+        dl_call = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
 
         if not os.path.isfile(output[0]):
             with open(log[0], 'w') as logfile:
                 _ = logfile.write('Handling download request' + '\n')
-                _ = logfile.write('CMD: {}'.format(exec) + '\n\n')
+                _ = logfile.write('CMD: {}'.format(dl_call) + '\n\n')
                 if local_path != output[0]:
                     _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
                     raise RuntimeError
 
-            shell(exec)
+            shell(dl_call)
     # end of rule
 
 

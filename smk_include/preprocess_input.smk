@@ -35,9 +35,6 @@ rule write_fastq_input_parts_fofn:
         fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
     log:
         'log/input/fastq/complete/{mrg_sample}_1000.fofn.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
     run:
@@ -74,7 +71,7 @@ rule merge_fastq_input_parts:
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
     resources:
-        runtime_hrs = 4
+        runtime_hrs = 8
     params:
         fastq_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
@@ -112,9 +109,6 @@ rule write_bam_input_parts_fofn:
         'log/input/bam/complete/{mrg_sample}_1000.pbn.fofn.log'
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     run:
         import os
         bam_parts = collect_pacbio_bam_input_parts(wildcards)
@@ -189,9 +183,6 @@ rule merge_strandseq_libraries:
         collect_strandseq_libraries
     output:
         'input/fastq/strand-seq/{sts_reads}.fofn'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     run:
         fastq_files = collect_strandseq_libraries(wildcards)
         with open(output[0], 'w') as dump:

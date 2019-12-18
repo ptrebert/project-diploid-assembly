@@ -146,36 +146,36 @@ rule dump_shasta_haploid_fasta:
             ' --input-fq {input} --output-fa {output} &> {log}'
 
 
-rule samtools_convert_sam_to_bam:
-    input:
-        sam = '{folder_path}.sam'
-    output:
-        bam = '{folder_path}.sam.bam'
-    threads: config['num_cpu_low']
-    resources:
-        runtime_hrs = 23
-    benchmark:
-        'run/{folder_path}.sam-convert.rsrc'
-    shell:
-        "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
-
-
-rule samtools_position_sort_bam_alignment:
-    input:
-        unsorted_bam = '{folder_path}.sam.bam'
-    output:
-        sorted_bam = '{folder_path}.psort.sam.bam'
-    threads: config['num_cpu_low']
-    benchmark:
-        'run/{folder_path}.psort-bam.rsrc'
-    resources:
-        mem_per_cpu_mb = 20 * 1024,  # 20G per CPU
-        mem_total_mb = config['num_cpu_low'] * (20 * 1024)
-    params:
-        mem_per_thread = '20G'
-    shell:
-        'samtools sort -m {params.mem_per_thread} --threads {threads} '
-            '-o {output.sorted_bam} {input.unsorted_bam}'
+# rule samtools_convert_sam_to_bam:
+#     input:
+#         sam = '{folder_path}.sam'
+#     output:
+#         bam = '{folder_path}.sam.bam'
+#     threads: config['num_cpu_low']
+#     resources:
+#         runtime_hrs = 23
+#     benchmark:
+#         'run/{folder_path}.sam-convert.rsrc'
+#     shell:
+#         "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
+#
+#
+# rule samtools_position_sort_bam_alignment:
+#     input:
+#         unsorted_bam = '{folder_path}.sam.bam'
+#     output:
+#         sorted_bam = '{folder_path}.psort.sam.bam'
+#     threads: config['num_cpu_low']
+#     benchmark:
+#         'run/{folder_path}.psort-bam.rsrc'
+#     resources:
+#         mem_per_cpu_mb = 20 * 1024,  # 20G per CPU
+#         mem_total_mb = config['num_cpu_low'] * (20 * 1024)
+#     params:
+#         mem_per_thread = '20G'
+#     shell:
+#         'samtools sort -m {params.mem_per_thread} --threads {threads} '
+#             '-o {output.sorted_bam} {input.unsorted_bam}'
 
 
 rule samtools_index_fasta:

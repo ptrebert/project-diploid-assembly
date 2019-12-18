@@ -4,9 +4,6 @@ rule derive_wtdbg_parameter_preset:
         '{filepath}.fastq.gz'
     output:
         '{filepath}.preset.wtdbg'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     run:
         import os
         preset = None
@@ -36,9 +33,6 @@ rule derive_flye_parameter_preset:
         '{filepath}.fastq.gz'
     output:
         '{filepath}.preset.flye'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 10
     run:
         import os
         preset = None
@@ -153,9 +147,6 @@ rule write_peregrine_nonhapres_fofn:
         'input/fastq/complete/{sample}.fastq.gz'
     output:
         'input/fastq/complete/{sample}.fofn'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 5
     params:
         mount_point = '/wd'
     run:
@@ -434,9 +425,6 @@ rule write_peregrine_haploid_split_fofn:
         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
     output:
         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fofn',
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 5
     params:
         mount_point = '/wd'
     run:

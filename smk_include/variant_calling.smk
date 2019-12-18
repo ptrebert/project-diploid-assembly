@@ -128,7 +128,6 @@ rule normalize_longshot_vcf:
     resources:
         mem_per_cpu_mb = 2048,
         mem_total_mb = 2048,
-        runtime_hrs = 0
     run:
         import io
         with open(log[0], 'w') as logfile:

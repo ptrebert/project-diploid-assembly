@@ -26,9 +26,6 @@ rule collect_remote_hgsvc_HG00514_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_chs_HG00514_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -50,9 +47,6 @@ rule collect_remote_hgsvc_HG00512_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_chs_HG00512_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -74,9 +68,6 @@ rule collect_remote_hgsvc_HG00513_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_chs_HG00513_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -98,9 +89,6 @@ rule collect_remote_hgsvc_pur_trio_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_pur-trio_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -126,9 +114,6 @@ rule collect_remote_hgsvc_NA19240_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_yri_NA19240_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -154,9 +139,6 @@ rule collect_remote_hgsvc_NA19238_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_yri_NA19238_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -182,9 +164,6 @@ rule collect_remote_hgsvc_NA19239_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_yri_NA19239_pacbio.log'
-    resources:
-        runtime_hrs = 0,
-        runtime_min = 30
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
