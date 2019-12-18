@@ -94,7 +94,11 @@ def parse_qstat_output(job_info):
                 elif exit_code == 0 and job_status == 'done':
                     job_status = 'success'
                 else:
-                    logger.error('Job has exit code {}, but not status done: {}'.format(exit_code, job_status))
+                    if exit_code == 271:
+                        logger.error('Job has exit code 271 - killed by PBS scheduler for exceeding resources '
+                                     'or walltime limit.')
+                    else:
+                        logger.error('Job has exit code {}, but not status done: {}'.format(exit_code, job_status))
                     raise RuntimeError('Job has exit code but not status done')
         else:
             continue
@@ -118,7 +122,7 @@ if mobj is None:
     raise ValueError('Malformed job id')
 
 num_job_id = mobj.group(0)
-job_status = 'failed'
+report_job_status = 'failed'
 try:
     qstat_output = sp.check_output(
         'qstat -xf {}'.format(num_job_id),
@@ -130,15 +134,15 @@ except sp.CalledProcessError as cpe:
     logger.error('qstat call failed: {} / {}'.format(cpe.returncode, cpe.output.decode('utf-8')))
     if cpe.returncode == 153:
         # job id no longer known to qstat, assume it was fine...
-        job_status = 'success'
+        report_job_status = 'success'
     else:
-        job_status = 'failed'
+        report_job_status = 'failed'
 else:
     qstat_output = qstat_output.decode('utf-8')
     logger.info('qstat call successful')
-    job_status = parse_qstat_output(qstat_output)
+    report_job_status = parse_qstat_output(qstat_output)
 finally:
-    sys.stdout.write('{}\n'.format(job_status))
-    logger.info('=== Done job id: {} / {}'.format(job_id, job_status))
+    sys.stdout.write('{}\n'.format(report_job_status))
+    logger.info('=== Done job id: {} / {}'.format(job_id, report_job_status))
     logging.shutdown()
     sys.exit(0)
