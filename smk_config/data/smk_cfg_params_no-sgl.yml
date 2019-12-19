@@ -15,8 +15,6 @@ peregrine_version: 0.1.5.5
 deepvariant_version: 0.9.0
 shasta_version: 0.3.0
 
-shasta_min_read_length: 30000
-
 # SaaRclust parameter sets
 # goal is to obtain 24 clusters
 min_contig_size: 100000
@@ -45,6 +43,7 @@ minimap_racon_aln_min_qual: 10
 # for known references for main
 # pipeline steps (i.e., everything
 # before evaluation)
+use_genome_size: hg38_GCA_p13
 main_chromosomes:
   - chr1
   - chr2

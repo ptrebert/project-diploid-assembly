@@ -8,16 +8,16 @@ rule master_statistics_input_data:
 
 rule compute_statistics_complete_input_fastq:
     input:
-        fastq = 'input/fastq/complete/{filename}.fastq.gz',
-        faidx = 'references/assemblies/hg38_GCA_p13.fasta.fai',
+        fastq = 'input/fastq/complete/{sample}.fastq.gz',
+        faidx = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai',
     output:
-        dump = 'output/statistics/stat_dumps/{filename}.fastq.pck',
-        summary = 'output/statistics/input_reads/{filename}.fastq.stats',
-    log: 'log/output/statistics/stat_dumps/{filename}.fastq.log',
-    benchmark: 'run/output/statistics/stat_dumps/{filename}.fastq.t2.rsrc'
+        dump = 'output/statistics/stat_dumps/{sample}.fastq.pck',
+        summary = 'input/fastq/complete/{sample}.stats',
+    log: 'log/output/statistics/stat_dumps/{sample}.fastq.log',
+    benchmark: 'run/output/statistics/stat_dumps/{sample}.fastq.t2.rsrc'
     threads: 2
     resources:
-        runtime_hrs= 6,
+        runtime_hrs= 8,
         mem_total_mb = 4096,
         mem_per_cpu_mb = 2048,
     params:
@@ -30,16 +30,16 @@ rule compute_statistics_complete_input_fastq:
 
 rule compute_statistics_complete_input_fasta:
     input:
-        fasta = 'input/fasta/complete/{filename}.fasta',
-        faidx = 'references/assemblies/hg38_GCA_p13.fasta.fai',
+        fasta = 'input/fasta/complete/{sample}.fasta',
+        faidx = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai',
     output:
-        dump = 'output/statistics/stat_dumps/{filename}.fasta.pck',
-        summary = 'output/statistics/input_reads/{filename}.fasta.stats',
-    log: 'log/output/statistics/stat_dumps/{filename}.fasta.log',
-    benchmark: 'run/output/statistics/stat_dumps/{filename}.fasta.t2.rsrc'
+        dump = 'output/statistics/stat_dumps/{sample}.fasta.pck',
+        summary = 'input/fasta/complete/{sample}.stats'
+    log: 'log/output/statistics/stat_dumps/{sample}.fasta.log',
+    benchmark: 'run/output/statistics/stat_dumps/{sample}.fasta.t2.rsrc'
     threads: 2
     resources:
-        runtime_hrs= 6,
+        runtime_hrs= 8,
         mem_total_mb = 4096,
         mem_per_cpu_mb = 2048,
     params:
@@ -52,16 +52,16 @@ rule compute_statistics_complete_input_fasta:
 
 rule compute_statistics_complete_input_bam:
     input:
-        bam = 'input/bam/complete/{filename}.pbn.bam',
-        faidx = 'references/assemblies/hg38_GCA_p13.fasta.fai',
+        bam = 'input/bam/complete/{sample}.pbn.bam',
+        faidx = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai',
     output:
-        dump = 'output/statistics/stat_dumps/{filename}.pbn.bam.pck',
-        summary = 'output/statistics/input_reads/{filename}.pbn.bam.stats',
-    log: 'log/output/statistics/stat_dumps/{filename}.pbn.bam.log',
-    benchmark: 'run/output/statistics/stat_dumps/{filename}.pbn.bam.t2.rsrc'
+        dump = 'output/statistics/stat_dumps/{sample}.pbn.bam.pck',
+        summary = 'input/bam/complete/{sample}.stats',
+    log: 'log/output/statistics/stat_dumps/{sample}.pbn.bam.log',
+    benchmark: 'run/output/statistics/stat_dumps/{sample}.pbn.bam.t2.rsrc'
     threads: 2
     resources:
-        runtime_hrs= 6,
+        runtime_hrs= 23,
         mem_total_mb = 4096,
         mem_per_cpu_mb = 2048,
     params:

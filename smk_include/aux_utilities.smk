@@ -115,7 +115,7 @@ rule dump_shasta_fasta:
         script_dir = config['script_dir'],
         buffer_limit = 8  # gigabyte
     shell:
-        '{params.script_dir}/dump_shasta_fasta.py --debug --buffer-size {params.buffer_limit} ' \
+        '{params.script_dir}/dump_shasta_fasta.py --debug --buffer-size {params.buffer_limit} '
             ' --input-fq {input} --output-fa {output} &> {log}'
 
 
@@ -436,10 +436,15 @@ def load_seq_length_file(wildcards, input):
     if not os.path.isfile(file_path):
         seq_len = 'SEQLEN-DRY-RUN'
     else:
-        with open(file_path, 'r') as info:
-            seq_len = info.readline().split()[1]
-            try:
-                _ = int(seq_len)
-            except ValueError:
-                raise AssertionError('Extracted seq. length is not an integer: {} / {}'.format(seq_len, file_path))
+        seq_len = 0
+        with open(file_path, 'r') as seq_info:
+            for line in seq_info:
+                if line.startswith('#'):
+                    continue
+                length = line.split()[1]
+                try:
+                    length = int(length)
+                    seq_len += length
+                except ValueError:
+                    raise ValueError('Extracted seq. length is not an integer: {} / {}'.format(line.strip(), file_path))
     return seq_len

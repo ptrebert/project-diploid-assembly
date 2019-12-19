@@ -57,13 +57,117 @@ rule derive_flye_parameter_preset:
             _ = dump.write(preset)
 
 
+def load_shasta_minreadlength(stats_file, target_cov):
+    """
+    :param stats_file:
+    :param target_cov:
+    :return:
+    """
+    import sys
+    min_read_length = 0
+    last_delta = sys.maxsize
+    with open(stats_file, 'r') as table:
+        for line in table:
+            if not line.startswith('cov_geq'):
+                continue
+            rlen_info, cov = line.strip().split()
+            rlen = int(rlen_info.split('_')[-1])
+            cov = float(cov)
+            # note that first entry is geq_0, i.e., no filtering
+            # in case the target coverage is not attainable at all
+            delta = abs(round(cov - target_cov, 1))
+            if delta < last_delta:
+                last_delta = delta
+                min_read_length = rlen
+    return min_read_length
+
+
+rule derive_shasta_parameter_preset:
+    input:
+        '{folder_path}/{file_name}.fasta',
+        '{folder_path}/{file_name}.stats'
+    output:
+        '{folder_path}/{file_name}.preset.shasta'
+    run:
+        import os
+        preset = None
+        file_name = os.path.basename(input[0])
+        _, _, platform_spec = file_name.split('_')[:3]
+        target_coverage = 60  # tech-independent recommendation: cov between 40x and 80x
+        if platform_spec.startswith('pb'):
+            if 'ccs' in platform_spec:
+                # https://github.com/chanzuckerberg/shasta/blob/master/conf/PacBio-CCS-Dec2019.conf
+                preset = [
+                    '[Kmers]',
+                    'k = 15',
+                    'probability = 0.02',
+                    '[MinHash]',
+                    'm = 12',
+                    'minBucketSize = 20',
+                    'maxBucketSize = 100',
+                    'minHashIterationCount = 25',
+                    'minFrequency = 10',
+                    '[ReadGraph]',
+                    'maxAlignmentCount = 20',
+                    '[Assembly]',
+                    'consensusCaller = Modal'
+                ]
+            elif 'clr' in platform_spec:
+                # https://github.com/chanzuckerberg/shasta/blob/master/conf/PacBio-CLR-Dec2019.conf
+                preset = [
+                    '[ReadGraph]',
+                    'maxAlignmentCount = 20',
+                    '[Assembly]',
+                    'consensusCaller = Modal'
+                ]
+            else:
+                raise ValueError('Cannot handle PacBio platform spec: {} / {}'.format(file_name, platform_spec))
+        elif platform_spec.startswith('ont'):
+            if platform_spec.endswith('-ul'):
+                # https://github.com/chanzuckerberg/shasta/blob/master/conf/Nanopore-UL-Dec2019.conf
+                preset = [
+                    '[MinHash]',
+                    'minBucketSize = 5',
+                    'maxBucketSize = 40',
+                    'minFrequency = 10',
+                    '[Align]',
+                    'maxSkip = 60',
+                    'maxDrift = 60',
+                    'minAlignedMarkerCount = 400',
+                    '[Assembly]',
+                    'consensusCaller = Bayesian:guppy-3.0.5-a'
+                ]
+            else:
+                # https://github.com/chanzuckerberg/shasta/blob/master/conf/Nanopore-Dec2019.conf
+                preset = [
+                    '[MinHash]',
+                    'minBucketSize = 5',
+                    'maxBucketSize = 30',
+                    'minFrequency = 5',
+                    '[Align]',
+                    'minAlignedFraction = 0.4',
+                    '[Assembly]',
+                    'consensusCaller = Bayesian:guppy-3.0.5-a',
+                ]
+        else:
+            raise ValueError('Unexpected platform spec: {} / {}'.format(file_name, platform_spec))
+        min_read_length = load_shasta_minreadlength(input[1], target_coverage)
+        preset.append('[Reads]')
+        preset.append('minReadLength = ' + str(min_read_length))
+
+        with open(output[0], 'w') as shasta_config:
+            _ = shasta_config.write('\n'.join(preset))
+    # end of run block
+
+
 rule compute_wtdbg_nonhapres_assembly_layout:
     """
     Non-haplotype resolved assembly = replaces known reference (such as hg38)
     """
     input:
         fastq = 'input/fastq/complete/{sample}.fastq.gz',
-        preset = 'input/fastq/complete/{sample}.preset.wtdbg'
+        preset = 'input/fastq/complete/{sample}.preset.wtdbg',
+        seq_info = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai'
     output:
         layout = 'output/reference_assembly/non-hap-res/layout/wtdbg2/{sample}/{sample}.ctg.lay.gz',
         aux = expand('output/reference_assembly/non-hap-res/layout/wtdbg2/{{sample}}/{{sample}}.{ext}',
@@ -80,9 +184,10 @@ rule compute_wtdbg_nonhapres_assembly_layout:
         runtime_hrs = lambda wildcards: 16 if '-ccs' in wildcards.sample else 40
     params:
         param_preset = load_preset_file,
-        out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0]
+        out_prefix = lambda wildcards, output: output.layout.rsplit('.', 3)[0],
+        genome_size = load_seq_length_file
     shell:
-        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g3g -t {threads}'
+        'wtdbg2 -x {params.param_preset} -i {input.fastq} -g {params.genome_size} -t {threads}'
             ' -o {params.out_prefix} &> {log}'
 
 
@@ -110,7 +215,8 @@ rule compute_flye_nonhapres_assembly:
     """
     input:
         fastq = 'input/fastq/complete/{sample}.fastq.gz',
-        preset = 'input/fastq/complete/{sample}.preset.flye'
+        preset = 'input/fastq/complete/{sample}.preset.flye',
+        seq_info = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai'
     output:
         layout = directory('output/reference_assembly/non-hap-res/layout/flye/{sample}/00-assembly'),
         consensus = directory('output/reference_assembly/non-hap-res/layout/flye/{sample}/10-consensus'),
@@ -134,9 +240,10 @@ rule compute_flye_nonhapres_assembly:
         runtime_hrs = lambda wildcards: 30 if '-ccs' in wildcards.sample else 128
     params:
         param_preset = load_preset_file,
-        out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
+        out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source),
+        genome_size = load_seq_length_file
     shell:
-        'flye {params.param_preset} {input.fastq} -g3g -t {threads}'
+        'flye {params.param_preset} {input.fastq} -g {params.genome_size} -t {threads}'
             ' --debug --out-dir {params.out_prefix} &> {log}'
             ' && '
             'cp {output.assm_source} {output.assembly}'
@@ -207,6 +314,7 @@ rule compute_shasta_nonhapres_assembly:
     input:
         shasta_exec = 'output/check_files/environment/shasta_version.ok',
         fasta = 'input/fasta/complete/{sample}.fasta',
+        config = 'input/fasta/complete/{sample}.preset.shasta'
     output:
         assm_files = expand('output/reference_assembly/non-hap-res/layout/shasta/{{sample}}/Assembly{assm_files}',
                             assm_files=['-BothStrands.gfa', '.gfa', 'GraphChainLengthHistogram.csv',
@@ -230,13 +338,12 @@ rule compute_shasta_nonhapres_assembly:
         mem_total_mb = 1433600,
         runtime_hrs = 8
     params:
-        min_read_length = config['shasta_min_read_length'],
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
         'rm -fd {params.out_prefix} && '
         'shasta --input {input.fasta} --assemblyDirectory {params.out_prefix} --command assemble '
             ' --memoryMode anonymous --memoryBacking 4K --threads {threads} '
-            ' --Reads.minReadLength {params.min_read_length} &> {log}'
+            ' --config {input.config} &> {log}'
             ' && '
             'cp {output.assm_source} {output.assembly}'
 
@@ -483,7 +590,8 @@ rule compute_shasta_haploid_split_assembly:
     """
     input:
         shasta_exec = 'output/check_files/environment/shasta_version.ok',
-        fasta = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta'
+        fasta = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta',
+        config = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.preset.shasta',
     output:
         assm_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/temp/layout/shasta/{{hap_reads}}.{{hap}}.{{sequence}}/Assembly{assm_files}',
                             assm_files=['-BothStrands.gfa', '.gfa', 'GraphChainLengthHistogram.csv',
@@ -507,12 +615,11 @@ rule compute_shasta_haploid_split_assembly:
         mem_total_mb = 262144,
         runtime_hrs = 2
     params:
-        min_read_length = config['shasta_min_read_length'],
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
         'rm -fd {params.out_prefix} && '
         'shasta --input {input.fasta} --assemblyDirectory {params.out_prefix} --command assemble '
             ' --memoryMode anonymous --memoryBacking 4K --threads {threads} '
-            ' --Reads.minReadLength {params.min_read_length} &> {log}'
+            ' --config {input.config} &> {log}'
             ' && '
             'cp {output.assm_source} {output.assembly}'
