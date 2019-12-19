@@ -66,7 +66,8 @@ rule write_strandseq_merge_fofn:
         import os
         bam_files = collect_strandseq_merge_files(wildcards)
         if len(bam_files) != 2:
-            raise AssertionError('Missing merge partner for strand-seq BAM files: {}'.format(bam_files))
+            raise RuntimeError('Missing merge partner for strand-seq BAM files: '
+                               '{}'.format(output.fofn))
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(bam_files):
@@ -218,15 +219,15 @@ def collect_clustered_fasta_sequences(wildcards):
     """
     """
     strandseq_reads = wildcards.sts_reads
-    sqa_assembly = wildcards.reference
+    nhr_assembly = wildcards.reference
 
     # this output folder is the /clustered_assembly subfolder
-    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=sqa_assembly, sts_reads=strandseq_reads).output.dir_fasta
+    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=nhr_assembly, sts_reads=strandseq_reads).output.dir_fasta
     checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.fasta'))
 
     cluster_fasta = expand(
         os.path.join(seq_output_dir, '{sequence}.fasta'),
-        reference=sqa_assembly,
+        reference=nhr_assembly,
         sts_reads=strandseq_reads,
         sequence=checkpoint_wildcards.sequence
     )
@@ -246,6 +247,9 @@ rule write_reference_fasta_clusters_fofn:
         import os
         # following example as above for merge strand-seq BAM files
         fasta_files = collect_clustered_fasta_sequences(wildcards)
+        if len(fasta_files) == 0:
+            raise RuntimeError('No FASTA files to merge after SaaRclust run. '
+                               'SaaRclust most likely failed for sample: {}'.format(output.fofn))
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(fasta_files):

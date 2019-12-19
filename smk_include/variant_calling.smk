@@ -273,8 +273,8 @@ rule extract_heterozygous_variants:
         vcf_original = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf'),
         vcf_retyped = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf'),
     shell:
-        'bcftools view --genotype het --output-type v --output-file {output.vcf_original} {input.vcf_original} ' \
-        ' && ' \
+        'bcftools view --genotype het --output-type v --output-file {output.vcf_original} {input.vcf_original} '
+        ' && '
         'bcftools view --genotype het --output-type v --output-file {output.vcf_retyped} {input.vcf_retyped} '
 
 
@@ -333,7 +333,11 @@ rule write_final_vcf_splits:
     output:
         fofn = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
     run:
+        import os
         vcf_files = collect_final_vcf_splits(wildcards)
+        if len(vcf_files) == 0:
+            raise RuntimeError('No VCF splits (final stage) to merge. Previous job(s) failed for sample: '
+                               '{} '.format(output.fofn))
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(vcf_files):
@@ -400,7 +404,11 @@ rule write_intermediate_vcf_splits:
     output:
         fofn = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
     run:
+        import os
         vcf_files = collect_intermediate_vcf_splits(wildcards)
+        if len(vcf_files) == 0:
+            raise RuntimeError('No VCF splits (intermediate stage) to merge. Previous job(s) failed for sample: '
+                               '{}'.format(output.fofn))
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(vcf_files):

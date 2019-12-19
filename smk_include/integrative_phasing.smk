@@ -144,6 +144,7 @@ rule write_strandphaser_config_file:
     params:
         sp_cpu = config['num_cpu_high']
     run:
+        import os
         # following same example as merge strand-seq BAMs in module prepare_custom_references
         bam_files = collect_strandseq_alignments(wildcards)
         outfolder = os.path.dirname(bam_files[0])
@@ -198,8 +199,8 @@ rule run_strandphaser:
         individual = lambda wildcards: wildcards.sts_reads.split('_')[0],
         script_dir = config['script_dir']
     shell:
-        '{params.script_dir}/run_strandphaser.R {params.input_dir} {input.cfg} ' \
-            ' {input.variant_calls} {input.wc_regions} ' \
+        '{params.script_dir}/run_strandphaser.R {params.input_dir} {input.cfg} '
+            ' {input.variant_calls} {input.wc_regions} '
             ' {params.output_dir} {params.individual} &> {log.stp}'
 
 
@@ -334,6 +335,9 @@ rule write_phased_vcf_splits_fofn:
     run:
         # follow same example as merge strand-seq BAMs in module prepare_custom_references
         vcf_files = intphase_collect_phased_vcf_split_files(wildcards)
+        if len(vcf_files) == 0:
+            raise RuntimeError('No phased VCF files to merge. Previous job(s) likely failed for: '
+                               '{}'.format(output.fofn))
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(vcf_files):

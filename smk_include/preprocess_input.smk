@@ -4,6 +4,7 @@ localrules: master_preprocess_input
 
 rule master_preprocess_input:
     input:
+        []
 
 
 def collect_fastq_input_parts(wildcards):
@@ -33,32 +34,20 @@ rule write_fastq_input_parts_fofn:
         collect_fastq_input_parts
     output:
         fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
-    log:
-        'log/input/fastq/complete/{mrg_sample}_1000.fofn.log'
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
     run:
         import os
         fastq_parts = collect_fastq_input_parts(wildcards)
-        records_written = 0
+        if len(fastq_parts) == 0:
+            raise RuntimeError('No FASTQ parts to merge: {}'.format(output.fofn))
 
-        with open(log[0], 'w') as logfile:
-            _ = logfile.write('{} FASTQ parts for merging\n'.format(len(fastq_parts)))
-
-            with open(output.fofn, 'w') as dump:
-                for file_path in sorted(fastq_parts):
-                    if not os.path.isfile(file_path):
-                        _ = logfile.write('Warning: path is not (yet) a file on the file system: {}\n'.format(file_path))
-                        if os.path.isdir(file_path):
-                            _ = logfile.write('Error: assumed file path is TRUE for directory: {}\n'.format(file_path))
-                            raise ValueError('Expected file path for PBN-BAM merge part, but received directory: {}'.format(file_path))
-                    _ = dump.write(file_path + '\n')
-                    records_written += 1
-            if records_written == 0:
-                _ = logfile.write('Error: 0 records written to fofn file: {}\n'.format(output.fofn))
-                os.unlink(output.fofn)
-            else:
-                _ = logfile.write('Completed: {} records written to fofn file: {}'.format(records_written, output.fofn))
+        with open(output.fofn, 'w') as dump:
+            for file_path in sorted(fastq_parts):
+                if not os.path.isfile(file_path):
+                    if os.path.isdir(file_path):
+                        raise ValueError('Expected file path for PBN-BAM merge part, but received directory: {}'.format(file_path))
+                _ = dump.write(file_path + '\n')
 
 
 rule merge_fastq_input_parts:
@@ -105,32 +94,20 @@ rule write_bam_input_parts_fofn:
         collect_pacbio_bam_input_parts
     output:
         fofn = 'input/bam/complete/{mrg_sample}_1000.pbn.fofn'
-    log:
-        'log/input/bam/complete/{mrg_sample}_1000.pbn.fofn.log'
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
     run:
         import os
         bam_parts = collect_pacbio_bam_input_parts(wildcards)
-        records_written = 0
+        if len(bam_parts) == 0:
+            raise RuntimeError('No partial BAM files to merge: {}'.format(output.fofn))
 
-        with open(log[0], 'w') as logfile:
-            _ = logfile.write('{} pbn.bam parts for merging\n'.format(len(bam_parts)))
-
-            with open(output.fofn, 'w') as dump:
-                for file_path in sorted(bam_parts):
-                    if not os.path.isfile(file_path):
-                        _ = logfile.write('Warning: path is not (yet) a file on the file system: {}\n'.format(file_path))
-                        if os.path.isdir(file_path):
-                            _ = logfile.write('Error: assumed file path is TRUE for directory: {}\n'.format(file_path))
-                            raise ValueError('Expected file path for PBN-BAM merge part, but received directory: {}'.format(file_path))
-                    _ = dump.write(file_path + '\n')
-                    records_written += 1
-            if records_written == 0:
-                _ = logfile.write('Error: 0 records written to fofn file: {}\n'.format(output.fofn))
-                os.unlink(output.fofn)
-            else:
-                _ = logfile.write('Completed: {} records written to fofn file: {}'.format(records_written, output.fofn))
+        with open(output.fofn, 'w') as dump:
+            for file_path in sorted(bam_parts):
+                if not os.path.isfile(file_path):
+                    if os.path.isdir(file_path):
+                        raise ValueError('Expected file path for PBN-BAM merge part, but received directory: {}'.format(file_path))
+                _ = dump.write(file_path + '\n')
 
 
 rule merge_pacbio_native_bams:
@@ -185,5 +162,8 @@ rule merge_strandseq_libraries:
         'input/fastq/strand-seq/{sts_reads}.fofn'
     run:
         fastq_files = collect_strandseq_libraries(wildcards)
+        if len(fastq_files) == 0:
+            raise RuntimeError('No Strand-seq FASTQ file to create file listing: {}'.format(output[0]))
+
         with open(output[0], 'w') as dump:
             _ = dump.write('\n'.join(sorted(fastq_files)))

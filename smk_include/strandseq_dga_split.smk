@@ -220,6 +220,9 @@ rule write_assembled_fasta_clusters_fofn:
         import os
         # follow same example as merge strand-seq BAMs in module prepare_custom_references
         fasta_files = collect_assembled_sequence_files(wildcards)
+        if len(fasta_files) == 0:
+            raise RuntimeError('No assembled cluster FASTAs (draft stage) to merge. Previous job(s) likely failed '
+                               'for: {}'.format(output.fofn))
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(fasta_files):
@@ -292,6 +295,9 @@ rule write_polished_contigs_fofn:
     run:
         import os
         contigs = sorted(collect_polished_contigs(wildcards))
+        if len(contigs) == 0:
+            raise RuntimeError('No assembled contig FASTAs (polished stage) to merge. Previous job(s) likely failed '
+                               'for: {}'.format(output.fofn))
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(contigs):
