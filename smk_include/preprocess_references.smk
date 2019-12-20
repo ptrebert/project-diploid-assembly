@@ -100,10 +100,12 @@ rule normalize_reference_assembly_names:
 
 rule reduce_reference_to_main_chromosomes:
     input:
-        full_ref = 'references/assemblies/GRCh3{num,\d}_{ref_id}.fasta'
+        full_ref = 'references/assemblies/GRCh3{num}_{ref_id}.fasta'
     output:
-        red_ref = 'references/assemblies/hg3{num,\d}_{ref_id}.fasta',
-        red_sizes = 'references/assemblies/hg3{num,\d}_{ref_id}.sizes'
+        red_ref = 'references/assemblies/hg3{num}_{ref_id}.fasta',
+        red_sizes = 'references/assemblies/hg3{num}_{ref_id}.sizes'
+    wildcard_constraints:
+        num = '[0-9]'
     resources:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096
