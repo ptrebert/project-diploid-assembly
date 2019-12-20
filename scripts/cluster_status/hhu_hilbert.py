@@ -102,7 +102,6 @@ def parse_qstat_output(job_info):
                     raise RuntimeError('Job has exit code but not status done')
         else:
             continue
-    log_info += '\n'
     logger.info(log_info)
     if job_status == 'running':
         if exit_code != -1:
@@ -113,7 +112,7 @@ def parse_qstat_output(job_info):
 
 job_id = sys.argv[1]
 
-logger.info('=== Received input job id: {}'.format(job_id))
+logger.info('>>> Received input job id: {}'.format(job_id))
 
 mobj = re.match('[0-9]+', job_id)
 
@@ -143,6 +142,6 @@ else:
     report_job_status = parse_qstat_output(qstat_output)
 finally:
     sys.stdout.write('{}\n'.format(report_job_status))
-    logger.info('=== Done job id: {} / {}'.format(job_id, report_job_status))
+    logger.info('<<< Done job id: {} / {}\n'.format(job_id, report_job_status))
     logging.shutdown()
     sys.exit(0)
