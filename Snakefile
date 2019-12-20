@@ -48,7 +48,7 @@ wildcard_constraints:
     # Some generic constraints to enforce a more consistent naming scheme
     folder_path = '[A-Za-z0-9\-_\/]+',  # note: "." is NOT allowed in a folder path
     file_name = '[A-Za-z0-9\-_\.]+',
-    known_ref = 'GRCh38[A-Za-z0-9_]+',
+    known_ref = 'GRCh3[78][A-Za-z0-9_]+',
     genemodel = 'GRCh38[A-Za-z0-9_]+'
 
 
