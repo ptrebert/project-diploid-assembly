@@ -69,22 +69,25 @@ rule minimap_reads_to_reference_alignment:
         minimap = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.minimap.log',
         samtools = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.samtools.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.t{}.rsrc'.format(config['num_cpu_max'])
-    threads: config['num_cpu_max']
+        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.t{}.rsrc'.format(config['num_cpu_high'])
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(65536 / config['num_cpu_max']),
+        mem_per_cpu_mb = int(65536 / config['num_cpu_high']),
         mem_total_mb = 65536,
         runtime_hrs = 71,
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.sample.split('_')[0],
         preset = load_preset_file,
-        discard_flag = config['minimap_readref_aln_discard']
+        discard_flag = config['minimap_readref_aln_discard'],
+        tempdir = lambda wildcards: os.path.join(
+                                        'temp', 'minimap', wildcards.folder_path,
+                                        wildcards.sample, wildcards.reference)
     shell:
         'minimap2 -t {threads} {params.preset} -a '
             '-R "@RG\\tID:1\\tSM:{params.individual}" '
             '{input.reference} {input.reads} 2> {log.minimap} | '
-            'samtools sort -m {resources.mem_sort_mb}M | '
+            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} | '
             'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.samtools}'
 
 
@@ -98,21 +101,25 @@ rule pbmm2_reads_to_reference_alignment:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbn.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbn.t{}.rsrc'.format(config['num_cpu_max'])
+        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbn.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         config['conda_env_pbtools']
-    threads: config['num_cpu_max']
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(98304 / config['num_cpu_max']),
+        mem_per_cpu_mb = int(98304 / config['num_cpu_high']),
         mem_total_mb = 98304,
         runtime_hrs = 71
     params:
-        align_threads = config['num_cpu_max'] - config['num_cpu_low'],
-        sort_threads = config['num_cpu_low'],
-        sort_memory_mb = int((98304 / config['num_cpu_max']) * config['num_cpu_low']),
+        align_threads = config['num_cpu_high'] - 2,
+        sort_threads = 2,
+        sort_memory_mb = int((98304 / config['num_cpu_high']) * 2),
         preset = load_preset_file,
-        individual = lambda wildcards: wildcards.sample.split('_')[0]
+        individual = lambda wildcards: wildcards.sample.split('_')[0],
+        tempdir = lambda wildcards: os.path.join(
+                                        'temp', 'pbmm2', wildcards.folder_path,
+                                        wildcards.sample, wildcards.reference)
     shell:
+        'TMPDIR={params.tempdir} '
         'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory_mb}M --no-bai '
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
             ' --preset {params.preset} --sample {params.individual} '
@@ -190,10 +197,14 @@ rule minimap_racon_polish_alignment_pass1:
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
         preset = load_preset_file,
         discard_flag = config['minimap_racon_aln_discard'],
-        min_qual = config['minimap_racon_aln_min_qual']
+        min_qual = config['minimap_racon_aln_min_qual'],
+        tempdir = lambda wildcards: os.path.join(
+                                      'temp', 'minimap', PATH_STRANDSEQ_DGA_SPLIT,
+                                      wildcards.pol_reads, wildcards.hap_reads,
+                                      wildcards.assembler, wildcards.hap, wildcards.sequence)
     shell:
         'minimap2 -t {threads} -a {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" '
-            ' {input.contigs} {input.reads} 2> {log} | samtools sort -m {resources.mem_sort_mb}M | '
+            ' {input.contigs} {input.reads} 2> {log} | samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} | '
             ' samtools view -q {params.min_qual} -F {params.discard_flag} /dev/stdin > {output.sam}'
 
 
@@ -219,8 +230,13 @@ rule pbmm2_arrow_polish_alignment_pass1:
         align_threads = config['num_cpu_high'] - 2,
         sort_threads = 2,
         preset = load_preset_file,
-        individual = lambda wildcards: wildcards.hap_reads.split('_')[0]
+        individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
+        tempdir = lambda wildcards: os.path.join(
+                                        'temp', 'pbmm2', PATH_STRANDSEQ_DGA_SPLIT,
+                                        wildcards.pol_reads, wildcards.hap_reads,
+                                        wildcards.assembler, wildcards.hap, wildcards.sequence)
     shell:
+        'TMPDIR={params.tempdir} '
         'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
             ' --preset {params.preset} --sample {params.individual} '
