@@ -117,8 +117,8 @@ rule run_breakpointr:
         script_dir = config['script_dir']
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(8192 / config['num_cpu_high']),
-        mem_total_mb = 8192,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(16535 * attempt / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 16535 * attempt,
         runtime_hrs = 11
     shell:
         '{params.script_dir}/run_breakpointr.R {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'

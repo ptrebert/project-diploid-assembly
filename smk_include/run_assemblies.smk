@@ -513,9 +513,9 @@ rule compute_flye_haploid_split_assembly:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.flye.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards: int((24576 if '-ccs' in wildcards.hap_reads else 131072) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards: 24576 if '-ccs' in wildcards.hap_reads else 131072,
-        runtime_hrs = lambda wildcards: 0 if '-ccs' in wildcards.hap_reads else 5
+        mem_per_cpu_mb = lambda wildcards, attempt: int((24576 if '-ccs' in wildcards.hap_reads else 81920 + attempt * 20480) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 24576 if '-ccs' in wildcards.hap_reads else 81920 + attempt * 20480,
+        runtime_hrs = lambda wildcards, attempt: 0 if '-ccs' in wildcards.hap_reads else 5
     params:
         param_preset = load_preset_file,
         seq_len = load_seq_length_file,

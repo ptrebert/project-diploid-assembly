@@ -8,7 +8,7 @@ jobs: 150
 latency-wait: 300
 keep-going: True
 rerun-incomplete: True
-restart-times: 0
+restart-times: 3
 max-status-checks-per-second: 0.0016
 default-resources:
   - mem_per_cpu_mb=1024
