@@ -190,8 +190,8 @@ rule run_strandphaser:
         config['conda_env_rdga']
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(8192 / config['num_cpu_high']),
-        mem_total_mb = 8192,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(16535 * attempt / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 16535 * attempt,
         runtime_hrs = 11
     params:
         input_dir = lambda wildcards, input: load_fofn_file(input),
