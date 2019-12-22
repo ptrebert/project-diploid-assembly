@@ -117,8 +117,8 @@ rule run_breakpointr:
         script_dir = config['script_dir']
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(16535 * attempt / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 16535 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
         runtime_hrs = 11
     shell:
         '{params.script_dir}/run_breakpointr.R {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'
@@ -190,8 +190,8 @@ rule run_strandphaser:
         config['conda_env_rdga']
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(16535 * attempt / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 16535 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
         runtime_hrs = 11
     params:
         input_dir = lambda wildcards, input: load_fofn_file(input),
