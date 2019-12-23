@@ -122,7 +122,7 @@ num_job_id = mobj.group(0)
 report_job_status = 'failed'
 try:
     qstat_output = sp.check_output(
-        'qstat -Gf {}'.format(num_job_id),
+        'qstat -f {}'.format(num_job_id),
         stderr=sp.STDOUT,
         shell=True,
         timeout=60

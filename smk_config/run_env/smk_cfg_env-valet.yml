@@ -10,7 +10,7 @@ reference_sources: /beeond/user/code/project-diploid-assembly/annotation/referen
 ref_cache_folder: references/cache
 
 num_cpu_max: 36
-num_cpu_high: 18
+num_cpu_high: 24
 num_cpu_medium: 12
 num_cpu_low: 6
 
