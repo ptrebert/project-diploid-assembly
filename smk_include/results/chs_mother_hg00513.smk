@@ -1,7 +1,7 @@
 
 include: '../result_vars.smk'
 
-localrules: run_chs_child,
+localrules: run_chs_mother,
             chs_mother_ccs_nhr_assemblies,
             chs_mother_ccs_clust_assemblies,
             chs_mother_ccs_variant_calling,
