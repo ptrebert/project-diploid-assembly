@@ -9,7 +9,7 @@ import subprocess as sp
 
 
 log_msg_format = "%(asctime)s | %(levelname)s | %(message)s"
-cluster_status_log = '/gpfs/project/ebertp/projects/rfdga/log/cluster_status.log'
+cluster_status_log = '/beeond/projects/diploid-assembly/log/cluster_status.log'
 os.makedirs(os.path.dirname(cluster_status_log), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -55,18 +55,16 @@ def parse_qstat_output(job_info):
         ]
 
     job_state_codes = {
-        'B': 'running',
-        'E': 'running',
-        'F': 'done',
+        'C': 'done',
+        'E': 'done',
         'H': 'running',
         'M': 'running',
         'Q': 'running',
         'R': 'running',
         'S': 'running',
         'T': 'running',
-        'U': 'running',
-        'W': 'running',
-        'X': 'done'}
+        'W': 'running'
+    }
 
     log_info, job_status, exit_code = '\n', None, -1
     for line in job_info.split('\n'):
@@ -124,7 +122,7 @@ num_job_id = mobj.group(0)
 report_job_status = 'failed'
 try:
     qstat_output = sp.check_output(
-        'qstat -xf {}'.format(num_job_id),
+        'qstat -Gf {}'.format(num_job_id),
         stderr=sp.STDOUT,
         shell=True,
         timeout=60

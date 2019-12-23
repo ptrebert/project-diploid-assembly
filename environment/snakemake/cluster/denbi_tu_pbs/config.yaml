@@ -12,7 +12,8 @@ jobs: 100
 latency-wait: 300
 keep-going: True
 rerun-incomplete: True
-restart-times: 0
+restart-times: 2
+max-status-checks-per-second: 0.0016
 default-resources:
   - runtime_hrs=1
   - runtime_min=59
