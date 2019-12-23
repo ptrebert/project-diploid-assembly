@@ -39,8 +39,8 @@ rule strandseq_dga_split_haplo_tagging:
     wildcard_constraints:
         fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
     resources:
-        mem_total_mb = 4096,
-        mem_per_cpu_mb = 4096,
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = 23
     shell:
         'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} ' \
@@ -71,8 +71,8 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     wildcard_constraints:
         pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
-        mem_total_mb = 4096,
-        mem_per_cpu_mb = 4096,
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = 23
     shell:
         'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} ' \
@@ -101,8 +101,8 @@ rule strandseq_dga_split_haplo_splitting:
     wildcard_constraints:
         fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
     resources:
-        mem_per_cpu_mb = 8192,
-        mem_total_mb = 8192,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = 23
     shell:
         'whatshap --debug split --discard-unknown-reads --pigz --only-largest-block '
@@ -132,8 +132,8 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
     wildcard_constraints:
         pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
-        mem_per_cpu_mb = 8192,
-        mem_total_mb = 8192,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = 23
     shell:
         'whatshap --debug split --discard-unknown-reads --only-largest-block '

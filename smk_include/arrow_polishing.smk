@@ -21,5 +21,3 @@ rule arrow_contig_polishing_pass1:
     shell:
         'variantCaller --algorithm=arrow --log-file {log} --log-level INFO -j {threads} '
             ' --reference {input.contigs} -o {output} {input.alignments}'
-
-

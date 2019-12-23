@@ -295,8 +295,8 @@ rule run_integrative_phasing:
     benchmark:
         'run/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.rsrc'
     resources:
-        mem_per_cpu_mb = 2048,
-        mem_total_mb = 2048
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     shell:
         'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} '
             ' {input.vcf} {input.bam} {input.spr_phased} 2> {log} '
@@ -357,6 +357,9 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
         'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf'
     log:
         'log/output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.concat.log'
+    resources:
+             mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+             mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     shell:
         'bcftools concat -f {input.fofn} --output {output} --output-type v &> {log}'
 
@@ -371,6 +374,9 @@ rule compute_strandphaser_phased_vcf_stats:
         spr_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.txt'
     log:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.log'
+    resources:
+             mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+             mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     shell:
         'bcftools stats {input.vcf} > {output.bcf_stats} 2> {log}'
             ' && '
@@ -390,6 +396,9 @@ rule compute_whatshap_phased_vcf_stats:
         wh_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.txt'
     log:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.log'
+    resources:
+             mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+             mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     shell:
         'bcftools stats {input.vcf} > {output.bcf_stats} 2> {log}'
             ' && '
