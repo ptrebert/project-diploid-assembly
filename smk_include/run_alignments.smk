@@ -67,7 +67,8 @@ rule minimap_reads_to_reference_alignment:
         'output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.psort.sam.bam'
     log:
         minimap = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.minimap.log',
-        samtools = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.samtools.log'
+        st_sort = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.st-sort.log',
+        st_view = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.st-view.log',
     benchmark:
         'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
@@ -87,8 +88,8 @@ rule minimap_reads_to_reference_alignment:
         'minimap2 -t {threads} {params.preset} -a '
             '-R "@RG\\tID:1\\tSM:{params.individual}" '
             '{input.reference} {input.reads} 2> {log.minimap} | '
-            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} | '
-            'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.samtools}'
+            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
+            'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
 
 
 rule pbmm2_reads_to_reference_alignment:
@@ -184,7 +185,8 @@ rule minimap_racon_polish_alignment_pass1:
     output:
         sam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.psort.sam',
     log:
-        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.log',
+        minimap = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.minimap.log',
+        st_sort = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.st-sort.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/polishing/alignments/{{pol_reads}}_map-to_{{hap_reads}}-{{assembler}}.{{hap}}.{{sequence}}.racon-p1.t{}.rsrc'.format(config['num_cpu_high'])
     threads: config['num_cpu_high']
@@ -204,7 +206,8 @@ rule minimap_racon_polish_alignment_pass1:
                                       wildcards.assembler, wildcards.hap, wildcards.sequence)
     shell:
         'minimap2 -t {threads} -a {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" '
-            ' {input.contigs} {input.reads} 2> {log} | samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} | '
+            ' {input.contigs} {input.reads} 2> {log.minimap} | '
+            ' samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
             ' samtools view -q {params.min_qual} -F {params.discard_flag} /dev/stdin > {output.sam}'
 
 
