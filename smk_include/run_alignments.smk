@@ -85,6 +85,7 @@ rule minimap_reads_to_reference_alignment:
                                         'temp', 'minimap', wildcards.folder_path,
                                         wildcards.sample, wildcards.reference)
     shell:
+        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
         'minimap2 -t {threads} {params.preset} -a '
             '-R "@RG\\tID:1\\tSM:{params.individual}" '
             '{input.reference} {input.reads} 2> {log.minimap} | '
@@ -205,6 +206,7 @@ rule minimap_racon_polish_alignment_pass1:
                                       wildcards.pol_reads, wildcards.hap_reads,
                                       wildcards.assembler, wildcards.hap, wildcards.sequence)
     shell:
+        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
         'minimap2 -t {threads} -a {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" '
             ' {input.contigs} {input.reads} 2> {log.minimap} | '
             ' samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
