@@ -17,7 +17,7 @@ rule arrow_contig_polishing_pass1:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(24576 + attempt * 8192 / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 8192,
-        runtime_hrs = 12
+        runtime_hrs = 47
     shell:
         'variantCaller --algorithm=arrow --log-file {log} --log-level INFO -j {threads} '
             ' --reference {input.contigs} -o {output} {input.alignments}'
