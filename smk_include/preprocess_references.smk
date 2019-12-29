@@ -3,6 +3,7 @@ localrules: master_preprocess_references
 
 rule master_preprocess_references:
     input:
+        []
 
 
 rule normalize_reference_assembly_names:
@@ -12,8 +13,8 @@ rule normalize_reference_assembly_names:
         seq = 'references/assemblies/{known_ref}.fasta',
         table = 'references/assemblies/{known_ref}.sizes'
     resources:
-        mem_total_mb = 8092,
-        mem_per_cpu_mb = 8092
+        mem_total_mb = 16384,
+        mem_per_cpu_mb = 16384
     run:
         import gzip as gzip
         import re
@@ -107,8 +108,8 @@ rule reduce_reference_to_main_chromosomes:
     wildcard_constraints:
         num = '[0-9]'
     resources:
-        mem_total_mb = 8092,
-        mem_per_cpu_mb = 8092
+        mem_total_mb = 16384,
+        mem_per_cpu_mb = 16384
     run:
         chrom_set = config['main_chromosomes']
 
