@@ -16,4 +16,3 @@
 *.pbi
 *.fastq.gz
 *.fastq
-*cluster*
