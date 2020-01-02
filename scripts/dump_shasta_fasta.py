@@ -16,6 +16,11 @@ except ImportError:
     for entry in sys.path:
         sys.stderr.write('>>> "{}"\n'.format(entry))
     sys.stderr.write('\n')
+    my_env = dict(os.environ)
+    sys.stderr.write('Entries in script environment\n')
+    for k, v in my_env.items():
+        if 'path' in k.lower():
+            sys.stderr.write('>>> {} : {}\n'.format(k, v))
     raise
 
 
