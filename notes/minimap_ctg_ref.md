@@ -45,3 +45,21 @@ Relevance:
             "bedtools bamtobed -i {input} > {output} 2> {log}"
 
 ```
+
+Diagnostic plot of the BED output file can be produced as follows:
+
+```R
+library(SaaRclust)
+library(BSgenome.Hsapiens.UCSC.hg38)
+
+bedfile <- "bedfile with aligned contigs to the reference"
+plt1 <- plotClusteredContigs(bedfile = bedfile, min.mapq = 10, bsgenome = BSgenome.Hsapiens.UCSC.hg38, report = 'clustering')
+plt2 <- plotClusteredContigs(bedfile = bedfile, min.mapq = 10, bsgenome = BSgenome.Hsapiens.UCSC.hg38, report = 'ordering')
+plt3 <- plotClusteredContigs(bedfile = bedfile, min.mapq = 10, bsgenome = BSgenome.Hsapiens.UCSC.hg38, report = 'orienting')
+
+#To save the plots:
+plot destination = "location and the file name where the plot should be saved"
+ggsave(filename = <plot destination/clustering.pdf>, plot = plt1, width = 12, height = 6)
+ggsave(filename = <plot destination/ordering.pdf>, plot = plt2, width = 12, height = 6)
+ggsave(filename = <plot destination/orienting.pdf>, plot = plt3, width = 12, height = 6)
+```
