@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+from snakemake.exceptions import WildcardError as WildcardError
 
 
 TARGET_PATHS = {
@@ -127,16 +128,43 @@ def define_file_targets(wildcards):
     file_targets = []
 
     for spec_type, spec_params in target_spec:
-        if spec_type == 'defaults':
+        if spec_type == 'aliases':
+            continue
+        elif spec_type == 'defaults':
             specs.update(spec_params)
         else:
+            # Copy dict with default values for each target spec.
+            # Note that target specs are processed in order,
+            # so switching to other defaults for a second set of
+            # target specs is possible
             tmp = dict(specs)
             tmp.update(spec_params)
             for target_name, target_path in TARGET_PATHS.items():
-                complete_target = target_path.format(**tmp)
-                missing_parameters = re.findall(wildcard_re, complete_target)
-                if len(missing_parameters) > 0:
-                    raise ValueError('Missing parameter values for target {}: '
-                                     '{} / (known: {})'.format(target_name, missing_parameters, tmp))
-                file_targets.append(complete_target)
+                try:
+                    complete_targets = expand(target_path, **tmp)
+                except (KeyError, WildcardError):
+                        raise ValueError('Missing parameter values for target {}: '
+                                         '(known: {})'.format(target_name, tmp))
+                else:
+                    for entry in complete_targets:
+                        assert len(entry) > 1, 'Define file targets: looks like iterating over ' \
+                                               'exploded string instead of list: {}'.format(complete_targets)
+                        file_targets.append(entry)
     return sorted(file_targets)
+
+
+rule dump_build_targets:
+    input:
+         targets = define_file_targets
+    output:
+        'output/targets/{population}_{family}/{individual}.fofn'
+    run:
+        if not input.targets:
+            try:
+                os.unlink(output[0])
+            except (OSError, IOError):
+                pass
+        else:
+            with open(output[0], 'w') as dump:
+                for file_target in input.targets:
+                    _ = dump.write(file_target + '\n')
