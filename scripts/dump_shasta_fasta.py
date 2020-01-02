@@ -11,6 +11,7 @@ try:
     import dnaio as dnaio
 except ImportError:
     sys.stderr.write('\nError - could not import dnaio module\n')
+    sys.stderr.write('PATH of Python interpreter: {}\n'.format(sys.executable))
     sys.stderr.write('Locations in sys.path\n')
     for entry in sys.path:
         sys.stderr.write('>>> "{}"\n'.format(entry))
