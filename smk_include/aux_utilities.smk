@@ -108,9 +108,9 @@ rule dump_shasta_fasta:
     benchmark:
         'run/input/fastq/complete/{file_name}.fa-dump.rsrc'
     resources:
-        runtime_hrs = 8,
-        mem_total_mb = 10240,
-        mem_per_cpu_mb = 10240,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 + 4096 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 + 4096 * attempt
     params:
         script_dir = config['script_dir'],
         buffer_limit = 8  # gigabyte
@@ -135,9 +135,9 @@ rule dump_shasta_haploid_fasta:
     benchmark:
         'run/{file_path}/haploid_fastq/{file_name}.fa-dump.rsrc'
     resources:
-        runtime_hrs = 4,
-        mem_total_mb = 6144,
-        mem_per_cpu_mb = 6144,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
     params:
         script_dir = config['script_dir'],
         buffer_limit = 4  # gigabyte
@@ -211,6 +211,7 @@ checkpoint create_assembly_sequence_files:
     output:
         directory('{folder_path}/{reference}/sequences')
     run:
+        import os
         output_dir = output[0]
         os.makedirs(output_dir, exist_ok=True)
         with open(input[0], 'r') as fai:
