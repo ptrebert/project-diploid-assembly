@@ -52,13 +52,13 @@ rule compute_statistics_complete_input_fasta:
 
 rule compute_statistics_split_cluster_fasta:
     input:
-         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
+         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta',
          faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
     output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta.pck',
-          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta.t2.rsrc'
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.pck',
+          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.t2.rsrc'
     threads: 2
     resources:
              runtime_hrs= 1,
