@@ -318,17 +318,28 @@ rule download_shasta_executable:
                 _ = logfile.write('Error: conda bin path does not exist: {}\n'.format(conda_path))
                 raise RuntimeError('No conda bin path detected')
             shasta_bin = os.path.join(conda_path, 'shasta')
-            _ = logfile.write('Placing shasta executable at path: {}\n'.format(shasta_bin))
-            dl_url = params.shasta_url.format(**{'version': params.shasta_ver})
-            _ = logfile.write('Downloading shasta v{} from URL {}\n\n'.format(params.shasta_ver, dl_url))
-            cmd = 'wget --quiet -O {} {} &>> {{log}}'.format(shasta_bin, dl_url)
-            shell(cmd)
-            if not os.path.isfile(shasta_bin):
-                _ = logfile.write('Download failed - no Shasta binary at destination path\n')
-                raise RuntimeError('Shasta download failed')
-            _ = logfile.write('\nDownload complete\n')
-            os.chmod(shasta_bin, stat.S_IXUSR)
-            _ = logfile.write('Changed mode of shasta binary to user-executable\n')
+            download_executable = True
+            if os.path.isfile(shasta_bin):
+                _ = logfile.write('Existing shasta executable found - removing...\n')
+                try:
+                    os.unlink(shasta_bin)
+                except (OSError, IOError) as error:
+                    _ = logfile.write('WARNING: could not remove shasta executable at path {}\n')
+                    _ = logfile.write('ERROR message: {}\n'.format(str(error)))
+                    _ = logfile.write('Proceeding - will fail if shasta version does not match...\n')
+                    download_executable = False
+            if download_executable:
+                _ = logfile.write('Placing shasta executable at path: {}\n'.format(shasta_bin))
+                dl_url = params.shasta_url.format(**{'version': params.shasta_ver})
+                _ = logfile.write('Downloading shasta v{} from URL {}\n\n'.format(params.shasta_ver, dl_url))
+                cmd = 'wget --no-verbose -O {} {} &>> {{log}}'.format(shasta_bin, dl_url)
+                shell(cmd)
+                if not os.path.isfile(shasta_bin):
+                    _ = logfile.write('Download failed - no Shasta binary at destination path\n')
+                    raise RuntimeError('Shasta download failed')
+                _ = logfile.write('\nDownload complete\n')
+            os.chmod(shasta_bin, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+            _ = logfile.write('Changed mode of shasta binary to user-rwx\n')
             try:
                 shasta_ver = sp.check_output('shasta --version',
                                              stderr=sp.STDOUT,
