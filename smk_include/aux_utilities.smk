@@ -310,7 +310,8 @@ rule download_shasta_executable:
                     else:
                         _ = logfile.write('Skipping over conda ENV VAR: {} - {}\n'.format(key, value))
             if conda_path is None:
-                _ = logfile.write('Error: could not identify conda environment base path\n')
+                _ = logfile.write('Error: could not identify conda environment under '
+                                  'environment variable CONDA_PREFIX)\n')
                 raise RuntimeError('No conda base path detected')
             conda_path = os.path.join(conda_path, 'bin')
             if not os.path.isdir(conda_path):
