@@ -50,6 +50,28 @@ rule compute_statistics_complete_input_fasta:
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
+rule compute_statistics_split_cluster_fasta:
+    input:
+         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
+         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+    output:
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta.pck',
+          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}-{assembler}.{hap}.{sequence}.fasta.t2.rsrc'
+    threads: 2
+    resources:
+             runtime_hrs= 1,
+             mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+             mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
+    params:
+          script_dir = config['script_dir']
+    shell:
+         '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fasta} '
+         '--output {output.dump} --summary-output {output.summary} '
+         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
+
+
 rule compute_statistics_complete_input_bam:
     input:
         bam = 'input/bam/complete/{sample}.pbn.bam',
