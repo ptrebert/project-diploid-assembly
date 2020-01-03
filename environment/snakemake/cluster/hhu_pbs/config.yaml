@@ -3,8 +3,7 @@
 directory: /gpfs/project/ebertp/projects/rfdga
 cluster: >-
   qsub
-  -v PATH=/gpfs/project/ebertp/software/conda/envs/dipassm/bin:/gpfs/project/ebertp/software/conda/condabin:/bin:/usr/bin:/usr/lpp/mmfs/bin
-  -v CONDA_PREFIX=/gpfs/project/ebertp/software/conda/envs/dipassm
+  -v PATH=/gpfs/project/ebertp/software/conda/envs/dipassm/bin:/gpfs/project/ebertp/software/conda/condabin:/bin:/usr/bin:/usr/lpp/mmfs/bin,CONDA_PREFIX=/gpfs/project/ebertp/software/conda/envs/dipassm
   -A {cluster.account} -l walltime={cluster.run_hrs}:{cluster.run_min}:00
   -l select=1:ncpus={cluster.cores}:mem={cluster.mem_mb}mb
   -N {cluster.name} -o {cluster.output} -e {cluster.error}

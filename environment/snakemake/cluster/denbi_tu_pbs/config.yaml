@@ -3,8 +3,7 @@
 directory: /beeond/projects/diploid-assembly
 cluster: >-
   qsub
-  -v PATH=/beeond/user/software/conda/envs/dipassm/bin:/beeond/user/software/conda/condabin:/bin:/usr/bin:/usr/local/bin
-  -v CONDA_PREFIX=/beeond/user/software/conda/envs/dipassm
+  -v PATH=/beeond/user/software/conda/envs/dipassm/bin:/beeond/user/software/conda/condabin:/bin:/usr/bin:/usr/local/bin,CONDA_PREFIX=/beeond/user/software/conda/envs/dipassm
   -d /beeond/projects/diploid-assembly
   -l walltime={cluster.run_hrs}:{cluster.run_min}:00,nodes=1:ppn={cluster.cores},mem={cluster.mem_mb}M
   -N {cluster.name} -o {cluster.output} -e {cluster.error}
