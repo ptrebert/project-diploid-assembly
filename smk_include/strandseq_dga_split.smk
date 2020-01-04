@@ -247,16 +247,38 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
     run:
+        import sys
         import io
+        import re
+        fasta_header = '^>[A-Za-z_0-9]+$'
+
         with open(output[0], 'w') as merged_fasta:
-            for fasta_file in params.cluster_fastas.split():
-                buffer = io.StringIO()
-                _, seq_id, _ = fasta_file.rsplit('.', 2)
-                with open(fasta_file, 'r') as single_fasta:
-                    for line in single_fasta:
-                        if line.startswith('>'):
-                            line = line.replace('>', '>{}_'.format(seq_id))
-                        buffer.write(line)
+            pass
+
+        for fasta_file in params.cluster_fastas.split():
+            buffer = io.StringIO()
+            _, seq_id, _ = fasta_file.rsplit('.', 2)
+            with open(fasta_file, 'r') as single_fasta:
+                for line in single_fasta:
+                    if line.startswith('>'):
+                        line = line.replace('>', '>{}_'.format(seq_id))
+                        # make sure there is no bogus info in the header
+                        line = line.split()[0].strip()
+                        if re.match(fasta_header, line) is None:
+                            # implies other characters in header
+                            sys.stderr.write('\nERROR: malformed FASTA header detected during merge '
+                                             'of assembled cluster FASTA files - affected file {} / '
+                                             'header {}\n'.format(fasta_file, line))
+                            try:
+                                os.unlink(output[0])
+                            except (OSError, IOError):
+                                # can't do anything about this
+                                pass
+                            raise ValueError('Malformed FASTA header in merge: {}'.format(line))
+                        line += '\n'
+                    buffer.write(line)
+
+            with open(output[0], 'a') as merged_fasta:
                 _ = merged_fasta.write(buffer.getvalue())
 
 
@@ -320,14 +342,38 @@ rule merge_polished_contigs:
     params:
         polished_fastas = lambda wildcards, input: load_fofn_file(input)
     run:
+        import sys
         import io
+        import re
+        fasta_header = '^>[A-Za-z_0-9]+$'
+
         with open(output[0], 'w') as merged_fasta:
-            for fasta_file in params.polished_fastas.split():
-                buffer = io.StringIO()
-                _, seq_id, _ = fasta_file.rsplit('.', 2)
-                with open(fasta_file, 'r') as single_fasta:
-                    for line in single_fasta:
-                        if line.startswith('>') and seq_id not in line:
+            pass
+
+        for fasta_file in params.polished_fastas.split():
+            buffer = io.StringIO()
+            _, seq_id, _ , _ = fasta_file.rsplit('.', 3)
+            with open(fasta_file, 'r') as single_fasta:
+                for line in single_fasta:
+                    if line.startswith('>'):
+                        if seq_id not in line:
                             line = line.replace('>', '>{}_'.format(seq_id))
-                        buffer.write(line)
+                        # some awesome workaround for silly names coming from other tools...
+                        line = line.replace('|arrow', '')
+                        # make sure there is no other bogus info in the header
+                        line = line.split()[0].strip()
+                        if re.match(fasta_header, line) is None:
+                            # implies other characters in header
+                            sys.stderr.write('\nERROR: malformed FASTA header detected during merge '
+                                             'of assembled cluster FASTA files - affected file {} / '
+                                             'header {}\n'.format(fasta_file, line))
+                            try:
+                                os.unlink(output[0])
+                            except (OSError, IOError):
+                                # can't do anything about this
+                                pass
+                            raise ValueError('Malformed FASTA header in merge: {}'.format(line))
+                        line += '\n'
+                    buffer.write(line)
+            with open(output[0], 'a') as merged_fasta:
                 _ = merged_fasta.write(buffer.getvalue())
