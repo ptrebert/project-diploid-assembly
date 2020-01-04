@@ -4,6 +4,7 @@ localrules: master_variant_calling
 
 rule master_variant_calling:
     input:
+        []
 
 
 rule compute_position_coverage:
@@ -20,6 +21,9 @@ rule compute_position_coverage:
     benchmark:
         'run/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}.pos-cov.rsrc'
     threads: 2
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: (2048 + 2048 * attempt) // 2
     shell:
         'bedtools genomecov -d -ibam {input.read_ref_aln} | gzip > {output}'
 
@@ -38,8 +42,8 @@ rule compute_uniform_coverage_regions:
     benchmark:
         'run/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.rsrc'
     resources:
-        mem_total_mb = 6144,
-        mem_per_cpu_mb = 6144
+        mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
     params:
         num_regions = 128,
         script_dir = config['script_dir']
@@ -102,8 +106,8 @@ rule call_variants_longshot:
     params:
         individual = lambda wildcards: wildcards.vc_reads.split('_')[0]
     resources:
-        mem_per_cpu_mb = 6144,
-        mem_total_mb = 6144
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
     shell:
         'longshot --no_haps --bam {input.read_ref_aln} '
             ' --ref {input.reference} --region {wildcards.sequence}'
@@ -126,8 +130,8 @@ rule normalize_longshot_vcf:
     log:
         'log/output/variant_calls/longshot/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     resources:
-        mem_per_cpu_mb = 2048,
-        mem_total_mb = 2048,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
     run:
         import io
         with open(log[0], 'w') as logfile:
@@ -219,6 +223,9 @@ rule filter_variant_calls_quality_biallelic_snps:
         'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.log'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
     shell:
         'bcftools filter --include "QUAL>={wildcards.qual}" {input.vcf} | '
             'bcftools view -c 1 --types snps -m 2 -M 2 | '
@@ -241,8 +248,8 @@ rule whatshap_regenotype_variant_calls:
     benchmark:
         'run/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.rsrc'
     resources:
-        mem_per_cpu_mb = 4096,
-        mem_total_mb = 4096,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
         runtime_hrs = 6
     shell:
         'whatshap genotype --chromosome {wildcards.sequence} --reference {input.reference} --output {output} {input.vcf} {input.read_ref_aln} &> {log}'
@@ -272,6 +279,9 @@ rule extract_heterozygous_variants:
     output:
         vcf_original = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf'),
         vcf_retyped = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf'),
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
     shell:
         'bcftools view --genotype het --output-type v --output-file {output.vcf_original} {input.vcf_original} '
         ' && '
@@ -296,6 +306,9 @@ rule intersect_original_retyped_variant_calls:
         desc = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/README.txt',
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/{vc_reads}.{sequence}.isect.log'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
     params:
         outdir = lambda wildcards, output: os.path.dirname(output.desc)
     shell:
@@ -357,6 +370,9 @@ rule merge_final_vcf_splits:
         'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf'
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.concat.log'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
     shell:
         'bcftools concat -f {input.fofn} --output {output} --output-type v &> {log}'
 
@@ -428,6 +444,9 @@ rule merge_intermediate_vcf_splits:
         'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.vcf'
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.concat.log'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
     shell:
         'bcftools concat -f {input.fofn} --output {output} --output-type v &> {log}'
 

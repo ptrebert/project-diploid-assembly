@@ -180,6 +180,8 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
         haplotype = '(1|2)',
         pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
         runtime_hrs = 23
     shell:
         'bamtools merge -in {input.hap} -in {input.un} -out {output} &> {log}'
