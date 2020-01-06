@@ -10,7 +10,7 @@ import pickle as pck
 
 import numpy as np
 import matplotlib as mpl
-mpl.use('TkAgg')
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 log.getLogger('matplotlib.font_manager').disabled = True
 

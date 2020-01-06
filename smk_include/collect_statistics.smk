@@ -96,12 +96,12 @@ rule compute_statistics_complete_input_bam:
 
 rule plot_fastq_input_statistics:
     input:
-        'output/statistics/fastq_input/stat_dumps/{sample}.stats.pck'
+        'output/statistics/stat_dumps/{sample}.{file_ext}.pck'
     output:
-        'output/plotting/statistics/fastq_input/{sample}.stats.pdf'
+        'output/plotting/statistics/input_reads/{sample}.{file_ext}.stats.pdf'
     params:
         script_dir = config['script_dir'],
-        lower_bound = 7000
+        lower_bound = 6000
     run:
         upper_bounds = {
             'ccs': 25000,
@@ -118,8 +118,9 @@ rule plot_fastq_input_statistics:
             }
         step_size = step_sizes[tech]
 
-        exec = '{params.script_dir}/plot_sample_stats.py'
-        exec += ' --pck-input {input} --genome-length 3G'
+        exec = '{params.script_dir}/plot_sample_stats.py --debug'
+        exec += ' --pck-input {input}'
+        exec += ' --text-size 11'
         exec += ' --sample-name {wildcards.sample}'
         exec += ' --lowest-bin ' + str(params.lower_bound)
         exec += ' --highest-bin ' + str(upper_bound)
