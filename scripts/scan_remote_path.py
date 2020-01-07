@@ -12,6 +12,10 @@ import collections as col
 import ftplib as ftplib
 
 
+CCS_TECH_KEYWORDS = ['ccs', 'q20']
+CLR_TECH_KEYWORDS = ['clr']
+
+
 def parse_command_line():
     """
     :return:
@@ -72,8 +76,8 @@ def parse_command_line():
         action="store_true",
         default=False,
         dest="clr_subreads",
-        help="If no CCS indicator (ccs/q20) is part of the filename, and the file is a "
-             "subreads file, then assume that it is a PacBio CLR dataset"
+        help="If no CCS indicator ({}) is part of the filename, and the file is a "
+             "subreads file, then assume that it is a PacBio CLR dataset".format(CCS_TECH_KEYWORDS)
     )
     parser.add_argument(
         "--file-infix",
@@ -94,6 +98,67 @@ def parse_command_line():
     return parser.parse_args()
 
 
+def extract_maximal_match(file_name):
+    """
+    :param file_name:
+    :return:
+    """
+    lib_id = re.compile('[A-Za-z0-9_\-]+')
+    longest_match = 0
+    matched_string = ''
+    for match in re.finditer(lib_id, file_name):
+        current_match = match.group(0)
+        if len(current_match) > longest_match:
+            longest_match = len(current_match)
+            matched_string = current_match
+    if longest_match == 0:
+        raise ValueError('Could not match name/library identifier in file name: {}'.format(file_name))
+    return matched_string
+
+
+def collect_strong_tech_indicators(remote_files, skip_files):
+    """
+    In case there is a tech mix in one folder, try to separate
+    different techs by checking if there is a library identifier
+    (typically a long, convoluted string with date etc.) that is
+    tied to a strong tech indicator (e.g., CCS, Q20 etc). If so,
+    that library identifier has to be ignored in case of potentially
+    ambiguous matches for, e.g., "subreads" datasets.
+
+    :param remote_files:
+    :param skip_files:
+    :return:
+    """
+    lib_tech_lut = dict()
+    for full_path in remote_files:
+        path, name = os.path.split(full_path)
+        if any([x in name.lower() for x in skip_files]):
+            continue
+        library_id = extract_maximal_match(name)
+        if any([x in name.lower() for x in CCS_TECH_KEYWORDS]):
+            tech = 'ccs'
+        elif any([x in name.lower() for x in CLR_TECH_KEYWORDS]):
+            tech = 'clr'
+        else:
+            tech = None
+        if library_id in lib_tech_lut:
+            known_tech = lib_tech_lut[library_id]
+            if known_tech is not None:
+                if tech is not None:
+                    if known_tech != tech:
+                        raise ValueError('Library ID {} has two tech '
+                                         'indicators: {} / {}'.format(library_id, known_tech, tech))
+                else:
+                    # strong tech indicator exists for lib
+                    # this is fine
+                    pass
+            else:
+                lib_tech_lut[library_id] = tech
+        else:
+            lib_tech_lut[library_id] = tech
+    return lib_tech_lut
+
+
 def annotate_remote_files(remote_files, cargs, logger):
     """
     :param remote_files:
@@ -105,6 +170,11 @@ def annotate_remote_files(remote_files, cargs, logger):
     aux_files = ['_stats', 'scraps', 'subreadset']
     match_individual = re.compile('[A-Z0-9]+')
     file_collector = col.defaultdict(list)
+
+    logger.debug('Collecting strong tech indicators per library')
+    tech_collector = collect_strong_tech_indicators(remote_files, meta_files + aux_files)
+    libraries = set(tech_collector.keys())
+    logger.debug('Identified {} libraries in remote files'.format(len(tech_collector)))
 
     for full_path in remote_files:
         path, name = os.path.split(full_path)
@@ -124,14 +194,19 @@ def annotate_remote_files(remote_files, cargs, logger):
         individual = mobj.group(0)
         tech = None
         logger.debug('Extracted individual {} for file {}'.format(individual, name))
-        if any([x in name.lower() for x in ['ccs', 'q20']]):
+        if any([x in name.lower() for x in CCS_TECH_KEYWORDS]):
             tech = 'ccs'
-        elif any([x in name.lower() for x in ['clr']]):
+        elif any([x in name.lower() for x in CLR_TECH_KEYWORDS]):
             tech = 'clr'
         elif tech is None and 'subreads' in name.lower() and cargs.clr_subreads:
-            # note: tech is None implies that this is not a CCS subreads file
-            logger.warning('Assuming CLR/subreads file: {}'.format(name))
-            tech = 'clr'
+            # need to check if library ID is associated with a strong tech indicator
+            for lib in libraries:
+                if lib in name:
+                    tech = tech_collector[lib]
+                    if tech is None:
+                        logger.warning('Assuming CLR/subreads file: {}'.format(name))
+                        tech = 'clr'
+                    break
         else:
             logger.warning('>>> Skipping file {} - could not id seq. tech.'.format(name))
             continue
