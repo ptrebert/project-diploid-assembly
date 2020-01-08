@@ -18,8 +18,6 @@ def main():
     outfile = args.outfile
     logfile = args.logfile
 
-    req_version = [int(v) for v in args.atleast.split('.')]
-
     try:
         os.makedirs(os.path.dirname(os.path.abspath(outfile)), exist_ok=True)
         os.makedirs(os.path.dirname(os.path.abspath(logfile)), exist_ok=True)
@@ -29,11 +27,14 @@ def main():
         # Ignore that and hope that Snakemake creates everything...
         pass
 
+    req_version = [int(v) for v in args.atleast.split('.')]
+
     version_pattern = re.compile('[0-9]+\\.[0-9]+(\\.[0-9]+)?')
 
     match_found = False
 
     with open(logfile, 'w') as log:
+        _ = log.write('Minimum version required: {}\n'.format(args.atleast))
         for line in sys.stdin.readlines():
             _ = log.write('Processing line: {}\n'.format(line.strip()))
             mobj = version_pattern.search(line.strip())
