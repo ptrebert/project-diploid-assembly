@@ -68,27 +68,17 @@ rule create_conda_environment_pyscript:
 rule check_singularity_version:
     output:
         'output/check_files/environment/singularity_version.ok'
+    log:
+        'log/output/check_files/environment/singularity_version.log'
     envmodules:
         config['env_module_singularity']
-    run:
-        import subprocess as sp
-
-        try:
-            sing_ver = sp.check_output('singularity --version',
-                                        stderr=sp.STDOUT,
-                                        shell=True)
-            sing_ver = sing_ver.decode('utf-8')
-            version_string = sing_ver.strip().split()[-1]
-            major, minor = version_string.split('.')[:2]
-            if int(major) >= 3 and int(minor) > 0:
-                with open(output[0], 'w') as dump:
-                    _ = dump.write(sing_ver)
-            else:
-                raise ValueError('Incompatible Singularity version (>3.0 required): {}'.format(sing_ver))
-        except sp.CalledProcessError as spe:
-            rc = spe.returncode
-            err_msg = str(spe.output)
-            raise ValueError('Could not determine Singularity version (>3.0 required): {} / {}'.format(rc, err_msg))
+    params:
+        script_dir = config['script_dir'],
+        min_version = '3.1.0'  # due to container format change between v2 and v3
+    shell:
+        '{params.script_dir}/utilities/version_checker.py '
+        '--outfile {output} --logfile {log} '
+        '--at-least {params.min_version}'
 
 
 rule download_shasta_executable:
