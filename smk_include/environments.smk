@@ -65,8 +65,22 @@ rule create_conda_environment_pyscript:
          '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
 
 
-shell.executable('/usr/bin/bash')
+rule inspect_hpc_module_singularity:
+    output:
+        'output/check_files/environment/module_singularity.ok'
+    log:
+        'log/output/check_files/environment/module_singularity.ok'
+    params:
+        script_dir = config['script_dir']
+    envmodules:
+        config['env_module_singularity']
+    shell:
+         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
+
+
 rule check_singularity_version:
+    input:
+        'output/check_files/environment/module_singularity.ok'
     output:
         'output/check_files/environment/singularity_version.ok'
     log:
@@ -77,10 +91,10 @@ rule check_singularity_version:
         script_dir = config['script_dir'],
         min_version = '3.1.0'  # due to container format change between v2 and v3
     shell:
-        'singularity --version | {params.script_dir}/utilities/version_checker.py '
+        'singularity --version | '
+        '{params.script_dir}/utilities/version_checker.py '
         '--outfile {output} --logfile {log} '
-        '--at-least {params.min_version}'
-shell.executable('/bin/bash')
+        '--at-least {params.min_version} '
 
 
 rule download_shasta_executable:
