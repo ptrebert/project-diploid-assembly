@@ -20,6 +20,8 @@ rule compute_statistics_complete_input_fastq:
         runtime_hrs= 8,
         mem_total_mb = 4096,
         mem_per_cpu_mb = 2048,
+    conda:
+         '../environment/conda/conda_pyscript.yml'
     params:
         script_dir = config['script_dir']
     shell:
@@ -42,6 +44,8 @@ rule compute_statistics_complete_input_fasta:
         runtime_hrs= 8,
         mem_total_mb = 4096,
         mem_per_cpu_mb = 2048,
+    conda:
+         '../environment/conda/conda_pyscript.yml'
     params:
         script_dir = config['script_dir']
     shell:
@@ -64,6 +68,8 @@ rule compute_statistics_split_cluster_fasta:
              runtime_hrs= 1,
              mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
              mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
+    conda:
+         '../environment/conda/conda_pyscript.yml'
     params:
           script_dir = config['script_dir']
     shell:
@@ -86,6 +92,8 @@ rule compute_statistics_complete_input_bam:
         runtime_hrs= 23,
         mem_total_mb = 4096,
         mem_per_cpu_mb = 2048,
+    conda:
+         '../environment/conda/conda_pyscript.yml'
     params:
         script_dir = config['script_dir']
     shell:
@@ -99,107 +107,21 @@ rule plot_fastq_input_statistics:
         'output/statistics/stat_dumps/{sample}.{file_ext}.pck'
     output:
         'output/plotting/statistics/input_reads/{sample}.{file_ext}.stats.pdf'
+    conda:
+         '../environment/conda/conda_pyscript.yml'
     params:
         script_dir = config['script_dir'],
-        lower_bound = 6000
-    run:
-        upper_bounds = {
-            'ccs': 25000,
-            'clr': 100000,
-            'ul': 100000
-            }
-        tech = wildcards.sample.split('_')[2].split('-')[-1]
-        upper_bound = upper_bounds[tech]
-
-        step_sizes = {
-            'ccs': 500,
-            'clr': 1000,
-            'ul': 1000
-            }
-        step_size = step_sizes[tech]
-
-        exec = '{params.script_dir}/plot_sample_stats.py --debug'
-        exec += ' --pck-input {input}'
-        exec += ' --text-size 11'
-        exec += ' --sample-name {wildcards.sample}'
-        exec += ' --lowest-bin ' + str(params.lower_bound)
-        exec += ' --highest-bin ' + str(upper_bound)
-        exec += ' --step-size ' + str(step_size)
-        exec += ' --output {output}'
-        shell(exec)
-
-
-rule filter_squashed_assembly_by_size:
-    input:
-        'references/assemblies/{sample}_sqa-{assembler}.fasta'
-    output:
-        fasta = 'references/assemblies/filtered/{sample}_sqa-{assembler}-100kb.fasta',
-        stats = 'output/statistics/assemblies/{sample}_sqa-{assembler}-100kb.stats.tsv'
-    log:
-        'log/references/assemblies/{sample}_sqa-{assembler}-100kb.log'
-    params:
-        scriptdir = config['script_dir'],
-        min_contig_size = config['min_contig_size'],
+        lower_bound = 6000,
+        upper_bound = lambda wildcards: {'ccs': 25000, 'clr': 100000, 'ul': 100000}[wildcards.sample.split('_')[2].split('-')[-1]],
+        step_size = lambda wildcards: {'ccs': 500, 'clr': 1000, 'ul': 1000}[wildcards.sample.split('_')[2].split('-')[-1]]
     shell:
-        '{params.scriptdir}/filter_squashed_assembly.py --debug --input-fasta {input}'
-            ' --output-fasta {output.fasta} --output-metrics {output.stats}'
-            ' --min-size {params.min_contig_size} &> {log}'
-
-
-rule compute_statistics_haplosplit_fastq:
-    input:
-        'output/diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.fastq.gz'
-    output:
-        'output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pck'
-    log:
-        'log/output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.log'
-    benchmark:
-        'run/output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.rsrc'
-    threads: config['num_cpu_low']
-    resources:
-        mem_total_mb = 24576,  # dependent on chunk size and avg. read length
-        mem_per_cpu_mb = int(24576 / config['num_cpu_low']),
-        runtime_hrs=lambda wildcards: 1 if '-ccs' in wildcards.filename else 2
-    params:
-        script_dir = config['script_dir']
-    shell:
-        '{params.script_dir}/collect_read_stats.py --debug --input-files {input} --output {output}'
-            ' --chunk-size 250000 --validate --num-cpu {threads} &> {log}'
-
-
-rule plot_fastq_haplosplit_statistics:
-    input:
-        'output/statistics/fastq_haplosplit/stat_dumps/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pck'
-    output:
-        'output/plotting/statistics/fastq_haplosplit/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.{hap}.stats.pdf'
-    params:
-        script_dir = config['script_dir'],
-        lower_bound = 7000
-    run:
-        upper_bounds = {
-            'ccs': 25000,
-            'clr': 100000,
-            'ul': 100000
-            }
-        tech = wildcards.sample.split('_')[2].split('-')[-1]
-        upper_bound = upper_bounds[tech]
-
-        step_sizes = {
-            'ccs': 500,
-            'clr': 1000,
-            'ul': 1000
-            }
-        step_size = step_sizes[tech]
-
-        exec = '{params.script_dir}/plot_sample_stats.py'
-        exec += ' --pck-input {input} --genome-length 3G'
-        exec += ' --sample-name {wildcards.sample}'
-        exec += ' --lowest-bin ' + str(params.lower_bound)
-        exec += ' --highest-bin ' + str(upper_bound)
-        exec += ' --step-size ' + str(step_size)
-        exec += ' --text-size 14'
-        exec += ' --output {output}'
-        shell(exec)
+        '{params.script_dir}/plot_sample_stats.py '
+        '--pck-input {input} --text-size 11 '
+        '--sample-name {wildcards.sample} '
+        '--lowest-bin {params.lower_bound} '
+        '--highest-bin {params.upper_bound} '
+        '--step-size {params.step_size} '
+        '--output {output} '
 
 
 def collect_tag_lists(wildcards):

@@ -4,18 +4,10 @@ rule compute_md5_checksum:
         '{filepath}'
     output:
         '{filepath}.md5'
+    conda:
+         '../environment/conda/conda_shelltools.yml'
     shell:
         "md5sum {input} > {output}"
-
-
-rule samtools_index_cram_alignment:
-    input:
-        cram = '{filepath}.cram'
-    output:
-        crai = '{filepath}.cram.crai'
-    threads: config['num_cpu_low']
-    shell:
-        "samtools index -@ {threads} {input.cram}"
 
 
 rule samtools_index_bam_alignment:
@@ -27,7 +19,9 @@ rule samtools_index_bam_alignment:
         'run/{{filepath}}.idx-bai.t{}.rsrc'.format(config['num_cpu_low'])
     threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards: 12 if '.pbn.bam' in wildcards.filepath else 1
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 8 * attempt
+    conda:
+         '../environment/conda/conda_biotools.yml'
     shell:
         "samtools index -@ {threads} {input.bam}"
 
@@ -40,9 +34,9 @@ rule pb_bamtools_index_bam_alignment:
     benchmark:
         'run/{filepath}.create-pbi.rsrc'
     resources:
-        runtime_hrs = lambda wildcards: 1 if '.part' in wildcards.filepath else 24
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 8 * attempt
     conda:
-        config['conda_env_pbtools']
+         '../environment/conda/conda_pbtools.yml'
     shell:
         'pbindex {input}'
 
@@ -63,7 +57,7 @@ rule pb_bam2x_dump_fastq:
     resources:
         runtime_hrs = lambda wildcards, input: 71 if '.part' in input.pbn_bam else 167
     conda:
-        config['conda_env_pbtools']
+         '../environment/conda/conda_pbtools.yml'
     params:
         out_prefix = lambda wildcards, output: output[0].rsplit('.', 2)[0]
     shell:
@@ -83,9 +77,9 @@ rule pb_bam2x_dump_haploid_fastq:
     wildcard_constraints:
         pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
-        runtime_hrs = 4
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 2 * attempt
     conda:
-        config['conda_env_pbtools']
+         '../environment/conda/conda_pbtools.yml'
     params:
         out_prefix = lambda wildcards, output: output[0].rsplit('.', 2)[0]
     shell:
@@ -111,6 +105,8 @@ rule dump_shasta_fasta:
         runtime_hrs = lambda wildcards, attempt: 8 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 + 4096 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 + 4096 * attempt
+    conda:
+         '../environment/conda/conda_pyscript.yml'
     params:
         script_dir = config['script_dir'],
         buffer_limit = 8  # gigabyte
@@ -135,9 +131,11 @@ rule dump_shasta_haploid_fasta:
     benchmark:
         'run/{file_path}/haploid_fastq/{file_name}.fa-dump.rsrc'
     resources:
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 2 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
+    conda:
+         '../environment/conda/conda_pyscript.yml'
     params:
         script_dir = config['script_dir'],
         buffer_limit = 4  # gigabyte
@@ -146,43 +144,13 @@ rule dump_shasta_haploid_fasta:
             ' --input-fq {input} --output-fa {output} &> {log}'
 
 
-# rule samtools_convert_sam_to_bam:
-#     input:
-#         sam = '{folder_path}.sam'
-#     output:
-#         bam = '{folder_path}.sam.bam'
-#     threads: config['num_cpu_low']
-#     resources:
-#         runtime_hrs = 23
-#     benchmark:
-#         'run/{folder_path}.sam-convert.rsrc'
-#     shell:
-#         "samtools view -o {output.bam} -b -@ {threads} {input.sam}"
-#
-#
-# rule samtools_position_sort_bam_alignment:
-#     input:
-#         unsorted_bam = '{folder_path}.sam.bam'
-#     output:
-#         sorted_bam = '{folder_path}.psort.sam.bam'
-#     threads: config['num_cpu_low']
-#     benchmark:
-#         'run/{folder_path}.psort-bam.rsrc'
-#     resources:
-#         mem_per_cpu_mb = 20 * 1024,  # 20G per CPU
-#         mem_total_mb = config['num_cpu_low'] * (20 * 1024)
-#     params:
-#         mem_per_thread = '20G'
-#     shell:
-#         'samtools sort -m {params.mem_per_thread} --threads {threads} '
-#             '-o {output.sorted_bam} {input.unsorted_bam}'
-
-
 rule samtools_index_fasta:
     input:
         '{filepath}.fasta'
     output:
         '{filepath}.fasta.fai'
+    conda:
+         '../environment/conda/conda_biotools.yml'
     shell:
         'samtools faidx {input}'
 
@@ -192,6 +160,8 @@ rule bgzip_file_copy:
         '{filepath}'
     output:
         '{filepath}.bgz'
+    conda:
+         '../environment/conda/conda_biotools.yml'
     shell:
         'bgzip -c {input} > {output}'
 
@@ -201,6 +171,8 @@ rule bcftools_index_bgzipped_file:
         '{filepath}.bgz'
     output:
         '{filepath}.bgz.tbi'
+    conda:
+         '../environment/conda/conda_biotools.yml'
     shell:
         'bcftools index --tbi {input}'
 
@@ -239,6 +211,8 @@ rule generate_bwa_index:
         mem_per_cpu_mb = 6144,
         mem_total_mb = 6144,
         runtime_hrs = 3
+    conda:
+         '../environment/conda/conda_biotools.yml'
     params:
         prefix = lambda wildcards, output: output[0].split('.')[0]
     shell:
@@ -252,11 +226,16 @@ rule singularity_pull_container:
         'output/container/{hub}/{repo}/{tool}_{version}.sif'
     log:
         'log/output/container/{hub}/{repo}/{tool}_{version}.pull.log'
+    #envmodules:
+       #    config['env_module_singularity']
     params:
-        pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo)
+        pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo),
+        singularity_module = config['env_module_singularity']
     shell:
+        'module load {params.singularity_module} ; '
         'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull '
-            '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
+            '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log} ; '
+        'module unload {params.singularity_module}'
 
 
 def collect_strandseq_alignments(wildcards):

@@ -16,6 +16,8 @@ rule compute_delta_assembly_reference:
         'log/output/evaluation/mummer_delta/{known_ref}/{folder_path}/{file_name}.mummer.log'
     benchmark:
         'run/output/evaluation/mummer_delta/{{known_ref}}/{{folder_path}}/{{file_name}}.mummer.t{}.rsrc'.format(config['num_cpu_medium'])
+    conda:
+         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
@@ -39,7 +41,7 @@ rule quast_analysis_assembly:
     benchmark:
         'run/output/evaluation/quastlg_busco/{{known_ref}}-{{genemodel}}/{{folder_path}}/{{file_name}}/quast_run.t{}.rsrc'.format(config['num_cpu_medium'])
     conda:
-        config['conda_env_rdga']
+         '../environment/conda/conda_rtools.yml'
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),

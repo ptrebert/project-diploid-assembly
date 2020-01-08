@@ -59,8 +59,10 @@ rule merge_fastq_input_parts:
         'log/input/fastq/complete/{mrg_sample}_1000.merge.log'
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
+    conda:
+        '../environment/conda/conda_shelltools.yml'
     resources:
-        runtime_hrs = 8
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
     params:
         fastq_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
@@ -121,8 +123,10 @@ rule merge_pacbio_native_bams:
         'run/input/bam/complete/{mrg_sample}_1000.mrg.rsrc'
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
+    conda:
+         '../environment/conda/conda_pbtools.yml'
     resources:
-        runtime_hrs = 71
+        runtime_hrs = lambda wildcards, attempt: 6 if attempt <= 1 else 16 * attempt
     params:
         bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
     shell:

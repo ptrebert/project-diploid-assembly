@@ -1,10 +1,4 @@
 
-CMD_DL_COMPRESSED_PARALLEL = 'aria2c --out={{output}} --file-allocation=none -s 4 -x 4 {remote_path} &>> {{log}}'
-
-CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
-
-CMD_DL_UNCOMPRESSED_SINGLE = 'wget --quiet -O /dev/stdout {remote_path} 2>> {{log}} | gzip > {{output}}'
-
 localrules: master_handle_data_download
 
 
@@ -71,28 +65,28 @@ checkpoint create_input_data_download_requests:
 rule download_bioproject_metadata:
     output:
         'input/bioprojects/{sts_reads}.metadata.tsv'
-    run:
-        import os
-        # This URL to be a common point of failure every couple of weeks,
-        # can't really change that - maybe save bioproject report file in
-        # repo when pipeline is stable
-        load_url = 'https://www.ebi.ac.uk/ena/data/warehouse/filereport?accession='
-        load_url += '{accession}'
-        load_url += '&result=read_run&fields='
-        load_url += 'study_accession,sample_accession,secondary_sample_accession'
-        load_url += ',experiment_accession,run_accession,submission_accession'
-        load_url += ',tax_id,scientific_name,instrument_platform,instrument_model'
-        load_url += ',library_name,library_layout,library_strategy,library_source'
-        load_url += ',library_selection,read_count,center_name,study_title,fastq_md5'
-        load_url += ',study_alias,experiment_alias,run_alias,fastq_ftp,submitted_ftp'
-        load_url += ',sample_alias,sample_title'
-        load_url += '&format=tsv&download=txt'
-
-        bioproject_accession = config['strandseq_to_bioproject'][wildcards.sts_reads]
-
-        tmp = load_url.format(**{'accession': bioproject_accession})
-        dl_call = 'wget --quiet -O {{output}} "{}"'.format(tmp)
-        shell(dl_call)
+    log:
+       'log/input/bioprojects/{sts_reads}.metadata.log'
+    conda:
+         '../environment/conda/conda_shelltools.yml'
+    params:
+        script_dir = config['script_dir'],
+        accession_number = 'PRJEB12849'  # TODO this needs to be dynamic
+    shell:
+        '{params.script_dir}/utilities/downloader.py --debug '
+        '--ena-file-report '
+        ' "https://www.ebi.ac.uk/ena/data/warehouse/filereport?accession='
+        '{params.accession_number}'
+        '&result=read_run&fields='
+        'study_accession,sample_accession,secondary_sample_accession'
+        ',experiment_accession,run_accession,submission_accession'
+        ',tax_id,scientific_name,instrument_platform,instrument_model'
+        ',library_name,library_layout,library_strategy,library_source'
+        ',library_selection,read_count,center_name,study_title,fastq_md5'
+        ',study_alias,experiment_alias,run_alias,fastq_ftp,submitted_ftp'
+        ',sample_alias,sample_title'
+        '\&format=tsv\&download=txt" '
+        '--output {output} &> {log}'
 
 
 checkpoint create_bioproject_download_requests:
@@ -106,7 +100,7 @@ checkpoint create_bioproject_download_requests:
         import os
         import csv
 
-        bioproject = config['strandseq_to_bioproject'][wildcards.sts_reads]
+        bioproject = 'PRJEB12849'  # TODO this needs to be dynamic
         individual = wildcards.sts_reads.split('_')[0]
 
         with open(log[0], 'w') as logfile:
@@ -155,27 +149,15 @@ rule handle_strandseq_download_requests:
         'log/input/fastq/strand-seq/{sts_reads}/{sample}_{run_id}.download.log'
     benchmark:
         'run/input/fastq/strand-seq/{sts_reads}/{sample}_{run_id}.download.rsrc'
+    conda:
+         '../environment/conda/conda_shelltools.yml'
     threads: 2
-    run:
-        with open(input[0], 'r') as req_file:
-            remote_path = req_file.readline().strip()
-            local_path = req_file.readline().strip()
-
-        if remote_path.endswith('.gz'):
-            exec = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
-        else:
-            exec = CMD_DL_UNCOMPRESSED_SINGLE.format(**{'remote_path': remote_path})
-
-        if not os.path.isfile(output[0]):
-            with open(log[0], 'w') as logfile:
-                _ = logfile.write('Handling download request' + '\n')
-                _ = logfile.write('CMD: {}'.format(exec) + '\n\n')
-                if local_path != output[0]:
-                    _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
-                    raise RuntimeError
-
-            shell(exec)
-    # end of checkpoint
+    params:
+        script_dir = config['script_dir']
+    shell:
+        '{params.script_dir}/utilities/downloader.py --debug '
+        '--request-file {input} --output {output} '
+        '--parallel-conn 1 &> {log}'
 
 
 rule handle_partial_fastq_download_request:
@@ -190,29 +172,19 @@ rule handle_partial_fastq_download_request:
     wildcard_constraints:
         split_type = '(parts|chunks)',
         req_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
-    threads: 2  # compromise between wget and aria2c
+    conda:
+         '../environment/conda/conda_shelltools.yml'
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = 12
-    run:
-        with open(input[0], 'r') as req_file:
-            remote_path = req_file.readline().strip()
-            local_path = req_file.readline().strip()
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    params:
+        script_dir = config['script_dir'],
+        parallel_conn = config['num_cpu_low'] - 1
+    shell:
+         '{params.script_dir}/utilities/downloader.py --debug '
+         '--request-file {input} --output {output} '
+         '--parallel-conn {params.parallel_conn} &> {log}'
 
-        if remote_path.endswith('.gz'):
-            exec = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
-        else:
-            exec = CMD_DL_UNCOMPRESSED_SINGLE.format(**{'remote_path': remote_path})
-
-        if not os.path.isfile(output[0]):
-            with open(log[0], 'w') as logfile:
-                _ = logfile.write('Handling download request' + '\n')
-                _ = logfile.write('CMD: {}'.format(exec) + '\n\n')
-                if local_path != output[0]:
-                    _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
-                    raise RuntimeError
-
-            shell(exec)
-    # end of rule
 
 
 def complete_fastq_samples_mock_merger(wildcards):
@@ -250,29 +222,18 @@ rule handle_complete_fastq_download_request:
         'log/input/fastq/complete/{req_sample}.download.log'
     benchmark:
         'run/input/fastq/complete/{req_sample}.download.rsrc'
-    threads: 2  # compromise between wget and aria2c
+    conda:
+         '../environment/conda/conda_shelltools.yml'
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = 12
-    run:
-        with open(input[0], 'r') as req_file:
-            remote_path = req_file.readline().strip()
-            local_path = req_file.readline().strip()
-
-        if remote_path.endswith('.gz'):
-            dl_call = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
-        else:
-            dl_call = CMD_DL_UNCOMPRESSED_SINGLE.format(**{'remote_path': remote_path})
-
-        if not os.path.isfile(output[0]):
-            with open(log[0], 'w') as logfile:
-                _ = logfile.write('Handling download request' + '\n')
-                _ = logfile.write('CMD: {}'.format(dl_call) + '\n\n')
-                if local_path != output[0]:
-                    _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
-                    raise RuntimeError
-
-            shell(dl_call)
-    # end of rule
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    params:
+        script_dir = config['script_dir'],
+        parallel_conn = config['num_cpu_low'] - 1
+    shell:
+         '{params.script_dir}/utilities/downloader.py --debug '
+         '--request-file {input} --output {output} '
+         '--parallel-conn {params.parallel_conn} &> {log}'
 
 
 rule handle_partial_pbn_bam_download_request:
@@ -287,27 +248,16 @@ rule handle_partial_pbn_bam_download_request:
     wildcard_constraints:
         split_type = '(parts|chunks)',
         req_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
-    threads: 2  # compromise between wget and aria2c
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = 12
-    run:
-        with open(input[0], 'r') as req_file:
-            remote_path = req_file.readline().strip()
-            local_path = req_file.readline().strip()
-
-        assert remote_path.endswith('.bam') or remote_path.endswith('.bam.1'), 'No BAM as download request'
-        dl_call = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
-
-        if not os.path.isfile(output[0]):
-            with open(log[0], 'w') as logfile:
-                _ = logfile.write('Handling download request' + '\n')
-                _ = logfile.write('CMD: {}'.format(dl_call) + '\n\n')
-                if local_path != output[0]:
-                    _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
-                    raise RuntimeError
-
-            shell(dl_call)
-    # end of rule
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    params:
+        script_dir = config['script_dir'],
+        parallel_conn = config['num_cpu_low'] - 1
+    shell:
+         '{params.script_dir}/utilities/downloader.py --debug '
+         '--request-file {input} --output {output} '
+         '--parallel-conn {params.parallel_conn} &> {log}'
 
 
 def get_bioproject_sample_annotator(bioproject):

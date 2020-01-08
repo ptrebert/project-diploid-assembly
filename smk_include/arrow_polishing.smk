@@ -12,11 +12,11 @@ rule arrow_contig_polishing_pass1:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.rsrc'
     conda:
-        config['conda_env_pbtools']
+         '../environment/conda/conda_pbtools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(24576 + attempt * 8192 / config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 8192,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(12288 + attempt * 24576 / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 12288 + attempt * 24576,
         runtime_hrs = 47
     shell:
         'variantCaller --algorithm=arrow --log-file {log} --log-level INFO -j {threads} '
