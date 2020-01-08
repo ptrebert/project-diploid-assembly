@@ -71,11 +71,14 @@ rule inspect_hpc_module_singularity:
     log:
         'log/output/check_files/environment/module_singularity.ok'
     params:
-        script_dir = config['script_dir']
-    envmodules:
-        config['env_module_singularity']
+        script_dir = config['script_dir'],
+        singularity_module = config['env_module_singularity']
+    #envmodules:
+    #    config['env_module_singularity']
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
+         'module load {params.singularity_module} ; '
+         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log} ; '
+         'module unload {params.singularity_module} '
 
 
 rule check_singularity_version:
@@ -85,16 +88,19 @@ rule check_singularity_version:
         'output/check_files/environment/singularity_version.ok'
     log:
         'log/output/check_files/environment/singularity_version.log'
-    envmodules:
-        config['env_module_singularity']
+    #envmodules:
+    #    config['env_module_singularity']
     params:
         script_dir = config['script_dir'],
-        min_version = '3.1.0'  # due to container format change between v2 and v3
+        min_version = '3.1.0',  # due to container format change between v2 and v3
+        singularity_module = config['env_module_singularity']
     shell:
+        'module load {params.singularity_module} ; '
         'singularity --version | '
         '{params.script_dir}/utilities/version_checker.py '
         '--outfile {output} --logfile {log} '
-        '--at-least {params.min_version} '
+        '--at-least {params.min_version} ; '
+        'module unload {params.singularity_module}'
 
 
 rule download_shasta_executable:
