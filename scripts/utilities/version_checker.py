@@ -42,8 +42,8 @@ def main():
                 version_info = mobj.group(0)
                 _ = log.write('Potential version info found: {}\n'.format(version_info))
                 tool_version = [int(v) for v in version_info.split('.')]
-                for x, y in zip(req_version, tool_version):
-                    if x > y and not x < y:
+                for min_v, is_v in zip(req_version, tool_version):
+                    if is_v > min_v and not is_v < min_v:
                         _ = log.write('Minimum version matched...\n')
                         match_found = True
                         break
