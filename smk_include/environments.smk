@@ -65,6 +65,7 @@ rule create_conda_environment_pyscript:
          '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
 
 
+shell.executable('/usr/bin/bash')
 rule check_singularity_version:
     output:
         'output/check_files/environment/singularity_version.ok'
@@ -79,6 +80,7 @@ rule check_singularity_version:
         'singularity --version | {params.script_dir}/utilities/version_checker.py '
         '--outfile {output} --logfile {log} '
         '--at-least {params.min_version}'
+shell.executable('/bin/bash')
 
 
 rule download_shasta_executable:

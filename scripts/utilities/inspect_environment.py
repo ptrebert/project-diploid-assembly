@@ -16,8 +16,14 @@ def main():
     outfile = args.outfile
     logfile = args.logfile
 
-    os.makedirs(os.path.dirname(os.path.abspath(outfile)), exist_ok=True)
-    os.makedirs(os.path.dirname(os.path.abspath(logfile)), exist_ok=True)
+    try:
+        os.makedirs(os.path.dirname(os.path.abspath(outfile)), exist_ok=True)
+        os.makedirs(os.path.dirname(os.path.abspath(logfile)), exist_ok=True)
+    except TypeError:
+        # since Conda environments (or the Singularity module on Hilbert)
+        # only support Python2 (...), exist_ok may cause an exception
+        # Ignore that and hope that Snakemake creates everything...
+        pass
 
     my_env = dict(os.environ)
 
