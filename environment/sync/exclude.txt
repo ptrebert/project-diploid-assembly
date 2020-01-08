@@ -8,6 +8,7 @@
 */haploid_fastq/*
 */haploid_bam/*
 *temp*
+*tmp*
 *processing*
 *.sh
 *.bam
