@@ -76,7 +76,7 @@ rule check_singularity_version:
         script_dir = config['script_dir'],
         min_version = '3.1.0'  # due to container format change between v2 and v3
     shell:
-        '{params.script_dir}/utilities/version_checker.py '
+        'singularity --version | {params.script_dir}/utilities/version_checker.py '
         '--outfile {output} --logfile {log} '
         '--at-least {params.min_version}'
 
