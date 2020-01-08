@@ -245,6 +245,8 @@ rule handle_partial_pbn_bam_download_request:
         'log/input/bam/partial/{split_type}/{req_sample}.{partnum}.download.log'
     benchmark:
         'run/input/bam/partial/{split_type}/{req_sample}.{partnum}.download.rsrc'
+    conda:
+        '../environment/conda/conda_shelltools.yml'
     wildcard_constraints:
         split_type = '(parts|chunks)',
         req_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
