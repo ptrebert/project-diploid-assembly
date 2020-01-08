@@ -5,7 +5,7 @@ include: 'smk_include/results/agg_pur_trio.smk'
 include: 'smk_include/results/agg_chs_trio.smk'
 include: 'smk_include/results/agg_yri_trio.smk'
 
-localrules: master
+localrules: master, setup_env
 
 # Global wildcard constraints for consistent naming
 wildcard_constraints:
@@ -57,8 +57,24 @@ rule master:
         rules.run_pur_trio.input,
         rules.run_chs_trio.input,
         rules.run_yri_trio.input
-
     message: 'Executing ALL'
+
+
+rule setup_env:
+    input:
+        rules.create_conda_environment_shell_tools.output,
+        rules.create_conda_environment_pacbio_tools.output,
+        rules.create_conda_environment_r_tools.output,
+        rules.create_conda_environment_bio_tools.output,
+        rules.create_conda_environment_pyscript.output,
+        rules.download_shasta_executable.output,
+        rules.download_quast_busco_databases.output,
+        rules.check_singularity_version.output,
+        rules.install_rlib_saarclust.output,
+        rules.install_rlib_breakpointr.output,
+        rules.install_rlib_strandphaser.output
+    message: 'Performing environment setup...'
+
 
 
 def make_log_useful(log_path, status):

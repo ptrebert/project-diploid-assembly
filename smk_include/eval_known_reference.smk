@@ -3,15 +3,7 @@ localrules: master_eval_known_reference
 
 rule master_eval_known_reference:
     input:
-
-
-rule download_quast_busco_databases:
-    output:
-        'output/check_files/quast-lg/busco_db_download.ok'
-    conda:
-        config['conda_env_rdga']
-    shell:
-        'quast-download-busco &> {output}'
+        []
 
 
 rule compute_delta_assembly_reference:
@@ -52,7 +44,7 @@ rule quast_analysis_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 24576,
-        runtime_hrs = 6
+        runtime_hrs = 8
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100

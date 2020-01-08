@@ -1,4 +1,4 @@
-name: rdga
+name: rtools
 channels:
   - conda-forge
   - bioconda

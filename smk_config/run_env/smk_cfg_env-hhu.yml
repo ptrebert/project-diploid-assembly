@@ -3,6 +3,7 @@ notify: False
 notify_email: ebertp@hhu.de
 
 script_dir: /gpfs/project/ebertp/code/project-diploid-assembly/scripts
+env_module_singularity: Singularity
 
 data_sources: /gpfs/project/ebertp/code/project-diploid-assembly/annotation/input_data_sources.json
 reference_sources: /gpfs/project/ebertp/code/project-diploid-assembly/annotation/reference_data_sources.json

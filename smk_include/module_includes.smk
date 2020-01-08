@@ -1,5 +1,6 @@
 
 # modules w/o other dependencies
+include: 'environments.smk'
 include: 'aux_utilities.smk'
 include: 'link_data_sources.smk'
 include: 'scrape_data_sources.smk'

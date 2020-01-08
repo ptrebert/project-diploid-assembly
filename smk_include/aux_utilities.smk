@@ -245,35 +245,6 @@ rule generate_bwa_index:
         'bwa index -p {params.prefix} {input.reference} &> {log}'
 
 
-rule no_singularity_mock_output:
-    output:
-        touch('output/check_files/environment/singularity.false')
-
-
-rule check_singularity_version:
-    output:
-        'output/check_files/environment/singularity_version.ok'
-    run:
-        import subprocess as sp
-
-        try:
-            sing_ver = sp.check_output('singularity --version',
-                                        stderr=sp.STDOUT,
-                                        shell=True)
-            sing_ver = sing_ver.decode('utf-8')
-            version_string = sing_ver.strip().split()[-1]
-            major, minor = version_string.split('.')[:2]
-            if int(major) >= 3 and int(minor) > 0:
-                with open(output[0], 'w') as dump:
-                    _ = dump.write(sing_ver)
-            else:
-                raise ValueError('Incompatible Singularity version (>3.0 required): {}'.format(sing_ver))
-        except sp.CalledProcessError as spe:
-            rc = spe.returncode
-            err_msg = str(spe.output)
-            raise ValueError('Could not determine Singularity version (>3.0 required): {} / {}'.format(rc, err_msg))
-
-
 rule singularity_pull_container:
     input:
         'output/check_files/environment/singularity_version.ok'
@@ -286,79 +257,6 @@ rule singularity_pull_container:
     shell:
         'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull '
             '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
-
-
-rule download_shasta_executable:
-    output:
-        'output/check_files/environment/shasta_version.ok'
-    log:
-        'log/output/check_files/environment/shasta_version.log'
-    params:
-        shasta_url = "https://github.com/chanzuckerberg/shasta/releases/download/{version}/shasta-Linux-{version}".format(**{'version': config['shasta_version']}),
-        shasta_ver = config['shasta_version']
-    run:
-        import os
-        import stat
-        import subprocess as sp
-
-        with open(log[0], 'w') as logfile:
-            conda_path = None
-            for key, value in dict(os.environ).items():
-                if 'conda' in key.lower():
-                    if key == 'CONDA_PREFIX':
-                        conda_path = value
-                    else:
-                        _ = logfile.write('Skipping over conda ENV VAR: {} - {}\n'.format(key, value))
-                if 'path' in key.lower():
-                    _ = logfile.write('LOG INFO - {}: {}\n'.format(key, value))
-            if conda_path is None:
-                _ = logfile.write('Error: could not identify conda environment under '
-                                  'environment variable CONDA_PREFIX)\n')
-                raise RuntimeError('No conda base path detected')
-            conda_path = os.path.join(conda_path, 'bin')
-            if not os.path.isdir(conda_path):
-                _ = logfile.write('Error: conda bin path does not exist: {}\n'.format(conda_path))
-                raise RuntimeError('No conda bin path detected')
-            shasta_bin = os.path.join(conda_path, 'shasta')
-            download_executable = True
-            if os.path.isfile(shasta_bin):
-                _ = logfile.write('Existing shasta executable found - removing...\n')
-                try:
-                    os.unlink(shasta_bin)
-                except (OSError, IOError) as error:
-                    _ = logfile.write('WARNING: could not remove shasta executable at path {}\n')
-                    _ = logfile.write('ERROR message: {}\n'.format(str(error)))
-                    _ = logfile.write('Proceeding - will fail if shasta version does not match...\n')
-                    download_executable = False
-            if download_executable:
-                _ = logfile.write('Placing shasta executable at path: {}\n'.format(shasta_bin))
-                dl_url = params.shasta_url.format(**{'version': params.shasta_ver})
-                _ = logfile.write('Downloading shasta v{} from URL {}\n\n'.format(params.shasta_ver, dl_url))
-                cmd = 'wget --no-verbose -O {} {} &>> {{log}}'.format(shasta_bin, dl_url)
-                shell(cmd)
-                if not os.path.isfile(shasta_bin):
-                    _ = logfile.write('Download failed - no Shasta binary at destination path\n')
-                    raise RuntimeError('Shasta download failed')
-                _ = logfile.write('\nDownload complete\n')
-            os.chmod(shasta_bin, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-            _ = logfile.write('Changed mode of shasta binary to user-rwx\n')
-            try:
-                shasta_ver = sp.check_output('shasta --version',
-                                             stderr=sp.STDOUT,
-                                             shell=True)
-                shasta_ver = shasta_ver.decode('utf-8')
-                version_string = shasta_ver.split('\n')[0].strip().split()[-1]
-                if version_string == params.shasta_ver:
-                    with open(output[0], 'w') as dump:
-                        _ = dump.write(shasta_ver)
-                    _ = logfile.write('Ok - Shasta assembler available in PATH')
-                else:
-                    raise ValueError('Incompatible Shasta version ({} required): {}'.format(params.shasta_ver, shasta_ver))
-            except sp.CalledProcessError as spe:
-                rc = spe.returncode
-                err_msg = str(spe.output)
-                raise ValueError('Could not determine Shasta version ({} required): {} / {}'.format(params.shasta_ver, rc, err_msg))
-    # end of run block
 
 
 def collect_strandseq_alignments(wildcards):

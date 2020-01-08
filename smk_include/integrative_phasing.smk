@@ -7,43 +7,7 @@ PATH_INTEGRATIVE_PHASING = '{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads
 
 rule master_integrative_phasing:
     input:
-
-
-rule install_rlib_breakpointr:
-    input:
-        'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
-    output:
-         check = touch('output/check_files/R_setup/breakpointr.ok')
-    log:
-        'log/output/check_files/R_setup/breakpointr.log'
-    conda:
-        config['conda_env_rdga']
-    resources:
-        mem_total_mb = 3072,
-        mem_per_cpu_mb = 3072
-    params:
-        script_dir = config['script_dir']
-    shell:
-        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R &> {log}'
-
-
-rule install_rlib_strandphaser:
-    input:
-        rules.install_rlib_breakpointr.output.check
-    output:
-         check = touch('output/check_files/R_setup/strandphaser_ver-{}.ok'.format(config['git_commit_strandphaser']))
-    log:
-        'log/output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
-    conda:
-        config['conda_env_rdga']
-    resources:
-        mem_total_mb = 3072,
-        mem_per_cpu_mb = 3072
-    params:
-        script_dir = config['script_dir'],
-        version = config['git_commit_strandphaser']
-    shell:
-        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R {params.version} &> {log}'
+        []
 
 
 rule write_breakpointr_config_file:
@@ -66,6 +30,7 @@ rule write_breakpointr_config_file:
     params:
         bp_cpu = config['num_cpu_high']
     run:
+        import os
         # following same example as merge strand-seq BAMs in module prepare_custom_references
         bam_files = collect_strandseq_alignments(wildcards)
         outfolder = os.path.dirname(bam_files[0])
