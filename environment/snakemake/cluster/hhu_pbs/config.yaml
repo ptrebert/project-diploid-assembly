@@ -15,6 +15,9 @@ keep-going: True
 rerun-incomplete: True
 restart-times: 3
 max-status-checks-per-second: 0.0016
+use-conda: True
+use-envmodules: True
+nolock: True
 default-resources:
   - mem_per_cpu_mb=1024
   - mem_total_mb=1024
