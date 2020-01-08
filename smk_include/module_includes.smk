@@ -14,7 +14,6 @@ include: 'preprocess_references.smk'
 include: 'variant_calling.smk'
 include: 'integrative_phasing.smk'
 
-include: 'canonical_dga.smk'  # currently deprecated
 include: 'strandseq_dga_joint.smk'
 include: 'strandseq_dga_split.smk'
 
@@ -28,4 +27,3 @@ include: 'arrow_polishing.smk'
 include: 'racon_polishing.smk'
 
 include: 'eval_known_reference.smk'
-include: 'eval_variant_calls.smk'  # currently deprecated
