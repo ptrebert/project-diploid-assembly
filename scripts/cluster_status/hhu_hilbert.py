@@ -71,7 +71,7 @@ def parse_qstat_output(job_info, job_id):
         'W': 'running',
         'X': 'done'}
 
-    log_info, job_status, exit_code = '\n=====\nJOB: {}'.format(job_id), None, None
+    log_info, job_status, exit_code = '\n=====\nJOB: {}\n'.format(job_id), None, None
     for line in job_info.split('\n'):
         line = line.strip()
         if not line:
