@@ -4,6 +4,7 @@ localrules: master_run_alignments
 
 rule master_run_alignments:
     input:
+        []
 
 
 rule derive_minimap_parameter_preset:
@@ -71,6 +72,8 @@ rule minimap_reads_to_reference_alignment:
         st_view = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.st-view.log',
     benchmark:
         'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = int(65536 / config['num_cpu_high']),
@@ -105,7 +108,7 @@ rule pbmm2_reads_to_reference_alignment:
     benchmark:
         'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbn.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
-        config['conda_env_pbtools']
+        '../environment/conda/conda_pbtools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = int(98304 / config['num_cpu_high']),
@@ -158,6 +161,8 @@ rule bwa_strandseq_to_reference_alignment:
         samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.samtools.log',
     benchmark:
         'run/output/alignments/strandseq_to_reference/{{reference}}/{{sts_reads}}/{{individual}}_{{sample_id}}.t{}.rsrc'.format(config['num_cpu_low'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
@@ -190,6 +195,8 @@ rule minimap_racon_polish_alignment_pass1:
         st_sort = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.st-sort.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/polishing/alignments/{{pol_reads}}_map-to_{{hap_reads}}-{{assembler}}.{{hap}}.{{sequence}}.racon-p1.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 16384 / config['num_cpu_high']),
@@ -225,7 +232,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/polishing/alignments/{{pol_reads}}_map-to_{{hap_reads}}-{{assembler}}.{{hap}}.{{sequence}}.arrow-p1.psort.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
-        config['conda_env_pbtools']
+        '../environment/conda/conda_pbtools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 16384 / config['num_cpu_high']),
