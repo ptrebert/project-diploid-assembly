@@ -14,6 +14,7 @@ PATH_STRANDSEQ_DGA_SPLIT_PROTECTED = PATH_STRANDSEQ_DGA_SPLIT.replace('{', '{{')
 
 rule master_strandseq_dga_split:
     input:
+        []
 
 
 rule strandseq_dga_split_haplo_tagging:
@@ -36,15 +37,17 @@ rule strandseq_dga_split_haplo_tagging:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.fq.tag.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.fq.tag.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
-        runtime_hrs = 23
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
     shell:
-        'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} ' \
-            '--reference {input.fasta} --output-haplotag-list {output.tags} ' \
+        'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} '
+            '--reference {input.fasta} --output-haplotag-list {output.tags} '
             '{input.vcf} {input.bam} &> {log}'
 
 
@@ -68,15 +71,17 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.pbn.tag.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.pbn.tag.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
-        runtime_hrs = 23
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
     shell:
-        'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} ' \
-            '--reference {input.fasta} --output-haplotag-list {output.tags} ' \
+        'whatshap --debug haplotag --regions {wildcards.sequence} --output {output.bam} '
+            '--reference {input.fasta} --output-haplotag-list {output.tags} '
             '{input.vcf} {input.bam} &> {log}'
 
 
@@ -98,12 +103,14 @@ rule strandseq_dga_split_haplo_splitting:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.{sequence}.fq.split.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.{sequence}.fq.split.rsrc',
+    conda:
+        '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
-        runtime_hrs = 23
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
     shell:
         'whatshap --debug split --discard-unknown-reads --pigz --only-largest-block '
             '--output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} '
@@ -129,12 +136,14 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.{sequence}.pbn.split.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.{sequence}.pbn.split.rsrc',
+    conda:
+        '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
-        runtime_hrs = 23
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
     shell:
         'whatshap --debug split --discard-unknown-reads --only-largest-block '
             '--output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} '
@@ -154,6 +163,8 @@ rule strandseq_dga_split_merge_tag_groups:
         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}-un.{sequence}.fastq.gz'
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}-un.{sequence}.fq.mrg.rsrc'
+    conda:
+        '../environment/conda/conda_shelltools.yml'
     wildcard_constraints:
         haplotype = '(1|2)',
         fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
@@ -176,13 +187,15 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.log'
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         haplotype = '(1|2)',
         pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
     resources:
-        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
-        runtime_hrs = 23
+        mem_total_mb = lambda wildcards, attempt: 512 + 512 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 512 + 512 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt
     shell:
         'bamtools merge -in {input.hap} -in {input.un} -out {output} &> {log}'
 
@@ -246,6 +259,9 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
          'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fasta'
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt
     run:
         import sys
         import io
@@ -341,6 +357,9 @@ rule merge_polished_contigs:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fasta'
     params:
         polished_fastas = lambda wildcards, input: load_fofn_file(input)
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt
     run:
         import sys
         import io
