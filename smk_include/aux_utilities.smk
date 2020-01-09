@@ -31,6 +31,8 @@ rule pb_bamtools_index_bam_alignment:
         pbn_bam = '{filepath}.pbn.bam'
     output:
         pbi = '{filepath}.pbn.bam.pbi'
+    log:
+        'log/{filepath}.create-pbi.log'
     benchmark:
         'run/{filepath}.create-pbi.rsrc'
     resources:
@@ -38,7 +40,7 @@ rule pb_bamtools_index_bam_alignment:
     conda:
          '../environment/conda/conda_pbtools.yml'
     shell:
-        'pbindex {input}'
+        'pbindex {input} &> {log}'
 
 
 rule pb_bam2x_dump_fastq:
@@ -55,7 +57,7 @@ rule pb_bam2x_dump_fastq:
         pbn_sample = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')',
         sample_type = '(_[0-9x]+|\.part[0-9]+)'
     resources:
-        runtime_hrs = lambda wildcards, input: 71 if '.part' in input.pbn_bam else 167
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     conda:
          '../environment/conda/conda_pbtools.yml'
     params:
