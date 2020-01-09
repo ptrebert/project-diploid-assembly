@@ -78,6 +78,8 @@ rule merge_mono_dinucleotide_fraction:
         'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
     benchmark:
         'run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     params:
         merge_files = lambda wildcards, input: load_fofn_file(input)
@@ -94,6 +96,8 @@ rule samtools_position_sort_strandseq_reads:
         '{folder_path}/temp/mrg/{sample}.mrg.sam.bam'
     output:
         temp('{folder_path}/temp/sort/{sample}.mrg.psort.sam.bam')
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = 512,
@@ -111,6 +115,8 @@ rule mark_duplicate_reads_strandseq:
         'log/{folder_path}/{sample}.mrg.psort.mdup.log'
     benchmark:
         'run/{folder_path}/{sample}.mrg.psort.mdup.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = 512,
@@ -185,7 +191,7 @@ checkpoint run_saarclust_assembly_clustering:
     benchmark:
         'run/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.run'
     conda:
-        config['conda_env_rdga']
+        '../environment/conda/conda_rtools.yml'
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192,
@@ -251,6 +257,8 @@ rule merge_reference_fasta_clusters:
     output:
         expand('output/reference_assembly/clustered/{{sts_reads}}/{{sample}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
+    conda:
+        '../environment/conda/conda_shelltools.yml'
     params:
         fasta_clusters = lambda wildcards, input: load_fofn_file(input)
     shell:
