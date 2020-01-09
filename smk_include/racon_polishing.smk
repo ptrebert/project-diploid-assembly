@@ -11,10 +11,12 @@ rule racon_contig_polishing_pass1:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.log'
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = int(24576 / config['num_cpu_medium']),
-        mem_total_mb = 24576,
-        runtime_hrs = 8
+        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 * attempt) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 2 * attempt
     shell:
         'racon --threads {threads} --include-unpolished {input.pol_reads} {input.alignments} {input.contigs} > {output} 2> {log}'
