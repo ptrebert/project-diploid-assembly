@@ -1,5 +1,5 @@
 
-localrules: master_link_data_sources
+localrules: master_scrape_data_sources
 
 rule master_scrape_data_sources:
     input:
@@ -26,6 +26,8 @@ rule collect_remote_hgsvc_HG00514_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_chs_HG00514_pacbio.log'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -47,6 +49,8 @@ rule collect_remote_hgsvc_HG00512_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_chs_HG00512_pacbio.log'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -68,6 +72,8 @@ rule collect_remote_hgsvc_HG00513_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_chs_HG00513_pacbio.log'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -89,6 +95,8 @@ rule collect_remote_hgsvc_pur_trio_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_pur-trio_pacbio.log'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -114,6 +122,8 @@ rule collect_remote_hgsvc_NA19240_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_yri_NA19240_pacbio.log'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -139,6 +149,8 @@ rule collect_remote_hgsvc_NA19238_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_yri_NA19238_pacbio.log'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
@@ -164,6 +176,8 @@ rule collect_remote_hgsvc_NA19239_pacbio:
         file_infix = ' hgsvc_pbsq2- '
     log:
         'log/input/data_sources/hgsvc_yri_NA19239_pacbio.log'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     shell:
         '{params.script_dir}/scan_remote_path.py --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
