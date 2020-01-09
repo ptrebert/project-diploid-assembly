@@ -5,8 +5,10 @@
 *output/alignments/*
 *output/container/*
 *output/check_files/*
+*/haploid_fasta/*
 */haploid_fastq/*
 */haploid_bam/*
+*/layout/*
 *temp*
 *tmp*
 *processing*
@@ -15,5 +17,3 @@
 *.sam
 *.bai
 *.pbi
-*.fastq.gz
-*.fastq
