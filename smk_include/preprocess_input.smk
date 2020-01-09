@@ -124,7 +124,7 @@ rule merge_pacbio_native_bams:
     wildcard_constraints:
         mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
     conda:
-         '../environment/conda/conda_pbtools.yml'
+         '../environment/conda/conda_biotools.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 if attempt <= 1 else 16 * attempt
     params:
