@@ -120,8 +120,10 @@ def parse_qstat_output(job_info, job_id):
             continue
     if job_status == 'failed':
         logger.error(log_info)
+    elif job_status == 'success':
+        logger.info(log_info)
     else:
-        if random.randint(0, 100) < 10:
+        if random.randint(0, 100) < 5:
             # for running/ongoing jobs, only sporadically log status
             logger.info(log_info)
 
