@@ -109,7 +109,7 @@ rule call_variants_longshot:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
     shell:
-        'longshot --no_haps --bam {input.read_ref_aln} '
+        'longshot --no_haps --force_overwrite --auto_max_cov --bam {input.read_ref_aln} '
             ' --ref {input.reference} --region {wildcards.sequence}'
              ' --sample_id {params.individual} --out {output} &> {log}'
 
@@ -139,6 +139,8 @@ rule normalize_longshot_vcf:
 
             header_lines = 0
             record_lines = 0
+            filtered_dense = 0
+            filtered_depth = 0
 
             out_buffer = io.StringIO()
             with open(input[0], 'r') as vcf_in:
@@ -150,6 +152,19 @@ rule normalize_longshot_vcf:
                     elif not line.startswith('#'):
                         record_lines += 1
                         cols = line.strip().split('\t')
+                        # filter out likely false positives marked as
+                        # "dense cluster (dn)" in the FILTER field
+                        if 'dn' in cols[6]:
+                            filtered_dense += 1
+                            continue
+                        elif 'dp' in cols[6]:
+                            # should not occur too frequently because
+                            # of auto_max_cov parameter
+                            filtered_depth += 1
+                            continue
+                        else:
+                            # no other longshot qualifier known atm
+                            pass
                         genotype_format = cols[-2].split(':')
                         if not genotype_format[1] == 'GQ':
                             _ = logfile.write('ERROR - approximate line number: {}\n'.format(header_lines + record_lines))
@@ -165,6 +180,11 @@ rule normalize_longshot_vcf:
                         header_lines += 1
                         out_buffer.write(line)
             _ = logfile.write('All lines of input VCF buffered (header: {} / records: {})\n'.format(header_lines, record_lines))
+            _ = logfile.write('Header lines: {}\n'.format(header_lines))
+            _ = logfile.write('Records total: {}\n'.format(record_lines))
+            _ = logfile.write('SNVs in dense clusters removed: {}\n'.format(filtered_dense))
+            _ = logfile.write('SNVs exceeding max depth removed: {}\n'.format(filtered_depth))
+            _ = logfile.write('SNV records remaining: {}\n'.format(record_lines - filtered_dense - filtered_depth))
 
             with open(output[0], 'w') as vcf_out:
                 _ = vcf_out.write(out_buffer.getvalue())
