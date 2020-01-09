@@ -20,6 +20,8 @@ rule compute_position_coverage:
         'output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}.pos-cov.txt.gz'
     benchmark:
         'run/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}.pos-cov.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: 2
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
@@ -41,6 +43,8 @@ rule compute_uniform_coverage_regions:
         'log/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.log'
     benchmark:
         'run/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.rsrc'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
@@ -48,8 +52,8 @@ rule compute_uniform_coverage_regions:
         num_regions = 128,
         script_dir = config['script_dir']
     shell:
-        'zgrep "{wildcards.sequence}\s" {input.pos_cov} | {params.script_dir}/np_cov_to_regions.py --debug ' \
-            ' --seq-info {input.seq_info} --num-regions {params.num_regions} --output {output}' \
+        'zgrep "{wildcards.sequence}\s" {input.pos_cov} | {params.script_dir}/np_cov_to_regions.py --debug '
+            ' --seq-info {input.seq_info} --num-regions {params.num_regions} --output {output}'
             ' &> {log}'
 
 
@@ -74,13 +78,15 @@ rule call_variants_freebayes_parallel:
         'log/output/variant_calls/freebayes/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
         'run/output/variant_calls/freebayes/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     params:
         timeout = config['freebayes_timeout_sec'],
         script_dir = config['script_dir']
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 if attempt == 1 else 16384 + attempt**attempt * 16384) / config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 16384 if attempt == 1 else 16384 + attempt**attempt * 16384,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 if attempt <= 1 else 16384 + attempt**attempt * 16384) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 16384 if attempt <= 1 else 16384 + attempt**attempt * 16384,
         runtime_hrs = 3
     shell:
         '{params.script_dir}/fb-parallel-timeout.sh {input.ref_regions} {threads} {params.timeout} {log}'
@@ -103,6 +109,8 @@ rule call_variants_longshot:
         'log/output/variant_calls/longshot/{reference}/{sts_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.log'
     benchmark:
         'run/output/variant_calls/longshot/{reference}/{sts_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     params:
         individual = lambda wildcards: wildcards.vc_reads.split('_')[0]
     resources:
@@ -216,19 +224,24 @@ rule call_variants_deepvariant:
         'log/output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
         'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
+    #envmodules:
+    #    config['env_module_singularity']
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(2048 / config['num_cpu_high']),
-        mem_total_mb = 2048,
-        runtime_hrs = 1
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1024 + 1024 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
-        temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sts_reads, wildcards.vc_reads, wildcards.sequence)
+        temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sts_reads, wildcards.vc_reads, wildcards.sequence),
+        singularity_module = config['env_module_singularity']
     shell:
+        'module load {params.singularity_module} ; '
         'singularity run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant '
             ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} '
             ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} '
-            ' --novcf_stats_report --intermediate_results_dir="{params.temp_dir}" --num_shards={threads} &> {log}'
+            ' --novcf_stats_report --intermediate_results_dir="{params.temp_dir}" --num_shards={threads} &> {log} ; '
+        'module unload {params.singularity_module}'
 
 
 rule filter_variant_calls_quality_biallelic_snps:
@@ -243,6 +256,8 @@ rule filter_variant_calls_quality_biallelic_snps:
         'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
@@ -267,10 +282,12 @@ rule whatshap_regenotype_variant_calls:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.log'
     benchmark:
         'run/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
-        runtime_hrs = 6
+        runtime_hrs = lambda wildcards, attempt: 5 if attempt <= 1 else 4 * attempt
     shell:
         'whatshap genotype --chromosome {wildcards.sequence} --reference {input.reference} --output {output} {input.vcf} {input.read_ref_aln} &> {log}'
 
@@ -285,8 +302,10 @@ rule filter_retyped_by_genotype_quality:
         temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/35-filter-GQ{gq}/splits/{vc_reads}.{sequence}.vcf')
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/35-filter-GQ{gq}/splits/{vc_reads}.{sequence}.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     shell:
-        'bcftools filter --include \'GQ>={wildcards.gq}\' --output-type v --output {output} {input.vcf} &> {log}'
+        'bcftools filter --include "GQ>={wildcards.gq}" --output-type v --output {output} {input.vcf} &> {log}'
 
 
 rule extract_heterozygous_variants:
@@ -299,6 +318,8 @@ rule extract_heterozygous_variants:
     output:
         vcf_original = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf'),
         vcf_retyped = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf'),
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
@@ -326,6 +347,8 @@ rule intersect_original_retyped_variant_calls:
         desc = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/README.txt',
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/{vc_reads}.{sequence}.isect.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
@@ -390,6 +413,8 @@ rule merge_final_vcf_splits:
         'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf'
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.concat.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
@@ -404,6 +429,8 @@ rule compute_final_vcf_stats:
         idx = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz.tbi',
     output:
         stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snv.QUAL{qual}.GQ{gq}.vcf.stats'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     shell:
         'bcftools stats {input.vcf} > {output.stats}'
 
@@ -464,6 +491,8 @@ rule merge_intermediate_vcf_splits:
         'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.vcf'
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.concat.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt
@@ -477,5 +506,7 @@ rule compute_intermediate_vcf_stats:
         idx = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.vcf.bgz.tbi',
     output:
         stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snv.QUAL{qual}.vcf.stats'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     shell:
         'bcftools stats {input.vcf} > {output.stats}'
