@@ -177,6 +177,8 @@ rule compute_wtdbg_nonhapres_assembly_layout:
         'log/output/reference_assembly/non-hap-res/layout/wtdbg2/{sample}_nhr-wtdbg.layout.log',
     benchmark:
         'run/output/reference_assembly/non-hap-res/layout/wtdbg2/{{sample}}_nhr-wtdbg.layout.t{}.rsrc'.format(config['num_cpu_max'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = lambda wildcards: int((163840 if '-ccs' in wildcards.sample else 393216) / config['num_cpu_max']),
@@ -200,6 +202,8 @@ rule compute_wtdbg_nonhapres_assembly_consensus:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.consensus.log'
     benchmark:
         'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-wtdbg.consensus.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards: int((8192 if '-ccs' in wildcards.sample else 24576) / config['num_cpu_max']),
@@ -233,11 +237,13 @@ rule compute_flye_nonhapres_assembly:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-flye.layout.log',
     benchmark:
         'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-flye.layout.t{}.rsrc'.format(config['num_cpu_max'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = lambda wildcards: int((557056 if '-ccs' in wildcards.sample else 1433600) / config['num_cpu_max']),
-        mem_total_mb = lambda wildcards: 557056 if '-ccs' in wildcards.sample else 1433600,
-        runtime_hrs = lambda wildcards: 30 if '-ccs' in wildcards.sample else 128
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1433600 if attempt <= 1 else 2949120) / config['num_cpu_max']),
+        mem_total_mb = lambda wildcards, attempt: 1433600 if attempt <= 1 else 2949120,
+        runtime_hrs = lambda wildcards, attempt: 47 if '-ccs' in wildcards.sample else 167
     params:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source),
@@ -288,21 +294,26 @@ rule compute_peregrine_nonhapres_assembly:
         pereg = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.log',
         copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
     benchmark:
-        'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-pereg.t{}.rsrc'.format(config['num_cpu_max'])
-    threads: config['num_cpu_max']
+        'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-pereg.t{}.rsrc'.format(config['num_cpu_high'])
+    #envmodules:
+    #    config['env_module_singularity']
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(131072 / config['num_cpu_max']),
-        mem_total_mb = 131072,
-        runtime_hrs = 20
+        mem_per_cpu_mb = lambda wildcards, attempt: int(110592 if attempt <= 1 else 172032 / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 172032,
+        runtime_hrs = lambda wildcards, attempt: 8 if attempt <= 1 else 23
     params:
         bind_folder = lambda wildcards: os.getcwd(),
-        out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
+        out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
+        singularity_module = config['env_module_singularity']
     shell:
+        'module load {params.singularity_module} ; '
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy} ; '
+        'module unload {params.singularity_module}'
 
 
 rule compute_shasta_nonhapres_assembly:
@@ -332,11 +343,13 @@ rule compute_shasta_nonhapres_assembly:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-shasta.layout.log',
     benchmark:
         'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-shasta.layout.t{}.rsrc'.format(config['num_cpu_max'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = int(1433600 / config['num_cpu_max']),
-        mem_total_mb = 1433600,
-        runtime_hrs = 8
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1433600 if attempt <= 1 else 2949120) / config['num_cpu_max']),
+        mem_total_mb = lambda wildcards, attempt: 1433600 if attempt <= 1 else 2949120,
+        runtime_hrs = lambda wildcards, attempt: 12 if attempt <= 1 else 71
     params:
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
@@ -368,6 +381,8 @@ rule compute_wtdbg_haploid_assembly_layout:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.wtdbg-layout.log'
     benchmark:
         'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_max'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         variant = '(canonical|strandseq_joint)'
     threads: config['num_cpu_max']
@@ -392,6 +407,8 @@ rule compute_wtdbg_haploid_assembly_consensus:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}.{hap}.wtdbg-consensus.log'
     benchmark:
         'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_assembly/{{hap_reads}}.{{hap}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
             variant = '(canonical|strandseq_joint)'
     threads: config['num_cpu_high']
@@ -423,6 +440,8 @@ rule compute_flye_haploid_assembly:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}.{hap}.flye.log'
     benchmark:
         'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_assembly/{{hap_reads}}.{{hap}}.flye.t{}.rsrc'.format(config['num_cpu_max'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
             variant = '(canonical|strandseq_joint)'
     threads: config['num_cpu_max']
@@ -458,6 +477,8 @@ rule compute_wtdbg_haploid_split_assembly_layout:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.{sequence}.wtdbg-layout.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_high']),
@@ -481,6 +502,8 @@ rule compute_wtdbg_haploid_split_assembly_consensus:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}.{hap}.{sequence}.wtdbg-consensus.log'
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_high']),
@@ -511,11 +534,13 @@ rule compute_flye_haploid_split_assembly:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}.{hap}.{sequence}.flye.log'
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.flye.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 if '-ccs' in wildcards.hap_reads else 81920 + attempt * 20480) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 24576 if '-ccs' in wildcards.hap_reads else 81920 + attempt * 20480,
-        runtime_hrs = lambda wildcards, attempt: 0 if '-ccs' in wildcards.hap_reads else 5
+        runtime_hrs = lambda wildcards, attempt: 0 if '-ccs' in wildcards.hap_reads else 4 * attempt
     params:
         param_preset = load_preset_file,
         seq_len = load_seq_length_file,
@@ -566,21 +591,26 @@ rule compute_peregrine_haploid_split_assembly:
         pereg = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.log',
         copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_max'])
-    threads: config['num_cpu_max']
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
+    #envmodules:
+    #    config['env_module_singularity']
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(131072 / config['num_cpu_max']),
-        mem_total_mb = 131072,
-        runtime_hrs = 20
+        mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
+        runtime_hrs = lambda wildcards, attempt: (attempt - 1) * (attempt - 1)
     params:
         bind_folder = lambda wildcards: os.getcwd(),
-        out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0]
+        out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
+        singularity_module = config['env_module_singularity']
     shell:
+        'module load {params.singularity_module} ; '
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy} ; '
+        'module unload {params.singularity_module}'
 
 
 rule compute_shasta_haploid_split_assembly:
@@ -609,11 +639,13 @@ rule compute_shasta_haploid_split_assembly:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-shasta.{hap}.{sequence}.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-shasta.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(262144 / config['num_cpu_high']),
-        mem_total_mb = 262144,
-        runtime_hrs = 2
+        mem_per_cpu_mb = lambda wildcards, attempt: int((49152 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
+        runtime_hrs = lambda wildcards, attempt: (attempt - 1) * (attempt - 1)
     params:
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
