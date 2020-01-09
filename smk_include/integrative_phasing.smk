@@ -75,7 +75,7 @@ rule run_breakpointr:
     benchmark:
         'run/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
     conda:
-        config['conda_env_rdga']
+        '../environment/conda/conda_rtools.yml'
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
         input_dir = lambda wildcards, input: load_fofn_file(input),
@@ -152,7 +152,7 @@ rule run_strandphaser:
     benchmark:
         'run/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.rsrc'
     conda:
-        config['conda_env_rdga']
+        '../environment/conda/conda_rtools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_high']),
@@ -169,71 +169,49 @@ rule run_strandphaser:
             ' {params.output_dir} {params.individual} &> {log.stp}'
 
 
-rule normalize_strandphaser_output:
-    """
-    StrandPhaseR does not report unobserved alleles, which creates
-    incompatible VCF records for WhatsHap (records with missing genotype
-    will be ignored). Since, in our case, we assume all variants to be
-    het SNVs, simply complement if missing
-    """
+rule write_strandphaser_split_vcf_fofn:
     input:
         rules.run_strandphaser.output.vcf_dir
     output:
-        norm_dir = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/strandphaser_norm'),
         fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn'
     resources:
         mem_total_mb = 2048,
         mem_per_cpu_mb = 2048,
-    message:
-        "Running potentially deprecated task - after commit #e608407, "
-           "StrandPhaseR does no longer omit unobserved alleles in output VCF."
     run:
-        import io
+        # Note that this rule does not call an aggregate function because
+        # run_strandphaser is not a checkpoint... I *think* the problem
+        # was the downstream call "run_integrative_phasing", where direct
+        # access to an individual VCF in /VCFfiles/{sequence}.vcf did not work
+        # See comment below for rule "run_integrative_phasing"
+
         import os
-        os.makedirs(output.norm_dir, exist_ok=True)
 
         input_dir = input[0]
-        input_vcfs = [f for f in os.listdir(input_dir) if f.endswith('.vcf')]
-        norm_paths = []
+        input_vcfs = sorted([f for f in os.listdir(input_dir) if f.endswith('.vcf')])
+        if len(input_vcfs) == 0:
+            raise RuntimeError('No StrandPhaseR-phased VCFs in /VCFfiles output dir. '
+                               'Cannot create fofn file: {}'.format(output.fofn))
 
-        gt_map = {'1|.': '1|0',
-                  '0|.': '0|1',
-                  '.|1': '0|1',
-                  '.|0': '1|0'}
-
-        for vcf_file in input_vcfs:
-            input_path = os.path.join(input_dir, vcf_file)
-            vcf_buffer = io.StringIO()
-            with open(input_path, 'r') as vcf:
-                for line in vcf:
-                    if not line.startswith('#'):
-                        columns = line.strip().split('\t')
-                        format_colum = columns[-2]
-                        value_column = columns[-1]
-                        assert format_colum.startswith('GT:'), \
-                            'Unexpected StrandPhaseR output format: {} / {}'.format(input_path, line.strip())
-                        values = value_column.split(':')
-                        values[0] = gt_map.get(values[0], values[0])
-                        value_column = ':'.join(values)
-                        columns[-1] = value_column
-                        line = '\t'.join(columns) + '\n'
-                    vcf_buffer.write(line)
-                output_path = os.path.join(output.norm_dir, vcf_file)
-                with open(output_path, 'w') as dump:
-                    _ = dump.write(vcf_buffer.getvalue())
-                norm_paths.append(output_path)
-
-        with open(output.fofn, 'w') as dump:
-            _ = dump.write('\n'.join(sorted(norm_paths)))
+        with open(output.fofn, 'w') as fofn:
+            for file_name in input_vcfs:
+                file_path = os.path.join(input_dir, file_name)
+                if not os.path.isfile(file_path):
+                    if os.path.isdir(file_path):
+                        # definitely wrong...
+                        raise RuntimeError('Found directory, but expected VCF file: {} '
+                                           '(write fofn file: {}'.format(file_path, output.fofn))
+                _ = fofn.write(file_path + '\n')
 
 
-rule merge_normalized_strandphaser_output:
+rule merge_strandphaser_output:
     input:
         fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn'
     output:
         vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf'
     log:
         'log/output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '.concat-phased.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     shell:
         'bcftools concat -f {input.fofn} --output-type v --output {output} &> {log}'
 
@@ -242,7 +220,7 @@ rule run_integrative_phasing:
     """
     Why this complicated command line?
     One of those "why-is-this-a-problem" situations; for some reason, Snakemake
-    does not recognize the output of the rule "normalize_strandphaser_output"
+    does not recognize the output of the rule "run_strandphaser"
     as the producer for the individual VCF splits. So, merge, and split again...
     """
     input:
@@ -259,6 +237,8 @@ rule run_integrative_phasing:
         'log/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.log'
     benchmark:
         'run/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt
@@ -322,6 +302,8 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
         'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf'
     log:
         'log/output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.concat.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
              mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
              mem_total_mb = lambda wildcards, attempt: 4096 * attempt
@@ -339,6 +321,8 @@ rule compute_strandphaser_phased_vcf_stats:
         spr_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.txt'
     log:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
              mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
              mem_total_mb = lambda wildcards, attempt: 4096 * attempt
@@ -361,6 +345,8 @@ rule compute_whatshap_phased_vcf_stats:
         wh_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.txt'
     log:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.log'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     resources:
              mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
              mem_total_mb = lambda wildcards, attempt: 4096 * attempt
