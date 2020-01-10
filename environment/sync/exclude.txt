@@ -1,6 +1,5 @@
 *snakemake*
 *cluster_jobs*
-*input/*
 *references/*
 *output/alignments/*
 *output/container/*
@@ -17,3 +16,6 @@
 *.sam
 *.bai
 *.pbi
+*.fastq
+*.fastq.gz
+*input/*.fasta
