@@ -3,10 +3,12 @@
 import os
 import sys
 import re
+import random
 import logging
 from logging.handlers import RotatingFileHandler
 import subprocess as sp
 
+random.seed()
 
 log_msg_format = "%(asctime)s | %(levelname)s | %(message)s"
 cluster_status_log = '/beeond/projects/diploid-assembly/log/cluster_status.log'
@@ -119,7 +121,7 @@ def parse_qstat_output(job_info, job_id):
     elif job_status == 'success':
         logger.info(log_info)
     else:
-        if random.randint(0, 100) < 5:
+        if random.randint(0, 100) < 50:
             # for running/ongoing jobs, only sporadically log status
             logger.info(log_info)
 
