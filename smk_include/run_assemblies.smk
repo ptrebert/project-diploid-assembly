@@ -301,19 +301,19 @@ rule compute_peregrine_nonhapres_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(110592 if attempt <= 1 else 172032 / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 172032,
-        runtime_hrs = lambda wildcards, attempt: 8 if attempt <= 1 else 23
+        runtime_hrs = lambda wildcards, attempt: 16 if attempt <= 1 else 12 * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
         singularity_module = config['env_module_singularity']
     shell:
-        'module load {params.singularity_module} ; '
+#        'module load {params.singularity_module} ; '
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
             ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy} ; '
-        'module unload {params.singularity_module}'
+#        'module unload {params.singularity_module}'
 
 
 rule compute_shasta_nonhapres_assembly:
@@ -598,7 +598,7 @@ rule compute_peregrine_haploid_split_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: (attempt - 1) * (attempt - 1)
+        runtime_hrs = lambda wildcards, attempt: (attempt - 1) * (attempt - 1) + 1
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
