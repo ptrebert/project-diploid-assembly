@@ -12,7 +12,7 @@ jobs: 150
 latency-wait: 300
 keep-going: True
 rerun-incomplete: True
-restart-times: 3
+restart-times: 1
 max-status-checks-per-second: 0.001
 use-conda: True
 use-envmodules: True
