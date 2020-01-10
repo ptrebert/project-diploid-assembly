@@ -604,13 +604,13 @@ rule compute_peregrine_haploid_split_assembly:
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
         singularity_module = config['env_module_singularity']
     shell:
-        'module load {params.singularity_module} ; '
+#        'module load {params.singularity_module} ; '
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
             ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy} ; '
-        'module unload {params.singularity_module}'
+#        'module unload {params.singularity_module}'
 
 
 rule compute_shasta_haploid_split_assembly:

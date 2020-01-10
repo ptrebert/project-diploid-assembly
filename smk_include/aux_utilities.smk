@@ -234,10 +234,10 @@ rule singularity_pull_container:
         pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo),
         singularity_module = config['env_module_singularity']
     shell:
-        'module load {params.singularity_module} ; '
+#        'module load {params.singularity_module} ; '
         'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull '
             '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log} ; '
-        'module unload {params.singularity_module}'
+#        'module unload {params.singularity_module}'
 
 
 def collect_strandseq_alignments(wildcards):
