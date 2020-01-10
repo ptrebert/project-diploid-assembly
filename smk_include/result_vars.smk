@@ -2,7 +2,7 @@
 KNOWN_REF = ['GRCh38_GCA_p13']
 GENEMODEL = ['GRCh38_GENCODEv31_basic']
 
-USE_SINGULARITY = False
+USE_SINGULARITY = bool(config['use_singularity'])
 
 if USE_SINGULARITY:
     CCS_VAR_CALLER = ['deepvar']
