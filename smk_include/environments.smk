@@ -69,7 +69,7 @@ rule inspect_hpc_module_singularity:
     output:
         'output/check_files/environment/module_singularity.ok'
     log:
-        'log/output/check_files/environment/module_singularity.ok'
+        'log/output/check_files/environment/module_singularity.log'
     params:
         script_dir = config['script_dir'],
         singularity_module = config['env_module_singularity']
