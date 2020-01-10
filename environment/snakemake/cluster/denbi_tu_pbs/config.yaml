@@ -3,7 +3,6 @@
 directory: /beeond/projects/diploid-assembly
 cluster: >-
   qsub
-  -v PATH=/beeond/user/software/conda/envs/dipassm/bin:/beeond/user/software/conda/condabin:/bin:/usr/bin:/usr/local/bin,CONDA_PREFIX=/beeond/user/software/conda/envs/dipassm
   -d /beeond/projects/diploid-assembly
   -l walltime={cluster.run_hrs}:{cluster.run_min}:00,nodes=1:ppn={cluster.cores},mem={cluster.mem_mb}M
   -N {cluster.name} -o {cluster.output} -e {cluster.error}
@@ -13,8 +12,10 @@ jobs: 100
 latency-wait: 300
 keep-going: True
 rerun-incomplete: True
-restart-times: 2
-max-status-checks-per-second: 0.0016
+restart-times: 1
+use-conda: True
+nolock: True
+max-status-checks-per-second: 0.001
 default-resources:
   - runtime_hrs=1
   - runtime_min=59
