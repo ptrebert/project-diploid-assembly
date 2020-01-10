@@ -56,18 +56,16 @@ def parse_qstat_output(job_info, job_id):
         ]
 
     job_state_codes = {
-        'B': 'running',
-        'E': 'running',
-        'F': 'done',
+        'C': 'done',
+        'E': 'done',
         'H': 'running',
         'M': 'running',
         'Q': 'running',
         'R': 'running',
         'S': 'running',
         'T': 'running',
-        'U': 'running',
-        'W': 'running',
-        'X': 'done'}
+        'W': 'running'
+    }
 
     log_info, job_status, exit_code = '\n=====\nJOB: {}\n'.format(job_id), None, None
     for line in job_info.split('\n'):
