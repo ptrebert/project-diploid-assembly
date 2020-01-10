@@ -16,8 +16,8 @@ deepvariant_version: 0.9.0
 shasta_version: 0.3.0
 
 # Assembler settings
-shasta_target_coverage: 60
-flye_target_coverage: 50
+shasta_target_coverage: 60  # tech-independent recommendation: cov between 40x and 80x
+flye_target_coverage: 50  # dev recommendation: ~30x, but we have enough RAM to go a bit higher
 
 # SaaRclust parameter sets
 # goal is to obtain 24 clusters

@@ -30,23 +30,40 @@ rule derive_wtdbg_parameter_preset:
 
 rule derive_flye_parameter_preset:
     input:
-        '{filepath}.fastq.gz'
+        '{folder_path}/{file_name}.fastq.gz',
+        '{folder_path}/{file_name}.stats'
     output:
-        '{filepath}.preset.flye'
+        '{folder_path}/{file_name}.preset.flye'
     run:
         import os
         preset = None
+
+        target_coverage = int(config['flye_target_coverage'])
+
+        with open(input[1], 'r') as table:
+            for line in table:
+                if not line.startswith('cov_geq'):
+                    continue
+                rlen_info, cov = line.strip().split()  # this is the entry cov_geq_0
+                if int(cov) > target_coverage:
+                    # only used for initial disjointig assembly
+                    # for final assembly, all reads are used
+                    preset = '--asm-coverage {} '.format(target_coverage)
+                else:
+                    preset = ''
+                break
+
         file_name = os.path.basename(input[0])
         _, _, platform_spec = file_name.split('_')[:3]
         if platform_spec.startswith('pb'):
             if 'ccs' in platform_spec:
-                preset = '--pacbio-corr'
+                preset += '--pacbio-corr'
             elif 'clr' in platform_spec:
-                preset = '--pacbio-raw'
+                preset += '--pacbio-raw'
             else:
                 raise ValueError('Cannot handle PacBio platform spec: {} / {}'.format(file_name, platform_spec))
         elif platform_spec.startswith('ont'):
-            preset = '--nano-raw'
+            preset += '--nano-raw'
         else:
             raise ValueError('Unexpected platform spec: {} / {}'.format(file_name, platform_spec))
 
@@ -93,7 +110,7 @@ rule derive_shasta_parameter_preset:
         preset = None
         file_name = os.path.basename(input[0])
         _, _, platform_spec = file_name.split('_')[:3]
-        target_coverage = 60  # tech-independent recommendation: cov between 40x and 80x
+        target_coverage = int(config['shasta_target_coverage'])
         if platform_spec.startswith('pb'):
             if 'ccs' in platform_spec:
                 # https://github.com/chanzuckerberg/shasta/blob/master/conf/PacBio-CCS-Dec2019.conf
