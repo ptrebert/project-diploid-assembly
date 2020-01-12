@@ -59,7 +59,7 @@ def parse_qstat_output(job_info, job_id):
 
     job_state_codes = {
         'B': 'running',
-        'E': 'running',
+        'E': 'done',
         'F': 'done',
         'H': 'running',
         'M': 'running',
@@ -92,9 +92,9 @@ def parse_qstat_output(job_info, job_id):
                     log_info += '... Job determined as ' + job_status + '\n'
             if 'Exit_status' in line:
                 exit_code = int(line.split()[-1])
-                if 0 < exit_code <= 128 and job_status == 'done':
+                if 0 < exit_code <= 128:
                     job_status = 'failed'
-                elif exit_code == 0 and job_status == 'done':
+                elif exit_code == 0:
                     job_status = 'success'
                 elif exit_code == -3:  # implicit: job status is running
                     # special PBS_VALUE: -3 = JOB_EXEC_RETRY : Job exec failed, do retry
@@ -131,6 +131,11 @@ def parse_qstat_output(job_info, job_id):
         logger.error('Job {} determined as running, but has error exit code: {}'.format(job_id, exit_code))
         logger.error(log_info)
         job_status = 'failed'
+
+    if job_status == 'done':
+        # does not yet have an exit code
+        # maybe caught in completing... wait
+        job_status = 'running'
 
     return job_status
 
