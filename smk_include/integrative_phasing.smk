@@ -155,8 +155,8 @@ rule run_strandphaser:
         '../environment/conda/conda_rtools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
         runtime_hrs = 11
     params:
         input_dir = lambda wildcards, input: load_fofn_file(input),
