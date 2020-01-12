@@ -115,7 +115,8 @@ rule call_variants_longshot:
         individual = lambda wildcards: wildcards.vc_reads.split('_')[0]
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
+        mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 2 * attempt
     shell:
         'longshot --no_haps --force_overwrite --auto_max_cov --bam {input.read_ref_aln} '
             ' --ref {input.reference} --region {wildcards.sequence}'
