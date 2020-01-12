@@ -318,7 +318,7 @@ rule compute_peregrine_nonhapres_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(110592 if attempt <= 1 else 172032 / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 172032,
-        runtime_hrs = lambda wildcards, attempt: 16 if attempt <= 1 else 12 * attempt
+        runtime_hrs = lambda wildcards, attempt: 35 if attempt <= 1 else 24 * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
