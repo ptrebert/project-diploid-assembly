@@ -57,7 +57,7 @@ rule pb_bam2x_dump_fastq:
         pbn_sample = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')',
         sample_type = '(_[0-9x]+|\.part[0-9]+)'
     resources:
-        runtime_hrs = lambda wildcards, attempt: 6 if attempt <= 1 else 12 * attempt
+        runtime_hrs = lambda wildcards, attempt: 35 if attempt <= 1 else 24 * attempt
     conda:
          '../environment/conda/conda_pbtools.yml'
     params:
