@@ -130,6 +130,12 @@ def parse_qstat_output(job_info, job_id):
         logger.error(log_info)
         job_status = 'failed'
 
+    if job_status == 'done':
+        # job is complete but has no exit code
+        # also seems to happen in case of PBS internal errors
+        # but can't be sure
+        job_status = 'running'
+
     return job_status
 
 
