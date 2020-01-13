@@ -53,7 +53,7 @@ def parse_qstat_output(job_info, job_id):
         'stime',
         'session_id',
         'etime',
-        'Exit_status',
+        'exit_status',
         ]
 
     job_state_codes = {
