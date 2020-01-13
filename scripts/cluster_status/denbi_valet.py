@@ -48,9 +48,8 @@ def parse_qstat_output(job_info, job_id):
         'mtime',
         'qtime',
         'Resource_List.mem',
-        'Resource_List.ncpus',
-        'Resource_List.select',
         'Resource_List.walltime',
+        'Resource_List.nodes'
         'stime',
         'session_id',
         'etime',
@@ -88,7 +87,7 @@ def parse_qstat_output(job_info, job_id):
                 else:
                     job_status = simple_job_state
                     log_info += '... Job determined as ' + job_status + '\n'
-            if 'Exit_status' in line:
+            if 'exit_status' in line:
                 exit_code = int(line.split()[-1])
                 if 0 < exit_code <= 128 and job_status == 'done':
                     job_status = 'failed'
