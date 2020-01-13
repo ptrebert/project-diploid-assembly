@@ -18,7 +18,7 @@ TARGET_PATHS = {
 
     "BUILD_DRAFT_HAPLOID_ASSEMBLY": os.path.join(
         "output", "diploid_assembly",
-        "strandseq_{approach}",
+        "strandseq_{hap_assm_mode}",
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
@@ -29,7 +29,7 @@ TARGET_PATHS = {
 
     "BUILD_POLISHED_HAPLOID_ASSEMBLY": os.path.join(
         "output", "diploid_assembly",
-        "strandseq_{approach}",
+        "strandseq_{hap_assm_mode}",
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
@@ -119,7 +119,7 @@ def define_file_targets(wildcards):
         raise ke
 
     try:
-        target_spec = config['target_specification_' + individual]
+        target_spec = config['sample_targets_' + individual]
     except KeyError as ke:
         sys.stderr.write('\nNo targets specified for individual [target_specification_] {} in config\n'.format(individual))
         raise ke
