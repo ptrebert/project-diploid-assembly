@@ -45,7 +45,8 @@ rule derive_flye_parameter_preset:
                 if not line.startswith('cov_geq'):
                     continue
                 rlen_info, cov = line.strip().split()  # this is the entry cov_geq_0
-                if int(cov) > target_coverage:
+                cov = int(float(cov))
+                if cov > target_coverage:
                     # only used for initial disjointig assembly
                     # for final assembly, all reads are used
                     preset = '--asm-coverage {} '.format(target_coverage)
