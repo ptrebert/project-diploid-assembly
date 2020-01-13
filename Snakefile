@@ -9,10 +9,8 @@ localrules: master, setup_env
 
 # Global wildcard constraints for consistent naming
 wildcard_constraints:
-    # Approach = Strand-seq DGA, or canonical w/o Strand-seq information
-    approach = '(strandseq|canonical)',
-    # For Strand-seq DGA, possible to proceed in a per-haplotype/per-cluster fashion
-    strategy = '(joint|split)',
+    # For Strand-seq haploid DGA, possible to proceed in a per-haplotype/per-cluster fashion (or jointly)
+    hap_assm_mode = '(joint|split)',
     # Sample should be used for individual + project + platform (+ x, but no file extension)
     sample = '[A-Za-z0-9_\-]+',
     # Individual such as HG00733
