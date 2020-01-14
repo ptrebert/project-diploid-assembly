@@ -229,9 +229,9 @@ rule call_variants_deepvariant:
     #    config['env_module_singularity']
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((1024 + 1024 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + 8192 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 12288 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1)
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sts_reads, wildcards.vc_reads, wildcards.sequence),
