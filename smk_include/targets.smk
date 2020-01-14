@@ -42,9 +42,39 @@ TARGET_PATHS = {
         "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.fasta"
     ),
 
+    "REPORT_NHR_ASSEMBLY": os.path.join(
+        "output", "evaluation", "quastlg_busco",
+        "{eval_known_ref}-{eval_gene_model}",
+        "reference_assembly", "non-hap-res",
+        "{hap_reads}_nhr-{nhr_assembler}/report.pdf"
+    ),
+
+    "REPORT_POLISHED_HAPLOID_ASSEMBLY": os.path.join(
+        "output", "evaluation", "quastlg_busco",
+        "{eval_known_ref}-{eval_gene_model}",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sts_reads}",
+        "polishing",
+        "{pol_reads}",
+        "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/report.pdf"
+    ),
+
     "STATS_SAMPLE_SUMMARY": os.path.join(
         "output", "statistics", "stat_dumps",
         "{hap_reads}.{file_ext}.pck"
+    ),
+
+    "STATS_VARIANT_CALLING_INITIAL": os.path.join(
+        "output", "statistics", "variant_calls",
+        "{var_caller}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{sts_reads}",
+        "{vc_reads}.snv.QUAL{filter_vcf_qual}.vcf.stats"
     ),
 
     "STATS_VARIANT_CALLING": os.path.join(
@@ -53,6 +83,15 @@ TARGET_PATHS = {
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{sts_reads}",
         "{vc_reads}.snv.QUAL{filter_vcf_qual}.GQ{filter_vcf_gq}.vcf.stats"
+    ),
+
+    "STATS_STRANDPHASER": os.path.join(
+        "output", "statistics", "phasing",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sts_reads}",
+        "{hap_reads}.spr-phased.stats.tsv"
     ),
 
     "STATS_INTEGRATIVE_PHASING": os.path.join(
