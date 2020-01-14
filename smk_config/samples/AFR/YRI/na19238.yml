@@ -1,0 +1,47 @@
+
+sample_description_NA19238:
+  individual: NA19238
+  sex: female
+  super_population: AFR
+  population: YRI
+  family: Y117
+  member: parent
+  data_sources:
+    - long_reads:
+        readset: NA19238_hgsvc_pbsq2-ccs
+        data_type: pacbio_native
+        load_type: parts
+        source_type: ftp
+    - strandseq:
+        readset: &sts_reads NA19238_1kg_il25k-npe_sseq
+        source_type: ena
+        bioproject: PRJEB12849
+    - short_reads:
+        readset: &short_reads NA19238_1kg_il25k-125pe_short
+        source_type: ena
+        bioproject: PRJEB9396
+
+
+sample_targets_NA19238:
+  - aliases:
+      1: &ccs_reads NA19238_hgsvc_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sts_reads: *sts_reads
+      pol_reads: *ccs_reads
+      pol_pass: racon-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: pereg
+      hap_assembler: pereg
+      var_caller: deepvar
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: freebayes
