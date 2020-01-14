@@ -1,5 +1,6 @@
 
 # modules w/o other dependencies
+include: 'constraints.smk'
 include: 'environments.smk'
 include: 'aux_utilities.smk'
 include: 'link_data_sources.smk'
@@ -27,3 +28,5 @@ include: 'arrow_polishing.smk'
 include: 'racon_polishing.smk'
 
 include: 'eval_known_reference.smk'
+
+include: 'targets.smk'

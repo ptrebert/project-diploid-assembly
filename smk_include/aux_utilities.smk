@@ -54,7 +54,7 @@ rule pb_bam2x_dump_fastq:
     benchmark:
         'run/input/bam/{folder_path}/{pbn_sample}{sample_type}.dump.rsrc'
     wildcard_constraints:
-        pbn_sample = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')',
+        pbn_sample = CONSTRAINT_ALL_PBN_INPUT_SAMPLES,
         sample_type = '(_[0-9x]+|\.part[0-9]+)'
     resources:
         runtime_hrs = lambda wildcards, attempt: 35 if attempt <= 1 else 24 * attempt
@@ -77,7 +77,7 @@ rule pb_bam2x_dump_haploid_fastq:
     benchmark:
         'run/output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pbn_hap_reads}.{hap}.{sequence}.dump.rsrc',
     wildcard_constraints:
-        pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
+        pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
     resources:
         runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 2 * attempt
     conda:

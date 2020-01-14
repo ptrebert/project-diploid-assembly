@@ -62,6 +62,30 @@ checkpoint create_input_data_download_requests:
     # end of rule
 
 
+def select_strandseq_bioproject_source(sts_reads):
+    """
+    :param sts_reads:
+    :return:
+    """
+    individual = sts_reads.split('_')[0]
+    sample_desc = config['sample_description_' + individual]
+    data_sources = sample_desc['data_sources']
+
+    bioproject = None
+    for record in data_sources:
+        if 'strandseq' not in record:
+            continue
+        record_spec = record['strandseq']
+        if record_spec['readset'].startswith(sts_reads):
+            # not sure if prefix matching necessary... should always be full match
+            if 'bioproject' not in record_spec:
+                raise ValueError('No bioproject annotated in config for Strand-seq readset: {}'.format(sts_reads))
+            bioproject = record_spec['bioproject']
+    if bioproject is None:
+        raise ValueError('No matching bioproject annotated for Strand-seq data: {}'.format(sts_reads))
+    return bioproject
+
+
 rule download_bioproject_metadata:
     output:
         'input/bioprojects/{sts_reads}.metadata.tsv'
@@ -71,7 +95,7 @@ rule download_bioproject_metadata:
          '../environment/conda/conda_shelltools.yml'
     params:
         script_dir = config['script_dir'],
-        accession_number = 'PRJEB12849'  # TODO this needs to be dynamic
+        accession_number = lambda wildcards: select_strandseq_bioproject_source(wildcards.sts_reads)
     shell:
         '{params.script_dir}/utilities/downloader.py --debug '
         '--ena-file-report '
@@ -100,7 +124,7 @@ checkpoint create_bioproject_download_requests:
         import os
         import csv
 
-        bioproject = 'PRJEB12849'  # TODO this needs to be dynamic
+        bioproject = select_strandseq_bioproject_source(wildcards.sts_reads)
         individual = wildcards.sts_reads.split('_')[0]
 
         with open(log[0], 'w') as logfile:
@@ -171,7 +195,7 @@ rule handle_partial_fastq_download_request:
         'run/input/fastq/partial/{split_type}/{req_sample}.{partnum}.download.rsrc'
     wildcard_constraints:
         split_type = '(parts|chunks)',
-        req_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
+        req_sample = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     conda:
          '../environment/conda/conda_shelltools.yml'
     threads: config['num_cpu_low']
@@ -217,7 +241,7 @@ rule handle_complete_fastq_download_request:
     output:
         'input/fastq/complete/{req_sample}_1000.fastq.gz'
     wildcard_constraints:
-        req_sample = '(' + '|'.join(config['complete_fastq_samples']) + ')'
+        req_sample = CONSTRAINT_COMPLETE_FASTQ_INPUT_SAMPLES
     log:
         'log/input/fastq/complete/{req_sample}.download.log'
     benchmark:
@@ -249,7 +273,7 @@ rule handle_partial_pbn_bam_download_request:
         '../environment/conda/conda_shelltools.yml'
     wildcard_constraints:
         split_type = '(parts|chunks)',
-        req_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
+        req_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     threads: config['num_cpu_low']
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 * attempt

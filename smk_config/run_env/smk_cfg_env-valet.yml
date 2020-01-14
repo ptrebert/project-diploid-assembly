@@ -14,3 +14,9 @@ num_cpu_max: 36
 num_cpu_high: 36
 num_cpu_medium: 12
 num_cpu_low: 6
+
+select_targets:
+  nhr_assembler:
+    - pereg
+  var_caller:
+    - deepvar

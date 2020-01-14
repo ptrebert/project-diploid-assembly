@@ -40,7 +40,7 @@ rule strandseq_dga_split_haplo_tagging:
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
+        fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+',
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -74,7 +74,7 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
+        pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -106,7 +106,7 @@ rule strandseq_dga_split_haplo_splitting:
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
+        fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+',
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -139,7 +139,7 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
+        pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -167,7 +167,7 @@ rule strandseq_dga_split_merge_tag_groups:
         '../environment/conda/conda_shelltools.yml'
     wildcard_constraints:
         haplotype = '(1|2)',
-        fq_hap_reads = '(' + '|'.join(config['partial_fastq_samples'] + config['complete_fastq_samples']) + ')_[0-9]+',
+        fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+',
     shell:
         'cat {input.hap} {input.un} > {output}'
 
@@ -191,7 +191,7 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         haplotype = '(1|2)',
-        pbn_hap_reads = '(' + '|'.join(config['partial_pbn_samples'] + config['complete_pbn_samples']) + ')_[0-9]+',
+        pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
     resources:
         mem_total_mb = lambda wildcards, attempt: 512 + 512 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 512 + 512 * attempt,

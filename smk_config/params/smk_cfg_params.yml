@@ -10,7 +10,6 @@ git_commit_strandphaser: e608407
 # git commits are changed!
 git_commit_version: 7
 
-use_singularity: False
 peregrine_version: 0.1.5.5
 deepvariant_version: 0.9.0
 shasta_version: 0.3.0

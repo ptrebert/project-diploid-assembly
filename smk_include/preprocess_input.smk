@@ -35,7 +35,7 @@ rule write_fastq_input_parts_fofn:
     output:
         fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
     wildcard_constraints:
-        mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
+        mrg_sample = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     run:
         import os
         fastq_parts = collect_fastq_input_parts(wildcards)
@@ -58,7 +58,7 @@ rule merge_fastq_input_parts:
     log:
         'log/input/fastq/complete/{mrg_sample}_1000.merge.log'
     wildcard_constraints:
-        mrg_sample = '(' + '|'.join(config['partial_fastq_samples']) + ')'
+        mrg_sample = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     conda:
         '../environment/conda/conda_shelltools.yml'
     resources:
@@ -97,7 +97,7 @@ rule write_bam_input_parts_fofn:
     output:
         fofn = 'input/bam/complete/{mrg_sample}_1000.pbn.fofn'
     wildcard_constraints:
-        mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
+        mrg_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     run:
         import os
         bam_parts = collect_pacbio_bam_input_parts(wildcards)
@@ -122,7 +122,7 @@ rule merge_pacbio_native_bams:
     benchmark:
         'run/input/bam/complete/{mrg_sample}_1000.mrg.rsrc'
     wildcard_constraints:
-        mrg_sample = '(' + '|'.join(config['partial_pbn_samples']) + ')'
+        mrg_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     conda:
          '../environment/conda/conda_biotools.yml'
     resources:
