@@ -39,7 +39,3 @@ sample_targets_HG01114:
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: longshot
-  - target:
-      nhr_assembler: shasta
-      hap_assembler: shasta
-      var_caller: longshot

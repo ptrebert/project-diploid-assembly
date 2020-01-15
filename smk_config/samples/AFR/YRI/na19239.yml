@@ -12,6 +12,11 @@ sample_description_NA19239:
         data_type: pacbio_native
         load_type: parts
         source_type: ftp
+    - long_reads:
+        readset: NA19239_hgsvc_pbsq2-clr
+        data_type: pacbio_native
+        load_type: parts
+        source_type: ftp
     - strandseq:
         readset: &sts_reads NA19239_1kg_il25k-npe_sseq
         source_type: ena
@@ -25,6 +30,7 @@ sample_description_NA19239:
 sample_targets_NA19239:
   - aliases:
       1: &ccs_reads NA19239_hgsvc_pbsq2-ccs_1000
+      2: &clr_reads NA19239_hgsvc_pbsq2-clr_1000
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
@@ -45,3 +51,19 @@ sample_targets_NA19239:
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: freebayes
+  - defaults:
+      hap_reads: *clr_reads
+      vc_reads: *clr_reads
+      sts_reads: *sts_reads
+      pol_reads: *clr_reads
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
