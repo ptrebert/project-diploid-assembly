@@ -281,7 +281,7 @@ def define_file_targets(wildcards):
 
 rule dump_build_targets:
     input:
-         targets = define_file_targets
+         define_file_targets
     output:
         'output/targets/{super_population}_{population}_{family}/{individual}.fofn'
     run:
@@ -289,7 +289,14 @@ rule dump_build_targets:
 
         root_dir = os.getcwd()
 
-        if len(input.targets) > 0:
+        # The internals of InputFiles are still unclear to me.
+        # Looks like the formerly used attribute "(input.)targets" did only
+        # exist if there were targets, i.e., the list had to be non-empty
+        # for the attribute to exist. Weird behavior...
+        if input and len(input) > 0:
             with open(output[0], 'w') as dump:
-                for file_target in input.targets:
-                    _ = dump.write(os.path.join(root_dir, file_target) + '\n')
+                for file_target in input:
+                    full_path = os.path.join(root_dir, file_target)
+                    assert os.path.isfile(full_path), \
+                        'Non-existing file as build target: {} / {}'.format(full_path, output[0])
+                    _ = dump.write(full_path + '\n')
