@@ -432,6 +432,7 @@ rule compute_final_vcf_stats:
         stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snv.QUAL{qual}.GQ{gq}.vcf.stats'
     conda:
         '../environment/conda/conda_biotools.yml'
+    priority: 200
     shell:
         'bcftools stats {input.vcf} > {output.stats}'
 
@@ -509,5 +510,6 @@ rule compute_intermediate_vcf_stats:
         stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snv.QUAL{qual}.vcf.stats'
     conda:
         '../environment/conda/conda_biotools.yml'
+    priority: 200
     shell:
         'bcftools stats {input.vcf} > {output.stats}'

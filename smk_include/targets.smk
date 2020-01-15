@@ -49,6 +49,19 @@ TARGET_PATHS = {
         "{hap_reads}_nhr-{nhr_assembler}/report.pdf"
     ),
 
+    "REPORT_DRAFT_HAPLOID_ASSEMBLY": os.path.join(
+        "output", "evaluation", "quastlg_busco",
+        "{eval_known_ref}-{eval_gene_model}",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sts_reads}",
+        "draft", "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}/report.pdf"
+    ),
+
     "REPORT_POLISHED_HAPLOID_ASSEMBLY": os.path.join(
         "output", "evaluation", "quastlg_busco",
         "{eval_known_ref}-{eval_gene_model}",

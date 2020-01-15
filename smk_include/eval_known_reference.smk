@@ -51,7 +51,7 @@ rule quast_analysis_assembly:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100
     shell:
-        'quast-lg.py --threads {threads} -r {input.known_ref}' \
-            ' --features gene:{input.genes} --conserved-genes-finding' \
-            ' --output-dir {params.output_dir} {input.assembly}' \
+        'quast-lg.py --threads {threads} -r {input.known_ref}'
+            ' --features gene:{input.genes} --conserved-genes-finding'
+            ' --output-dir {params.output_dir} {input.assembly}'
             ' &> {log}'

@@ -323,6 +323,7 @@ rule compute_strandphaser_phased_vcf_stats:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.log'
     conda:
         '../environment/conda/conda_biotools.yml'
+    priority: 200
     resources:
              mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
              mem_total_mb = lambda wildcards, attempt: 4096 * attempt
@@ -334,9 +335,6 @@ rule compute_strandphaser_phased_vcf_stats:
 
 rule compute_whatshap_phased_vcf_stats:
     input:
-        spr_bcf_stats = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.vcf.stats',
-        spr_stats_tsv = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.tsv',
-        spr_stats_txt = 'output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.txt',
         vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
         idx = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi'
     output:
@@ -347,6 +345,7 @@ rule compute_whatshap_phased_vcf_stats:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.log'
     conda:
         '../environment/conda/conda_biotools.yml'
+    priority: 200
     resources:
              mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
              mem_total_mb = lambda wildcards, attempt: 4096 * attempt

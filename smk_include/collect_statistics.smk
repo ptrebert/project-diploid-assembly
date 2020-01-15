@@ -109,6 +109,7 @@ rule plot_fastq_input_statistics:
         'output/plotting/statistics/input_reads/{sample}.{file_ext}.stats.pdf'
     conda:
          '../environment/conda/conda_pyscript.yml'
+    priority: 200
     params:
         script_dir = config['script_dir'],
         lower_bound = 6000,
@@ -155,6 +156,7 @@ rule summarize_tagging_splitting_statistics:
         'output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.tsv'
     benchmark:
         'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.rsrc'
+    priority: 200
     run:
         tsv_files = collect_tag_lists(wildcards)
 
