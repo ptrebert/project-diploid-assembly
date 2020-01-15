@@ -124,6 +124,11 @@ TARGET_PATHS = {
         "{sts_reads}",
         "{hap_reads}.tags.{tag_source}.tsv"
     ),
+
+    "PLOT_INPUT_SAMPLE_STATS": os.path.join(
+        "output", "plotting", "statistics", "input_reads",
+        "{sample}.{file_ext}.stats.pdf"
+    )
 }
 
 
@@ -226,6 +231,12 @@ def define_file_targets(wildcards):
 
     file_targets = []
 
+    keep_path = False
+    selected_path = None
+    if 'select_target_path' in config:
+        keep_path = True
+        selected_path = config['select_target_path']
+
     for target_specification in sample_targets:
         if 'aliases' in target_specification:
             continue
@@ -255,6 +266,8 @@ def define_file_targets(wildcards):
             if not keep_target:
                 continue
             for target_name, target_path in TARGET_PATHS.items():
+                if keep_path and selected_path != target_name:
+                    continue
                 if '{hap_reads}' in target_path:
                     hap_readset = tmp['hap_reads']
                     for readset, annotation in readset_annotation.items():

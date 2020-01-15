@@ -102,7 +102,7 @@ rule compute_statistics_complete_input_bam:
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
-rule plot_fastq_input_statistics:
+rule plot_input_long_reads_statistics:
     input:
         'output/statistics/stat_dumps/{sample}.{file_ext}.pck'
     output:
