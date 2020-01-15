@@ -80,12 +80,36 @@ def parse_command_line():
              "subreads file, then assume that it is a PacBio CLR dataset".format(CCS_TECH_KEYWORDS)
     )
     parser.add_argument(
+        "--assume-paired-reads",
+        "-prd",
+        action="store_true",
+        default=False,
+        dest="paired_reads",
+        help="Assume paired reads with mate indicators R1/R2"
+    )
+    parser.add_argument(
         "--file-infix",
         "-in",
         type=str,
         required=True,
         dest="infix",
         help="Define the infix for the output files."
+    )
+    parser.add_argument(
+        "--file-suffix",
+        "-sfx",
+        type=str,
+        default=None,
+        dest="suffix",
+        help="Append suffix to all file names (before part or mate indicator)."
+    )
+    parser.add_argument(
+        "--fix-tech",
+        "-ft",
+        type=str,
+        default=None,
+        dest="fix_tech",
+        help="Use a fix technology for all files irrespective of tech indicators in the file name."
     )
     parser.add_argument(
         "--output",
@@ -194,7 +218,9 @@ def annotate_remote_files(remote_files, cargs, logger):
         individual = mobj.group(0)
         tech = None
         logger.debug('Extracted individual {} for file {}'.format(individual, name))
-        if any([x in name.lower() for x in CCS_TECH_KEYWORDS]):
+        if cargs.fix_tech is not None:
+            tech = cargs.fix_tech
+        elif any([x in name.lower() for x in CCS_TECH_KEYWORDS]):
             tech = 'ccs'
         elif any([x in name.lower() for x in CLR_TECH_KEYWORDS]):
             tech = 'clr'
@@ -229,7 +255,10 @@ def annotate_remote_files(remote_files, cargs, logger):
             file_ext = 'sam.bam'
         else:
             pass
-        base_file_prefix = '_'.join([individual, cargs.infix + tech])
+        if cargs.suffix is None:
+            base_file_prefix = '_'.join([individual, cargs.infix + tech])
+        else:
+            base_file_prefix = '_'.join([individual, cargs.infix + tech, cargs.suffix])
         logger.debug('Adding file to collection: {}'.format(name))
         file_collector[(local_path, base_file_prefix, file_ext)].append(full_path)
     logger.debug('Identified {} different file groups'.format(len(file_collector)))
@@ -249,7 +278,12 @@ def enumerate_file_parts(file_groups, cargs, logger):
         if len(remote_files) == 1:
             raise ValueError('Single remote file - "complete" suffix needed')
         for part_num, rf in enumerate(remote_files, start=1):
-            key = os.path.join(local_path, file_prefix + '.part' + str(part_num))
+            if cargs.paired_reads:
+                if part_num > 2:
+                    raise ValueError('Assuming paired reads, but mate indicator > 2: {}'.format(remote_files))
+                key = os.path.join(local_path, file_prefix + '.R' + str(part_num))
+            else:
+                key = os.path.join(local_path, file_prefix + '.part' + str(part_num))
             full_local_path = key + '.' + file_ext
             assert key not in output, 'Duplicate key: {}\n\n{}\n'.format(key, file_groups)
             remote_path = os.path.join(cargs.server, rf)
