@@ -1,0 +1,41 @@
+
+sample_description_HG02587:
+  individual: HG02587
+  sex: female
+  super_population: AFR
+  population: GWD
+  family: GB24
+  member: child
+  data_sources:
+    - long_reads:
+        readset: HG02587_hgsvc_pbsq2-clr
+        data_type: pacbio_native
+        load_type: parts
+        source_type: ftp
+    - strandseq:
+        readset: &sts_reads HG02587_hgsvc_il25k-npe_sseq
+        source_type: ftp
+    - short_reads:
+        readset: &short_reads HG02587_hgsvc_il25k-125pe_short
+        source_type: ftp
+
+
+sample_targets_HG02587:
+  - aliases:
+      2: &clr_hgsvc HG02587_sra_pbsq2-clr_1000
+  - defaults:
+      hap_reads: *clr_hgsvc
+      vc_reads: *clr_hgsvc
+      sts_reads: *sts_reads
+      pol_reads: *clr_hgsvc
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot

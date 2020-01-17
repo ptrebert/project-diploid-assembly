@@ -5,7 +5,9 @@ localrules: run_amr_trios,
             run_pur_mother,
             run_pur_child,
             run_clm_trio,
-            run_clm_child
+            run_clm_child,
+            run_pel_trio,
+            run_pel_child
 
 
 rule run_pur_father:
@@ -47,9 +49,22 @@ rule run_clm_trio:
 
 ##############################################
 
+rule run_pel_child:
+    input:
+         'output/targets/AMR_PEL_PEL003/HG01573.fofn'
+    message: 'Running AMR-PEL-PEL003 child'
+
+rule run_pel_trio:
+    input:
+         rules.run_pel_child.input
+    message: 'Running AMR-PEL-PEL003 trio'
+
+##############################################
+
 rule run_amr_trios:
     input:
         rules.run_pur_trio.input,
-        rules.run_clm_trio.input
+        rules.run_clm_trio.input,
+        rules.run_pel_trio.input
     message: 'Running AMR trios'
 
