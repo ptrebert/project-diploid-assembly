@@ -27,6 +27,12 @@ rule compute_statistics_complete_input_fastq:
     shell:
         '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fastq} '
         '--output {output.dump} --summary-output {output.summary} '
+        '--copy-stats-dump '
+        'output/statistics/stat_dumps/{wildcards.sample}.pbn.bam.pck '
+        'output/statistics/stat_dumps/{wildcards.sample}.fasta.pck '
+        '--copy-summary '
+        'input/bam/complete/{wildcards.sample}.stats '
+        'input/fasta/complete/{wildcards.sample}.stats '
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
@@ -51,7 +57,37 @@ rule compute_statistics_complete_input_fasta:
     shell:
         '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fasta} '
         '--output {output.dump} --summary-output {output.summary} '
+        '--copy-stats-dump '
+        'output/statistics/stat_dumps/{wildcards.sample}.pbn.bam.pck '
+        'output/statistics/stat_dumps/{wildcards.sample}.fastq.pck '
+        '--copy-summary '
+        'input/bam/complete/{wildcards.sample}.stats '
+        'input/fastq/complete/{wildcards.sample}.stats '
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
+
+
+rule compute_statistics_split_cluster_fastq:
+    input:
+         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
+         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+    output:
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.pck',
+          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.t2.rsrc'
+    threads: 2
+    resources:
+             runtime_hrs= 1,
+             mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+             mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
+    conda:
+         '../environment/conda/conda_pyscript.yml'
+    params:
+          script_dir = config['script_dir']
+    shell:
+         '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fasta} '
+         '--output {output.dump} --summary-output {output.summary} '
+         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
 rule compute_statistics_split_cluster_fasta:
@@ -99,6 +135,11 @@ rule compute_statistics_complete_input_bam:
     shell:
         '{params.script_dir}/collect_read_stats.py --debug --input-files {input.bam} '
         '--output {output.dump} --summary-output {output.summary} '
+        'output/statistics/stat_dumps/{wildcards.sample}.fasta.pck '
+        'output/statistics/stat_dumps/{wildcards.sample}.fastq.pck '
+        '--copy-summary '
+        'input/fasta/complete/{wildcards.sample}.stats '
+        'input/fastq/complete/{wildcards.sample}.stats '
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 

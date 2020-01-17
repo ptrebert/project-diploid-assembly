@@ -2,9 +2,9 @@
 
 import os as os
 import sys as sys
+import shutil as sh
 import logging as log
 import io as io
-import gzip as gz
 import traceback as trb
 import argparse as argp
 import pickle as pck
@@ -50,8 +50,8 @@ def parse_command_line():
         type=str,
         required=True,
         dest="output",
-        help="Full path to output file (Python pickle format). Directories will"
-             " be created if they do not exist.",
+        help="Full path to output file (Python pickle format). Directories will "
+             "be created if they do not exist.",
     )
     parser.add_argument(
         "--summary-output",
@@ -93,9 +93,27 @@ def parse_command_line():
         type=int,
         default=1,
         dest="numcpu",
-        help="Specify number of CPU cores to use for parallel computation. Note"
-        " that there is no sanity checking for actually free/available cores."
-        " Default: 1",
+        help="Specify number of CPU cores to use for parallel computation. "
+             "Note that there is no sanity check for actually free/available cores. "
+             "Default: 1",
+    )
+    parser.add_argument(
+        "--copy-stats-dump",
+        "-cpd",
+        type=str,
+        nargs='*',
+        dest="copy_dump",
+        help="Path to file(s) containing the same data set statistics derived from a different "
+             "input data format; simply copy instead of reprocessing."
+    )
+    parser.add_argument(
+        "--copy-summary",
+        "-cps",
+        type=str,
+        nargs='*',
+        dest="copy_summary",
+        help="Path to file(s) containing the same data set summary derived from a different "
+             "input data format; simply copy instead of reprocessing."
     )
     return parser.parse_args()
 
@@ -261,14 +279,12 @@ def prepare_summary_statistics(length_stat, genome_size, num_reads):
     return summary_stats
 
 
-def main(logger, cargs):
+def compute_dataset_statistics(cargs, logger):
     """
-    :param logger:
     :param cargs:
+    :param logger:
     :return:
     """
-    logger.debug("Starting computations")
-
     file_paths, chunk_readers, read_processors = assemble_file_processors(cargs.input, logger)
 
     len_stats = col.Counter()
@@ -309,18 +325,32 @@ def main(logger, cargs):
 
     summary_stats = None
     total_genome_size = -1
+
+    # the summary output could have been copied from a different source
     if cargs.summary_output is not None:
-        logger.debug('User requested summary output...')
-        total_genome_size = get_total_genome_size(cargs.size_file, cargs.genome_size)
-        gs_gbp = round(total_genome_size / 1e9, 2)
-        logger.debug('Total genome size set to: {} bp'.format(total_genome_size))
-        logger.debug('... human readable: {} Gbp'.format(gs_gbp))
-        summary_stats = prepare_summary_statistics(len_stats, total_genome_size, read_count)
-        logger.debug('Summary statistics computed')
-        os.makedirs(os.path.abspath(os.path.dirname(cargs.summary_output)), exist_ok=True)
-        with open(cargs.summary_output, 'w') as stats:
-            _ = stats.write('\n'.join(['\t'.join([k, str(v)]) for k, v in summary_stats]))
-        logger.debug('Summary statistics written to file {}'.format(cargs.summary_output))
+        if os.path.isfile(cargs.summary_output):
+            logger.debug('Loading summary statistics from file: {}'.format(cargs.summary_output))
+            summary_stats = {}
+            with open(cargs.summary_output, 'r') as summary:
+                for line in summary:
+                    key, value = line.strip().split('\t')
+                    if any([x in key for x in ['cov', 'Gbp']]):
+                        value = float(value)
+                    else:
+                        value = int(value)
+                    summary_stats[key] = value
+        else:
+            logger.debug('User requested summary output...')
+            total_genome_size = get_total_genome_size(cargs.size_file, cargs.genome_size)
+            gs_gbp = round(total_genome_size / 1e9, 2)
+            logger.debug('Total genome size set to: {} bp'.format(total_genome_size))
+            logger.debug('... human readable: {} Gbp'.format(gs_gbp))
+            summary_stats = prepare_summary_statistics(len_stats, total_genome_size, read_count)
+            logger.debug('Summary statistics computed')
+            os.makedirs(os.path.abspath(os.path.dirname(cargs.summary_output)), exist_ok=True)
+            with open(cargs.summary_output, 'w') as stats:
+                _ = stats.write('\n'.join(['\t'.join([k, str(v)]) for k, v in summary_stats]))
+            logger.debug('Summary statistics written to file {}'.format(cargs.summary_output))
 
     logger.debug('Done - processed {} reads'.format(read_count))
     gc_info_reads = sum(gc_stats.values())
@@ -339,6 +369,49 @@ def main(logger, cargs):
     with open(cargs.output, 'wb') as stats_dump:
         _ = pck.dump(dump, stats_dump)
     logger.debug('Statistics saved to output file')
+
+    return
+
+
+def copy_output_from_existing_source(file_paths, output, logger):
+    """
+    :param file_paths:
+    :param output:
+    :param logger:
+    :return:
+    """
+    dest_path = None
+    for file_path in file_paths:
+        if os.path.isfile(file_path):
+            # this check is important because it is not guaranteed
+            # that other stats computation have finished already
+            # (it is likely, though)
+            logger.debug('Found existing statistics source at path: {}'.format(file_path))
+            os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
+            dest_path = sh.copy(file_path, output)
+            logger.debug('Copied statistics from {} to {}'.format(file_path, dest_path))
+            break
+    return dest_path
+
+
+def main(logger, cargs):
+    """
+    :param logger:
+    :param cargs:
+    :return:
+    """
+    logger.debug('Starting computations')
+
+    logger.debug('Checking if output can be copied from other source...')
+    stats_dump_path = copy_output_from_existing_source(cargs.copy_dump, cargs.output, logger)
+
+    if cargs.summary_output is not None:
+        _ = copy_output_from_existing_source(cargs.copy_summary, cargs.summary_output, logger)
+
+    if stats_dump_path is None:
+        logger.debug('No other sources specified, computing dataset statistics...')
+        compute_dataset_statistics(cargs, logger)
+
     return
 
 
