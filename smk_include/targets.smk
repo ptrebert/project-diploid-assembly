@@ -127,7 +127,7 @@ TARGET_PATHS = {
 
     "PLOT_INPUT_SAMPLE_STATS": os.path.join(
         "output", "plotting", "statistics", "input_reads",
-        "{sample}.{file_ext}.stats.pdf"
+        "{hap_reads}.{file_ext}.stats.pdf"
     )
 }
 
