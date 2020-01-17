@@ -19,21 +19,21 @@
     "remote_path": "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.28_GRCh38.p13/GCA_000001405.28_GRCh38.p13_genomic.fna.gz",
     "local_path": "references/downloads/GRCh38_GCA_p13.fa.gz"
   },
-  "HG00733_hgsvc_pbil-trio_truth.hA": {
+  "HG00733_hgsvc_pbil-trio_hapA": {
     "remote_path": "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20180227_IlluminaPolishedPhasedSV/HG00733.h0.polish.fasta.gz",
-    "local_path": "references/downloads/HG00733_hgsvc_pbil-trio_truth.hA.fa.gz"
+    "local_path": "references/downloads/HG00733_hgsvc_pbil-trio_hapA.fa.gz"
   },
-  "HG00733_hgsvc_pbil-trio_truth.hB": {
+  "HG00733_hgsvc_pbil-trio_hapB": {
     "remote_path": "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20180227_IlluminaPolishedPhasedSV/HG00733.h1.polish.fasta.gz",
-    "local_path": "references/downloads/HG00733_hgsvc_pbil-trio_truth.hB.fa.gz"
+    "local_path": "references/downloads/HG00733_hgsvc_pbil-trio_hapB.fa.gz"
   },
-  "HG00514_hgsvc_pbil-trio_truth.hA": {
+  "HG00514_hgsvc_pbil-trio_hapA": {
     "remote_path": "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20180227_IlluminaPolishedPhasedSV/HG00514.h0.polish.fasta.gz",
-    "local_path": "references/downloads/HG00514_hgsvc_pbil-trio_truth.hA.fa.gz"
+    "local_path": "references/downloads/HG00514_hgsvc_pbil-trio_hapA.fa.gz"
   },
-  "HG00514_hgsvc_pbil-trio_truth.hB": {
+  "HG00514_hgsvc_pbil-trio_hapB": {
     "remote_path": "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20180227_IlluminaPolishedPhasedSV/HG00514.h1.polish.fasta.gz",
-    "local_path": "references/downloads/HG00514_hgsvc_pbil-trio_truth.hB.fa.gz"
+    "local_path": "references/downloads/HG00514_hgsvc_pbil-trio_hapB.fa.gz"
   },
   "GRCh38_GENCODEv31_basic": {
     "remote_path": "ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_31/gencode.v31.basic.annotation.gff3.gz",
