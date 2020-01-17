@@ -276,7 +276,7 @@ rule handle_partial_pbn_bam_download_request:
         req_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
     params:
         script_dir = config['script_dir'],
         parallel_conn = config['num_cpu_low'] - 1

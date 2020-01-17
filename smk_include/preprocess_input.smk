@@ -126,7 +126,7 @@ rule merge_pacbio_native_bams:
     conda:
          '../environment/conda/conda_biotools.yml'
     resources:
-        runtime_hrs = lambda wildcards, attempt: 6 if attempt <= 1 else 24 * attempt
+        runtime_hrs = lambda wildcards, attempt: 6 if (attempt <= 1 and '-ccs' in wildcards.mrg_sample) else 24 * attempt
     params:
         bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
     shell:
