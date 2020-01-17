@@ -242,6 +242,7 @@ rule call_variants_deepvariant:
             ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} '
             ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} '
             ' --novcf_stats_report --intermediate_results_dir="{params.temp_dir}" --num_shards={threads} &> {log} ; '
+        'rm -rfd {params.temp_dir} ; '
 #        'module unload {params.singularity_module}'
 
 
