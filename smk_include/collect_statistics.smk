@@ -135,6 +135,7 @@ rule compute_statistics_complete_input_bam:
     shell:
         '{params.script_dir}/collect_read_stats.py --debug --input-files {input.bam} '
         '--output {output.dump} --summary-output {output.summary} '
+        '--copy-stats-dump '
         'output/statistics/stat_dumps/{wildcards.sample}.fasta.pck '
         'output/statistics/stat_dumps/{wildcards.sample}.fastq.pck '
         '--copy-summary '
