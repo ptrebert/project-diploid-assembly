@@ -7,6 +7,12 @@ from snakemake.exceptions import WildcardError as WildcardError
 
 
 TARGET_PATHS = {
+    "INIT_COMPLETE_DATA": os.path.join(
+        "input",
+        "{input_format}",
+        "complete",
+        "{hap_reads}.{file_ext}{ext_modifier}"
+    ),
     "BUILD_NHR_ASSEMBLY": os.path.join(
         "output", "reference_assembly", "non-hap-res",
         "{hap_reads}_nhr-{nhr_assembler}.fasta"
@@ -191,12 +197,20 @@ def annotate_readset_data_types(sample_desc):
         readset = this_record['readset']
         dt = this_record['data_type']
         if dt == 'pacbio_native':
-            v = {'file_ext': 'pbn.bam',
-                 'tag_source': 'pbn'}
+            v = {
+                'input_format': 'bam',
+                'file_ext': 'pbn.bam',
+                'ext_modifier': '',
+                'tag_source': 'pbn'
+            }
             source_annotation[readset] = v
         elif dt == 'fastq':
-            v = {'file_ext': 'fastq',
-                 'tag_source': 'fq'}
+            v = {
+                'input_format': 'fastq',
+                'file_ext': 'fastq',
+                'ext_modifier': '.gz',
+                'tag_source': 'fq'
+            }
             source_annotation[readset] = v
         else:
             raise ValueError('Unexpected data type: {} / {}'.format(dt, this_record))
@@ -236,6 +250,9 @@ def define_file_targets(wildcards):
     if 'select_target_path' in config:
         keep_path = True
         selected_path = config['select_target_path']
+        if not selected_path in TARGET_PATHS:
+            raise ValueError('Selected target path does not exist: '
+                             '{} // {}'.format(selected_path, sorted(TARGET_PATHS.keys())))
 
     for target_specification in sample_targets:
         if 'aliases' in target_specification:
@@ -267,7 +284,11 @@ def define_file_targets(wildcards):
                 continue
             for target_name, target_path in TARGET_PATHS.items():
                 if keep_path and selected_path != target_name:
-                    continue
+                    if target_name.startswith('INIT'):
+                        # Init targets are always needed
+                        pass
+                    else:
+                        continue
                 if '{hap_reads}' in target_path:
                     hap_readset = tmp['hap_reads']
                     for readset, annotation in readset_annotation.items():
@@ -278,9 +299,9 @@ def define_file_targets(wildcards):
                             break
                 try:
                     complete_targets = expand(target_path, **tmp)
-                except (KeyError, WildcardError):
+                except (KeyError, WildcardError) as error:
                         raise ValueError('Missing parameter values for target {}: '
-                                         '(known: {})'.format(target_name, tmp))
+                                         '(known: {}) - {}'.format(target_name, tmp, str(error)))
                 else:
                     for entry in complete_targets:
                         assert len(entry) > 1, 'Define file targets: looks like iterating over ' \
@@ -309,6 +330,9 @@ rule dump_build_targets:
         if input and len(input) > 0:
             with open(output[0], 'w') as dump:
                 for file_target in input:
+                    if file_target.startswith('input/'):
+                        # skip over INIT targets
+                        continue
                     full_path = os.path.join(root_dir, file_target)
                     assert os.path.isfile(full_path), \
                         'Non-existing file as build target: {} / {}'.format(full_path, output[0])
