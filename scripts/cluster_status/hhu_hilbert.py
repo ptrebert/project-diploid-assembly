@@ -10,8 +10,17 @@ import subprocess as sp
 
 random.seed()
 
+FILE_PATH_STATUS_LOG = None
+
+if FILE_PATH_STATUS_LOG is None:
+    FILE_PATH_STATUS_LOG = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)),
+        'log', 'cluster_status.log'
+    )
+
 log_msg_format = "%(asctime)s | %(levelname)s | %(message)s"
-cluster_status_log = '/gpfs/project/ebertp/projects/rfdga/log/cluster_status.log'
+cluster_status_log = FILE_PATH_STATUS_LOG
 os.makedirs(os.path.dirname(cluster_status_log), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
