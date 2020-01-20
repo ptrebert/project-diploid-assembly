@@ -22,7 +22,7 @@ sample_description_HG01573:
 
 sample_targets_HG01573:
   - aliases:
-      2: &clr_hgsvc HG01573_sra_pbsq2-clr_1000
+      2: &clr_hgsvc HG01573_hgsvc_pbsq2-clr_1000
   - defaults:
       hap_reads: *clr_hgsvc
       vc_reads: *clr_hgsvc
