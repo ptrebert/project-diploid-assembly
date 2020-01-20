@@ -120,7 +120,8 @@ rule mark_duplicate_reads_strandseq:
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = 512,
-        mem_total_mb = config['num_cpu_low'] * 512
+        mem_total_mb = config['num_cpu_low'] * 512,
+        runtime_hrs = lambda wildcards, attempt: attempt * 2
     shell:
         'sambamba markdup -t {threads} --overflow-list-size 600000 {input} {output} &> {log}'
 
