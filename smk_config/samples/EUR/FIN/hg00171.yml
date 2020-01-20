@@ -1,0 +1,41 @@
+
+sample_description_HG00171:
+  individual: HG00171
+  sex: female
+  super_population: EUR
+  population: FIN
+  family: HG00171
+  member: unrelated
+  data_sources:
+    - long_reads:
+        readset: HG00171_hgsvc_pbsq2-clr
+        data_type: pacbio_native
+        load_type: parts
+        source_type: ftp
+    - strandseq:
+        readset: &sts_reads HG00171_hgsvc_il25k-npe_sseq
+        source_type: ftp
+    - short_reads:
+        readset: &short_reads HG00171_hgsvc_il25k-125pe_short
+        source_type: ftp
+
+
+sample_targets_HG00171:
+  - aliases:
+      1: &clr_reads HG00171_hgsvc_pbsq2-clr_1000
+  - defaults:
+      hap_reads: *clr_reads
+      vc_reads: *clr_reads
+      sts_reads: *sts_reads
+      pol_reads: *clr_reads
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
