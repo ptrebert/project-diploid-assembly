@@ -663,7 +663,7 @@ rule compute_shasta_haploid_split_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((49152 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: (attempt - 1) * (attempt - 1)
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
     shell:
