@@ -616,7 +616,7 @@ rule compute_peregrine_haploid_split_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: (attempt - 1) * (attempt - 1) + 1
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
