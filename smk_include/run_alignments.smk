@@ -253,3 +253,40 @@ rule pbmm2_arrow_polish_alignment_pass1:
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
             ' --preset {params.preset} --sample {params.individual} '
             ' {input.contigs} {input.reads} {output.bam} &> {log}'
+
+
+rule minimap_contig_to_known_reference_alignment:
+    input:
+        contigs = 'output/{folder_path}/{reference}.fasta',
+        #preset = 'input/fastq/complete/{sample}.preset.minimap',
+        reference = 'references/assemblies/{aln_reference}.fasta'
+    output:
+        'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.psort.sam.bam'
+    log:
+        minimap = 'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.minimap.log',
+        st_sort = 'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.st-sort.log',
+        st_view = 'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.st-view.log',
+    benchmark:
+        '.'.join(['run/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 16384 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 16384 + 16384 * attempt,
+        runtime_hrs = 71,
+        mem_sort_mb = 8192
+    params:
+        individual = lambda wildcards: wildcards.reference.split('_')[0],
+        discard_flag = config['minimap_contigref_aln_discard'],
+        tempdir = lambda wildcards: os.path.join(
+                                        'temp', 'minimap', wildcards.folder_path,
+                                        wildcards.reference, wildcards.aln_reference)
+    shell:
+        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
+        'minimap2 -t {threads} '
+            '--secondary=no --eqx -Y -ax asm20 -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
+            '-R "@RG\\tID:{wildcards.reference}\\tSM:{params.individual}" '
+            '{input.reference} {input.contigs} 2> {log.minimap} | '
+            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
+            'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'

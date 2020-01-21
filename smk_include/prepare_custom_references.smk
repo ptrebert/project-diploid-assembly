@@ -121,7 +121,7 @@ rule mark_duplicate_reads_strandseq:
     resources:
         mem_per_cpu_mb = 512,
         mem_total_mb = config['num_cpu_low'] * 512,
-        runtime_hrs = lambda wildcards, attempt: attempt * 2
+        runtime_hrs = lambda wildcards, attempt: attempt + (attempt -1 ) * 2
     shell:
         'sambamba markdup -t {threads} --overflow-list-size 600000 {input} {output} &> {log}'
 
@@ -264,3 +264,51 @@ rule merge_reference_fasta_clusters:
         fasta_clusters = lambda wildcards, input: load_fofn_file(input)
     shell:
         'cat {params.fasta_clusters} > {output}'
+
+
+# Below: create a diagnostic plot (SaaRclust) package, requires contig to reference alignment
+
+rule dump_contig_to_reference_alignment_to_bed:
+        input:
+            'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.psort.sam.bam'
+        output:
+            'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.bed'
+        log:
+            'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.dump-bed.log'
+        benchmark:
+            'run/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.dump-bed.rsrc'
+        conda:
+            '../environment/conda/conda_biotools.yml'
+        resources:
+            runtime_hrs = lambda wildcards, attempt: attempt,
+            mem_total_mb = 2048,
+            mem_per_cpu_mb = 2048
+        shell:
+            'bedtools bamtobed -i {input} > {output} 2> {log}'
+
+
+rule plot_saarclust_diagnostic_output:
+    input:
+        setup_ok = 'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']),
+        ctg_ref_aln = 'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.bed'
+    output:
+        clustering = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.clustering.pdf',
+        ordering = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.ordering.pdf',
+        orienting = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.orienting.pdf',
+    log:
+       'log/output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.log'
+    benchmark:
+        'run/output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
+    conda:
+        '../environment/conda/conda_rtools.yml'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt
+    params:
+        run_script = os.path.join(config['script_dir'], 'plot_saarclust_diagnostics.R'),
+        out_prefix = lambda wildcards: os.path.join(
+            'output', 'plotting', 'saarclust_diagnostics', 'reference_assembly', 'clustered',
+            wildcards.folder_path, wildcards.reference + '_map-to_' + wildcards.aln_reference)
+    shell:
+         '{params.run_script} {input.ctg_ref_aln} hg38 {params.out_prefix} &> {log}'

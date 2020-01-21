@@ -63,3 +63,12 @@ ggsave(filename = <plot destination/clustering.pdf>, plot = plt1, width = 12, he
 ggsave(filename = <plot destination/ordering.pdf>, plot = plt2, width = 12, height = 6)
 ggsave(filename = <plot destination/orienting.pdf>, plot = plt3, width = 12, height = 6)
 ```
+
+## Note
+
+Add following packages to `rtools` environment after bug fixing stage.
+
+```yaml
+  - bioconductor-bsgenome=1.50.0=r351_0
+  - bioconductor-bsgenome.hsapiens.ucsc.hg38=1.4.1=r351_5
+```
