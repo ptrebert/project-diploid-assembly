@@ -83,3 +83,11 @@ sample_targets_HG00733:
       nhr_assembler: shasta
       hap_assembler: shasta
       var_caller: longshot
+  - target:
+      nhr_assembler: flye
+      hap_assembler: canu
+      var_caller: longshot
+  - target:
+      nhr_assembler: shasta
+      hap_assembler: canu
+      var_caller: longshot

@@ -75,6 +75,37 @@ rule derive_flye_parameter_preset:
             _ = dump.write(preset)
 
 
+rule derive_canu_parameter_preset:
+    input:
+        '{folder_path}/{file_name}.fastq.gz',
+        #'{folder_path}/{file_name}.stats'
+    output:
+        '{folder_path}/{file_name}.preset.flye'
+    run:
+        import os
+        preset = ''
+
+        file_name = os.path.basename(input[0])
+        _, _, platform_spec = file_name.split('_')[:3]
+        if platform_spec.startswith('pb'):
+            if 'ccs' in platform_spec:
+                preset += '-pacbio-hifi'
+            elif 'clr' in platform_spec:
+                preset += '-pacbio-raw'
+            else:
+                raise ValueError('Cannot handle PacBio platform spec: {} / {}'.format(file_name, platform_spec))
+        elif platform_spec.startswith('ont'):
+            preset += '-nano-raw'
+        else:
+            raise ValueError('Unexpected platform spec: {} / {}'.format(file_name, platform_spec))
+
+        if not preset:
+            raise ValueError('canu preset is None: {}'.format(input[0]))
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write(preset)
+
+
 def load_shasta_minreadlength(stats_file, target_cov):
     """
     :param stats_file:
@@ -673,3 +704,49 @@ rule compute_shasta_haploid_split_assembly:
             ' --config {input.config} &> {log}'
             ' && '
             'cp {output.assm_source} {output.assembly}'
+
+
+rule compute_canu_haploid_split_assembly:
+    """
+    Because of the substantial resource requirements for Canu,
+    this is currently only implemented for haploid split assemblies.
+    """
+    input:
+        fastq = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
+        preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.preset.canu',
+        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq'
+    output:
+        logs = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/canu-logs'),
+        scripts = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/canu-scripts'),
+        correct = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/correction'),
+        trimming = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/trimming'),
+        unitigging = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/unitigging'),
+        # below: stuff which actually has the prefix
+        seqstore = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/{hap_reads}.{hap}.{sequence}.seqstore'),
+        stuff = multiext('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/{hap_reads}.{hap}.{sequence}',
+                         '.contigs.layout', '.contigs.layout.readToTig', '.contigs.layout.tigInfo', '.unitigs.bed', '.unitigs.fasta', '.unitigs.gfa',
+                         '.unitigs.layout', '.unitigs.layout.readToTig', '.unitigs.layout.tigInfo'),
+        assm_source = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/{hap_reads}.{hap}.{sequence}.contigs.fasta',
+        assembly = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-canu.{hap}.{sequence}.fasta'
+    log:
+        os.path.join('log/output', PATH_STRANDSEQ_DGA_SPLIT, 'draft/haploid_assembly/{hap_reads}.{hap}.{sequence}.canu.log')
+    benchmark:
+        os.path.join('run/output', PATH_STRANDSEQ_DGA_SPLIT, 'draft/haploid_assembly/',
+                     '{hap_reads}.{hap}.{sequence}.canu' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 188416,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(188416 / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: 24 + 24 * attempt
+    params:
+        out_prefix = lambda wildcards: '.'.join([wildcards.hap_reads, wildcards.hap, wildcards.sequence]),
+        out_dir = lambda wildcards, output: os.path.dirname(output.logs),
+        param_preset = load_preset_file,
+        seq_len = load_seq_length_file,
+    shell:
+        'canu -p {params.out_prefix} -d {params.out_dir} '
+            'genomeSize={params.seq_len} '
+            'useGrid=false saveOverlaps=false saveReadCorrections=false saveReads=false '
+            '{params.param_preset} {input.fastq} &> {log}'
