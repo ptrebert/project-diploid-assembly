@@ -80,7 +80,7 @@ rule derive_canu_parameter_preset:
         '{folder_path}/{file_name}.fastq.gz',
         #'{folder_path}/{file_name}.stats'
     output:
-        '{folder_path}/{file_name}.preset.flye'
+        '{folder_path}/{file_name}.preset.canu'
     run:
         import os
         preset = ''
