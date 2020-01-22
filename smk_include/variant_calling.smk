@@ -289,7 +289,7 @@ rule whatshap_regenotype_variant_calls:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 5 if attempt <= 1 else 4 * attempt
+        runtime_hrs = lambda wildcards, attempt: 5 if attempt <= 1 else 5 * attempt
     shell:
         'whatshap genotype --chromosome {wildcards.sequence} --reference {input.reference} --output {output} {input.vcf} {input.read_ref_aln} &> {log}'
 
