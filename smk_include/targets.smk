@@ -189,13 +189,17 @@ def annotate_readset_data_types(sample_desc):
         sys.stderr.write('\nERROR: no data sources defined for sample: {}\n'.format(sample_desc))
         raise ValueError('No data sources defined')
 
+    individual = sample_desc['individual']
     source_annotation = dict()
     for data_record in data_sources:
-        if 'long_reads' not in data_record:
+        readset_type = list(data_record.keys())[0]
+        readset_spec = data_record[readset_type]
+        readset_name = readset_spec['readset']
+        if not readset_name.startswith(individual):
+            raise ValueError('Readset {} does not match with individual: {}'.format(readset_name, individual))
+        if readset_type != 'long_reads':
             continue
-        this_record = data_record['long_reads']
-        readset = this_record['readset']
-        dt = this_record['data_type']
+        dt = readset_spec['data_type']
         if dt == 'pacbio_native':
             v = {
                 'input_format': 'bam',
@@ -203,7 +207,7 @@ def annotate_readset_data_types(sample_desc):
                 'ext_modifier': '',
                 'tag_source': 'pbn'
             }
-            source_annotation[readset] = v
+            source_annotation[readset_name] = v
         elif dt == 'fastq':
             v = {
                 'input_format': 'fastq',
@@ -211,9 +215,9 @@ def annotate_readset_data_types(sample_desc):
                 'ext_modifier': '.gz',
                 'tag_source': 'fq'
             }
-            source_annotation[readset] = v
+            source_annotation[readset_name] = v
         else:
-            raise ValueError('Unexpected data type: {} / {}'.format(dt, this_record))
+            raise ValueError('Unexpected data type: {} / {}'.format(dt, readset_spec))
     return source_annotation
 
 
