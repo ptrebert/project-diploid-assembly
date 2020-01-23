@@ -19,7 +19,7 @@ rule samtools_index_bam_alignment:
         'run/{{filepath}}.idx-bai.t{}.rsrc'.format(config['num_cpu_low'])
     threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 12 * attempt
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 16 * attempt
     conda:
          '../environment/conda/conda_biotools.yml'
     shell:
@@ -36,7 +36,7 @@ rule pb_bamtools_index_bam_alignment:
     benchmark:
         'run/{filepath}.create-pbi.rsrc'
     resources:
-        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 12 * attempt
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 16 * attempt
     conda:
          '../environment/conda/conda_pbtools.yml'
     shell:
