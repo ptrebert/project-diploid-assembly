@@ -37,6 +37,7 @@ dependencies:
   - longshot=0.4.0
   - wtdbg=2.5
   - flye=2.6
+  - canu=1.9
   - racon=1.4.10
   - lighter=1.1.2
   - bcalm=2.2.1
