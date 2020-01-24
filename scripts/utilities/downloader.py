@@ -15,6 +15,8 @@ CMD_DL_COMPRESSED_SINGLE = 'wget --no-verbose -O {output} {remote_path}'
 
 CMD_DL_UNCOMPRESSED_SINGLE = 'wget --no-verbose -O /dev/stdout {remote_path} | gzip > {output}'
 
+CMD_COPY_LOCAL = 'cp {remote_path} {output}'
+
 
 def parse_command_line():
     """
@@ -115,7 +117,15 @@ def handle_request_file_download(req_file_path, output_path, parallel_conn, logg
     logger.debug('Creating folder hierarchy')
     os.makedirs(os.path.dirname(os.path.abspath(local_path)), exist_ok=True)
 
-    if any([remote_path.endswith(x) for x in ['.gz', '.bam', '.bam.1']]):
+    if os.path.isfile(remote_path):
+        logger.debug('Request file contains local resource')
+        call = CMD_COPY_LOCAL.format(
+            **{
+                'remote_path': remote_path,
+                'output': output_path
+            }
+        )
+    elif any([remote_path.endswith(x) for x in ['.gz', '.bam', '.bam.1']]):
         logger.debug('Downloading remote path in parallel with {} connections'.format(parallel_conn))
         call = CMD_DL_COMPRESSED_PARALLEL.format(
             **{
