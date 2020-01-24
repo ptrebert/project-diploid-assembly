@@ -102,6 +102,7 @@ def parse_command_line():
         "-cpd",
         type=str,
         nargs='*',
+        default=None,
         dest="copy_dump",
         help="Path to file(s) containing the same data set statistics derived from a different "
              "input data format; simply copy instead of reprocessing."
@@ -111,6 +112,7 @@ def parse_command_line():
         "-cps",
         type=str,
         nargs='*',
+        default=None,
         dest="copy_summary",
         help="Path to file(s) containing the same data set summary derived from a different "
              "input data format; simply copy instead of reprocessing."
@@ -381,16 +383,20 @@ def copy_output_from_existing_source(file_paths, output, logger):
     :return:
     """
     dest_path = None
-    for file_path in file_paths:
-        if os.path.isfile(file_path):
-            # this check is important because it is not guaranteed
-            # that other stats computation have finished already
-            # (it is likely, though)
-            logger.debug('Found existing statistics source at path: {}'.format(file_path))
-            os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
-            dest_path = sh.copy(file_path, output)
-            logger.debug('Copied statistics from {} to {}'.format(file_path, dest_path))
-            break
+    if file_paths is None:
+        pass
+    else:
+        dest_path = None
+        for file_path in file_paths:
+            if os.path.isfile(file_path):
+                # this check is important because it is not guaranteed
+                # that other stats computation have finished already
+                # (it is likely, though)
+                logger.debug('Found existing statistics source at path: {}'.format(file_path))
+                os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
+                dest_path = sh.copy(file_path, output)
+                logger.debug('Copied statistics from {} to {}'.format(file_path, dest_path))
+                break
     return dest_path
 
 
