@@ -5,9 +5,23 @@ if (is.element('breakpointR', installed.packages()[,1])) {
     remove.packages('breakpointR')
 }
 
-BiocManager::install(
-    c("breakpointR"),
-    update=FALSE
-)
+args = commandArgs(trailingOnly=TRUE)
+
+git.commit = args[1]
+
+if (is.na(as.numeric(git.commit))) {
+    # means proper git tag
+    devtools::install_git(
+        "git://github.com/daewoooo/breakpointR.git",
+        ref = git.commit,
+        dependencies=FALSE,
+        upgrade=FALSE
+    )
+} else {
+    BiocManager::install(
+        c("breakpointR"),
+        update=FALSE
+    )
+}
 
 quit(save="no")
