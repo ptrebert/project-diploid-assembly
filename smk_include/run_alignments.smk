@@ -211,7 +211,53 @@ rule minimap_racon_polish_alignment_pass1:
         tempdir = lambda wildcards: os.path.join(
                                       'temp', 'minimap', PATH_STRANDSEQ_DGA_SPLIT,
                                       wildcards.pol_reads, wildcards.hap_reads,
-                                      wildcards.assembler, wildcards.hap, wildcards.sequence)
+                                      wildcards.assembler, wildcards.hap, wildcards.sequence, 'pass1')
+    shell:
+        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
+        'minimap2 -t {threads} -a {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" '
+            ' {input.contigs} {input.reads} 2> {log.minimap} | '
+            ' samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
+            ' samtools view -q {params.min_qual} -F {params.discard_flag} /dev/stdin > {output.sam}'
+
+
+rule minimap_racon_polish_alignment_pass2:
+    """
+    vc_reads = FASTQ file used for variant calling relative to reference
+    hap_reads = FASTQ file to be used for haplotype reconstruction
+    sts_reads = FASTQ file used for strand-seq phasing
+    pol_reads = FASTQ file used for Racon contig polishing
+    """
+    input:
+        reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.fastq.gz',
+        preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.preset.minimap',
+        contigs = os.path.join('output', PATH_STRANDSEQ_DGA_SPLIT, 'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.fasta')
+    output:
+        sam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p2.psort.sam',
+    log:
+        minimap = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p2.minimap.log',
+        st_sort = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p2.st-sort.log',
+    benchmark:
+        os.path.join(
+            'run/output', PATH_STRANDSEQ_DGA_SPLIT,
+            'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p2.' + 't{}.rsrc'.format(config['num_cpu_high'])
+        )
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 16384 / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: attempt * 16384,
+        mem_sort_mb = 4096,
+        runtime_hrs = 3
+    params:
+        individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
+        preset = load_preset_file,
+        discard_flag = config['minimap_racon_aln_discard'],
+        min_qual = config['minimap_racon_aln_min_qual'],
+        tempdir = lambda wildcards: os.path.join(
+                                      'temp', 'minimap', PATH_STRANDSEQ_DGA_SPLIT,
+                                      wildcards.pol_reads, wildcards.hap_reads,
+                                      wildcards.assembler, wildcards.hap, wildcards.sequence, 'pass2')
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
         'minimap2 -t {threads} -a {params.preset} -R "@RG\\tID:1\\tSM:{params.individual}" '
