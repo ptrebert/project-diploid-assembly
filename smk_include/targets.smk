@@ -139,13 +139,13 @@ TARGET_PATHS = {
     "PLOT_SAARCLUST_DIAG_ASSEMBLY_CLUSTERING": os.path.join(
         "output", "plotting", "saarclust_diagnostics", "reference_assembly", "clustered",
         "{sts_reads}",
-        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{aln_reference}.clustering.pdf",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.clustering.pdf",
     ),
 
     "PLOT_SAARCLUST_DIAG_ASSEMBLY_ORIENTING": os.path.join(
         "output", "plotting", "saarclust_diagnostics", "reference_assembly", "clustered",
         "{sts_reads}",
-        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{aln_reference}.orienting.pdf",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.orienting.pdf",
     ),
 }
 
