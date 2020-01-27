@@ -36,7 +36,7 @@ sample_targets_HG00514:
       vc_reads: *ccs_reads
       sts_reads: *sts_reads
       pol_reads: *ccs_reads
-      pol_pass: racon-p1
+      pol_pass: racon-p2
       hap_assm_mode: split
       hap:
         - h1-un
