@@ -290,8 +290,8 @@ rule compute_flye_nonhapres_assembly:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((1433600 if attempt <= 1 else 2949120) / config['num_cpu_max']),
-        mem_total_mb = lambda wildcards, attempt: 1433600 if attempt <= 1 else 2949120,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
+        mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
         runtime_hrs = lambda wildcards, attempt: 47 if '-ccs' in wildcards.sample else 167
     params:
         param_preset = load_preset_file,
@@ -396,8 +396,8 @@ rule compute_shasta_nonhapres_assembly:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((1433600 if attempt <= 1 else 2949120) / config['num_cpu_max']),
-        mem_total_mb = lambda wildcards, attempt: 1433600 if attempt <= 1 else 2949120,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
+        mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
         runtime_hrs = lambda wildcards, attempt: 12 if attempt <= 1 else 71
     params:
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
@@ -749,4 +749,6 @@ rule compute_canu_haploid_split_assembly:
         'canu -p {params.out_prefix} -d {params.out_dir} '
             'genomeSize={params.seq_len} '
             'useGrid=false saveOverlaps=false saveReadCorrections=false saveReads=false '
-            '{params.param_preset} {input.fastq} &> {log}'
+            '{params.param_preset} {input.fastq} &> {log} '
+            ' && '
+            'cp {output.assm_source} {output.assembly}'
