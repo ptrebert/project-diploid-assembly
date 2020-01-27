@@ -84,7 +84,7 @@ rule run_breakpointr:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
-        runtime_hrs = 11
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     shell:
         '{params.script_dir}/run_breakpointr.R {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'
 
@@ -157,7 +157,7 @@ rule run_strandphaser:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
-        runtime_hrs = 11
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     params:
         input_dir = lambda wildcards, input: load_fofn_file(input),
         output_dir = lambda wildcards, output: os.path.dirname(output.cfg),
@@ -241,7 +241,8 @@ rule run_integrative_phasing:
         '../environment/conda/conda_biotools.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
         'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} '
             ' {input.vcf} {input.bam} {input.spr_phased} 2> {log} '
@@ -325,8 +326,8 @@ rule compute_strandphaser_phased_vcf_stats:
         '../environment/conda/conda_biotools.yml'
     priority: 200
     resources:
-             mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
-             mem_total_mb = lambda wildcards, attempt: 4096 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     shell:
         'bcftools stats {input.vcf} > {output.bcf_stats} 2> {log}'
             ' && '
