@@ -3,7 +3,9 @@ localrules: run_eas_trios,
             run_chs_trio,
             run_chs_father,
             run_chs_mother,
-            run_chs_child
+            run_chs_child,
+            run_khv_trio,
+            run_khv_child
 
 
 rule run_chs_mother:
@@ -31,8 +33,23 @@ rule run_chs_trio:
         rules.run_chs_child.input
     message: 'Running EAS-CHS-SH032 trio'
 
+#######################################################
+
+rule run_khv_child:
+    input:
+        'output/targets/EAS_KHV_VN047/HG02018.fofn'
+    message: 'Running EAS-KHV-VN047 child'
+
+
+rule run_khv_trio:
+    input:
+        rules.run_khv_child.input
+    message: 'Running EAS-KHV-VN047 trio'
+
+########################################################
 
 rule run_eas_trios:
     input:
-        rules.run_chs_trio.input
+        rules.run_chs_trio.input,
+        rules.run_khv_trio.input
     message: 'Running EAS trios'

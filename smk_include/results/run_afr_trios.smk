@@ -5,7 +5,11 @@ localrules: run_afr_trios,
             run_yri_mother,
             run_yri_child,
             run_gwd_trio,
-            run_gwd_child
+            run_gwd_child,
+            run_acb_trio,
+            run_acb_child,
+            run_asw_trio,
+            run_asw_child
 
 
 rule run_yri_mother:
@@ -48,8 +52,48 @@ rule run_gwd_trio:
 
 ######################################################
 
+rule run_acb_child:
+    input:
+        'output/targets/AFR_ACB_BB13/HG02011.fofn'
+    message: 'Running AFR-ACB-BB13 child'
+
+
+rule run_acb_trio:
+    input:
+        rules.run_acb_child.input,
+    message: 'Running AFR-ACB-BB13 trio'
+
+######################################################
+
+rule run_asw_child:
+    input:
+        'output/targets/AFR_ACB_2436/NA19983.fofn'
+    message: 'Running AFR-ASW-2436 child'
+
+
+rule run_asw_trio:
+    input:
+        rules.run_asw_child.input,
+    message: 'Running AFR-ASW-2436 trio'
+
+######################################################
+
+rule run_msl_child:
+    input:
+        'output/targets/AFR_MSL_SL05/HG03065.fofn'
+    message: 'Running AFR-MSL-SL05 child'
+
+
+rule run_msl_trio:
+    input:
+        rules.run_asw_child.input,
+    message: 'Running AFR-MSL-SL05 trio'
+
+######################################################
 rule run_afr_trios:
     input:
         rules.run_yri_trio.input,
-        rules.run_gwd_trio.input
+        rules.run_gwd_trio.input,
+        rules.run_acb_trio.input,
+        rules.run_asw_trio.input
     message: 'Running AFR trios'
