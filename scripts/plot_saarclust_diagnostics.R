@@ -7,6 +7,7 @@ args = commandArgs(trailingOnly=TRUE)
 bed.file = args[1]
 ref.genome = args[2]
 output.folder = args[3]
+contig.ordering = args[4]
 
 stopifnot(ref.genome == 'hg38')
 
@@ -20,12 +21,16 @@ plot.clustering <- plotClusteredContigs(
     report = 'clustering'
 )
 
-plot.ordering <- plotClusteredContigs(
-    bedfile = bed.file,
-    min.mapq = 10,
-    bsgenome = BSgenome.Hsapiens.UCSC.hg38,
-    report = 'ordering'
-)
+if (as.logical(contig.ordering)) {
+
+    plot.ordering <- plotClusteredContigs(
+        bedfile = bed.file,
+        min.mapq = 10,
+        bsgenome = BSgenome.Hsapiens.UCSC.hg38,
+        report = 'ordering'
+    )
+}
+
 
 plot.orienting <- plotClusteredContigs(
     bedfile = bed.file,
@@ -34,9 +39,13 @@ plot.orienting <- plotClusteredContigs(
     report = 'orienting'
 )
 
-ggsave(filename = paste(output.prefix, 'clustering.pdf', sep='.'), plot = plot.clustering, width = 16, height = 8)
-ggsave(filename = paste(output.prefix, 'ordering.pdf', sep='.'), plot = plot.ordering, width = 16, height = 8)
-ggsave(filename = paste(output.prefix, 'orienting.pdf', sep='.'), plot = plot.orienting, width = 16, height = 8)
+ggsave(filename = paste(output.folder, 'clustering.pdf', sep='.'), plot = plot.clustering, width = 16, height = 8)
+
+if (as.logical(contig.ordering)) {
+    ggsave(filename = paste(output.prefix, 'ordering.pdf', sep='.'), plot = plot.ordering, width = 16, height = 8)
+}
+
+ggsave(filename = paste(output.folder, 'orienting.pdf', sep='.'), plot = plot.orienting, width = 16, height = 8)
 
 warnings()
 
