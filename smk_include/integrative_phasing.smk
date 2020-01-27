@@ -75,7 +75,7 @@ rule run_breakpointr:
     benchmark:
         'run/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
     conda:
-        '../environment/conda/conda_rtools.yml'
+        '../environment/conda/conda_rscript.yml'
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
         input_dir = lambda wildcards, input: load_fofn_file(input),
@@ -152,7 +152,7 @@ rule run_strandphaser:
     benchmark:
         'run/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.rsrc'
     conda:
-        '../environment/conda/conda_rtools.yml'
+        '../environment/conda/conda_rscript.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),

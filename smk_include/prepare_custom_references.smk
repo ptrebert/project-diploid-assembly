@@ -135,7 +135,7 @@ rule write_saarclust_config_file:
     containing just the input folder for StrandPhaseR
     """
     input:
-        setup_ok = 'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']),
+        setup_ok = rules.install_rlib_saarclust.output.check,
         reference = 'output/reference_assembly/non-hap-res/{reference}.fasta',
         ref_idx = 'output/reference_assembly/non-hap-res/{reference}.fasta.fai',
         strandseq_reads = 'input/fastq/strand-seq/{sts_reads}.fofn',
@@ -192,7 +192,7 @@ checkpoint run_saarclust_assembly_clustering:
     benchmark:
         'run/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.run'
     conda:
-        '../environment/conda/conda_rtools.yml'
+        '../environment/conda/conda_rscript.yml'
     resources:
         mem_per_cpu_mb = 8192,
         mem_total_mb = 8192,
@@ -269,38 +269,43 @@ rule merge_reference_fasta_clusters:
 # Below: create a diagnostic plot (SaaRclust) package, requires contig to reference alignment
 
 rule dump_contig_to_reference_alignment_to_bed:
-        input:
-            'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.psort.sam.bam'
-        output:
-            'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.bed'
-        log:
-            'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.dump-bed.log'
-        benchmark:
-            'run/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.dump-bed.rsrc'
-        conda:
-            '../environment/conda/conda_biotools.yml'
-        resources:
-            runtime_hrs = lambda wildcards, attempt: attempt,
-            mem_total_mb = 2048,
-            mem_per_cpu_mb = 2048
-        shell:
-            'bedtools bamtobed -i {input} > {output} 2> {log}'
+    input:
+        'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.psort.sam.bam'
+    output:
+        'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.bed'
+    log:
+        'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.dump-bed.log'
+    benchmark:
+        'run/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.dump-bed.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt,
+        mem_total_mb = 2048,
+        mem_per_cpu_mb = 2048
+    shell:
+        'bedtools bamtobed -i {input} > {output} 2> {log}'
 
 
 rule plot_saarclust_diagnostic_output:
+    """
+    The default for SaaRclust is to concatenate all individual contigs
+    per cluster into a single sequence. During this process, ordering
+    information is lost, hence the following output is not part of this rule:
+    ordering = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.ordering.pdf',
+    """
     input:
         setup_ok = 'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']),
         ctg_ref_aln = 'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.bed'
     output:
         clustering = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.clustering.pdf',
-        ordering = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.ordering.pdf',
         orienting = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.orienting.pdf',
     log:
        'log/output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.log'
     benchmark:
         'run/output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
     conda:
-        '../environment/conda/conda_rtools.yml'
+        '../environment/conda/conda_rscript.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -308,7 +313,7 @@ rule plot_saarclust_diagnostic_output:
     params:
         run_script = os.path.join(config['script_dir'], 'plot_saarclust_diagnostics.R'),
         out_prefix = lambda wildcards: os.path.join(
-            'output', 'plotting', 'saarclust_diagnostics', 'reference_assembly', 'clustered',
-            wildcards.folder_path, wildcards.reference + '_map-to_' + wildcards.aln_reference)
+            'output', 'plotting', 'saarclust_diagnostics', wildcards.folder_path,
+            wildcards.reference + '_map-to_' + wildcards.aln_reference)
     shell:
-         '{params.run_script} {input.ctg_ref_aln} hg38 {params.out_prefix} &> {log}'
+         '{params.run_script} {input.ctg_ref_aln} hg38 {params.out_prefix} FALSE &> {log}'
