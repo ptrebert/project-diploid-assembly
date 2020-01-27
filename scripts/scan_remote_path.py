@@ -85,14 +85,14 @@ def parse_command_line():
         action="store_true",
         default=False,
         dest="paired_reads",
-        help="Assume paired reads with mate indicators R1/R2"
+        help="Assume paired reads with mate indicators (R)1_/(R)2_"
     )
     parser.add_argument(
         "--file-infix",
         "-in",
         type=str,
         required=True,
-        dest="infix",
+        dest="file_infix",
         help="Define the infix for the output files."
     )
     parser.add_argument(
@@ -100,7 +100,7 @@ def parse_command_line():
         "-sfx",
         type=str,
         default=None,
-        dest="suffix",
+        dest="file_suffix",
         help="Append suffix to all file names (before part or mate indicator)."
     )
     parser.add_argument(
@@ -110,6 +110,15 @@ def parse_command_line():
         default=None,
         dest="fix_tech",
         help="Use a fix technology for all files irrespective of tech indicators in the file name."
+    )
+    parser.add_argument(
+        "--local-path-suffix",
+        "-lps",
+        type=str,
+        default=None,
+        dest="local_path_suffix",
+        help="Specify a suffix for the local (folder) path, possibly consisting of the following "
+             "placeholders: individual, file_infix, tech, file_suffix."
     )
     parser.add_argument(
         "--output",
@@ -127,7 +136,7 @@ def extract_maximal_match(file_name):
     :param file_name:
     :return:
     """
-    lib_id = re.compile('[A-Za-z0-9_\-]+')
+    lib_id = re.compile('[A-Za-z0-9_\\-]+')
     longest_match = 0
     matched_string = ''
     for match in re.finditer(lib_id, file_name):
@@ -191,8 +200,8 @@ def annotate_remote_files(remote_files, cargs, logger):
     :return:
     """
     meta_files = ['readme', 'manifest']
-    aux_files = ['_stats', 'scraps', 'subreadset']
-    match_individual = re.compile('[A-Z0-9]+')
+    aux_files = ['_stats', 'scraps', 'subreadset', 'xml']
+    match_individual = re.compile('[A-Z]{2}[0-9]+')
     file_collector = col.defaultdict(list)
 
     logger.debug('Collecting strong tech indicators per library')
@@ -213,8 +222,12 @@ def annotate_remote_files(remote_files, cargs, logger):
             continue
         mobj = match_individual.match(name)
         if mobj is None:
-            logger.warning('No individual identified for file: {}'.format(name))
-            continue
+            # in case the file was in a sub folder, check if that sub folder matches
+            sub_folder = os.path.split(path)[1]
+            mobj = match_individual.match(sub_folder)
+            if mobj is None:
+                logger.warning('No individual identified for file: {}'.format(name))
+                continue
         individual = mobj.group(0)
         tech = None
         logger.debug('Extracted individual {} for file {}'.format(individual, name))
@@ -255,11 +268,46 @@ def annotate_remote_files(remote_files, cargs, logger):
             file_ext = 'sam.bam'
         else:
             pass
-        if cargs.suffix is None:
-            base_file_prefix = '_'.join([individual, cargs.infix + tech])
+        if cargs.file_suffix is None:
+            file_prefix_components = [individual, cargs.file_infix + tech]
+        elif cargs.file_suffix == 'library_id':
+            library_id = None
+            for lib in libraries:
+                if lib in name:
+                    library_id = lib
+                    break
+            if library_id is None:
+                raise ValueError('Did not identify library ID for file: {}'.format(name))
+            # some clean up
+            library_id = library_id.replace(individual, '')
+            # custom...
+            library_id = library_id.replace('sequence', '')
+            if cargs.paired_reads:
+                # mate indicator will be added automatically
+                match_mate = re.search('(R[12]_|_[12]_)', library_id)
+                if match_mate is not None:
+                    library_id = library_id.replace(match_mate.group(0), '')
+            library_id = library_id.strip('_-.')
+            file_prefix_components = [individual, cargs.file_infix + tech, library_id]
         else:
-            base_file_prefix = '_'.join([individual, cargs.infix + tech, cargs.suffix])
+            file_prefix_components = [individual, cargs.file_infix + tech, cargs.file_suffix]
+
+        if file_prefix_components[0].startswith('GM'):
+            file_prefix_components[0] = file_prefix_components[0].replace('GM', 'NA')
+        base_file_prefix = '_'.join(file_prefix_components)
+
         logger.debug('Adding file to collection: {}'.format(name))
+
+        if cargs.local_path_suffix is not None:
+            logger.debug('Adding suffix to local path')
+            path_suffix = cargs.local_path_suffix.format(**{
+                'individual': individual,
+                'file_infix': cargs.file_infix,
+                'tech': tech,
+                'file_suffix': cargs.file_suffix
+            })
+            local_path = os.path.join(local_path, path_suffix)
+
         file_collector[(local_path, base_file_prefix, file_ext)].append(full_path)
     logger.debug('Identified {} different file groups'.format(len(file_collector)))
     return file_collector
@@ -276,25 +324,78 @@ def enumerate_file_parts(file_groups, cargs, logger):
     for (local_path, file_prefix, file_ext), remote_files in file_groups.items():
         logger.debug('Processing {} / {}'.format(file_prefix, file_ext))
         if len(remote_files) == 1:
-            raise ValueError('Single remote file - "complete" suffix needed')
+            raise ValueError('Single remote file - "complete" suffix needed: {} / {}'.format(local_path, file_prefix))
         for part_num, rf in enumerate(remote_files, start=1):
             if cargs.paired_reads:
                 if part_num > 2:
                     raise ValueError('Assuming paired reads, but mate indicator > 2: {}'.format(remote_files))
-                key = os.path.join(local_path, file_prefix + '.R' + str(part_num))
+                key = os.path.join(local_path, file_prefix + '_' + str(part_num))
             else:
                 key = os.path.join(local_path, file_prefix + '.part' + str(part_num))
             full_local_path = key + '.' + file_ext
             assert key not in output, 'Duplicate key: {}\n\n{}\n'.format(key, file_groups)
+            # note here: local files are always collected with full path, so localhost
+            # is never prepended here
             remote_path = os.path.join(cargs.server, rf)
-            if not remote_path.startswith('ftp://'):
-                remote_path = 'ftp://' + remote_path
+            if cargs.server != 'localhost' and not remote_path.startswith('ftp://'):
+                remote_path = 'ftp://' + remote_path.strip('/')
             output[key] = {
                 "remote_path": remote_path,
                 "local_path": full_local_path
             }
     logger.debug('Prepared annotation for {} file splits'.format(len(output)))
     return output
+
+
+def traverse_remote_path(ftp_server, remote_url, logger):
+    """
+    :param ftp_server:
+    :param remote_url:
+    :param logger:
+    :return:
+    """
+    logger.debug('Traversing remote path (hard limit: depth <= 1): {}'.format(remote_url))
+
+    remote_listing = ftp_server.nlst(remote_url)
+    remote_files = []
+
+    for item in remote_listing:
+        # simplistic heuristic: if it has a file extension, it's a file
+        # works for intended use case
+        if len(item.split('.')) > 1:
+            # it's a file
+            remote_files.append(item)
+            continue
+        logger.debug('Assuming sub folder: {}'.format(item))
+        try:
+            sub_dir_listing = ftp_server.nlst(item)
+        except Exception as error:
+            logger.warning('Error getting sub dir file listing: {}'.format(error))
+            logger.debug('Skipping entry: {}'.format(item))
+            continue
+        remote_files.extend(sub_dir_listing)
+
+    logger.debug('Collected {} files from remote path'.format(len(remote_files)))
+
+    return remote_files
+
+
+def traverse_local_path(local_path, logger):
+    """
+    :param local_path:
+    :param logger:
+    :return:
+    """
+    logger.debug('Traversing local path (no symlinks followed): {}'.format(local_path))
+
+    local_files = []
+    for root, dirs, files in os.walk(local_path, followlinks=False):
+        full_paths = [os.path.abspath(os.path.join(root, f)) for f in files]
+        local_files.extend(full_paths)
+
+    logger.debug('Collected {} files from local path'.format(len(local_files)))
+
+    return local_files
 
 
 def main(logger, cargs):
@@ -305,15 +406,29 @@ def main(logger, cargs):
     """
     if not len(cargs.collect_files) == len(cargs.sort_files):
         raise ValueError('Need one path prefix per file extension (sort and collect files)')
-    logger.debug("Starting remote FTP scan...")
-    server = ftplib.FTP(cargs.server)
-    logger.debug('Attempt for anonymous login')
-    server.login()
 
-    remote_files = server.nlst(cargs.ftp_path)
-    logger.debug("Identified {} remote files under path {}".format(len(remote_files), cargs.ftp_path))
+    if cargs.server == 'localhost':
+        logger.debug('Localhost specified')
+        data_files = traverse_local_path(cargs.ftp_path, logger)
+    else:
+        logger.debug("Starting remote FTP scan...")
+        server = ftplib.FTP(cargs.server)
+        logger.debug('Attempt for anonymous login')
+        try:
+            msg = server.login()
+            code = int(msg.split()[0])
+            if code != 230:
+                raise RuntimeError('FTP server login failed: {}'.format(msg))
+        except ValueError as verr:
+            logger.error('Cannot parse login response code: {}'.format(str(msg)))
+            raise verr
+        data_files = traverse_remote_path(server, cargs.ftp_path, logger)
+        try:
+            server.quit()
+        except:
+            pass
 
-    file_groups = annotate_remote_files(remote_files, cargs, logger)
+    file_groups = annotate_remote_files(data_files, cargs, logger)
 
     output = enumerate_file_parts(file_groups, cargs, logger)
 
