@@ -10,7 +10,8 @@ rule create_conda_environment_shell_tools:
     conda:
         '../environment/conda/conda_shelltools.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
+         '{params.script_dir}/utilities/inspect_environment.py '
+         '--export-conda-env --outfile {output} --logfile {log}'
 
 
 rule create_conda_environment_pacbio_tools:
@@ -23,10 +24,33 @@ rule create_conda_environment_pacbio_tools:
     conda:
         '../environment/conda/conda_pbtools.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
+         '{params.script_dir}/utilities/inspect_environment.py '
+         '--export-conda-env --outfile {output} --logfile {log}'
+
+
+rule create_conda_environment_r_script:
+    """
+    Conda environment for execution of R scripts
+    SaaRclust / breakpointR / StrandPhaseR
+    """
+    output:
+        'output/check_files/environment/conda_rscript.ok'
+    log:
+        'log/output/check_files/environment/conda_rscript.log'
+    params:
+        script_dir = config['script_dir']
+    conda:
+        '../environment/conda/conda_rscript.yml'
+    shell:
+         '{params.script_dir}/utilities/inspect_environment.py '
+         '--export-conda-env --outfile {output} --logfile {log}'
 
 
 rule create_conda_environment_r_tools:
+    """
+    Conda environment for execution of tools with
+    an R dependency such as Quast/BUSCO
+    """
     output:
         'output/check_files/environment/conda_rtools.ok'
     log:
@@ -36,7 +60,8 @@ rule create_conda_environment_r_tools:
     conda:
         '../environment/conda/conda_rtools.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
+         '{params.script_dir}/utilities/inspect_environment.py '
+         '--export-conda-env --outfile {output} --logfile {log}'
 
 
 rule create_conda_environment_bio_tools:
@@ -49,7 +74,8 @@ rule create_conda_environment_bio_tools:
     conda:
         '../environment/conda/conda_biotools.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
+         '{params.script_dir}/utilities/inspect_environment.py '
+         '--export-conda-env --outfile {output} --logfile {log}'
 
 
 rule create_conda_environment_pyscript:
@@ -62,7 +88,8 @@ rule create_conda_environment_pyscript:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log}'
+         '{params.script_dir}/utilities/inspect_environment.py '
+         '--export-conda-env --outfile {output} --logfile {log}'
 
 
 rule inspect_hpc_module_singularity:
@@ -76,9 +103,8 @@ rule inspect_hpc_module_singularity:
     #envmodules:
     #    config['env_module_singularity']
     shell:
-#         'module load {params.singularity_module} ; '
-         '{params.script_dir}/utilities/inspect_environment.py --outfile {output} --logfile {log} ; '
-#         'module unload {params.singularity_module} '
+         '{params.script_dir}/utilities/inspect_environment.py '
+         '--export-conda-env --outfile {output} --logfile {log} ; '
 
 
 rule check_singularity_version:
@@ -93,14 +119,11 @@ rule check_singularity_version:
     params:
         script_dir = config['script_dir'],
         min_version = '3.1.0',  # due to container format change between v2 and v3
-        singularity_module = config['env_module_singularity']
     shell:
-#        'module load {params.singularity_module} ; '
         'singularity --version | '
         '{params.script_dir}/utilities/version_checker.py '
         '--outfile {output} --logfile {log} '
         '--at-least {params.min_version} ; '
-#        'module unload {params.singularity_module}'
 
 
 rule download_shasta_executable:
@@ -131,13 +154,13 @@ rule download_shasta_executable:
 
 rule install_rlib_saarclust:
     input:
-        'output/check_files/environment/conda_rtools.ok'
+        rules.create_conda_environment_r_script.output
     output:
          check = touch('output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']))
     log:
         'log/output/check_files/R_setup/saarclust_ver-{}.log'.format(config['git_commit_saarclust'])
     conda:
-        '../environment/conda/conda_rtools.yml'
+        '../environment/conda/conda_rscript.yml'
     params:
         script_dir = config['script_dir'],
         version = config['git_commit_saarclust']
@@ -148,23 +171,31 @@ rule install_rlib_saarclust:
         'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {log}'
 
 
+if int(config['git_commit_version']) < 8:
+    INSTALL_BREAKPOINTR_OUTPUT = 'output/check_files/R_setup/breakpointr.ok'
+    BREAKPOINTR_VERSION = -1
+else:
+    INSTALL_BREAKPOINTR_OUTPUT = 'output/check_files/R_setup/breakpointr_ver-{}.ok'.format(config['git_commit_breakpointr'])
+    BREAKPOINTR_VERSION = config['git_commit_breakpointr']
+
+
 rule install_rlib_breakpointr:
     input:
-        #'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust'])
         rules.install_rlib_saarclust.output.check
     output:
-         check = touch('output/check_files/R_setup/breakpointr.ok')
+         check = touch(INSTALL_BREAKPOINTR_OUTPUT)
     log:
         'log/output/check_files/R_setup/breakpointr.log'
     conda:
-        '../environment/conda/conda_rtools.yml'
+        '../environment/conda/conda_rscript.yml'
     resources:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096
     params:
-        script_dir = config['script_dir']
+        script_dir = config['script_dir'],
+        version = BREAKPOINTR_VERSION
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R &> {log}'
+        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R {params.version} &> {log}'
 
 
 rule install_rlib_strandphaser:
@@ -175,7 +206,7 @@ rule install_rlib_strandphaser:
     log:
         'log/output/check_files/R_setup/strandphaser_ver-{}.log'.format(config['git_commit_strandphaser'])
     conda:
-        '../environment/conda/conda_rtools.yml'
+        '../environment/conda/conda_rscript.yml'
     resources:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096
@@ -188,7 +219,7 @@ rule install_rlib_strandphaser:
 
 rule download_quast_busco_databases:
     input:
-        rules.install_rlib_strandphaser.output.check
+        rules.create_conda_environment_r_tools.output
     output:
         'output/check_files/quast-lg/busco_db_download.ok'
     conda:
