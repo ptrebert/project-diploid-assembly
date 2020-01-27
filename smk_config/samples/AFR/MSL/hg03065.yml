@@ -1,28 +1,28 @@
 
-sample_description_HG02587:
-  individual: HG02587
-  sex: female
+sample_description_HG03065:
+  individual: HG03065
+  sex: male
   super_population: AFR
-  population: GWD
-  family: GB24
+  population: MSL
+  family: SL05
   member: child
   data_sources:
     - long_reads:
-        readset: HG02587_hgsvc_pbsq2-clr
+        readset: HG03065_hgsvc_pbsq2-clr
         data_type: pacbio_native
         load_type: parts
-        source_type: ftp
+        source_type: globus
     - strandseq:
-        readset: &sts_reads HG02587_hgsvc_ilnxs-80pe_sseq
+        readset: &sts_reads HG03065_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
     - short_reads:
-        readset: &short_reads HG02587_hgsvc_il25k-125pe_short
+        readset: &short_reads HG03065_hgsvc_il25k-125pe_short
         source_type: ftp
 
 
-sample_targets_HG02587:
+sample_targets_HG03065:
   - aliases:
-      2: &clr_hgsvc HG02587_hgsvc_pbsq2-clr_1000
+      2: &clr_hgsvc HG03065_hgsvc_pbsq2-clr_1000
   - defaults:
       hap_reads: *clr_hgsvc
       vc_reads: *clr_hgsvc

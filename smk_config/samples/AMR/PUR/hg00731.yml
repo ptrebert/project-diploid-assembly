@@ -12,6 +12,11 @@ sample_description_HG00731:
         data_type: pacbio_native
         load_type: parts
         source_type: ftp
+    - long_reads:
+        readset: HG00731_hgsvc_pbsq2-clr
+        data_type: pacbio_native
+        load_type: parts
+        source_type: globus
     - strandseq:
         readset: &sts_reads HG00731_1kg_il25k-npe_sseq
         source_type: ena

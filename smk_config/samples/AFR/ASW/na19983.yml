@@ -1,28 +1,28 @@
 
-sample_description_HG02587:
-  individual: HG02587
+sample_description_NA19983:
+  individual: NA19983
   sex: female
   super_population: AFR
-  population: GWD
-  family: GB24
+  population: ASW
+  family: 2436
   member: child
   data_sources:
     - long_reads:
-        readset: HG02587_hgsvc_pbsq2-clr
+        readset: NA19983_hgsvc_pbsq2-clr
         data_type: pacbio_native
         load_type: parts
-        source_type: ftp
+        source_type: globus
     - strandseq:
-        readset: &sts_reads HG02587_hgsvc_ilnxs-80pe_sseq
+        readset: &sts_reads NA19983_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
     - short_reads:
-        readset: &short_reads HG02587_hgsvc_il25k-125pe_short
+        readset: &short_reads NA19983_hgsvc_il25k-125pe_short
         source_type: ftp
 
 
-sample_targets_HG02587:
+sample_targets_NA19983:
   - aliases:
-      2: &clr_hgsvc HG02587_hgsvc_pbsq2-clr_1000
+      2: &clr_hgsvc NA19983_hgsvc_pbsq2-clr_1000
   - defaults:
       hap_reads: *clr_hgsvc
       vc_reads: *clr_hgsvc

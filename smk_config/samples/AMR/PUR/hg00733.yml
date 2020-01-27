@@ -18,11 +18,6 @@ sample_description_HG00733:
         load_type: parts
         source_type: amazon
     - long_reads:
-        readset: HG00733_hgsvc_pbsq2-clr
-        data_type: pacbio_native
-        load_type: parts
-        source_type: ftp
-    - long_reads:
         readset: HG00733_hpg_ontpm-ul
         data_type: fastq
         load_type: parts

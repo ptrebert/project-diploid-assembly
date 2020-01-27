@@ -1,28 +1,28 @@
 
-sample_description_HG03721:
-  individual: HG03721
-  sex: female
+sample_description_HG03009:
+  individual: HG03009
+  sex: male
   super_population: SAS
-  population: ITU
-  family: IT003
-  member: parent
+  population: BEB
+  family: HG03009
+  member: unrelated
   data_sources:
     - long_reads:
-        readset: HG03721_hgsvc_pbsq2-clr
+        readset: HG03009_hgsvc_pbsq2-clr
         data_type: pacbio_native
         load_type: parts
-        source_type: ftp
+        source_type: globus
     - strandseq:
-        readset: &sts_reads HG03721_hgsvc_ilnxs-80pe_sseq
+        readset: &sts_reads HG03009_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
     - short_reads:
-        readset: &short_reads HG03721_hgsvc_il25k-125pe_short
+        readset: &short_reads HG03009_hgsvc_il25k-125pe_short
         source_type: ftp
 
 
-sample_targets_HG03721:
+sample_targets_HG03009:
   - aliases:
-      1: &clr_reads HG03721_hgsvc_pbsq2-clr_1000
+      1: &clr_reads HG03009_hgsvc_pbsq2-clr_1000
   - defaults:
       hap_reads: *clr_reads
       vc_reads: *clr_reads
