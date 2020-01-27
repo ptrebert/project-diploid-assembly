@@ -50,9 +50,9 @@ minimap_racon_aln_min_qual: 10
 # pipeline steps (i.e., everything
 # before evaluation)
 eval_known_ref: GRCh38_GCA_p13
+eval_align_ref: hg38_GCA_p13
 eval_gene_model: GRCh38_GENCODEv31_basic
 use_genome_size: hg38_GCA_p13
-aln_reference: hg38_GCA_p13
 main_chromosomes:
   - chr1
   - chr2
