@@ -6,7 +6,7 @@ cluster: >-
   -d /beeond/projects/diploid-assembly
   -l walltime={cluster.run_hrs}:{cluster.run_min}:00,nodes=1:ppn={cluster.cores},mem={cluster.mem_mb}M
   -N {cluster.name} -o {cluster.output} -e {cluster.error}
-cluster-config: /beeond/user/code/project-diploid-assembly/environment/snakemake/cluster/denbi_tu_pbs/denbi_cluster.json
+cluster-config: environment/snakemake/cluster/denbi_tu_pbs/denbi_cluster.json
 local-cores: 2
 jobs: 100
 latency-wait: 600

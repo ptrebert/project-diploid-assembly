@@ -6,7 +6,7 @@ cluster: >-
   -A {cluster.account} -l walltime={cluster.run_hrs}:{cluster.run_min}:00
   -l select=1:ncpus={cluster.cores}:mem={cluster.mem_mb}mb
   -N {cluster.name} -o {cluster.output} -e {cluster.error}
-#cluster-config: /gpfs/project/ebertp/code/project-diploid-assembly/environment/snakemake/cluster/hhu_pbs/hilbert_cluster.json
+cluster-config: environment/snakemake/cluster/hhu_pbs/hilbert_cluster.json
 local-cores: 1
 jobs: 50
 latency-wait: 300
@@ -15,7 +15,7 @@ rerun-incomplete: True
 restart-times: 1
 max-status-checks-per-second: 0.001
 use-conda: True
-use-envmodules: True
+use-envmodules: False
 nolock: False
 default-resources:
   - mem_per_cpu_mb=1024
