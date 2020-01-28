@@ -11,6 +11,12 @@ localrules: run_afr_trios,
             run_asw_trio,
             run_asw_child
 
+rule run_na19036_individual:
+    input:
+        'output/targets/AFR_LWK_NA19036/NA19036.fofn'
+    message: 'Running AFR-LWK-NA19036 individual'
+
+######################################################
 
 rule run_yri_mother:
     input:
@@ -90,8 +96,10 @@ rule run_msl_trio:
     message: 'Running AFR-MSL-SL05 trio'
 
 ######################################################
+
 rule run_afr_trios:
     input:
+        rules.run_na19036_individual.input,
         rules.run_yri_trio.input,
         rules.run_gwd_trio.input,
         rules.run_acb_trio.input,
