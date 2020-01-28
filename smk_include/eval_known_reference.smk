@@ -22,7 +22,7 @@ rule compute_delta_assembly_reference:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 24576,
-        runtime_hrs = 4
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} {input.known_ref} {input.custom_ref} --delta={output.delta} &> {log}'
 
@@ -46,7 +46,7 @@ rule quast_analysis_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 24576,
-        runtime_hrs = 8
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
     priority: 100
