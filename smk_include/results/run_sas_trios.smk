@@ -47,7 +47,7 @@ rule run_stu_trio:
 
 rule run_sas_trios:
     input:
-        rules.run_hg03009_individual,
+        rules.run_hg03009_individual.input,
         rules.run_itu_trio.input,
         rules.run_stu_trio.input
     message: 'Running SAS trios'
