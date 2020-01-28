@@ -47,12 +47,13 @@ rule compute_uniform_coverage_regions:
         '../environment/conda/conda_pyscript.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         num_regions = 128,
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('np_cov_to_regions.py')
     shell:
-        'zgrep "{wildcards.sequence}\s" {input.pos_cov} | {params.script_dir}/np_cov_to_regions.py --debug '
+        'zgrep "{wildcards.sequence}\s" {input.pos_cov} | {params.script_exec} --debug '
             ' --seq-info {input.seq_info} --num-regions {params.num_regions} --output {output}'
             ' &> {log}'
 
@@ -80,16 +81,16 @@ rule call_variants_freebayes_parallel:
         'run/output/variant_calls/freebayes/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
-    params:
-        timeout = config['freebayes_timeout_sec'],
-        script_dir = config['script_dir']
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((16384 if attempt <= 1 else 16384 + attempt**attempt * 16384) / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 16384 if attempt <= 1 else 16384 + attempt**attempt * 16384,
-        runtime_hrs = 3
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    params:
+        timeout = config['freebayes_timeout_sec'],
+        script_exec = lambda wildcards: find_script_path('fb-parallel-timeout.sh')
     shell:
-        '{params.script_dir}/fb-parallel-timeout.sh {input.ref_regions} {threads} {params.timeout} {log}'
+        '{params.script_exec} {input.ref_regions} {threads} {params.timeout} {log}'
             ' --use-best-n-alleles 4 --strict-vcf -f {input.reference} {input.read_ref_aln} > {output}'
 
 

@@ -2,13 +2,7 @@
 notify: False
 notify_email: pebert@mpi-inf.mpg.de
 
-script_dir: /beeond/user/code/project-diploid-assembly/scripts
 env_module_singularity: None
-
-data_sources: /beeond/user/code/project-diploid-assembly/annotation/input_data_sources.json
-reference_sources: /beeond/user/code/project-diploid-assembly/annotation/reference_data_sources.json
-
-ref_cache_folder: references/cache
 
 num_cpu_max: 36
 num_cpu_high: 36

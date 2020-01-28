@@ -1,10 +1,4 @@
 
-CMD_DL_COMPRESSED_PARALLEL = 'aria2c --out={{output}} --file-allocation=none -s 4 -x 4 {remote_path} &>> {{log}}'
-
-CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
-
-CMD_DL_UNCOMPRESSED_SINGLE = 'wget --quiet -O /dev/stdout {remote_path} 2>> {{log}} | gzip > {{output}}'
-
 localrules: master_handle_reference_download
 
 rule master_handle_reference_download:
@@ -17,15 +11,15 @@ rule create_reference_download_request:
         'references/{subfolder}/{reference}.request'
     run:
         import os
-        import json
+        ref_sources_info = config['reference_data_sources']
 
-        ref_sources_path = config['reference_sources']
-        assert os.path.isfile(ref_sources_path), 'No reference sources configured'
+        file_info = ref_sources_info[wildcards.reference]
 
-        with open(ref_sources_path, 'r') as annotation:
-            sources = json.load(annotation)
-
-        file_info = sources[wildcards.reference]
+        request_path = os.path.join('references', wildcards.subfolder)
+        if not file_info['local_path'].startswith(request_path):
+            raise ValueError('Reference file mismatch: '
+                             'requested path is {}, '
+                             'annotated is {}'.format(request_path, file_info['local_path']))
 
         try:
             md5 = file_info['md5']
@@ -50,9 +44,9 @@ rule handle_raw_fasta_reference_download_request:
          '../environment/conda/conda_shelltools.yml'
     threads: 2
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
     shell:
-        '{params.script_dir}/utilities/downloader.py --debug '
+        '{params.script_exec} --debug '
         '--request-file {input} --output {output} '
         '--parallel-conn 1 &> {log}'
 
@@ -68,8 +62,8 @@ rule handle_gff_reference_download_request:
          '../environment/conda/conda_shelltools.yml'
     threads: 2
     params:
-          script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
     shell:
-         '{params.script_dir}/utilities/downloader.py --debug '
+         '{params.script_exec} --debug '
          '--request-file {input} --output {output} '
          '--parallel-conn 1 &> {log}'

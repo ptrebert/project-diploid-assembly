@@ -17,7 +17,7 @@ rule collect_remote_hgsvc_HG00514_pacbio:
     output:
         'input/data_sources/hgsvc_HG00514_pacbio.json'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
         server = 'ftp.1000genomes.ebi.ac.uk',
         remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20190508_HG00514_PacBioSequel2/',
         collect = ' fastq.gz bam ',
@@ -30,7 +30,7 @@ rule collect_remote_hgsvc_HG00514_pacbio:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-        '{params.script_dir}/scan_remote_path.py --debug '
+        '{params.script_exec} --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
             ' --collect-files {params.collect} --sort-files {params.sort} '
             ' {params.bam_format} {params.clr_subreads} --file-infix {params.file_infix}'
@@ -41,7 +41,7 @@ rule collect_remote_hgsvc_HG00512_pacbio:
     output:
         'input/data_sources/hgsvc_HG00512_pacbio.json'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
         server = 'ftp.1000genomes.ebi.ac.uk',
         remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191031_CHS_PacBio_HG00512_HiFi/',
         collect = ' fastq.gz bam ',
@@ -53,7 +53,7 @@ rule collect_remote_hgsvc_HG00512_pacbio:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-        '{params.script_dir}/scan_remote_path.py --debug '
+        '{params.script_exec} --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
             ' --collect-files {params.collect} --sort-files {params.sort} '
             ' {params.bam_format} --file-infix {params.file_infix}'
@@ -64,7 +64,7 @@ rule collect_remote_hgsvc_HG00513_pacbio:
     output:
         'input/data_sources/hgsvc_HG00513_pacbio.json'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
         server = 'ftp.1000genomes.ebi.ac.uk',
         remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191031_CHS_PacBio_HG00513_HiFi/',
         collect = ' fastq.gz bam ',
@@ -76,7 +76,7 @@ rule collect_remote_hgsvc_HG00513_pacbio:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-        '{params.script_dir}/scan_remote_path.py --debug '
+        '{params.script_exec} --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
             ' --collect-files {params.collect} --sort-files {params.sort} '
             ' {params.bam_format} --file-infix {params.file_infix}'
@@ -87,7 +87,7 @@ rule collect_remote_hgsvc_pur_trio_pacbio:
     output:
         'input/data_sources/hgsvc_pur-trio_pacbio.json'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
         server = 'ftp.1000genomes.ebi.ac.uk',
         remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20190925_PUR_PacBio_HiFi/',
         collect = ' fastq.gz bam ',
@@ -99,7 +99,7 @@ rule collect_remote_hgsvc_pur_trio_pacbio:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-        '{params.script_dir}/scan_remote_path.py --debug '
+        '{params.script_exec} --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
             ' --collect-files {params.collect} --sort-files {params.sort} '
             ' {params.bam_format} --file-infix {params.file_infix}'
@@ -110,7 +110,7 @@ rule collect_remote_hgsvc_NA19240_pacbio:
     output:
         'input/data_sources/hgsvc_NA19240_pacbio.json'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
         server = 'ftp.1000genomes.ebi.ac.uk',
         remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191005_YRI_PacBio_NA19240_HiFi/',
         collect = ' fastq.gz bam ',
@@ -122,7 +122,7 @@ rule collect_remote_hgsvc_NA19240_pacbio:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-        '{params.script_dir}/scan_remote_path.py --debug '
+        '{params.script_exec} --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
             ' --collect-files {params.collect} --sort-files {params.sort} '
             ' {params.bam_format} --file-infix {params.file_infix}'
@@ -133,7 +133,7 @@ rule collect_remote_hgsvc_NA19238_pacbio:
     output:
         'input/data_sources/hgsvc_NA19238_pacbio.json'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
         server = 'ftp.1000genomes.ebi.ac.uk',
         remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191205_YRI_PacBio_NA19238_HIFI/',
         collect = ' fastq.gz bam ',
@@ -145,7 +145,7 @@ rule collect_remote_hgsvc_NA19238_pacbio:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-        '{params.script_dir}/scan_remote_path.py --debug '
+        '{params.script_exec} --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
             ' --collect-files {params.collect} --sort-files {params.sort} '
             ' {params.bam_format} --file-infix {params.file_infix}'
@@ -156,7 +156,7 @@ rule collect_remote_hgsvc_NA19239_pacbio:
     output:
         'input/data_sources/hgsvc_NA19239_pacbio.json'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
         server = 'ftp.1000genomes.ebi.ac.uk',
         remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191205_YRI_PacBio_NA19239_HIFI/',
         collect = ' fastq.gz bam ',
@@ -168,7 +168,7 @@ rule collect_remote_hgsvc_NA19239_pacbio:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-        '{params.script_dir}/scan_remote_path.py --debug '
+        '{params.script_exec} --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
             ' --collect-files {params.collect} --sort-files {params.sort} '
             ' {params.bam_format} --file-infix {params.file_infix}'
@@ -179,7 +179,7 @@ rule collect_remote_hgsvc_jax_pacbio:
     output:
         'input/data_sources/hgsvc_JAX_pacbio.json'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
         server = 'ftp.1000genomes.ebi.ac.uk',
         remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20200108_PacBio_CLR_JAX/',
         collect = ' bam ',
@@ -192,7 +192,7 @@ rule collect_remote_hgsvc_jax_pacbio:
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-        '{params.script_dir}/scan_remote_path.py --debug '
+        '{params.script_exec} --debug '
             ' --server {params.server} --ftp-path {params.remote_path} '
             ' --collect-files {params.collect} --sort-files {params.sort} '
             ' {params.bam_format} {params.clr_subreads} --file-infix {params.file_infix}'

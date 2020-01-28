@@ -2,25 +2,9 @@
 notify: False
 notify_email: ebertp@hhu.de
 
-script_dir: /home/pebert/work/code/github/project-diploid-assembly/scripts
-
-data_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/input_data_sources.json
-reference_sources: /home/pebert/work/code/github/project-diploid-assembly/annotation/reference_data_sources.json
-
-ref_cache_folder: references/cache
+env_module_singularity: None
 
 num_cpu_max: 4
 num_cpu_high: 3
 num_cpu_medium: 2
 num_cpu_low: 1
-
-
-# YAML Conda environments can only be used
-# if the Conda installations lives on the same
-# file system as the Snakemake working
-# directory (where the Snakemake-internal
-# Conda envs will be created)
-# see: bitbucket.org/snakemake/snakemake/issues/1266/add-copy-option-for-conda-env
-# Replace .txt with .yml depending on system
-conda_env_pbtools: "../environment/conda/conda_pbtools.yml"
-conda_env_rdga: "../environment/conda/conda_rdga.yml"

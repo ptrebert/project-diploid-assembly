@@ -23,9 +23,9 @@ rule compute_statistics_complete_input_fastq:
     conda:
          '../environment/conda/conda_pyscript.yml'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
-        '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fastq} '
+        '{params.script_exec} --debug --input-files {input.fastq} '
         '--output {output.dump} --summary-output {output.summary} '
         '--copy-stats-dump '
         'output/statistics/stat_dumps/{wildcards.sample}.pbn.bam.pck '
@@ -53,9 +53,9 @@ rule compute_statistics_complete_input_fasta:
     conda:
          '../environment/conda/conda_pyscript.yml'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
-        '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fasta} '
+        '{params.script_exec} --debug --input-files {input.fasta} '
         '--output {output.dump} --summary-output {output.summary} '
         '--copy-stats-dump '
         'output/statistics/stat_dumps/{wildcards.sample}.pbn.bam.pck '
@@ -83,9 +83,9 @@ rule compute_statistics_split_cluster_fastq:
     conda:
          '../environment/conda/conda_pyscript.yml'
     params:
-          script_dir = config['script_dir']
+          script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
-         '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fasta} '
+         '{params.script_exec} --debug --input-files {input.fasta} '
          '--output {output.dump} --summary-output {output.summary} '
          '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
@@ -107,9 +107,9 @@ rule compute_statistics_split_cluster_fasta:
     conda:
          '../environment/conda/conda_pyscript.yml'
     params:
-          script_dir = config['script_dir']
+          script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
-         '{params.script_dir}/collect_read_stats.py --debug --input-files {input.fasta} '
+         '{params.script_exec} --debug --input-files {input.fasta} '
          '--output {output.dump} --summary-output {output.summary} '
          '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
@@ -131,9 +131,9 @@ rule compute_statistics_complete_input_bam:
     conda:
          '../environment/conda/conda_pyscript.yml'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
-        '{params.script_dir}/collect_read_stats.py --debug --input-files {input.bam} '
+        '{params.script_exec} --debug --input-files {input.bam} '
         '--output {output.dump} --summary-output {output.summary} '
         '--copy-stats-dump '
         'output/statistics/stat_dumps/{wildcards.sample}.fasta.pck '
@@ -153,12 +153,12 @@ rule plot_input_long_reads_statistics:
          '../environment/conda/conda_pyscript.yml'
     priority: 200
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('plot_sample_stats.py'),
         lower_bound = 6000,
         upper_bound = lambda wildcards: {'ccs': 25000, 'clr': 100000, 'ul': 100000}[wildcards.sample.split('_')[2].split('-')[-1]],
         step_size = lambda wildcards: {'ccs': 500, 'clr': 1000, 'ul': 1000}[wildcards.sample.split('_')[2].split('-')[-1]]
     shell:
-        '{params.script_dir}/plot_sample_stats.py '
+        '{params.script_exec} '
         '--pck-input {input} --text-size 11 '
         '--sample-name {wildcards.sample} '
         '--lowest-bin {params.lower_bound} '

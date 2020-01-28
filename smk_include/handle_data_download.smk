@@ -17,29 +17,29 @@ checkpoint create_input_data_download_requests:
     run:
         import os
         import json as json
-        import sys as sys
         import collections as col
-
-        all_data_sources = list(input)
-        try:
-            manual_annotation = config['data_sources']
-            assert os.path.isfile(manual_annotation), 'No data sources found at path: {}'.format(manual_annotation)
-            all_data_sources.append(manual_annotation)
-        except KeyError:
-            sys.stderr.write('\nWarning: no manually annotated data sources identified in config\n')
 
         complete_sources = dict()
         check_key_dups = col.Counter()
 
-        for annotation in all_data_sources:
+        for annotation in list(input):
             with open(annotation, 'r') as paths:
                 obj = json.load(paths)
                 check_key_dups.update(list(obj.keys()))
                 complete_sources.update(obj)
 
+        # add all manually annotated data sources
+        for k, v in config.items():
+            if not k.startswith('sample_data_sources'):
+                continue
+            manual_annotation = config[k]
+            check_key_dups.update(list(manual_annotation.keys()))
+            complete_sources.update(manual_annotation)
+
         count_keys = check_key_dups.most_common()
         if count_keys[0][1] > 1:
-            raise ValueError('Duplicate keys in data sources annotation: {}'.format(count_keys[0]))
+            dup_keys = [t for t in count_keys if t[1] > 1]
+            raise ValueError('Duplicate keys in data sources annotation: {}'.format(dup_keys))
 
         os.makedirs(output[0], exist_ok=True)
         prefix = os.path.split(output[0])[0]
@@ -94,10 +94,10 @@ rule download_bioproject_metadata:
     conda:
          '../environment/conda/conda_shelltools.yml'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         accession_number = lambda wildcards: select_strandseq_bioproject_source(wildcards.sts_reads)
     shell:
-        '{params.script_dir}/utilities/downloader.py --debug '
+        '{params.script_exec} --debug '
         '--ena-file-report '
         ' "https://www.ebi.ac.uk/ena/data/warehouse/filereport?accession='
         '{params.accession_number}'
@@ -177,9 +177,9 @@ rule handle_strandseq_download_requests:
          '../environment/conda/conda_shelltools.yml'
     threads: 2
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
     shell:
-        '{params.script_dir}/utilities/downloader.py --debug '
+        '{params.script_exec} --debug '
         '--request-file {input} --output {output} '
         '--parallel-conn 1 &> {log}'
 
@@ -202,10 +202,10 @@ rule handle_partial_fastq_download_request:
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 * attempt
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         parallel_conn = config['num_cpu_low'] - 1
     shell:
-         '{params.script_dir}/utilities/downloader.py --debug '
+         '{params.script_exec} --debug '
          '--request-file {input} --output {output} '
          '--parallel-conn {params.parallel_conn} &> {log}'
 
@@ -252,10 +252,10 @@ rule handle_complete_fastq_download_request:
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 * attempt
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         parallel_conn = config['num_cpu_low'] - 1
     shell:
-         '{params.script_dir}/utilities/downloader.py --debug '
+         '{params.script_exec} --debug '
          '--request-file {input} --output {output} '
          '--parallel-conn {params.parallel_conn} &> {log}'
 
@@ -278,10 +278,10 @@ rule handle_partial_pbn_bam_download_request:
     resources:
         runtime_hrs = lambda wildcards, attempt: 12 * attempt
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         parallel_conn = config['num_cpu_low'] - 1
     shell:
-         '{params.script_dir}/utilities/downloader.py --debug '
+         '{params.script_exec} --debug '
          '--request-file {input} --output {output} '
          '--parallel-conn {params.parallel_conn} &> {log}'
 

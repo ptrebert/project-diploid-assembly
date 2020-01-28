@@ -1,8 +1,8 @@
 
 # modules w/o other dependencies
 include: 'constraints.smk'
-include: 'environments.smk'
 include: 'aux_utilities.smk'
+include: 'environments.smk'
 include: 'link_data_sources.smk'
 include: 'scrape_data_sources.smk'
 include: 'handle_reference_download.smk'

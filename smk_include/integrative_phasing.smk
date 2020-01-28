@@ -76,17 +76,17 @@ rule run_breakpointr:
         'run/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
-    params:
-        output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
-        input_dir = lambda wildcards, input: load_fofn_file(input),
-        script_dir = config['script_dir']
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
         runtime_hrs = lambda wildcards, attempt: 12 * attempt
+    params:
+        output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
+        input_dir = lambda wildcards, input: load_fofn_file(input),
+        script_exec = lambda wildcards: find_script_path('run_breakpointr.R')
     shell:
-        '{params.script_dir}/run_breakpointr.R {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'
+        '{params.script_exec} {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'
 
 
 rule write_strandphaser_config_file:
@@ -162,9 +162,9 @@ rule run_strandphaser:
         input_dir = lambda wildcards, input: load_fofn_file(input),
         output_dir = lambda wildcards, output: os.path.dirname(output.cfg),
         individual = lambda wildcards: wildcards.sts_reads.split('_')[0],
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('run_strandphaser.R')
     shell:
-        '{params.script_dir}/run_strandphaser.R {params.input_dir} {input.cfg} '
+        '{params.script_exec} {params.input_dir} {input.cfg} '
             ' {input.variant_calls} {input.wc_regions} '
             ' {params.output_dir} {params.individual} &> {log.stp}'
 

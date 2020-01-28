@@ -6,11 +6,11 @@ rule create_conda_environment_shell_tools:
     log:
         'log/output/check_files/environment/conda_shelltools.log'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
     conda:
         '../environment/conda/conda_shelltools.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py '
+         '{params.script_exec} '
          '--export-conda-env --outfile {output} --logfile {log}'
 
 
@@ -20,11 +20,11 @@ rule create_conda_environment_pacbio_tools:
     log:
         'log/output/check_files/environment/conda_pbtools.log'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
     conda:
         '../environment/conda/conda_pbtools.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py '
+         '{params.script_exec} '
          '--export-conda-env --outfile {output} --logfile {log}'
 
 
@@ -38,11 +38,11 @@ rule create_conda_environment_r_script:
     log:
         'log/output/check_files/environment/conda_rscript.log'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
     conda:
         '../environment/conda/conda_rscript.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py '
+         '{params.script_exec} '
          '--export-conda-env --outfile {output} --logfile {log}'
 
 
@@ -56,11 +56,11 @@ rule create_conda_environment_r_tools:
     log:
         'log/output/check_files/environment/conda_rtools.log'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
     conda:
         '../environment/conda/conda_rtools.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py '
+         '{params.script_exec} '
          '--export-conda-env --outfile {output} --logfile {log}'
 
 
@@ -70,11 +70,11 @@ rule create_conda_environment_bio_tools:
     log:
         'log/output/check_files/environment/conda_biotools.log'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
     conda:
         '../environment/conda/conda_biotools.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py '
+         '{params.script_exec} '
          '--export-conda-env --outfile {output} --logfile {log}'
 
 
@@ -84,11 +84,11 @@ rule create_conda_environment_pyscript:
     log:
         'log/output/check_files/environment/conda_pyscript.log'
     params:
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
     conda:
         '../environment/conda/conda_pyscript.yml'
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py '
+         '{params.script_exec} '
          '--export-conda-env --outfile {output} --logfile {log}'
 
 
@@ -98,13 +98,13 @@ rule inspect_hpc_module_singularity:
     log:
         'log/output/check_files/environment/module_singularity.log'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities'),
         singularity_module = config['env_module_singularity']
     #envmodules:
     #    config['env_module_singularity']
     shell:
-         '{params.script_dir}/utilities/inspect_environment.py '
-         '--export-conda-env --outfile {output} --logfile {log} ; '
+         '{params.script_exec} '
+         '--export-conda-env --outfile {output} --logfile {log}'
 
 
 rule check_singularity_version:
@@ -117,13 +117,13 @@ rule check_singularity_version:
     #envmodules:
     #    config['env_module_singularity']
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('version_checker.py', 'utilities'),
         min_version = '3.1.0',  # due to container format change between v2 and v3
     shell:
         'singularity --version | '
-        '{params.script_dir}/utilities/version_checker.py '
+        '{params.script_exec} '
         '--outfile {output} --logfile {log} '
-        '--at-least {params.min_version} ; '
+        '--at-least {params.min_version}'
 
 
 rule download_shasta_executable:
@@ -138,13 +138,13 @@ rule download_shasta_executable:
     params:
         shasta_url = "https://github.com/chanzuckerberg/shasta/releases/download/{version}/shasta-Linux-{version}".format(**{'version': config['shasta_version']}),
         shasta_ver = config['shasta_version'],
-        script_dir = config['script_dir']
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
     threads: 2
     resources:
         mem_total_mb = 2048,
         mem_per_cpu_mb = 1024
     shell:
-         '{params.script_dir}/utilities/downloader.py --debug '
+         '{params.script_exec} --debug '
             '--shasta-exec {params.shasta_url} '
             '--shasta-version {params.shasta_ver} '
             '--shasta-path $CONDA_PREFIX/bin/shasta '
@@ -162,13 +162,13 @@ rule install_rlib_saarclust:
     conda:
         '../environment/conda/conda_rscript.yml'
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('install_saarclust.R'),
         version = config['git_commit_saarclust']
     resources:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_saarclust.R {params.version} &> {log}'
+        'TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
 
 
 if int(config['git_commit_version']) < 8:
@@ -192,10 +192,10 @@ rule install_rlib_breakpointr:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('install_breakpointr.R'),
         version = BREAKPOINTR_VERSION
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_breakpointr.R {params.version} &> {log}'
+        'TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
 
 
 rule install_rlib_strandphaser:
@@ -211,10 +211,10 @@ rule install_rlib_strandphaser:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('install_strandphaser.R'),
         version = config['git_commit_strandphaser']
     shell:
-        'TAR=$(which tar) {params.script_dir}/install_strandphaser.R {params.version} &> {log}'
+        'TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
 
 
 rule download_quast_busco_databases:

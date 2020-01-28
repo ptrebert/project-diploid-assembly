@@ -194,15 +194,15 @@ checkpoint run_saarclust_assembly_clustering:
     conda:
         '../environment/conda/conda_rscript.yml'
     resources:
-        mem_per_cpu_mb = 8192,
-        mem_total_mb = 8192,
-        runtime_hrs = 23
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 + 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
     params:
-        script_dir = config['script_dir'],
+        script_exec = lambda wildcards: find_script_path('run_saarclust.R'),
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
         in_folder = lambda wildcards, input: load_fofn_file(input)
     shell:
-        '{params.script_dir}/run_saarclust.R {input.cfg} {params.in_folder} {params.out_folder} &> {log} '
+        '{params.script_exec} {input.cfg} {params.in_folder} {params.out_folder} &> {log} '
 
 
 def collect_clustered_fasta_sequences(wildcards):
@@ -311,9 +311,9 @@ rule plot_saarclust_diagnostic_output:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt
     params:
-        run_script = os.path.join(config['script_dir'], 'plot_saarclust_diagnostics.R'),
+        script_exec = lambda wildcards: find_script_path('plot_saarclust_diagnostics.R'),
         out_prefix = lambda wildcards: os.path.join(
             'output', 'plotting', 'saarclust_diagnostics', wildcards.folder_path,
             wildcards.reference + '_map-to_' + wildcards.aln_reference)
     shell:
-         '{params.run_script} {input.ctg_ref_aln} hg38 {params.out_prefix} FALSE &> {log}'
+         '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} FALSE &> {log}'
