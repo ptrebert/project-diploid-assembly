@@ -44,4 +44,4 @@ dependencies:
   - graphaligner=1.0.10
   - pigz=2.4
   - pip:
-    - git+https://bitbucket.org/whatshap/whatshap
+    - git+https://bitbucket.org/whatshap/whatshap@a3f8c91
