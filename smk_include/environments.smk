@@ -104,7 +104,7 @@ rule inspect_hpc_module_singularity:
     #    config['env_module_singularity']
     shell:
          '{params.script_exec} '
-         '--export-conda-env --outfile {output} --logfile {log}'
+         '--outfile {output} --logfile {log}'
 
 
 rule check_singularity_version:
