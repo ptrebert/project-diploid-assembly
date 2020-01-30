@@ -210,9 +210,9 @@ rule generate_bwa_index:
     benchmark:
         'run/{folder_path}/bwa_index/{reference}.rsrc'
     resources:
-        mem_per_cpu_mb = 6144,
-        mem_total_mb = 6144,
-        runtime_hrs = 3
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
     conda:
          '../environment/conda/conda_biotools.yml'
     params:
