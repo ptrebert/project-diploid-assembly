@@ -318,8 +318,8 @@ rule minimap_contig_to_known_reference_alignment:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 16384 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 16384 + 16384 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
         runtime_hrs = 71,
         mem_sort_mb = 8192
     params:
