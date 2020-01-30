@@ -4,6 +4,7 @@ include: 'smk_include/module_includes.smk'
 include: 'smk_include/results/run_afr_trios.smk'
 include: 'smk_include/results/run_amr_trios.smk'
 include: 'smk_include/results/run_eas_trios.smk'
+include: 'smk_include/results/run_eur_trios.smk'
 include: 'smk_include/results/run_sas_trios.smk'
 
 localrules: master, setup_env
@@ -55,6 +56,7 @@ rule master:
     input:
         rules.run_afr_trios.input,
         rules.run_amr_trios.input,
+        rules.run_eur_trios.input,
         rules.run_eas_trios.input,
         rules.run_sas_trios.input
     message: 'Executing ALL'
