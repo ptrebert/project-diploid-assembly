@@ -16,7 +16,7 @@ rerun-incomplete: True
 restart-times: 1
 use-conda: True
 nolock: True
-max-status-checks-per-second: 0.1
+max-status-checks-per-second: 0.01
 default-resources:
   - runtime_hrs=1
   - runtime_min=59
