@@ -170,24 +170,59 @@ def extract_wildcard_config_parameters():
 CONFIG_TARGETS_GLOBAL_SETTINGS = extract_wildcard_config_parameters()
 
 
-def extract_selected_targets():
+def extract_selected_or_skipped_targets(handle_targets):
     """
+    :param handle_targets:
     :return:
     """
     try:
-        select_targets = config['select_targets']
+        modify_targets = config[handle_targets]
     except KeyError:
-        select_targets = dict()
+        modify_targets = dict()
     else:
-        for key, values in select_targets.items():
+        for key, values in modify_targets.items():
             if not isinstance(values, list):
-                sys.stderr.write('\nERROR: select_targets have to be specified as a name-to-list mapping.\n')
-                sys.stderr.write('Found in config: {} to {} ({}) mapping.\n'.format(key, values, type(values)))
-                raise ValueError('Invalid select targets specified (expected list).')
-    return set(select_targets.keys()), select_targets
+                sys.stderr.write('\nERROR: {} have to be specified as a name-to-list mapping.\n')
+                sys.stderr.write('Found in config: {} to {} ({}) mapping.\n'.format(handle_targets, key, values, type(values)))
+                raise ValueError('Invalid {} specified (expected list).'.format(handle_targets))
+    return set(modify_targets.keys()), modify_targets
 
 
-CONFIG_TARGETS_SELECTED_KEYS, CONFIG_TARGETS_SELECTED_VALUES = extract_selected_targets()
+CONFIG_TARGETS_SELECTED_KEYS, CONFIG_TARGETS_SELECTED_VALUES = extract_selected_or_skipped_targets('select_targets')
+
+CONFIG_TARGETS_SKIPPED_KEYS, CONFIG_TARGETS_SKIPPED_VALUES = extract_selected_or_skipped_targets('skip_targets')
+
+
+def check_target_modifier_match(target_spec, check_keys, check_values, check_keep):
+    """
+    If targets are selected in the config / by the user, check if this target_spec
+    is to be kept or skipped
+
+    :param target_spec:
+    :param check_keys:
+    :param check_values:
+    :param check_keep:
+    :return:
+    """
+    modify_target = check_keep
+    for key in set(target_spec.keys()).intersection(check_keys):
+        current_value = target_spec[key]
+        if isinstance(current_value, str):
+            if check_keep:
+                modify_target &= current_value in check_values[key]
+            else:
+                modify_target |= current_value in check_values[key]
+        elif isinstance(current_value, list):
+            # we check that only lists are in selected_targets
+            current_values = set(current_value)
+            if check_keep:
+                modify_target &= len(current_values.intersection(check_values[key])) > 0
+            else:
+                modify_target |= len(current_values.intersection(check_values[key])) > 0
+        else:
+            raise ValueError('Cannot handle data type of target parameter: '
+                             '{} / {} / {}'.format(key, current_value, type(current_value)))
+    return modify_target
 
 
 def annotate_readset_data_types(sample_desc):
@@ -284,20 +319,21 @@ def define_file_targets(wildcards):
             target_spec = target_specification['target']
             tmp = dict(target_values)
             tmp.update(target_spec)
-            keep_target = True
-            for key in set(tmp.keys()).intersection(CONFIG_TARGETS_SELECTED_KEYS):
-                current_value = tmp[key]
-                if isinstance(current_value, str):
-                    keep_target &= current_value in CONFIG_TARGETS_SELECTED_VALUES[key]
-                elif isinstance(current_value, list):
-                    # we check that only lists are in selected_targets
-                    current_values = set(current_value)
-                    keep_target &= len(current_values.intersection(CONFIG_TARGETS_SELECTED_VALUES[key])) > 0
-                else:
-                    raise ValueError('Cannot handle data type of target parameter: '
-                                     '{} / {} / {}'.format(key, current_value, type(current_value)))
-            if not keep_target:
+
+            if not check_target_modifier_match(tmp,
+                    CONFIG_TARGETS_SELECTED_KEYS,
+                    CONFIG_TARGETS_SELECTED_VALUES,
+                    True):
+                sys.stderr.write('\nWARNING: not keeping target spec: {}\n'.format(target_spec))
                 continue
+
+            if check_target_modifier_match(tmp,
+                CONFIG_TARGETS_SKIPPED_KEYS,
+                CONFIG_TARGETS_SKIPPED_VALUES,
+                False):
+                sys.stderr.write('\nWARNING: skipping over target spec: {}\n'.format(target_spec))
+                continue
+
             for target_name, target_path in TARGET_PATHS.items():
                 if keep_path and selected_path != target_name:
                     if target_name.startswith('INIT'):

@@ -71,20 +71,41 @@ sample_targets_HG00733:
         - h1
         - h2
   - target:
+      name: pacbio_test
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: longshot
   - target:
+      name: pacbio_test
       nhr_assembler: shasta
       hap_assembler: shasta
       var_caller: longshot
   - target:
+      name: pacbio_test
       nhr_assembler: flye
       hap_assembler: canu
       var_caller: longshot
   - target:
+      name: pacbio_test
       nhr_assembler: shasta
       hap_assembler: canu
+      var_caller: longshot
+  - defaults:
+      hap_reads: *ont_hpg
+      vc_reads: *ont_hpg
+      sts_reads: *sts_reads
+      pol_reads: *ont_hpg
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      name: nanopore_test
+      nhr_assembler: shasta
+      hap_assembler: shasta
       var_caller: longshot
 
 
