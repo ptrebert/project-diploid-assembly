@@ -47,17 +47,14 @@ rule write_strandseq_merge_fofn:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
     run:
         import os
-        bam_files = collect_strandseq_merge_files(wildcards)
-        if len(bam_files) != 2:
+        validate_checkpoint_output(input.bams)
+        if len(input.bams) != 2:
             raise RuntimeError('Missing merge partner for strand-seq BAM files: '
                                '{}'.format(output.fofn))
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(bam_files):
+            for file_path in sorted(input.bams):
                 if not os.path.isfile(file_path):
-                    if os.path.isdir(file_path):
-                        # this is definitely wrong
-                        raise AssertionError('Expected file path for strand-seq BAM merge, but received directory: {}'.format(file_path))
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
@@ -150,9 +147,10 @@ rule write_saarclust_config_file:
         prob_threshold = config['prob_threshold']
     run:
         import os
-        # following same example as merge strand-seq BAMs above
-        bam_files = collect_strandseq_alignments(wildcards)
-        outfolder = os.path.dirname(bam_files[0])
+
+        validate_checkpoint_output(input.bams)
+
+        outfolder = os.path.dirname(input.bam[0])
 
         config_rows = [
             '[SaaRclust]',
@@ -234,19 +232,11 @@ rule write_reference_fasta_clusters_fofn:
     output:
         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
     run:
-        import os
-        # following example as above for merge strand-seq BAM files
-        fasta_files = collect_clustered_fasta_sequences(wildcards)
-        if len(fasta_files) == 0:
-            raise RuntimeError('No FASTA files to merge after SaaRclust run. '
-                               'SaaRclust most likely failed for sample: {}'.format(output.fofn))
+        validate_checkpoint_output(input.fasta)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(fasta_files):
+            for file_path in sorted(input.fasta):
                 if not os.path.isfile(file_path):
-                    if os.path.isdir(file_path):
-                        # this is definitely wrong
-                        raise AssertionError('Expected file path for strand-seq BAM merge, but received directory: {}'.format(file_path))
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')

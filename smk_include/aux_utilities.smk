@@ -264,6 +264,42 @@ def collect_strandseq_alignments(wildcards):
     return sorted(bam_files)
 
 
+def validate_checkpoint_output(check_output, expected_type='list_of_files'):
+    """
+    Because of github issues #55 and #142, this function exists to make
+    sure the output returned from a checkpoint evaluation conforms to
+    expectation (so far always list of file paths)
+
+    :param check_output:
+    :param expected_type:
+    :return:
+    """
+    if expected_type == 'list_of_files':
+        if isinstance(check_output, list):
+            num_of_items = len(check_output)
+            if num_of_items == 0:
+                raise ValueError('Checkpoint evaluation resulted in empty list of files')
+            for item in check_output:
+                if os.path.isdir(item):
+                    raise ValueError('Validating checkpoint output w/ {} items '
+                                     '- encountered directory: {}'.format(num_of_items, item))
+        elif isinstance(check_output, str):
+            if os.path.isdir(check_output):
+                # this is the reported case, handle in particular
+                raise RuntimeError('Checkpoint evaluation failed, '
+                                   'returned single str / directory: {}'.format(check_output))
+            else:
+                raise ValueError('Single string returned from checkpoint evaluation, '
+                                 'but is (not yet) a directory path: {}'.format(check_output))
+        else:
+            raise ValueError('Non-list type received for checkpoint '
+                             'output validation: {} / {}'.format(type(check_output), str(check_output)))
+    else:
+        raise NotImplementedError('aux_utilities::validate_checkpoint_output called with '
+                                  'unsupported expected type: {}'.format(expected_type))
+    return
+
+
 def load_preset_file(wildcards, input):
     """
     Save load for parameters from files that do not

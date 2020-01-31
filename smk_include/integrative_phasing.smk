@@ -31,9 +31,10 @@ rule write_breakpointr_config_file:
         bp_cpu = config['num_cpu_high']
     run:
         import os
-        # following same example as merge strand-seq BAMs in module prepare_custom_references
-        bam_files = collect_strandseq_alignments(wildcards)
-        outfolder = os.path.dirname(bam_files[0])
+
+        validate_checkpoint_output(input.bam)
+
+        outfolder = os.path.dirname(input.bam[0])
 
         config_rows = [
             '[General]',
@@ -110,9 +111,10 @@ rule write_strandphaser_config_file:
         sp_cpu = config['num_cpu_high']
     run:
         import os
-        # following same example as merge strand-seq BAMs in module prepare_custom_references
-        bam_files = collect_strandseq_alignments(wildcards)
-        outfolder = os.path.dirname(bam_files[0])
+
+        validate_checkpoint_output(input.bam)
+
+        outfolder = os.path.dirname(input.bam[0])
 
         config_rows = [
             '[General]',
@@ -275,18 +277,15 @@ def intphase_collect_phased_vcf_split_files(wildcards):
 
 rule write_phased_vcf_splits_fofn:
     input:
-        splits = intphase_collect_phased_vcf_split_files
+        vcf_splits = intphase_collect_phased_vcf_split_files
     output:
         fofn = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.fofn'
     run:
         # follow same example as merge strand-seq BAMs in module prepare_custom_references
-        vcf_files = intphase_collect_phased_vcf_split_files(wildcards)
-        if len(vcf_files) == 0:
-            raise RuntimeError('No phased VCF files to merge. Previous job(s) likely failed for: '
-                               '{}'.format(output.fofn))
+        validate_checkpoint_output(input.vcf_splits)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(vcf_files):
+            for file_path in sorted(input.vcf_splits):
                 if not os.path.isfile(file_path):
                     if os.path.isdir(file_path):
                         # this is definitely wrong

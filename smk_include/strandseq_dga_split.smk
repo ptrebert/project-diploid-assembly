@@ -233,18 +233,12 @@ rule write_assembled_fasta_clusters_fofn:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fofn',
     run:
         import os
-        # follow same example as merge strand-seq BAMs in module prepare_custom_references
-        fasta_files = collect_assembled_sequence_files(wildcards)
-        if len(fasta_files) == 0:
-            raise RuntimeError('No assembled cluster FASTAs (draft stage) to merge. Previous job(s) likely failed '
-                               'for: {}'.format(output.fofn))
+
+        validate_checkpoint_output(input.cluster_fastas)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(fasta_files):
+            for file_path in sorted(input.cluster_fastas):
                 if not os.path.isfile(file_path):
-                    if os.path.isdir(file_path):
-                        # this is definitely wrong
-                        raise AssertionError('Expected file path for cluster FASTA merge, but received directory: {}'.format(file_path))
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
@@ -334,13 +328,11 @@ rule write_polished_contigs_fofn:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
     run:
         import os
-        contigs = sorted(collect_polished_contigs(wildcards))
-        if len(contigs) == 0:
-            raise RuntimeError('No assembled contig FASTAs (polished stage) to merge. Previous job(s) likely failed '
-                               'for: {}'.format(output.fofn))
+
+        validate_checkpoint_output(input.contigs)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(contigs):
+            for file_path in sorted(input.contigs):
                 if not os.path.isfile(file_path):
                     if os.path.isdir(file_path):
                         # this is definitely wrong

@@ -193,14 +193,14 @@ def collect_tag_lists(wildcards):
 
 rule summarize_tagging_splitting_statistics:
     input:
-        collect_tag_lists
+        tags = collect_tag_lists
     output:
         'output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.tsv'
     benchmark:
         'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.rsrc'
     priority: 200
     run:
-        tsv_files = collect_tag_lists(wildcards)
+        validate_checkpoint_output(input.tags)
 
         import os
         import collections as col
@@ -208,7 +208,7 @@ rule summarize_tagging_splitting_statistics:
         hapcount = col.Counter()
         line_num = 0
 
-        for tsv in tsv_files:
+        for tsv in sorted(input.tags):
             with open(tsv, 'r') as table:
                 for line in table:
                     if line.startswith('#'):

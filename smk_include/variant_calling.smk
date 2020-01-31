@@ -393,17 +393,12 @@ rule write_final_vcf_splits:
         fofn = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
     run:
         import os
-        vcf_files = collect_final_vcf_splits(wildcards)
-        if len(vcf_files) == 0:
-            raise RuntimeError('No VCF splits (final stage) to merge. Previous job(s) failed for sample: '
-                               '{} '.format(output.fofn))
+
+        validate_checkpoint_output(input.vcf_splits)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(vcf_files):
+            for file_path in sorted(input.vcf_splits):
                 if not os.path.isfile(file_path):
-                    if os.path.isdir(file_path):
-                        # this is definitely wrong
-                        raise AssertionError('Expected file path for final VCF split merge, but received directory: {}'.format(file_path))
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
@@ -472,17 +467,12 @@ rule write_intermediate_vcf_splits:
         fofn = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
     run:
         import os
-        vcf_files = collect_intermediate_vcf_splits(wildcards)
-        if len(vcf_files) == 0:
-            raise RuntimeError('No VCF splits (intermediate stage) to merge. Previous job(s) failed for sample: '
-                               '{}'.format(output.fofn))
+
+        validate_checkpoint_output(input.vcf_splits)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(vcf_files):
+            for file_path in sorted(input.vcf_splits):
                 if not os.path.isfile(file_path):
-                    if os.path.isdir(file_path):
-                        # this is definitely wrong
-                        raise AssertionError('Expected file path for intermediate VCF split merge, but received directory: {}'.format(file_path))
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
