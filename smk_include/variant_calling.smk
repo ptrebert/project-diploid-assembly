@@ -288,8 +288,8 @@ rule whatshap_regenotype_variant_calls:
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 2048 + 512 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 2048 + 512 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 + 1024 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 + 1024 * attempt,
         runtime_hrs = lambda wildcards, attempt: 3 if attempt <= 1 else 12 * attempt
     shell:
         'whatshap genotype --chromosome {wildcards.sequence} --reference {input.reference} --output {output} {input.vcf} {input.read_ref_aln} &> {log}'
