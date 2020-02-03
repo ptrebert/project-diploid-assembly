@@ -101,7 +101,7 @@ rule download_bioproject_metadata:
         '--ena-file-report '
         ' "https://www.ebi.ac.uk/ena/data/warehouse/filereport?accession='
         '{params.accession_number}'
-        '&result=read_run&fields='
+        '\&result=read_run\&fields='
         'study_accession,sample_accession,secondary_sample_accession'
         ',experiment_accession,run_accession,submission_accession'
         ',tax_id,scientific_name,instrument_platform,instrument_model'
