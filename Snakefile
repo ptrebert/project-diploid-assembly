@@ -92,6 +92,7 @@ rule master_custom:
 
 rule setup_env:
     input:
+        rules.create_cluster_log_folders.output,
         rules.create_conda_environment_shell_tools.output,
         rules.create_conda_environment_pacbio_tools.output,
         rules.create_conda_environment_r_tools.output,

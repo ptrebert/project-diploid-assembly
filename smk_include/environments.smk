@@ -1,4 +1,13 @@
 
+localrules: create_cluster_log_folders
+
+
+rule create_cluster_log_folders:
+    output:
+        touch('output/check_files/environment/cluster_log_folders.ok')
+    shell:
+        'mkdir -p log/cluster_jobs/stderr && mkdir -p log/cluster_jobs/stdout'
+
 
 rule create_conda_environment_shell_tools:
     output:
