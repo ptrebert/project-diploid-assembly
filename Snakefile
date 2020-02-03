@@ -59,7 +59,35 @@ rule master:
         rules.run_eur_trios.input,
         rules.run_eas_trios.input,
         rules.run_sas_trios.input
-    message: 'Executing ALL'
+    message: 'Default run: processing all HGSVC samples'
+
+
+def collect_all_configured_samples(wildcards):
+    """
+    :return:
+    """
+    configured_samples = []
+    build_target_path = 'output/targets/{super_pop}_{population}_{family_id}/{individual}.fofn'
+
+    for key, values in config.items():
+        if not key.startswith('sample_description'):
+            continue
+        sample_desc = {
+            'super_pop': values['super_population'],
+            'population': values['population'],
+            'family_id': values['family'],
+            'individual': values['individual']
+        }
+        sample_targets = build_target_path.format(**sample_desc)
+        configured_samples.append(sample_targets)
+    configured_samples = sorted(set(configured_samples))
+    return configured_samples
+
+
+rule master_custom:
+    input:
+        collect_all_configured_samples
+    message: 'Custom run: processing only samples in loaded configuration'
 
 
 rule setup_env:
