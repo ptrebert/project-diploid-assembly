@@ -304,11 +304,11 @@ rule compute_flye_nonhapres_assembly:
             'cp {output.assm_source} {output.assembly}'
 
 
-rule write_peregrine_nonhapres_fofn:
+rule write_peregrine_input_fofn:
     input:
-        'input/fastq/complete/{sample}.fastq.gz'
+        '{folder_path}/{file_name}.fastq.gz'
     output:
-        'input/fastq/complete/{sample}.fofn'
+        '{folder_path}/{file_name}.input.peregrine'
     params:
         mount_point = '/wd'
     run:
@@ -331,7 +331,7 @@ rule compute_peregrine_nonhapres_assembly:
     """
     input:
         container = 'output/container/docker/cschin/peregrine_{}.sif'.format(config['peregrine_version']),
-        fofn = 'input/fastq/complete/{sample}.fofn'
+        fofn = 'input/fastq/complete/{sample}.input.peregrine'
     output:
         dir_seqdb = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/0-seqdb'),
         dir_index = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/1-index'),
@@ -601,18 +601,6 @@ rule compute_flye_haploid_split_assembly:
             'cp {output.assm_source} {output.assembly}'
 
 
-rule write_peregrine_haploid_split_fofn:
-    input:
-        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
-    output:
-        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fofn',
-    params:
-        mount_point = '/wd'
-    run:
-        with open(output[0], 'w') as fofn:
-            _ = fofn.write(params.mount_point + '/' + input[0])
-
-
 rule compute_peregrine_haploid_split_assembly:
     """
     Why this construct: (yes yes || true)
@@ -628,7 +616,7 @@ rule compute_peregrine_haploid_split_assembly:
     """
     input:
         container = 'output/container/docker/cschin/peregrine_{}.sif'.format(config['peregrine_version']),
-        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fofn',
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.input.peregrine',
     output:
         dir_seqdb = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/0-seqdb'),
         dir_index = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/peregrine/{hap_reads}.{hap}.{sequence}/1-index'),
