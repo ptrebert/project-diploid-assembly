@@ -7,7 +7,7 @@ keep-going: True
 rerun-incomplete: True
 restart-times: 0
 use-conda: True
-use-envmodules: False
+#use-envmodules: False
 nolock: True
 resources:
   mem_total_mb=1520432
