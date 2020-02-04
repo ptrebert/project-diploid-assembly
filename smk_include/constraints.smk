@@ -103,6 +103,6 @@ CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES = build_input_data_wildcard_constrai
     input_type='strandseq',
     readset_selectors={
         'source_type': ['ena'],
-        'library_fraction': ['two'],
+        'library_fractions': ['two'],
     }
 )
