@@ -133,7 +133,7 @@ def load_shasta_minreadlength(stats_file, target_cov):
 
 rule derive_shasta_parameter_preset:
     input:
-        '{folder_path}/{file_name}.fasta',
+        '{folder_path}/{file_name}.fastq',
         '{folder_path}/{file_name}.stats'
     output:
         '{folder_path}/{file_name}.preset.shasta'
@@ -344,8 +344,8 @@ rule compute_peregrine_nonhapres_assembly:
         copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
     benchmark:
         'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-pereg.t{}.rsrc'.format(config['num_cpu_high'])
-    #envmodules:
-    #    config['env_module_singularity']
+    envmodules:
+        config['env_module_singularity']
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(110592 if attempt <= 1 else 172032 / config['num_cpu_high']),
@@ -354,15 +354,12 @@ rule compute_peregrine_nonhapres_assembly:
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
-        singularity_module = config['env_module_singularity']
     shell:
-#        'module load {params.singularity_module} ; '
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy} ; '
-#        'module unload {params.singularity_module}'
+            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
 
 
 rule compute_shasta_nonhapres_assembly:
@@ -373,8 +370,8 @@ rule compute_shasta_nonhapres_assembly:
     """
     input:
         shasta_exec = 'output/check_files/environment/shasta_version.ok',
-        fasta = 'input/fasta/complete/{sample}.fasta',
-        config = 'input/fasta/complete/{sample}.preset.shasta'
+        fasta = 'input/fastq/complete/{sample}.fastq',
+        config = 'input/fastq/complete/{sample}.preset.shasta'
     output:
         assm_files = expand('output/reference_assembly/non-hap-res/layout/shasta/{{sample}}/Assembly{assm_files}',
                             assm_files=['-BothStrands.gfa', '.gfa', 'GraphChainLengthHistogram.csv',
@@ -629,8 +626,8 @@ rule compute_peregrine_haploid_split_assembly:
         copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
-    #envmodules:
-    #    config['env_module_singularity']
+    envmodules:
+        config['env_module_singularity']
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
@@ -639,15 +636,12 @@ rule compute_peregrine_haploid_split_assembly:
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
-        singularity_module = config['env_module_singularity']
     shell:
-#        'module load {params.singularity_module} ; '
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy} ; '
-#        'module unload {params.singularity_module}'
+            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
 
 
 rule compute_shasta_haploid_split_assembly:
@@ -657,8 +651,8 @@ rule compute_shasta_haploid_split_assembly:
     """
     input:
         shasta_exec = 'output/check_files/environment/shasta_version.ok',
-        fasta = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta',
-        config = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.preset.shasta',
+        fasta = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq',
+        config = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.preset.shasta',
     output:
         assm_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/temp/layout/shasta/{{hap_reads}}.{{hap}}.{{sequence}}/Assembly{assm_files}',
                             assm_files=['-BothStrands.gfa', '.gfa', 'GraphChainLengthHistogram.csv',

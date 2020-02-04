@@ -291,7 +291,8 @@ def define_file_targets(wildcards):
         raise ke
 
     # make a copy here to have global settings for potential debugging output
-    target_values = dict(CONFIG_TARGETS_GLOBAL_SETTINGS)
+    global_settings = dict(CONFIG_TARGETS_GLOBAL_SETTINGS)
+    target_settings = dict(global_settings)
     readset_annotation = annotate_readset_data_types(sample_desc)
 
     file_targets = []
@@ -310,21 +311,22 @@ def define_file_targets(wildcards):
             continue
         elif 'defaults' in target_specification:
             target_spec = target_specification['defaults']
-            target_values.update(target_spec)
+            target_settings = dict(global_settings)
+            target_settings.update(target_spec)
         else:
             # Copy dict with default values for each target spec.
             # Note that target specs are processed in order,
             # so switching to other defaults for a second set of
             # target specs is possible
             target_spec = target_specification['target']
-            tmp = dict(target_values)
+            tmp = dict(target_settings)
             tmp.update(target_spec)
 
             if not check_target_modifier_match(tmp,
                     CONFIG_TARGETS_SELECTED_KEYS,
                     CONFIG_TARGETS_SELECTED_VALUES,
                     True):
-                sys.stderr.write('\nWARNING: not keeping target spec: {}\n'.format(target_spec))
+                sys.stderr.write('\nWARNING: discarding target spec: {}\n'.format(target_spec))
                 continue
 
             if check_target_modifier_match(tmp,
@@ -352,8 +354,9 @@ def define_file_targets(wildcards):
                 try:
                     complete_targets = expand(target_path, **tmp)
                 except (KeyError, WildcardError) as error:
-                        raise ValueError('Missing parameter values for target {}: '
-                                         '(known: {}) - {}'.format(target_name, tmp, str(error)))
+                        sys.stderr.write('\nMissing parameter values for target {}: '
+                                         '(known: {}) - {} [Skipping]\n'.format(target_name, tmp, str(error)))
+                        continue
                 else:
                     for entry in complete_targets:
                         assert len(entry) > 1, 'Define file targets: looks like iterating over ' \

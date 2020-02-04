@@ -1,5 +1,7 @@
 
-localrules: master_prepare_custom_references
+localrules: master_prepare_custom_references,
+            write_saarclust_config_file,
+            write_reference_fasta_clusters_fofn
 
 
 rule master_prepare_custom_references:
@@ -45,6 +47,8 @@ rule write_strandseq_merge_fofn:
         bams = collect_strandseq_merge_files
     output:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
+    wildcard_constraints:
+        sts_reads = CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES
     run:
         import os
         validate_checkpoint_output(input.bams)
@@ -75,6 +79,8 @@ rule merge_mono_dinucleotide_fraction:
         'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
     benchmark:
         'run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
+    wildcard_constraints:
+        sts_reads = CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -168,6 +174,9 @@ rule write_saarclust_config_file:
             'remove.always.WC = TRUE',
             'mask.regions = FALSE'
         ]
+
+        if int(config['git_commit_version']) > 7:
+            config_rows.append('desired.num.clusters = 24')
 
         with open(output.cfg, 'w') as dump:
             _ = dump.write('\n'.join(config_rows) + '\n')

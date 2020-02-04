@@ -1,5 +1,8 @@
 
-localrules: master_integrative_phasing
+localrules: master_integrative_phasing,
+            write_breakpointr_config_file,
+            write_strandphaser_config_file,
+            write_phased_vcf_splits_fofn
 
 
 PATH_INTEGRATIVE_PHASING = '{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}'

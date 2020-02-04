@@ -1,5 +1,8 @@
 
-localrules: master_preprocess_input
+localrules: master_preprocess_input,
+            write_fastq_input_parts_fofn,
+            write_bam_input_parts_fofn,
+            merge_strandseq_libraries
 
 
 rule master_preprocess_input:
@@ -120,6 +123,26 @@ rule merge_pacbio_native_bams:
     shell:
         'bamtools merge {params.bam_parts} -out {output}'
 
+
+rule chs_child_filter_to_100x:
+    """
+    This one sample has ~200x coverage, and cannot be processed by flye
+    Hard-code for now as this is not required for any other input sample
+    """
+    input:
+        'input/bam/complete/HG00514_hgsvc_pbsq2-clr_1000.pbn.bam'
+    output:
+        'input/bam/complete/HG00514_hgsvc_pbsq2-clr_0526.pbn.bam'
+    log:
+        'log/input/bam/complete/HG00514_hgsvc_pbsq2-clr_0526.sampling.log'
+    benchmark:
+        'run/input/bam/complete/HG00514_hgsvc_pbsq2-clr_0526.sampling.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    shell:
+        'bamtools filter -length ">=30000" -in {input} -out {output} &> {log}'
 
 
 def collect_strandseq_libraries(wildcards):

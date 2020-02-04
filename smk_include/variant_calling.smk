@@ -1,5 +1,7 @@
 
-localrules: master_variant_calling
+localrules: master_variant_calling,
+            write_intermediate_vcf_splits,
+            write_final_vcf_splits
 
 
 rule master_variant_calling:
@@ -226,8 +228,8 @@ rule call_variants_deepvariant:
         'log/output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
         'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
-    #envmodules:
-    #    config['env_module_singularity']
+    envmodules:
+        config['env_module_singularity']
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + 8192 * attempt) / config['num_cpu_high']),
@@ -236,15 +238,12 @@ rule call_variants_deepvariant:
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sts_reads, wildcards.vc_reads, wildcards.sequence),
-        singularity_module = config['env_module_singularity']
     shell:
-#        'module load {params.singularity_module} ; '
         'singularity run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant '
             ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} '
             ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} '
             ' --novcf_stats_report --intermediate_results_dir="{params.temp_dir}" --num_shards={threads} &> {log} ; '
         'rm -rfd {params.temp_dir} ; '
-#        'module unload {params.singularity_module}'
 
 
 rule filter_variant_calls_quality_biallelic_snps:

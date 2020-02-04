@@ -10,6 +10,22 @@ rule compute_md5_checksum:
         "md5sum {input} > {output}"
 
 
+rule gunzip_fastq_copy:
+    """
+    exists only for Shasta input
+    """
+    input:
+        '{filepath}.fastq.gz'
+    output:
+        '{filepath}.fastq'
+    conda:
+         '../environment/conda/conda_shelltools.yml'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 12 * attempt
+    shell:
+        "gzip -dc {input} > {output}"
+
+
 rule samtools_index_bam_alignment:
     input:
         bam = '{filepath}'
@@ -228,16 +244,13 @@ rule singularity_pull_container:
         'output/container/{hub}/{repo}/{tool}_{version}.sif'
     log:
         'log/output/container/{hub}/{repo}/{tool}_{version}.pull.log'
-    #envmodules:
-       #    config['env_module_singularity']
+    envmodules:
+        config['env_module_singularity']
     params:
         pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo),
-        singularity_module = config['env_module_singularity']
     shell:
-#        'module load {params.singularity_module} ; '
         'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull '
-            '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log} ; '
-#        'module unload {params.singularity_module}'
+            '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
 
 
 def collect_strandseq_alignments(wildcards):

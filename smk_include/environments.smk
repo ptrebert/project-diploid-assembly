@@ -108,9 +108,8 @@ rule inspect_hpc_module_singularity:
         'log/output/check_files/environment/module_singularity.log'
     params:
         script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities'),
-        singularity_module = config['env_module_singularity']
-    #envmodules:
-    #    config['env_module_singularity']
+    envmodules:
+        config['env_module_singularity']
     shell:
          '{params.script_exec} '
          '--outfile {output} --logfile {log}'
@@ -123,8 +122,8 @@ rule check_singularity_version:
         'output/check_files/environment/singularity_version.ok'
     log:
         'log/output/check_files/environment/singularity_version.log'
-    #envmodules:
-    #    config['env_module_singularity']
+    envmodules:
+        config['env_module_singularity']
     params:
         script_exec = lambda wildcards: find_script_path('version_checker.py', 'utilities'),
         min_version = '3.1.0',  # due to container format change between v2 and v3
