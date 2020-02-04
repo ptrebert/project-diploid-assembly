@@ -4,7 +4,7 @@
 # and StrandPhaseR setup
 git_commit_saarclust: c0eb57f
 git_commit_strandphaser: e608407
-git_commit_breakpointr: 8fcac82
+git_commit_breakpointr: 268d99d
 # arbitrarily tying a version number
 # to the git commits to avoid additional
 # wildcards - increment this number when
@@ -13,7 +13,7 @@ git_commit_version: 8
 
 peregrine_version: 0.1.5.5
 deepvariant_version: 0.9.0
-shasta_version: 0.3.0
+shasta_version: 0.4.0
 
 # Assembler settings
 shasta_target_coverage: 60  # tech-independent recommendation: cov between 40x and 80x
