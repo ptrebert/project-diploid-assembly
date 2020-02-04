@@ -15,6 +15,7 @@ keep-going: True
 rerun-incomplete: True
 restart-times: 1
 use-conda: True
+use-envmodules: False
 nolock: True
 max-status-checks-per-second: 0.01
 default-resources:
