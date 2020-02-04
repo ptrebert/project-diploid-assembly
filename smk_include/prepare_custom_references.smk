@@ -154,7 +154,7 @@ rule write_saarclust_config_file:
     run:
         import os
 
-        validate_checkpoint_output(input.bams)
+        validate_checkpoint_output(input.bam)
 
         outfolder = os.path.dirname(input.bam[0])
 
