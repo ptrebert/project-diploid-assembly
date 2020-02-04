@@ -6,6 +6,6 @@ dependencies:
   - Python=3.6.*
   - pip=19.2.3
   - openssl=1.0.2t
-  - Snakemake=5.8.2
+  - Snakemake=5.10.0
   - drmaa=0.7.9
   - pyyaml=5.3
