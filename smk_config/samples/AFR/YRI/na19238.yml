@@ -21,6 +21,7 @@ sample_description_NA19238:
         readset: &sts_reads NA19238_1kg_il25k-npe_sseq
         source_type: ena
         bioproject: PRJEB12849
+        library_fractions: two
     - short_reads:
         readset: &short_reads NA19238_1kg_il25k-125pe_short
         source_type: ena

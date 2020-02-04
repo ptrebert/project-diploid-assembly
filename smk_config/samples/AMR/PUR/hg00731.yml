@@ -21,6 +21,7 @@ sample_description_HG00731:
         readset: &sts_reads HG00731_1kg_il25k-npe_sseq
         source_type: ena
         bioproject: PRJEB12849
+        library_fractions: two
     - short_reads:
         readset: &short_reads HG00731_1kg_il25k-125pe_short
         source_type: ena
