@@ -43,6 +43,14 @@ def collect_strandseq_merge_files(wildcards):
 
 
 rule write_strandseq_merge_fofn:
+    """
+    2020-02-05
+    Since this has to be executed once per merge pair,
+    I don't want to make this a local rule executed on the submit node
+    (presumably fixing github issue #216). However, the validate_checkpoint_output
+    function indeed fails; apparently, issue #55 is still unfixed in 5.10.0
+    So, implement the checkpoint functionality manually for this one... awesome
+    """
     input:
         bams = collect_strandseq_merge_files
     output:
@@ -51,13 +59,22 @@ rule write_strandseq_merge_fofn:
         sts_reads = CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES
     run:
         import os
-        validate_checkpoint_output(input.bams)
-        if len(input.bams) != 2:
-            raise RuntimeError('Missing merge partner for strand-seq BAM files: '
-                               '{}'.format(output.fofn))
+        pattern = '[empty]'
+        try:
+            validate_checkpoint_output(input.bams)
+            bam_files = input.bams
+        except RuntimeError:
+            # this means validate failed
+            import glob
+            pattern = output.fofn.replace('-npe', '-*').replace('.fofn', '_*.filt.sam.bam')
+            bam_files = set(glob.glob(pattern))  # make fail if glob pattern is wrong
+
+        if len(bam_files) != 2:
+            raise RuntimeError('Missing merge partner for strand-seq BAM files {} / {}: '
+                               '{}'.format(output.fofn, pattern, bam_files))
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(input.bams):
+            for file_path in sorted(bam_files):
                 if not os.path.isfile(file_path):
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
