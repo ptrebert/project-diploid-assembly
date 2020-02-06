@@ -1,4 +1,7 @@
 
+import os
+import sys
+
 localrules: master_scrape_data_sources
 
 
@@ -7,16 +10,13 @@ def read_configured_data_sources():
     :return:
     """
 
-    COMMAND_SCAN_PATH_CALL = '{{params.script_exec}} --debug --output {{output}} '
+    COMMAND_SCAN_PATH_CALL = '{{script_exec}} --debug --output {{output}} '
     COMMAND_SCAN_PATH_CALL += '--server {server} --data-source {data_source} '
     COMMAND_SCAN_PATH_CALL += '--collect-files {collect_files} --sort-into {sort_into} '
     COMMAND_SCAN_PATH_CALL += '--file-infix {file_infix} {file_suffix} '
     COMMAND_SCAN_PATH_CALL += '{local_path_suffix} {fix_tech} '
     COMMAND_SCAN_PATH_CALL += '{assume_pacbio_native} {assume_clr_subreads} {assume_paired_reads} '
     COMMAND_SCAN_PATH_CALL += '&> {{log}}'
-
-    import os
-    import sys
 
     default_parameters = {
         'file_suffix': '',
@@ -26,6 +26,8 @@ def read_configured_data_sources():
         'assume_clr_subreads': '',
         'assume_paired_reads': ''
     }
+
+    script_path = find_script_path('scan_remote_path.py')
 
     source_names = []
     source_outputs = []
@@ -70,6 +72,10 @@ def read_configured_data_sources():
         else:
             source_names.append(source_name)
             source_outputs.append(data_source_output)
+            log_file = os.path.join('log', data_source_output.replace('.json', '.log'))
+            source_call = source_call.format(**{'script_exec': script_path,
+                                                'output': data_source_output,
+                                                'log': log_file})
             source_syscalls.append(source_call)
 
     if len(source_outputs) != len(set(source_outputs)):
@@ -79,10 +85,16 @@ def read_configured_data_sources():
     if not source_names:
         sys.stderr.write('\nWARNING: no data sources configured\n')
 
+    if not len(source_names) == len(source_outputs) == len(source_syscalls):
+        raise RuntimeError('Length mismatch for data sources: \n'
+                           ' => {} \n => {} \n => {}'.format(source_names, source_outputs, source_syscalls))
+
     return source_names, source_outputs, source_syscalls
 
 
 DATA_SOURCE_NAMES, DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS = read_configured_data_sources()
+
+MAP_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 1)[0], call) for source, call in zip(DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS))
 
 
 rule master_scrape_data_sources:
@@ -90,16 +102,22 @@ rule master_scrape_data_sources:
         DATA_SOURCE_OUTPUTS
 
 
-for name, outfile, syscall in zip(DATA_SOURCE_NAMES, DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS):
-    rule:
-        output:
-            outfile
-        log:
-            os.path.join('log', outfile.replace('.json', '.log'))
-        message: 'Processing data source: {}'.format(name)
-        conda:
-            '../environment/conda/conda_pyscript.yml'
-        params:
-            script_exec = lambda wildcards: find_script_path('scan_remote_path.py')
-        shell:
-            syscall
+rule scrape_data_source:
+    """
+    2020-02-06
+    This was originally an anon rule iterating through the above lists.
+    This worked locally, but resulted in wrong system calls matched to certain
+    output file names in a cluster environment (maybe an issue with the job
+    submission script for anon rules?). Don't wait for snakemake fix, work around...
+    """
+    output:
+        'input/data_sources/{data_source}.json'
+    log:
+        'log/input/data_sources/{data_source}.log'
+    message: 'Processing data source: {output}'
+    conda:
+        '../environment/conda/conda_pyscript.yml'
+    params:
+        scrape_call = lambda wildcards: MAP_SOURCE_TO_CALL[wildcards.data_source]
+    shell:
+        '{params.scrape_call}'
