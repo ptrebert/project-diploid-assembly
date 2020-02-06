@@ -5,7 +5,9 @@ localrules: run_sas_trios,
             run_itu_mother,
             run_itu_child,
             run_stu_trio,
-            run_stu_child
+            run_stu_child,
+            run_pjl_trio,
+            run_pjl_child
 
 
 rule run_hg03009_individual:
@@ -45,9 +47,22 @@ rule run_stu_trio:
 
 #########################################################
 
+rule run_pjl_child:
+    input:
+        'output/targets/SAS_PJL_PK06/HG02492.fofn'
+    message: 'Running SAS-PJL-PK06 child'
+
+rule run_pjl_trio:
+    input:
+        rules.run_pjl_child.input
+    message: 'Running SAS-PJL-PK06 trio'
+
+#########################################################
+
 rule run_sas_trios:
     input:
         rules.run_hg03009_individual.input,
         rules.run_itu_trio.input,
-        rules.run_stu_trio.input
+        rules.run_stu_trio.input,
+        rules.run_pjl_trio.input
     message: 'Running SAS trios'
