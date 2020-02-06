@@ -181,9 +181,11 @@ rule install_rlib_saarclust:
 
 if int(config['git_commit_version']) < 8:
     INSTALL_BREAKPOINTR_OUTPUT = 'output/check_files/R_setup/breakpointr.ok'
+    INSTALL_BREAKPOINTR_LOGFILE = 'log/output/check_files/R_setup/breakpointr.log'
     BREAKPOINTR_VERSION = -1
 else:
     INSTALL_BREAKPOINTR_OUTPUT = 'output/check_files/R_setup/breakpointr_ver-{}.ok'.format(config['git_commit_breakpointr'])
+    INSTALL_BREAKPOINTR_LOGFILE = 'log/output/check_files/R_setup/breakpointr_ver-{}.ok'.format(config['git_commit_breakpointr'])
     BREAKPOINTR_VERSION = config['git_commit_breakpointr']
 
 
@@ -193,7 +195,7 @@ rule install_rlib_breakpointr:
     output:
          check = touch(INSTALL_BREAKPOINTR_OUTPUT)
     log:
-        'log/output/check_files/R_setup/breakpointr.log'
+        INSTALL_BREAKPOINTR_LOGFILE
     conda:
         '../environment/conda/conda_rscript.yml'
     resources:
