@@ -13,6 +13,10 @@ sample_description_HG00733:
         load_type: parts
         source_type: ftp
     - long_reads:
+        readset: HG00733_hgsvc_pbsq2-clr
+        data_type: pacbio_native
+        load_type: parts
+    - long_reads:
         readset: HG00733_sra_pbsq1-clr
         data_type: pacbio_native
         load_type: parts
@@ -59,6 +63,22 @@ sample_targets_HG00733:
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: freebayes
+  - defaults:
+      hap_reads: *clr_hgsvc
+      vc_reads: *clr_hgsvc
+      sts_reads: *sts_reads
+      pol_reads: *clr_hgsvc
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
   - defaults:
       hap_reads: *clr_sra
       vc_reads: *clr_sra

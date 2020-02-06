@@ -45,8 +45,9 @@ rule handle_raw_fasta_reference_download_request:
     threads: 2
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else ''
     shell:
-        '{params.script_exec} --debug '
+        '{params.script_exec} --debug {params.force_copy} '
         '--request-file {input} --output {output} '
         '--parallel-conn 1 &> {log}'
 
@@ -63,7 +64,8 @@ rule handle_gff_reference_download_request:
     threads: 2
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else ''
     shell:
-         '{params.script_exec} --debug '
+         '{params.script_exec} --debug {params.force_copy} '
          '--request-file {input} --output {output} '
          '--parallel-conn 1 &> {log}'

@@ -12,7 +12,7 @@ import collections as col
 import ftplib as ftplib
 
 
-CCS_TECH_KEYWORDS = ['ccs', 'q20']
+CCS_TECH_KEYWORDS = ['ccs', 'q20', 'hifi']
 CLR_TECH_KEYWORDS = ['clr']
 
 
@@ -34,17 +34,17 @@ def parse_command_line():
         "--server",
         "-srv",
         type=str,
-        default="ftp.1000genomes.ebi.ac.uk",
+        required=True,
         dest="server",
-        help="Remote server URL. Default: ftp.1000genomes.ebi.ac.uk",
+        help="Remote server URL or localhost",
     )
     parser.add_argument(
-        "--ftp-path",
-        "-fp",
+        "--data-source",
+        "-ds",
         type=str,
         required=True,
-        dest="ftp_path",
-        help="Folder on FTP server to scan for input",
+        dest="data_source",
+        help="Folder on server to scan for input",
     )
     parser.add_argument(
         "--collect-files",
@@ -55,11 +55,11 @@ def parse_command_line():
         help="Specify file extensions to collect from remote path."
     )
     parser.add_argument(
-        "--sort-files",
-        "-sf",
+        "--sort-into",
+        "-si",
         type=str,
         nargs='+',
-        dest="sort_files",
+        dest="sort_into",
         help="For each file extension, specify the local path prefix for the file."
     )
     parser.add_argument(
@@ -255,9 +255,12 @@ def annotate_remote_files(remote_files, cargs, logger):
         logger.debug('Accepted file: {}'.format(name))
         local_path = None
         file_ext = None
-        for lp, ext in zip(cargs.sort_files, cargs.collect_files):
+        for lp, ext in zip(cargs.sort_into, cargs.collect_files):
             if name.endswith(ext):
                 local_path = lp
+                if not local_path.startswith('input'):
+                    logger.debug('Prepending "input/" to local path {}'.format(local_path))
+                    local_path = os.path.join('input', local_path)
                 file_ext = ext
                 break
         if local_path is None:
@@ -404,12 +407,12 @@ def main(logger, cargs):
     :param cargs:
     :return:
     """
-    if not len(cargs.collect_files) == len(cargs.sort_files):
+    if not len(cargs.collect_files) == len(cargs.sort_into):
         raise ValueError('Need one path prefix per file extension (sort and collect files)')
 
     if cargs.server == 'localhost':
         logger.debug('Localhost specified')
-        data_files = traverse_local_path(cargs.ftp_path, logger)
+        data_files = traverse_local_path(cargs.data_source, logger)
     else:
         logger.debug("Starting remote FTP scan...")
         server = ftplib.FTP(cargs.server)
@@ -422,7 +425,7 @@ def main(logger, cargs):
         except ValueError as verr:
             logger.error('Cannot parse login response code: {}'.format(str(msg)))
             raise verr
-        data_files = traverse_remote_path(server, cargs.ftp_path, logger)
+        data_files = traverse_remote_path(server, cargs.data_source, logger)
         try:
             server.quit()
         except:

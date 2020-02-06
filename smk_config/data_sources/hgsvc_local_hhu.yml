@@ -1,0 +1,15 @@
+
+data_source_pacbio_hhu_local:
+  comment: "HGSVC local HHU-HILBERT source for Sequel2 PacBio CLR data"
+  output: 'hgsvc_local_hhu_pacbio.json'
+  server: 'localhost'
+  data_source: '/gpfs/project/ebertp/data/local_source/pacbio_clr'
+  collect_files:
+    - 'bam'
+  sort_into:
+    - 'bam/partial/parts'
+  file_infix: 'hgsvc_pbsq2-'
+  assume_pacbio_native: True
+  assume_clr_subreads: True
+
+

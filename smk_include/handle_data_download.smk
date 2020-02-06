@@ -178,8 +178,9 @@ rule handle_strandseq_download_requests:
     threads: 2
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else ''
     shell:
-        '{params.script_exec} --debug '
+        '{params.script_exec} --debug {params.force_copy} '
         '--request-file {input} --output {output} '
         '--parallel-conn 1 &> {log}'
 
@@ -203,9 +204,10 @@ rule handle_partial_fastq_download_request:
         runtime_hrs = lambda wildcards, attempt: 6 * attempt
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
         parallel_conn = config['num_cpu_low'] - 1
     shell:
-         '{params.script_exec} --debug '
+         '{params.script_exec} --debug {params.force_copy}  '
          '--request-file {input} --output {output} '
          '--parallel-conn {params.parallel_conn} &> {log}'
 
@@ -253,9 +255,10 @@ rule handle_complete_fastq_download_request:
         runtime_hrs = lambda wildcards, attempt: 6 * attempt
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
         parallel_conn = config['num_cpu_low'] - 1
     shell:
-         '{params.script_exec} --debug '
+         '{params.script_exec} --debug {params.force_copy} '
          '--request-file {input} --output {output} '
          '--parallel-conn {params.parallel_conn} &> {log}'
 
@@ -279,9 +282,10 @@ rule handle_partial_pbn_bam_download_request:
         runtime_hrs = lambda wildcards, attempt: 12 * attempt
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
         parallel_conn = config['num_cpu_low'] - 1
     shell:
-         '{params.script_exec} --debug '
+         '{params.script_exec} --debug {params.force_copy} '
          '--request-file {input} --output {output} '
          '--parallel-conn {params.parallel_conn} &> {log}'
 

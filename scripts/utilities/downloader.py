@@ -17,6 +17,8 @@ CMD_DL_UNCOMPRESSED_SINGLE = 'wget --no-verbose -O /dev/stdout {remote_path} | g
 
 CMD_COPY_LOCAL = 'cp {remote_path} {output}'
 
+CMD_SYM_LINK = 'ln -s {remote_path} {output}'
+
 
 def parse_command_line():
     """
@@ -69,6 +71,15 @@ def parse_command_line():
     )
 
     parser.add_argument(
+        "--force-local-copy",
+        "-flc",
+        action="store_true",
+        default=False,
+        dest="force_local_copy",
+        help="For files located on localhost, make a copy instead of soft linking. Default: False"
+    )
+
+    parser.add_argument(
         "--output",
         "-o",
         type=str,
@@ -97,11 +108,12 @@ def parse_command_line():
     return parser.parse_args()
 
 
-def handle_request_file_download(req_file_path, output_path, parallel_conn, logger):
+def handle_request_file_download(req_file_path, output_path, parallel_conn, force_copy, logger):
     """
     :param req_file_path:
     :param output_path:
     :param parallel_conn:
+    :param force_copy:
     :param logger:
     :return:
     """
@@ -115,16 +127,25 @@ def handle_request_file_download(req_file_path, output_path, parallel_conn, logg
         raise ValueError('Path mismatch between output and request file: {} / {}'.format(output_path, local_path))
 
     logger.debug('Creating folder hierarchy')
-    os.makedirs(os.path.dirname(os.path.abspath(local_path)), exist_ok=True)
+    local_folder = os.path.dirname(os.path.abspath(local_path))
+    os.makedirs(local_folder, exist_ok=True)
 
     if os.path.isfile(remote_path):
         logger.debug('Request file contains local resource')
-        call = CMD_COPY_LOCAL.format(
-            **{
-                'remote_path': remote_path,
-                'output': output_path
-            }
-        )
+        if force_copy:
+            selected_method = CMD_COPY_LOCAL
+        else:
+            common_prefix = os.path.commonprefix([remote_path, local_folder])
+            if common_prefix == '/':
+                logger.warning('Creating sym link between different file systems')
+            selected_method = CMD_SYM_LINK
+
+        call = selected_method.format(
+                **{
+                    'remote_path': remote_path,
+                    'output': output_path
+                })
+
     elif any([remote_path.endswith(x) for x in ['.gz', '.bam', '.bam.1']]):
         logger.debug('Downloading remote path in parallel with {} connections'.format(parallel_conn))
         call = CMD_DL_COMPRESSED_PARALLEL.format(
@@ -132,16 +153,14 @@ def handle_request_file_download(req_file_path, output_path, parallel_conn, logg
                 'remote_path': remote_path,
                 'num_conn': parallel_conn,
                 'output': output_path
-            }
-        )
+            })
     else:
         logger.debug('Downloading remote path with single process')
         call = CMD_DL_UNCOMPRESSED_SINGLE.format(
             **{
                 'remote_path': remote_path,
                 'output': output_path
-            }
-        )
+            })
 
     logger.debug('Executing system call: {}'.format(call))
 
@@ -309,6 +328,7 @@ def main(logger, cargs):
             cargs.request_file,
             cargs.output,
             cargs.parallel_conn,
+            cargs.force_local_copy,
             logger
         )
     elif cargs.ena_file_report is not None:

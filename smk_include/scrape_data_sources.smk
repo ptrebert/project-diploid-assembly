@@ -1,199 +1,105 @@
 
 localrules: master_scrape_data_sources
 
+
+def read_configured_data_sources():
+    """
+    :return:
+    """
+
+    COMMAND_SCAN_PATH_CALL = '{{params.script_exec}} --debug --output {{output}} '
+    COMMAND_SCAN_PATH_CALL += '--server {server} --data-source {data_source} '
+    COMMAND_SCAN_PATH_CALL += '--collect-files {collect_files} --sort-into {sort_into} '
+    COMMAND_SCAN_PATH_CALL += '--file-infix {file_infix} {file_suffix} '
+    COMMAND_SCAN_PATH_CALL += '{local_path_suffix} {fix_tech} '
+    COMMAND_SCAN_PATH_CALL += '{assume_pacbio_native} {assume_clr_subreads} {assume_paired_reads} '
+    COMMAND_SCAN_PATH_CALL += '&> {{log}}'
+
+    import os
+    import sys
+
+    default_parameters = {
+        'file_suffix': '',
+        'local_path_suffix': '',
+        'fix_tech': '',
+        'assume_pacbio_native': '',
+        'assume_clr_subreads': '',
+        'assume_paired_reads': ''
+    }
+
+    source_names = []
+    source_outputs = []
+    source_syscalls = []
+
+    for key, values in config.items():
+        if not key.startswith('data_source'):
+            continue
+        source_name = key.split('_', 2)[-1]
+
+        data_source_output = None
+        data_source_config = dict(default_parameters)
+
+        for parameter, setting in values.items():
+            if parameter == 'output':
+                if not setting.startswith('input/data_sources'):
+                    data_source_output = os.path.join('input/data_sources', setting)
+                else:
+                    data_source_output = setting
+            elif parameter.startswith('assume'):
+                bool_switch = ''.join(['--', parameter.replace('_', '-')])
+                if setting:
+                    data_source_config[parameter] = bool_switch
+                else:
+                    data_source_config[parameter] = ''
+            elif any([parameter.startswith(x) for x in ['name', 'comment']]):
+                source_name += ' ({})'.format(setting)
+            else:
+                if isinstance(setting, list):
+                    setting = ' '.join(setting)
+                data_source_config[parameter] = setting
+
+        if data_source_output is None:
+            sys.stderr.write('\nERROR: no output ("output: filename") file defined for data source: {}'.format(key))
+            raise ValueError('No output file defined for data source: {}'.format(key))
+
+        try:
+            source_call = COMMAND_SCAN_PATH_CALL.format(**data_source_config)
+        except KeyError as kerr:
+            sys.stderr.write('\nERROR: cannot parse data source specification: {} / {}\n'.format(key, values))
+            raise kerr
+        else:
+            source_names.append(source_name)
+            source_outputs.append(data_source_output)
+            source_syscalls.append(source_call)
+
+    if len(source_outputs) != len(set(source_outputs)):
+        sys.stderr.write('\nERROR: at least two data sources specify the same output file: {}\n'.format(sorted(source_outputs)))
+        raise ValueError('Duplicate data source output file.')
+
+    if not source_names:
+        sys.stderr.write('\nWARNING: no data sources configured\n')
+
+    return source_names, source_outputs, source_syscalls
+
+
+DATA_SOURCE_NAMES, DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS = read_configured_data_sources()
+
+
 rule master_scrape_data_sources:
     input:
-        'input/data_sources/hgsvc_HG00514_pacbio.json',
-        'input/data_sources/hgsvc_HG00512_pacbio.json',
-        'input/data_sources/hgsvc_HG00513_pacbio.json',
-        'input/data_sources/hgsvc_pur-trio_pacbio.json',
-        'input/data_sources/hgsvc_NA19240_pacbio.json',
-        'input/data_sources/hgsvc_NA19239_pacbio.json',
-        'input/data_sources/hgsvc_NA19238_pacbio.json',
-        'input/data_sources/hgsvc_JAX_pacbio.json',
+        DATA_SOURCE_OUTPUTS
 
 
-rule collect_remote_hgsvc_HG00514_pacbio:
-    output:
-        'input/data_sources/hgsvc_HG00514_pacbio.json'
-    params:
-        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20190508_HG00514_PacBioSequel2/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        clr_subreads = ' --assume-clr-subreads',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_chs_HG00514_pacbio.log'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    shell:
-        '{params.script_exec} --debug '
-            ' --server {params.server} --ftp-path {params.remote_path} '
-            ' --collect-files {params.collect} --sort-files {params.sort} '
-            ' {params.bam_format} {params.clr_subreads} --file-infix {params.file_infix}'
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_HG00512_pacbio:
-    output:
-        'input/data_sources/hgsvc_HG00512_pacbio.json'
-    params:
-        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191031_CHS_PacBio_HG00512_HiFi/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_chs_HG00512_pacbio.log'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    shell:
-        '{params.script_exec} --debug '
-            ' --server {params.server} --ftp-path {params.remote_path} '
-            ' --collect-files {params.collect} --sort-files {params.sort} '
-            ' {params.bam_format} --file-infix {params.file_infix}'
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_HG00513_pacbio:
-    output:
-        'input/data_sources/hgsvc_HG00513_pacbio.json'
-    params:
-        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191031_CHS_PacBio_HG00513_HiFi/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_chs_HG00513_pacbio.log'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    shell:
-        '{params.script_exec} --debug '
-            ' --server {params.server} --ftp-path {params.remote_path} '
-            ' --collect-files {params.collect} --sort-files {params.sort} '
-            ' {params.bam_format} --file-infix {params.file_infix}'
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_pur_trio_pacbio:
-    output:
-        'input/data_sources/hgsvc_pur-trio_pacbio.json'
-    params:
-        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20190925_PUR_PacBio_HiFi/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_pur-trio_pacbio.log'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    shell:
-        '{params.script_exec} --debug '
-            ' --server {params.server} --ftp-path {params.remote_path} '
-            ' --collect-files {params.collect} --sort-files {params.sort} '
-            ' {params.bam_format} --file-infix {params.file_infix}'
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_NA19240_pacbio:
-    output:
-        'input/data_sources/hgsvc_NA19240_pacbio.json'
-    params:
-        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191005_YRI_PacBio_NA19240_HiFi/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_yri_NA19240_pacbio.log'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    shell:
-        '{params.script_exec} --debug '
-            ' --server {params.server} --ftp-path {params.remote_path} '
-            ' --collect-files {params.collect} --sort-files {params.sort} '
-            ' {params.bam_format} --file-infix {params.file_infix}'
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_NA19238_pacbio:
-    output:
-        'input/data_sources/hgsvc_NA19238_pacbio.json'
-    params:
-        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191205_YRI_PacBio_NA19238_HIFI/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_yri_NA19238_pacbio.log'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    shell:
-        '{params.script_exec} --debug '
-            ' --server {params.server} --ftp-path {params.remote_path} '
-            ' --collect-files {params.collect} --sort-files {params.sort} '
-            ' {params.bam_format} --file-infix {params.file_infix}'
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_NA19239_pacbio:
-    output:
-        'input/data_sources/hgsvc_NA19239_pacbio.json'
-    params:
-        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20191205_YRI_PacBio_NA19239_HIFI/',
-        collect = ' fastq.gz bam ',
-        sort = ' input/fastq/partial/parts input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_yri_NA19239_pacbio.log'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    shell:
-        '{params.script_exec} --debug '
-            ' --server {params.server} --ftp-path {params.remote_path} '
-            ' --collect-files {params.collect} --sort-files {params.sort} '
-            ' {params.bam_format} --file-infix {params.file_infix}'
-            ' --output {output} &> {log}'
-
-
-rule collect_remote_hgsvc_jax_pacbio:
-    output:
-        'input/data_sources/hgsvc_JAX_pacbio.json'
-    params:
-        script_exec = lambda wildcards: find_script_path('scan_remote_path.py'),
-        server = 'ftp.1000genomes.ebi.ac.uk',
-        remote_path = 'vol1/ftp/data_collections/HGSVC2/working/20200108_PacBio_CLR_JAX/',
-        collect = ' bam ',
-        sort = ' input/bam/partial/parts ',
-        bam_format = ' --assume-pacbio-native ',
-        clr_subreads = ' --assume-clr-subreads',
-        file_infix = ' hgsvc_pbsq2- '
-    log:
-        'log/input/data_sources/hgsvc_JAX_pacbio.log'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    shell:
-        '{params.script_exec} --debug '
-            ' --server {params.server} --ftp-path {params.remote_path} '
-            ' --collect-files {params.collect} --sort-files {params.sort} '
-            ' {params.bam_format} {params.clr_subreads} --file-infix {params.file_infix}'
-            ' --output {output} &> {log}'
+for name, outfile, syscall in zip(DATA_SOURCE_NAMES, DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS):
+    rule:
+        output:
+            outfile
+        log:
+            os.path.join('log', outfile.replace('.json', '.log'))
+        message: 'Processing data source: {}'.format(name)
+        conda:
+            '../environment/conda/conda_pyscript.yml'
+        params:
+            script_exec = lambda wildcards: find_script_path('scan_remote_path.py')
+        shell:
+            syscall
