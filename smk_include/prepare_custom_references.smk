@@ -59,14 +59,21 @@ rule write_strandseq_merge_fofn:
         sts_reads = CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES
     run:
         import os
+        import sys
         pattern = '[empty]'
         try:
             validate_checkpoint_output(input.bams)
             bam_files = input.bams
-        except RuntimeError:
+        except RuntimeError as rterr:
             # this means validate failed
+            sys.stderr.write('\nWARNING: checkpoint evaluation failed ({}) - '
+                             'making manual attempt of collecting files...\n'.format(str(rterr)))
             import glob
-            pattern = output.fofn.replace('-npe', '-*').replace('.fofn', '_*.filt.sam.bam')
+            out_folder, out_file = os.path.split(output.fofn)
+            # adapt folder and file name - see collect_strandseq_merge_files
+            out_folder = out_folder.replace('/mrg', '/aln')
+            out_file = out_file.replace('-npe', '-*').replace('.fofn', '_*.filt.sam.bam')
+            pattern = os.path.join(out_folder, out_file)
             bam_files = set(glob.glob(pattern))  # make fail if glob pattern is wrong
 
         if len(bam_files) != 2:
@@ -76,7 +83,6 @@ rule write_strandseq_merge_fofn:
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(bam_files):
                 if not os.path.isfile(file_path):
-                    import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
 
