@@ -348,8 +348,8 @@ rule compute_peregrine_nonhapres_assembly:
         config['env_module_singularity']
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(110592 if attempt <= 1 else 172032 / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 172032,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((499712 if attempt <= 1 else 749568 * (attempt - 1)) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 499712 if attempt <= 1 else 749568 * (attempt - 1),
         runtime_hrs = lambda wildcards, attempt: 35 if attempt <= 1 else 24 * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
@@ -630,8 +630,8 @@ rule compute_peregrine_haploid_split_assembly:
         config['env_module_singularity']
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416 * (attempt - 1)) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416 * (attempt - 1),
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
