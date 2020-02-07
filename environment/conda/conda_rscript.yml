@@ -1,4 +1,4 @@
-name: rtools
+name: rscript
 channels:
   - conda-forge
   - bioconda
