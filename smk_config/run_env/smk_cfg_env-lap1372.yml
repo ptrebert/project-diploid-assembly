@@ -2,7 +2,7 @@
 notify: False
 notify_email: ebertp@hhu.de
 
-env_module_singularity: None
+env_module_singularity: False
 
 num_cpu_max: 4
 num_cpu_high: 3
