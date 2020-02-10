@@ -177,7 +177,12 @@ rule write_saarclust_config_file:
     run:
         import os
 
-        validate_checkpoint_output(input.bam)
+        try:
+            validate_checkpoint_output(input.bam)
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            _ = collect_strandseq_alignments(wildcards, glob_collect=True)
 
         outfolder = os.path.dirname(input.bam[0])
 

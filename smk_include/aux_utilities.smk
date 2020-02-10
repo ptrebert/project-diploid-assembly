@@ -248,34 +248,51 @@ rule singularity_pull_container:
         config['env_module_singularity']
     params:
         pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo),
-        singularity = config['env_module_singularity']
+        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
-        'module load {params.singularity} ; '
+        '{params.singularity}'
         'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull '
             '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
 
 
-def collect_strandseq_alignments(wildcards):
+def collect_strandseq_alignments(wildcards, glob_collect=False):
     """
     """
+    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}'
+
     individual, project, platform_spec = wildcards.sts_reads.split('_')[:3]
     platform, spec = platform_spec.split('-')
 
-    requests_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
+    if glob_collect:
+        import glob
+        source_path = source_path.replace('{ext}', '*')
+        source_path = source_path.replace('{lib_id}', '*')
+        pattern = source_path.format(**{'reference': wildcards.reference,
+                                        'sts_reads': wildcards.sts_reads,
+                                        'individual': individual,
+                                        'project': project,
+                                        'platform': platform})
+        bam_files = glob.glob(pattern)
+        if not bam_files:
+            raise RuntimeError('collect_strandseq_alignments: no files collected with pattern {}'.format(pattern))
 
-    search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_{run_id}_1.request')
+    else:
+        requests_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
 
-    checkpoint_wildcards = glob_wildcards(search_path)
+        search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_{run_id}_1.request')
 
-    bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}',
-        reference=wildcards.reference,
-        individual=individual,
-        sts_reads=wildcards.sts_reads,
-        project=project,
-        platform=platform,
-        lib_id=checkpoint_wildcards.lib_id,
-        ext=['', '.bai'])
+        checkpoint_wildcards = glob_wildcards(search_path)
+
+        bam_files = expand(
+            source_path,
+            reference=wildcards.reference,
+            individual=individual,
+            sts_reads=wildcards.sts_reads,
+            project=project,
+            platform=platform,
+            lib_id=checkpoint_wildcards.lib_id,
+            ext=['', '.bai'])
+
     return sorted(bam_files)
 
 
