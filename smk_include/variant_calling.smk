@@ -238,7 +238,9 @@ rule call_variants_deepvariant:
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sts_reads, wildcards.vc_reads, wildcards.sequence),
+        singularity = config['env_module_singularity']
     shell:
+        'module load {params.singularity} ; '
         'singularity run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant '
             ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} '
             ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} '

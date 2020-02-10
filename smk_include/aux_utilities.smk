@@ -248,7 +248,9 @@ rule singularity_pull_container:
         config['env_module_singularity']
     params:
         pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo),
+        singularity = config['env_module_singularity']
     shell:
+        'module load {params.singularity} ; '
         'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull '
             '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
 

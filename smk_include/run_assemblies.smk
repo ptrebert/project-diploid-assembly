@@ -354,7 +354,9 @@ rule compute_peregrine_nonhapres_assembly:
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
+        singularity = config['env_module_singularity']
     shell:
+        'module load {params.singularity} ; '
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
@@ -636,7 +638,9 @@ rule compute_peregrine_haploid_split_assembly:
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
+        singularity = config['env_module_singularity']
     shell:
+        'module load {params.singularity} ; '
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
