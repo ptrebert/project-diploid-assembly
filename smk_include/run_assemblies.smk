@@ -708,7 +708,7 @@ rule compute_canu_haploid_split_assembly:
         trimming = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/trimming'),
         unitigging = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/unitigging'),
         # below: stuff which actually has the prefix
-        seqstore = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/{hap_reads}.{hap}.{sequence}.seqstore'),
+        seqstore = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/{hap_reads}.{hap}.{sequence}.seqStore'),
         stuff = multiext('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/{hap_reads}.{hap}.{sequence}',
                          '.contigs.layout', '.contigs.layout.readToTig', '.contigs.layout.tigInfo', '.unitigs.bed', '.unitigs.fasta', '.unitigs.gfa',
                          '.unitigs.layout', '.unitigs.layout.readToTig', '.unitigs.layout.tigInfo'),
