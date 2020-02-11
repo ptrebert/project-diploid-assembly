@@ -9,7 +9,7 @@ cluster: >-
 cluster-config: environment/snakemake/cluster/denbi_tu_pbs/denbi_cluster.json
 cluster-status: /beeond/user/code/project-diploid-assembly/scripts/cluster_status/denbi_valet.py
 local-cores: 2
-jobs: 100
+jobs: 40
 latency-wait: 600
 keep-going: True
 rerun-incomplete: True
