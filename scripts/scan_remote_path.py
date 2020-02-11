@@ -435,6 +435,9 @@ def main(logger, cargs):
 
     output = enumerate_file_parts(file_groups, cargs, logger)
 
+    if not output:
+        raise RuntimeError('Output empty / no source data collected')
+
     os.makedirs(os.path.dirname(os.path.abspath(cargs.output)), exist_ok=True)
     with open(cargs.output, 'w') as dump:
         json.dump(output, dump, sort_keys=True, indent=2)
