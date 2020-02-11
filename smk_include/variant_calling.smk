@@ -362,27 +362,40 @@ rule intersect_original_retyped_variant_calls:
         'bcftools isec -p {params.outdir} {input.original_vcf} {input.retyped_vcf} &> {log}'
 
 
-def collect_final_vcf_splits(wildcards):
+def collect_final_vcf_splits(wildcards, glob_collect=False):
     """
     """
-    reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
-                                                                    reference=wildcards.reference).output[0]
 
-    checkpoint_wildcards = glob_wildcards(
-        os.path.join(seq_output_dir, '{sequence}.seq')
-        )
+    source_path = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf'
 
-    vcf_files = expand(
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf',
-        var_caller=wildcards.var_caller,
-        reference=wildcards.reference,
-        sts_reads=wildcards.sts_reads,
-        qual=wildcards.qual,
-        gq=wildcards.gq,
-        vc_reads=wildcards.vc_reads,
-        sequence=checkpoint_wildcards.sequence
-        )
+    if glob_collect:
+        import glob
+        pattern = source_path.replace('.{sequence}/', '.*/')
+        pattern = pattern.format(**dict(wildcards))
+        vcf_files = glob.glob(pattern)
+
+        if not vcf_files:
+            raise RuntimeError('collect_final_vcf_splits: no files collected with pattern {}'.format(pattern))
+
+    else:
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
+                                                                        reference=wildcards.reference).output[0]
+
+        checkpoint_wildcards = glob_wildcards(
+            os.path.join(seq_output_dir, '{sequence}.seq')
+            )
+
+        vcf_files = expand(
+            source_path,
+            var_caller=wildcards.var_caller,
+            reference=wildcards.reference,
+            sts_reads=wildcards.sts_reads,
+            qual=wildcards.qual,
+            gq=wildcards.gq,
+            vc_reads=wildcards.vc_reads,
+            sequence=checkpoint_wildcards.sequence
+            )
 
     return vcf_files
 
@@ -395,10 +408,17 @@ rule write_final_vcf_splits:
     run:
         import os
 
-        validate_checkpoint_output(input.vcf_splits)
+        try:
+            validate_checkpoint_output(input.vcf_splits)
+            vcf_splits = input.vcf_splits
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            vcf_splits = collect_final_vcf_splits(wildcards, glob_collect=True)
+
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(input.vcf_splits):
+            for file_path in sorted(vcf_splits):
                 if not os.path.isfile(file_path):
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
@@ -437,26 +457,39 @@ rule compute_final_vcf_stats:
 
 # Same again for convenience on intermediate set of SNPs
 
-def collect_intermediate_vcf_splits(wildcards):
+def collect_intermediate_vcf_splits(wildcards, glob_collect=False):
     """
     """
-    reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
-                                                                    reference=wildcards.reference).output[0]
+    source_path = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
 
-    checkpoint_wildcards = glob_wildcards(
-        os.path.join(seq_output_dir, '{sequence}.seq')
-        )
+    if glob_collect:
+        import glob
+        pattern = source_path.replace('.{sequence}.', '.*.')
+        pattern = pattern.format(**dict(wildcards))
+        vcf_files = glob.glob(pattern)
 
-    vcf_files = expand(
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf',
-        var_caller=wildcards.var_caller,
-        reference=wildcards.reference,
-        sts_reads=wildcards.sts_reads,
-        qual=wildcards.qual,
-        vc_reads=wildcards.vc_reads,
-        sequence=checkpoint_wildcards.sequence
-        )
+        if not vcf_files:
+            raise RuntimeError('collect_intermediate_vcf_splits: no files collected with pattern {}'.format(pattern))
+
+    else:
+
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
+                                                                        reference=wildcards.reference).output[0]
+
+        checkpoint_wildcards = glob_wildcards(
+            os.path.join(seq_output_dir, '{sequence}.seq')
+            )
+
+        vcf_files = expand(
+            source_path,
+            var_caller=wildcards.var_caller,
+            reference=wildcards.reference,
+            sts_reads=wildcards.sts_reads,
+            qual=wildcards.qual,
+            vc_reads=wildcards.vc_reads,
+            sequence=checkpoint_wildcards.sequence
+            )
 
     return vcf_files
 
@@ -469,10 +502,16 @@ rule write_intermediate_vcf_splits:
     run:
         import os
 
-        validate_checkpoint_output(input.vcf_splits)
+        try:
+            validate_checkpoint_output(input.vcf_splits)
+            vcf_splits = input.vcf_splits
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            vcf_splits = collect_intermediate_vcf_splits(wildcards, glob_collect=True)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(input.vcf_splits):
+            for file_path in sorted(vcf_splits):
                 if not os.path.isfile(file_path):
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))

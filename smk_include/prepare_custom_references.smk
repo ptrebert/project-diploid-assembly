@@ -9,9 +9,12 @@ rule master_prepare_custom_references:
         []
 
 
-def collect_strandseq_merge_files(wildcards):
+def collect_strandseq_merge_files(wildcards, glob_collect=False):
     """
     """
+
+    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{individual}_{project}_{spec}_{lib_id}_{run_id}.filt.sam.bam'
+
     individual = wildcards.individual
     platform = wildcards.platform
     project = wildcards.project
@@ -20,24 +23,35 @@ def collect_strandseq_merge_files(wildcards):
     assert individual in wildcards.reference and individual in wildcards.sts_reads, \
         'Wrong reference / sts_reads match: {} / {}'.format(wildcards.reference, wildcards.sts_reads)
 
-    requests_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
+    if glob_collect:
+        import glob
+        pattern = source_path.replace('{run_id}', '*')
+        pattern = pattern.replace('{spec}', platform + '-*')
+        pattern = pattern.format(**dict(wildcards))
+        bam_files = glob.glob(pattern)
 
-    search_pattern = '_'.join([individual, project, '{spec}', lib_id, '{run_id}', '1'])
+        if not bam_files:
+            raise RuntimeError('collect_strandseq_merge_files: no files collected with pattern {}'.format(pattern))
 
-    search_path = os.path.join(requests_dir, search_pattern + '.request')
+    else:
+        requests_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
 
-    checkpoint_wildcards = glob_wildcards(search_path)
+        search_pattern = '_'.join([individual, project, '{spec}', lib_id, '{run_id}', '1'])
 
-    bam_files = expand(
-        'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{individual}_{project}_{spec}_{lib_id}_{run_id}.filt.sam.bam',
-        zip,
-        reference=[wildcards.reference, wildcards.reference],
-        individual=[individual, individual],
-        sts_reads=[wildcards.sts_reads, wildcards.sts_reads],
-        project=[project, project],
-        spec=checkpoint_wildcards.spec,
-        lib_id=[lib_id, lib_id],
-        run_id=checkpoint_wildcards.run_id)
+        search_path = os.path.join(requests_dir, search_pattern + '.request')
+
+        checkpoint_wildcards = glob_wildcards(search_path)
+
+        bam_files = expand(
+            source_path,
+            zip,
+            reference=[wildcards.reference, wildcards.reference],
+            individual=[individual, individual],
+            sts_reads=[wildcards.sts_reads, wildcards.sts_reads],
+            project=[project, project],
+            spec=checkpoint_wildcards.spec,
+            lib_id=[lib_id, lib_id],
+            run_id=checkpoint_wildcards.run_id)
 
     return bam_files
 
@@ -59,22 +73,14 @@ rule write_strandseq_merge_fofn:
         sts_reads = CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES
     run:
         import os
-        import sys
         pattern = '[empty]'
         try:
             validate_checkpoint_output(input.bams)
             bam_files = input.bams
-        except RuntimeError as rterr:
-            # this means validate failed
-            sys.stderr.write('\nWARNING: checkpoint evaluation failed ({}) - '
-                             'making manual attempt of collecting files...\n'.format(str(rterr)))
-            import glob
-            out_folder, out_file = os.path.split(output.fofn)
-            # adapt folder and file name - see collect_strandseq_merge_files
-            out_folder = out_folder.replace('/mrg', '/aln')
-            out_file = out_file.replace('-npe', '-*').replace('.fofn', '_*.filt.sam.bam')
-            pattern = os.path.join(out_folder, out_file)
-            bam_files = set(glob.glob(pattern))  # make fail if glob pattern is wrong
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            bam_files = collect_strandseq_merge_files(wildcards, glob_collect=True)
 
         if len(bam_files) != 2:
             raise RuntimeError('Missing merge partner for strand-seq BAM files {} / {}: '
@@ -83,6 +89,7 @@ rule write_strandseq_merge_fofn:
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(bam_files):
                 if not os.path.isfile(file_path):
+                    import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
 
@@ -179,12 +186,13 @@ rule write_saarclust_config_file:
 
         try:
             validate_checkpoint_output(input.bam)
+            bam_files = input.bam
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            _ = collect_strandseq_alignments(wildcards, glob_collect=True)
+            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True)
 
-        outfolder = os.path.dirname(input.bam[0])
+        outfolder = os.path.dirname(bam_files[0])
 
         config_rows = [
             '[SaaRclust]',
@@ -240,24 +248,36 @@ checkpoint run_saarclust_assembly_clustering:
         '{params.script_exec} {input.cfg} {params.in_folder} {params.out_folder} &> {log} '
 
 
-def collect_clustered_fasta_sequences(wildcards):
+def collect_clustered_fasta_sequences(wildcards, glob_collect=False):
     """
     """
-    strandseq_reads = wildcards.sts_reads
-    nhr_assembly = wildcards.reference
+    source_path = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/clustered_assembly/{sequence}.fasta'
 
-    # this output folder is the /clustered_assembly subfolder
-    seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=nhr_assembly, sts_reads=strandseq_reads).output.dir_fasta
-    checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.fasta'))
+    if glob_collect:
+        import glob
+        pattern = source_path.replace('{sequence}', '*')
+        pattern = pattern.format(**dict(wildcards))
+        fasta_files = glob.glob(pattern)
 
-    cluster_fasta = expand(
-        os.path.join(seq_output_dir, '{sequence}.fasta'),
-        reference=nhr_assembly,
-        sts_reads=strandseq_reads,
-        sequence=checkpoint_wildcards.sequence
-    )
+        if not fasta_files:
+            raise RuntimeError('collect_clustered_fasta_sequences: no files collected with pattern {}'.format(pattern))
 
-    return sorted(cluster_fasta)
+    else:
+        strandseq_reads = wildcards.sts_reads
+        nhr_assembly = wildcards.reference
+
+        # this output folder is the /clustered_assembly subfolder
+        seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=nhr_assembly, sts_reads=strandseq_reads).output.dir_fasta
+        checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.fasta'))
+
+        fasta_files = expand(
+            source_path,
+            reference=nhr_assembly,
+            sts_reads=strandseq_reads,
+            sequence=checkpoint_wildcards.sequence
+        )
+
+    return fasta_files
 
 
 rule write_reference_fasta_clusters_fofn:
@@ -269,10 +289,16 @@ rule write_reference_fasta_clusters_fofn:
     output:
         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{reference}.clusters.fofn'
     run:
-        validate_checkpoint_output(input.fasta)
+        try:
+            validate_checkpoint_output(input.fasta)
+            fasta_files = input.fasta
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(input.fasta):
+            for file_path in sorted(fasta_files):
                 if not os.path.isfile(file_path):
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))

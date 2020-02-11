@@ -167,28 +167,43 @@ rule plot_input_long_reads_statistics:
         '--output {output} '
 
 
-def collect_tag_lists(wildcards):
+def collect_tag_lists(wildcards, glob_collect=False):
     """
     :param wildcards:
     :return:
     """
     import os
-    reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
-                                                                    reference=wildcards.reference).output[0]
-    checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
 
-    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tags.{tag_type}.tsv',
-                        var_caller=wildcards.var_caller,
-                        gq=wildcards.gq,
-                        qual=wildcards.qual,
-                        reference=wildcards.reference,
-                        vc_reads=wildcards.vc_reads,
-                        sts_reads=wildcards.sts_reads,
-                        hap_reads=wildcards.hap_reads,
-                        sequence=checkpoint_wildcards.sequence,
-                        tag_type=wildcards.tag_type)
-    return sorted(seq_files)
+    source_path = os.path.join('output',
+                               PATH_STRANDSEQ_DGA_SPLIT,
+                               'draft/haplotags/{hap_reads}.{sequence}.tags.{tag_type}.tsv')
+
+    if glob_collect:
+        import glob
+        pattern = source_path.replace('{sequence}', '*')
+        pattern = pattern.format(**dict(wildcards))
+        seq_files = glob.glob(pattern)
+
+        if not seq_files:
+            raise RuntimeError('collect_tag_lists: no files collected with pattern {}'.format(pattern))
+
+    else:
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
+                                                                        reference=wildcards.reference).output[0]
+        checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
+
+        seq_files = expand(source_path,
+                           var_caller=wildcards.var_caller,
+                           gq=wildcards.gq,
+                           qual=wildcards.qual,
+                           reference=wildcards.reference,
+                           vc_reads=wildcards.vc_reads,
+                           sts_reads=wildcards.sts_reads,
+                           hap_reads=wildcards.hap_reads,
+                           sequence=checkpoint_wildcards.sequence,
+                           tag_type=wildcards.tag_type)
+    return seq_files
 
 
 rule summarize_tagging_splitting_statistics:
@@ -200,7 +215,13 @@ rule summarize_tagging_splitting_statistics:
         'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.rsrc'
     priority: 200
     run:
-        validate_checkpoint_output(input.tags)
+        try:
+            validate_checkpoint_output(input.tags)
+            tag_files = input.tags
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            tag_files = collect_tag_lists(wildcards, glob_collect=True)
 
         import os
         import collections as col
@@ -208,7 +229,7 @@ rule summarize_tagging_splitting_statistics:
         hapcount = col.Counter()
         line_num = 0
 
-        for tsv in sorted(input.tags):
+        for tsv in sorted(tag_files):
             with open(tsv, 'r') as table:
                 for line in table:
                     if line.startswith('#'):
@@ -228,6 +249,7 @@ rule summarize_tagging_splitting_statistics:
 
         percent_h1 = round((hapcount['H1'] / total_reads) * 100, 2)
         percent_h2 = round((hapcount['H2'] / total_reads) * 100, 2)
+        percent_tag = round(percent_h1 + percent_h2, 2)
         percent_un = round((hapcount['none'] / total_reads) * 100, 2)
 
         with open(output[0], 'w') as summary:
@@ -237,5 +259,6 @@ rule summarize_tagging_splitting_statistics:
             _ = summary.write('num_untagged\t{}\n'.format(hapcount['none']))
             _ = summary.write('percent_hap1\t{}\n'.format(percent_h1))
             _ = summary.write('percent_hap2\t{}\n'.format(percent_h2))
+            _ = summary.write('percent_tagged\t{}\n'.format(percent_tag))
             _ = summary.write('percent_untagged\t{}\n'.format(percent_un))
         

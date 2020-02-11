@@ -37,12 +37,13 @@ rule write_breakpointr_config_file:
 
         try:
             validate_checkpoint_output(input.bam)
+            bam_files = input.bam
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            _ = collect_strandseq_alignments(wildcards, glob_collect=True)
+            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True)
 
-        outfolder = os.path.dirname(input.bam[0])
+        outfolder = os.path.dirname(bam_files[0])
 
         config_rows = [
             '[General]',
@@ -122,12 +123,13 @@ rule write_strandphaser_config_file:
 
         try:
             validate_checkpoint_output(input.bam)
+            bam_files = input.bam
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            _ = collect_strandseq_alignments(wildcards, glob_collect=True)
+            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True)
 
-        outfolder = os.path.dirname(input.bam[0])
+        outfolder = os.path.dirname(bam_files[0])
 
         config_rows = [
             '[General]',
@@ -264,27 +266,41 @@ rule run_integrative_phasing:
             ' | egrep "^(#|{wildcards.sequence}\s)" > {output}'
 
 
-def intphase_collect_phased_vcf_split_files(wildcards):
+def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=False):
     """
     """
-    folder_path = 'output/reference_assembly/clustered/' + wildcards.sts_reads
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=folder_path, reference=wildcards.reference).output[0]
+    source_path = os.path.join('output/integrative_phasing/processing/whatshap',
+                               PATH_INTEGRATIVE_PHASING,
+                               '{hap_reads}.{sequence}.phased.vcf')
 
-    checkpoint_wildcards = glob_wildcards(
-        os.path.join(seq_output_dir, '{sequence}.seq')
-        )
+    if glob_collect:
+        import glob
+        pattern = source_path.replace('.{sequence}.', '.*.')
+        pattern = pattern.format(**dict(wildcards))
+        vcf_files = glob.glob(pattern)
 
-    vcf_files = expand(
-        'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.vcf',
-        var_caller=wildcards.var_caller,
-        reference=wildcards.reference,
-        gq=wildcards.gq,
-        qual=wildcards.qual,
-        vc_reads=wildcards.vc_reads,
-        sts_reads=wildcards.sts_reads,
-        hap_reads=wildcards.hap_reads,
-        sequence=checkpoint_wildcards.sequence
-        )
+        if not vcf_files:
+            raise RuntimeError('intphase_collect_phased_vcf_split_files: no files collected with pattern {}'.format(pattern))
+
+    else:
+        folder_path = 'output/reference_assembly/clustered/' + wildcards.sts_reads
+        seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=folder_path, reference=wildcards.reference).output[0]
+
+        checkpoint_wildcards = glob_wildcards(
+            os.path.join(seq_output_dir, '{sequence}.seq')
+            )
+
+        vcf_files = expand(
+            source_path,
+            var_caller=wildcards.var_caller,
+            reference=wildcards.reference,
+            gq=wildcards.gq,
+            qual=wildcards.qual,
+            vc_reads=wildcards.vc_reads,
+            sts_reads=wildcards.sts_reads,
+            hap_reads=wildcards.hap_reads,
+            sequence=checkpoint_wildcards.sequence
+            )
     return sorted(vcf_files)
 
 
@@ -295,10 +311,16 @@ rule write_phased_vcf_splits_fofn:
         fofn = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.fofn'
     run:
         # follow same example as merge strand-seq BAMs in module prepare_custom_references
-        validate_checkpoint_output(input.vcf_splits)
+        try:
+            validate_checkpoint_output(input.vcf_splits)
+            vcf_splits = input.vcf_splits
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            vcf_splits = intphase_collect_phased_vcf_split_files(wildcards, glob_collect=True)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(input.vcf_splits):
+            for file_path in sorted(vcf_splits):
                 if not os.path.isfile(file_path):
                     if os.path.isdir(file_path):
                         # this is definitely wrong

@@ -204,26 +204,44 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
 # the assembled sequence as single FASTA file into the evaluation part
 # of the pipeline (e.g., QUAST-LG)
 
-def collect_assembled_sequence_files(wildcards):
+def collect_assembled_sequence_files(wildcards, glob_collect=False):
     """
     """
-    reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
-                                                                    reference=wildcards.reference).output[0]
-    checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
+    import os
 
-    seq_files = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
-                        var_caller=wildcards.var_caller,
-                        gq=wildcards.gq,
-                        qual=wildcards.qual,
-                        reference=wildcards.reference,
-                        vc_reads=wildcards.vc_reads,
-                        sts_reads=wildcards.sts_reads,
-                        hap_reads=wildcards.hap_reads,
-                        assembler=wildcards.assembler,
-                        hap=wildcards.hap,
-                        sequence=checkpoint_wildcards.sequence)
-    return sorted(seq_files)
+    source_path = os.path.join('output',
+                               PATH_STRANDSEQ_DGA_SPLIT,
+                               'draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta')
+
+    if glob_collect:
+        import glob
+        pattern = source_path.replace('{sequence}', '*')
+        pattern = pattern.format(**dict(wildcards))
+        fasta_files = glob.glob(pattern)
+
+        if not fasta_files:
+            raise RuntimeError('collect_assembled_sequence_files: no files collected with pattern {}'.format(pattern))
+
+    else:
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
+                                                                        reference=wildcards.reference).output[0]
+        checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
+
+        fasta_files = expand(
+            source_path,
+            var_caller=wildcards.var_caller,
+            gq=wildcards.gq,
+            qual=wildcards.qual,
+            reference=wildcards.reference,
+            vc_reads=wildcards.vc_reads,
+            sts_reads=wildcards.sts_reads,
+            hap_reads=wildcards.hap_reads,
+            assembler=wildcards.assembler,
+            hap=wildcards.hap,
+            sequence=checkpoint_wildcards.sequence
+        )
+    return fasta_files
 
 
 rule write_assembled_fasta_clusters_fofn:
@@ -233,11 +251,16 @@ rule write_assembled_fasta_clusters_fofn:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fofn',
     run:
         import os
-
-        validate_checkpoint_output(input.cluster_fastas)
+        try:
+            validate_checkpoint_output(input.cluster_fastas)
+            fasta_files = input.cluster_fastas
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            fasta_files = collect_assembled_sequence_files(wildcards, glob_collect=True)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(input.cluster_fastas):
+            for file_path in sorted(fasta_files):
                 if not os.path.isfile(file_path):
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
@@ -260,7 +283,10 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
         import sys
         import io
         import re
+        import collections
         fasta_header = '^>[A-Za-z_0-9]+$'
+
+        header_counter = collections.Counter()
 
         with open(output[0], 'w') as merged_fasta:
             pass
@@ -285,40 +311,69 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
                                 # can't do anything about this
                                 pass
                             raise ValueError('Malformed FASTA header in merge: {}'.format(line))
+                        header_counter[line] += 1
                         line += '\n'
                     buffer.write(line)
 
             with open(output[0], 'a') as merged_fasta:
                 _ = merged_fasta.write(buffer.getvalue())
 
+        for header, count in header_counter.most_common():
+            if count <= 1:
+                break
+            sys.stderr.write('\nERROR: duplicate header in assembled FASTA merge: {} / {}\n'.format(header, count))
+            if os.path.isfile(output[0]):
+                # note: deleting output leads to failed job
+                os.unlink(output[0])
 
-def collect_polished_contigs(wildcards):
 
-    reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
-    seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
-                                                                    reference=wildcards.reference).output[0]
+def collect_polished_contigs(wildcards, glob_collect=False):
+    """
+    :param wildcards:
+    :param glob_collect:
+    :return:
+    """
+    import os
 
-    checkpoint_wildcards = glob_wildcards(
-        os.path.join(seq_output_dir, '{sequence}.seq')
+    source_path = os.path.join('output',
+                               PATH_STRANDSEQ_DGA_SPLIT,
+                               'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.{pol_pass}.fasta')
+
+    if glob_collect:
+        import glob
+        pattern = source_path.replace('{sequence}', '*')
+        pattern = pattern.format(**dict(wildcards))
+        fasta_files = glob.glob(pattern)
+
+        if not fasta_files:
+            raise RuntimeError('collect_polished_contigs: no files collected with pattern {}'.format(pattern))
+
+    else:
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
+                                                                        reference=wildcards.reference).output[0]
+
+        checkpoint_wildcards = glob_wildcards(
+            os.path.join(seq_output_dir, '{sequence}.seq')
+            )
+
+        fasta_files = expand(
+            source_path,
+            var_caller=wildcards.var_caller,
+            qual=wildcards.qual,
+            gq=wildcards.gq,
+            reference=wildcards.reference,
+            vc_reads=wildcards.vc_reads,
+            sts_reads=wildcards.sts_reads,
+            pol_reads=wildcards.pol_reads,
+            hap_reads=wildcards.hap_reads,
+            assembler=wildcards.assembler,
+            hap=wildcards.hap,
+            sequence=checkpoint_wildcards.sequence,
+            pol_pass=wildcards.pol_pass
         )
 
-    polished_contigs = expand(
-        'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.{pol_pass}.fasta',
-        var_caller=wildcards.var_caller,
-        qual=wildcards.qual,
-        gq=wildcards.gq,
-        reference=wildcards.reference,
-        vc_reads=wildcards.vc_reads,
-        sts_reads=wildcards.sts_reads,
-        pol_reads=wildcards.pol_reads,
-        hap_reads=wildcards.hap_reads,
-        assembler=wildcards.assembler,
-        hap=wildcards.hap,
-        sequence=checkpoint_wildcards.sequence,
-        pol_pass=wildcards.pol_pass
-    )
-
-    return polished_contigs
+    return fasta_files
 
 
 rule write_polished_contigs_fofn:
@@ -329,14 +384,17 @@ rule write_polished_contigs_fofn:
     run:
         import os
 
-        validate_checkpoint_output(input.contigs)
+        try:
+            validate_checkpoint_output(input.contigs)
+            fasta_files = input.contigs
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{]\n'.format(str(error)))
+            fasta_files = collect_polished_contigs(wildcards, glob_collect=True)
 
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(input.contigs):
+            for file_path in sorted(fasta_files):
                 if not os.path.isfile(file_path):
-                    if os.path.isdir(file_path):
-                        # this is definitely wrong
-                        raise AssertionError('Expected file path for Arrow polished FASTA, but received directory: {}'.format(file_path))
                     import sys
                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                 _ = dump.write(file_path + '\n')
@@ -356,7 +414,10 @@ rule merge_polished_contigs:
         import sys
         import io
         import re
+        import collections
         fasta_header = '^>[A-Za-z_0-9]+$'
+
+        header_counter = collections.Counter()
 
         with open(output[0], 'w') as merged_fasta:
             pass
@@ -384,7 +445,16 @@ rule merge_polished_contigs:
                                 # can't do anything about this
                                 pass
                             raise ValueError('Malformed FASTA header in merge: {}'.format(line))
+                        header_counter[line] += 1
                         line += '\n'
                     buffer.write(line)
             with open(output[0], 'a') as merged_fasta:
                 _ = merged_fasta.write(buffer.getvalue())
+
+        for header, count in header_counter.most_common():
+            if count <= 1:
+                break
+            sys.stderr.write('\nERROR: duplicate header in polished FASTA merge: {} / {}\n'.format(header, count))
+            if os.path.isfile(output[0]):
+                # note: deleting output leads to failed job
+                os.unlink(output[0])
