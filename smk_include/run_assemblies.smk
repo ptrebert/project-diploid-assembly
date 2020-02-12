@@ -723,9 +723,9 @@ rule compute_canu_haploid_split_assembly:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 188416,
-        mem_per_cpu_mb = lambda wildcards, attempt: int(188416 / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: 24 + 24 * attempt
+        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416 * (attempt - 1),
+        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416 * (attempt - 1)) / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: 24 + 12 * attempt
     params:
         out_prefix = lambda wildcards: '.'.join([wildcards.hap_reads, wildcards.hap, wildcards.sequence]),
         out_dir = lambda wildcards, output: os.path.dirname(output.logs),
