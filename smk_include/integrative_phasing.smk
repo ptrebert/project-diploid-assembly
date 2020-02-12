@@ -88,8 +88,8 @@ rule run_breakpointr:
         '../environment/conda/conda_rscript.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
         runtime_hrs = lambda wildcards, attempt: 12 * attempt
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
