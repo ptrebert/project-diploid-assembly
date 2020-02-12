@@ -9,7 +9,11 @@ localrules: run_afr_trios,
             run_acb_trio,
             run_acb_child,
             run_asw_trio,
-            run_asw_child
+            run_asw_child,
+            run_msl_trio,
+            run_msl_child,
+            run_esn_trio,
+            run_esn_child
 
 rule run_na19036_individual:
     input:
@@ -73,7 +77,7 @@ rule run_acb_trio:
 
 rule run_asw_child:
     input:
-        'output/targets/AFR_ACB_2436/NA19983.fofn'
+        'output/targets/AFR_ASW_2436/NA19983.fofn'
     message: 'Running AFR-ASW-2436 child'
 
 
@@ -97,11 +101,26 @@ rule run_msl_trio:
 
 ######################################################
 
+rule run_esn_child:
+    input:
+        'output/targets/AFR_ESN_NG98/HG03371.fofn'
+    message: 'Running AFR-ESN-NG98 child'
+
+
+rule run_esn_trio:
+    input:
+        rules.run_esn_child.input,
+    message: 'Running AFR-ESN-NG98 trio'
+
+######################################################
+
 rule run_afr_trios:
     input:
         rules.run_na19036_individual.input,
         rules.run_yri_trio.input,
         rules.run_gwd_trio.input,
         rules.run_acb_trio.input,
-        rules.run_asw_trio.input
+        rules.run_asw_trio.input,
+        rules.run_msl_trio.input,
+        rules.run_esn_trio.input
     message: 'Running AFR trios'
