@@ -99,10 +99,23 @@ CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES = build_input_data_wildcard_constraint(
     }
 )
 
-CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES = build_input_data_wildcard_constraint(
+CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES = build_input_data_wildcard_constraint(
     input_type='strandseq',
     readset_selectors={
-        'source_type': ['ena'],
         'library_fractions': ['two'],
+    }
+)
+
+CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES = build_input_data_wildcard_constraint(
+    input_type='strandseq',
+    readset_selectors={
+        'library_fractions': ['one'],
+    }
+)
+
+CONSTRAINT_STRANDSEQ_SAMPLES = build_input_data_wildcard_constraint(
+    input_type='strandseq',
+    readset_selectors={
+        'source_type': ['ena', 'ftp']
     }
 )

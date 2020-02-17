@@ -1,7 +1,8 @@
 
 localrules: master_prepare_custom_references,
             write_saarclust_config_file,
-            write_reference_fasta_clusters_fofn
+            write_reference_fasta_clusters_fofn,
+            link_strandseq_monofraction_samples
 
 
 rule master_prepare_custom_references:
@@ -70,7 +71,7 @@ rule write_strandseq_merge_fofn:
     output:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES
+        sts_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES
     run:
         import os
         pattern = '[empty]'
@@ -110,7 +111,7 @@ rule merge_mono_dinucleotide_fraction:
     benchmark:
         'run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_ENA_DIFRACTION_SAMPLES
+        sts_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -118,6 +119,17 @@ rule merge_mono_dinucleotide_fraction:
         merge_files = lambda wildcards, input: load_fofn_file(input)
     shell:
         'samtools merge -@ {threads} -O BAM {output} {params.merge_files} &> {log}'
+
+
+rule link_strandseq_monofraction_samples:
+    input:
+        'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{library_id}.filt.sam.bam'
+    output:
+        'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{library_id}.mrg.sam.bam'
+    wildcard_constraints:
+        sts_reads = CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES
+    shell:
+        'ln -s {input} {output}'
 
 
 rule samtools_position_sort_strandseq_reads:
@@ -133,8 +145,9 @@ rule samtools_position_sort_strandseq_reads:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = 512,
-        mem_total_mb = config['num_cpu_low'] * 512
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt,
+        mem_total_mb = lambda wildcards, attempt: config['num_cpu_low'] * 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
         'samtools sort -m {resources.mem_per_cpu_mb}M --threads {threads} -o {output} {input}'
 
@@ -152,9 +165,9 @@ rule mark_duplicate_reads_strandseq:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = 512,
-        mem_total_mb = config['num_cpu_low'] * 512,
-        runtime_hrs = lambda wildcards, attempt: attempt + (attempt -1 ) * 2
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt,
+        mem_total_mb = lambda wildcards, attempt: config['num_cpu_low'] * 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
         'sambamba markdup -t {threads} --overflow-list-size 600000 {input} {output} &> {log}'
 
