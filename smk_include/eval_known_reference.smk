@@ -44,8 +44,8 @@ rule quast_analysis_assembly:
          '../environment/conda/conda_rtools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + attempt * 24576) / config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 24576 + attempt * 24576,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((36864 + attempt * 36864) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 36864 + attempt * 36864,
         runtime_hrs = lambda wildcards, attempt: 12 * attempt
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
