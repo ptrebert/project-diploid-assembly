@@ -61,17 +61,17 @@ rule pb_bamtools_index_bam_alignment:
 
 rule pb_bam2x_dump_fastq:
     input:
-        pbn_bam = 'input/bam/{folder_path}/{pbn_sample}{sample_type}.pbn.bam',
-        pbn_idx = 'input/bam/{folder_path}/{pbn_sample}{sample_type}.pbn.bam.pbi'
+        pbn_bam = 'input/bam/{pbn_sample}_{sampling}.pbn.bam',
+        pbn_idx = 'input/bam/{pbn_sample}_{sampling}.pbn.bam.pbi'
     output:
-        'input/fastq/{folder_path}/{pbn_sample}{sample_type}.fastq.gz'
+        'input/fastq/{pbn_sample}_{sampling}.fastq.gz'
     log:
-        'log/input/bam/{folder_path}/{pbn_sample}{sample_type}.dump.log'
+        'log/input/bam/{pbn_sample}_{sampling}.dump.log'
     benchmark:
-        'run/input/bam/{folder_path}/{pbn_sample}{sample_type}.dump.rsrc'
+        'run/input/bam/{pbn_sample}_{sampling}.dump.rsrc'
     wildcard_constraints:
         pbn_sample = CONSTRAINT_ALL_PBN_INPUT_SAMPLES,
-        sample_type = '(_[0-9x]+|\.part[0-9]+)'
+        sampling = '[0-9x]+'
     resources:
         runtime_hrs = lambda wildcards, attempt: 48 * attempt
     conda:
@@ -112,13 +112,13 @@ rule dump_shasta_fasta:
     (tested with v0.3.0)
     """
     input:
-        'input/fastq/complete/{file_name}.fastq.gz'
+        'input/fastq/{file_name}.fastq.gz'
     output:
-        'input/fasta/complete/{file_name}.fasta'
+        'input/fasta/{file_name}.fasta'
     log:
-        'log/input/fastq/complete/{file_name}.fa-dump.log'
+        'log/input/fastq/{file_name}.fa-dump.log'
     benchmark:
-        'run/input/fastq/complete/{file_name}.fa-dump.rsrc'
+        'run/input/fastq/{file_name}.fa-dump.rsrc'
     resources:
         runtime_hrs = lambda wildcards, attempt: 8 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 + 4096 * attempt,
@@ -258,7 +258,7 @@ rule singularity_pull_container:
 def collect_strandseq_alignments(wildcards, glob_collect=False):
     """
     """
-    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{project}_{platform}-npe_{lib_id}.mrg.psort.mdup.sam.bam{ext}'
+    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup.sam.bam{ext}'
 
     individual, project, platform_spec = wildcards.sts_reads.split('_')[:3]
     platform, spec = platform_spec.split('-')
@@ -271,15 +271,19 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
                                         'sts_reads': wildcards.sts_reads,
                                         'individual': individual,
                                         'project': project,
-                                        'platform': platform})
+                                        'platform': platform,
+                                        'spec': spec})
         bam_files = glob.glob(pattern)
         if not bam_files:
             raise RuntimeError('collect_strandseq_alignments: no files collected with pattern {}'.format(pattern))
 
     else:
-        requests_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
+        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
 
-        search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_{run_id}_1.request')
+        if wildcards.sts_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
+            search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_{run_id}_1.request')
+        else:
+            search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_1.request')
 
         checkpoint_wildcards = glob_wildcards(search_path)
 
@@ -290,6 +294,7 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
             sts_reads=wildcards.sts_reads,
             project=project,
             platform=platform,
+            spec=spec,
             lib_id=checkpoint_wildcards.lib_id,
             ext=['', '.bai'])
 

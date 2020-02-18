@@ -38,7 +38,7 @@ rule strandseq_dga_joint_haplo_tagging:
 
 rule strandseq_dga_joint_haplo_splitting:
     input:
-        fastq = 'input/fastq/complete/{hap_reads}.fastq.gz',
+        fastq = 'input/fastq/{hap_reads}.fastq.gz',
         tags = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tags.fq.tsv',
     output:
         h1 = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.h1.fastq.gz',
@@ -81,8 +81,8 @@ rule strandseq_dga_joint_haplo_tagging_pacbio_native:
 
 rule strandseq_dga_joint_haplo_splitting_pacbio_native:
     input:
-        pbn_bam = 'input/bam/complete/{hap_reads}.pbn.bam',
-        pbn_idx = 'input/bam/complete/{hap_reads}.pbn.bam.bai',
+        pbn_bam = 'input/bam/{hap_reads}.pbn.bam',
+        pbn_idx = 'input/bam/{hap_reads}.pbn.bam.bai',
         tags = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tags.pbn.tsv',
     output:
         h1 = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h1.pbn.bam',

@@ -14,7 +14,7 @@ def collect_strandseq_merge_files(wildcards, glob_collect=False):
     """
     """
 
-    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{individual}_{project}_{spec}_{lib_id}_{run_id}.filt.sam.bam'
+    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{individual}_{project}_{platform}-{spec}_{lib_id}_{run_id}.filt.sam.bam'
 
     individual = wildcards.individual
     platform = wildcards.platform
@@ -27,7 +27,7 @@ def collect_strandseq_merge_files(wildcards, glob_collect=False):
     if glob_collect:
         import glob
         pattern = source_path.replace('{run_id}', '*')
-        pattern = pattern.replace('{spec}', platform + '-*')
+        pattern = pattern.replace('{spec}', '*')
         pattern = pattern.format(**dict(wildcards))
         bam_files = glob.glob(pattern)
 
@@ -35,9 +35,8 @@ def collect_strandseq_merge_files(wildcards, glob_collect=False):
             raise RuntimeError('collect_strandseq_merge_files: no files collected with pattern {}'.format(pattern))
 
     else:
-        requests_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
-
-        search_pattern = '_'.join([individual, project, '{spec}', lib_id, '{run_id}', '1'])
+        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
+        search_pattern = '_'.join([individual, project, platform + '-{spec}', lib_id, '{run_id}', '1'])
 
         search_path = os.path.join(requests_dir, search_pattern + '.request')
 
@@ -50,6 +49,7 @@ def collect_strandseq_merge_files(wildcards, glob_collect=False):
             individual=[individual, individual],
             sts_reads=[wildcards.sts_reads, wildcards.sts_reads],
             project=[project, project],
+            platform=[platform, platform],
             spec=checkpoint_wildcards.spec,
             lib_id=[lib_id, lib_id],
             run_id=checkpoint_wildcards.run_id)
@@ -69,9 +69,10 @@ rule write_strandseq_merge_fofn:
     input:
         bams = collect_strandseq_merge_files
     output:
-        fofn = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.fofn'
+        fofn = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.fofn'
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES
+        sts_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES,
+        lib_id = 'P[A-Z0-9]+'
     run:
         import os
         pattern = '[empty]'
@@ -105,11 +106,11 @@ rule merge_mono_dinucleotide_fraction:
     input:
         fofn = rules.write_strandseq_merge_fofn.output.fofn
     output:
-        temp('output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.sam.bam')
+        temp('output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.sam.bam')
     log:
-        'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-npe_{lib_id}.mrg.log'
+        'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.log'
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg{individual}_{project}_{platform}-npe_{lib_id}.mrg.rsrc'
+        'run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.rsrc'
     wildcard_constraints:
         sts_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES
     conda:
@@ -184,7 +185,7 @@ rule write_saarclust_config_file:
         setup_ok = rules.install_rlib_saarclust.output.check,
         reference = 'output/reference_assembly/non-hap-res/{reference}.fasta',
         ref_idx = 'output/reference_assembly/non-hap-res/{reference}.fasta.fai',
-        strandseq_reads = 'input/fastq/strand-seq/{sts_reads}.fofn',
+        strandseq_reads = 'input/fastq/{sts_reads}.fofn',
         bam = collect_strandseq_alignments  # from module aux_utilities
     output:
         cfg = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sts_reads}/saarclust.config',

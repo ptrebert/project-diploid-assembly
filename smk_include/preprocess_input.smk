@@ -17,8 +17,8 @@ def collect_fastq_input_parts(wildcards, glob_collect=False):
     :return:
     """
     import os
-    subfolder = 'fastq/partial/parts'
     sample = wildcards.mrg_sample
+    subfolder = os.path.join('fastq', sample)
 
     if glob_collect:
         import glob
@@ -30,10 +30,9 @@ def collect_fastq_input_parts(wildcards, glob_collect=False):
 
     else:
 
-        requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder).output[0]
+        request_path = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=sample).output[0]
 
         base_path = os.path.join('input', subfolder)
-        request_path = os.path.join(base_path, 'requests')
 
         checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
 
@@ -47,10 +46,10 @@ def collect_fastq_input_parts(wildcards, glob_collect=False):
 
 rule write_fastq_input_parts_fofn:
     input:
-        req_dir = 'input/fastq/partial/parts/requests',
+        req_dir = 'input/fastq/{mrg_sample}/requests',
         fastq_parts = collect_fastq_input_parts
     output:
-        fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
+        fofn = 'input/fastq/{mrg_sample}_1000.fofn'
     wildcard_constraints:
         mrg_sample = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     run:
@@ -69,11 +68,11 @@ rule write_fastq_input_parts_fofn:
 
 rule merge_fastq_input_parts:
     input:
-        fofn = 'input/fastq/complete/{mrg_sample}_1000.fofn'
+        fofn = 'input/fastq/{mrg_sample}_1000.fofn'
     output:
-        'input/fastq/complete/{mrg_sample}_1000.fastq.gz'
+        'input/fastq/{mrg_sample}_1000.fastq.gz'
     log:
-        'log/input/fastq/complete/{mrg_sample}_1000.merge.log'
+        'log/input/fastq/{mrg_sample}_1000.merge.log'
     wildcard_constraints:
         mrg_sample = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     conda:
@@ -92,27 +91,25 @@ def collect_pacbio_bam_input_parts(wildcards, glob_collect=False):
     :return:
     """
     import os
-    subfolder = 'bam/partial/parts'
-    sample = wildcards.mrg_sample
+    readset = wildcards.readset
+    subfolder = os.path.join('bam', readset)
 
     if glob_collect:
         import glob
-        pattern = os.path.join('input', subfolder, sample + '.part*.pbn.bam')
+        pattern = os.path.join('input', subfolder, readset + '.part*.pbn.bam')
         bam_parts = glob.glob(pattern)
 
         if not bam_parts:
             raise RuntimeError('collect_pacbio_bam_input_parts: no files collected with pattern {}'.format(pattern))
 
     else:
-        requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder).output[0]
+        request_path = checkpoints.create_input_data_download_requests.get(subfolder='bam', readset=readset).output[0]
+        data_path = os.path.split(request_path)[0]
 
-        base_path = os.path.join('input', subfolder)
-        request_path = os.path.join(base_path, 'requests')
-
-        checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
+        checkpoint_wildcards = glob_wildcards(os.path.join(request_path, readset + '.{part_num}.request'))
 
         bam_parts = expand(
-            os.path.join(base_path, sample + '.{part_num}.pbn.bam'),
+            os.path.join(data_path, readset + '.{part_num}.pbn.bam'),
             part_num=checkpoint_wildcards.part_num
         )
 
@@ -121,10 +118,10 @@ def collect_pacbio_bam_input_parts(wildcards, glob_collect=False):
 
 rule write_bam_input_parts_fofn:
     input:
-        req_dir = 'input/bam/partial/parts/requests',
+        req_dir = 'input/bam/{readset}/requests',
         bam_parts = collect_pacbio_bam_input_parts
     output:
-        fofn = 'input/bam/complete/{mrg_sample}_1000.pbn.fofn'
+        fofn = 'input/bam/{readset}_1000.pbn.fofn'
     wildcard_constraints:
         mrg_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     run:
@@ -143,13 +140,13 @@ rule write_bam_input_parts_fofn:
 
 rule merge_pacbio_native_bams:
     input:
-        fofn = 'input/bam/complete/{mrg_sample}_1000.pbn.fofn'
+        fofn = 'input/bam/{mrg_sample}_1000.pbn.fofn'
     output:
-        'input/bam/complete/{mrg_sample}_1000.pbn.bam'
+        'input/bam/{mrg_sample}_1000.pbn.bam'
     log:
-        'log/input/bam/complete/{mrg_sample}_1000.mrg.log'
+        'log/input/bam/{mrg_sample}_1000.mrg.log'
     benchmark:
-        'run/input/bam/complete/{mrg_sample}_1000.mrg.rsrc'
+        'run/input/bam/{mrg_sample}_1000.mrg.rsrc'
     wildcard_constraints:
         mrg_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     conda:
@@ -168,13 +165,13 @@ rule chs_child_filter_to_100x:
     Hard-code for now as this is not required for any other input sample
     """
     input:
-        'input/bam/complete/HG00514_hgsvc_pbsq2-clr_1000.pbn.bam'
+        'input/bam/HG00514_hgsvc_pbsq2-clr_1000.pbn.bam'
     output:
-        'input/bam/complete/HG00514_hgsvc_pbsq2-clr_0526.pbn.bam'
+        'input/bam/HG00514_hgsvc_pbsq2-clr_0526.pbn.bam'
     log:
-        'log/input/bam/complete/HG00514_hgsvc_pbsq2-clr_0526.sampling.log'
+        'log/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.log'
     benchmark:
-        'run/input/bam/complete/HG00514_hgsvc_pbsq2-clr_0526.sampling.rsrc'
+        'run/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
@@ -190,7 +187,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
     :return:
     """
     import os
-    source_path = 'input/fastq/strand-seq/{sts_reads}/{lib_id}.fastq.gz'
+    source_path = 'input/fastq/{sts_reads}/{lib_id}.fastq.gz'
 
     if glob_collect:
         import glob
@@ -202,7 +199,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
             raise RuntimeError('collect_strandseq_libraries: no files collected with pattern {}'.format(pattern))
 
     else:
-        checkpoint_dir = checkpoints.create_bioproject_download_requests.get(sts_reads=wildcards.sts_reads).output[0]
+        checkpoint_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
 
         glob_pattern = os.path.join(checkpoint_dir, '{lib_id}.request')
 
@@ -226,7 +223,9 @@ rule merge_strandseq_libraries:
     input:
         sseq_libs = collect_strandseq_libraries
     output:
-        'input/fastq/strand-seq/{sts_reads}.fofn'
+        'input/fastq/{sts_reads}.fofn'
+    wildcard_constraints:
+        sts_reads = CONSTRAINT_STRANDSEQ_SAMPLES
     run:
         try:
             validate_checkpoint_output(input.sseq_libs)

@@ -92,7 +92,7 @@ rule strandseq_dga_split_haplo_splitting:
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        fastq = 'input/fastq/complete/{fq_hap_reads}.fastq.gz',
+        fastq = 'input/fastq/{fq_hap_reads}.fastq.gz',
         tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.tags.fq.tsv',
     output:
         h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h1.{sequence}.fastq.gz',
@@ -124,8 +124,8 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
     sts_reads = FASTQ file used for strand-seq phasing
     """
     input:
-        pbn_bam = 'input/bam/complete/{pbn_hap_reads}.pbn.bam',
-        pbn_idx = 'input/bam/complete/{pbn_hap_reads}.pbn.bam.bai',
+        pbn_bam = 'input/bam/{pbn_hap_reads}.pbn.bam',
+        pbn_idx = 'input/bam/{pbn_hap_reads}.pbn.bam.bai',
         tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.tags.pbn.tsv',
     output:
         h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h1.{sequence}.pbn.bam',

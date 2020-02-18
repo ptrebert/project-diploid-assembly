@@ -10,7 +10,6 @@ TARGET_PATHS = {
     "INIT_COMPLETE_DATA": os.path.join(
         "input",
         "{input_format}",
-        "complete",
         "{hap_reads}.{file_ext}{ext_modifier}"
     ),
     "BUILD_NHR_ASSEMBLY": os.path.join(

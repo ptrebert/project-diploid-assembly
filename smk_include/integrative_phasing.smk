@@ -24,7 +24,7 @@ rule write_breakpointr_config_file:
     input:
         setup_ok = rules.install_rlib_breakpointr.output.check,
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        strandseq_reads = 'input/fastq/strand-seq/{sts_reads}.fofn',
+        strandseq_reads = 'input/fastq/{sts_reads}.fofn',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
         cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/breakpointr.config',
@@ -88,7 +88,7 @@ rule run_breakpointr:
         '../environment/conda/conda_rscript.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(49152 * attempt / config['num_cpu_high']),
+        mem_per_cpu_mb = lambda wildcards, attempt: int(49152    * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
         runtime_hrs = lambda wildcards, attempt: 12 * attempt
     params:
@@ -110,7 +110,7 @@ rule write_strandphaser_config_file:
     input:
         setup_ok = rules.install_rlib_strandphaser.output.check,
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        strandseq_reads = 'input/fastq/strand-seq/{sts_reads}.fofn',
+        strandseq_reads = 'input/fastq/{sts_reads}.fofn',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
         cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.config',

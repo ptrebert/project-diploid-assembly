@@ -8,11 +8,11 @@ rule master_statistics_input_data:
 
 rule compute_statistics_complete_input_fastq:
     input:
-        fastq = 'input/fastq/complete/{sample}.fastq.gz',
+        fastq = 'input/fastq/{sample}.fastq.gz',
         faidx = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai',
     output:
         dump = 'output/statistics/stat_dumps/{sample}.fastq.pck',
-        summary = 'input/fastq/complete/{sample}.stats',
+        summary = 'input/fastq/{sample}.stats',
     log: 'log/output/statistics/stat_dumps/{sample}.fastq.log',
     benchmark: 'run/output/statistics/stat_dumps/{sample}.fastq.t2.rsrc'
     threads: 2
@@ -31,18 +31,18 @@ rule compute_statistics_complete_input_fastq:
         'output/statistics/stat_dumps/{wildcards.sample}.pbn.bam.pck '
         'output/statistics/stat_dumps/{wildcards.sample}.fasta.pck '
         '--copy-summary '
-        'input/bam/complete/{wildcards.sample}.stats '
-        'input/fasta/complete/{wildcards.sample}.stats '
+        'input/bam/{wildcards.sample}.stats '
+        'input/fasta/{wildcards.sample}.stats '
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
 rule compute_statistics_complete_input_fasta:
     input:
-        fasta = 'input/fasta/complete/{sample}.fasta',
+        fasta = 'input/fasta/{sample}.fasta',
         faidx = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai',
     output:
         dump = 'output/statistics/stat_dumps/{sample}.fasta.pck',
-        summary = 'input/fasta/complete/{sample}.stats'
+        summary = 'input/fasta/{sample}.stats'
     log: 'log/output/statistics/stat_dumps/{sample}.fasta.log',
     benchmark: 'run/output/statistics/stat_dumps/{sample}.fasta.t2.rsrc'
     threads: 2
@@ -61,8 +61,8 @@ rule compute_statistics_complete_input_fasta:
         'output/statistics/stat_dumps/{wildcards.sample}.pbn.bam.pck '
         'output/statistics/stat_dumps/{wildcards.sample}.fastq.pck '
         '--copy-summary '
-        'input/bam/complete/{wildcards.sample}.stats '
-        'input/fastq/complete/{wildcards.sample}.stats '
+        'input/bam/{wildcards.sample}.stats '
+        'input/fastq/{wildcards.sample}.stats '
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
@@ -116,11 +116,11 @@ rule compute_statistics_split_cluster_fasta:
 
 rule compute_statistics_complete_input_bam:
     input:
-        bam = 'input/bam/complete/{sample}.pbn.bam',
+        bam = 'input/bam/{sample}.pbn.bam',
         faidx = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai',
     output:
         dump = 'output/statistics/stat_dumps/{sample}.pbn.bam.pck',
-        summary = 'input/bam/complete/{sample}.stats',
+        summary = 'input/bam/{sample}.stats',
     log: 'log/output/statistics/stat_dumps/{sample}.pbn.bam.log',
     benchmark: 'run/output/statistics/stat_dumps/{sample}.pbn.bam.t2.rsrc'
     threads: 2
@@ -139,8 +139,8 @@ rule compute_statistics_complete_input_bam:
         'output/statistics/stat_dumps/{wildcards.sample}.fasta.pck '
         'output/statistics/stat_dumps/{wildcards.sample}.fastq.pck '
         '--copy-summary '
-        'input/fasta/complete/{wildcards.sample}.stats '
-        'input/fastq/complete/{wildcards.sample}.stats '
+        'input/fasta/{wildcards.sample}.stats '
+        'input/fastq/{wildcards.sample}.stats '
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 

@@ -61,8 +61,8 @@ rule derive_pbmm2_parameter_preset:
 
 rule minimap_reads_to_reference_alignment:
     input:
-        reads = 'input/fastq/complete/{sample}.fastq.gz',
-        preset = 'input/fastq/complete/{sample}.preset.minimap',
+        reads = 'input/fastq/{sample}.fastq.gz',
+        preset = 'input/fastq/{sample}.preset.minimap',
         reference = 'output/reference_assembly/{folder_path}/{reference}.fasta'
     output:
         'output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.psort.sam.bam'
@@ -98,8 +98,8 @@ rule minimap_reads_to_reference_alignment:
 
 rule pbmm2_reads_to_reference_alignment:
     input:
-        reads = 'input/bam/complete/{sample}.pbn.bam',
-        preset = 'input/bam/complete/{sample}.preset.pbmm2',
+        reads = 'input/bam/{sample}.pbn.bam',
+        preset = 'input/bam/{sample}.preset.pbmm2',
         reference = 'output/reference_assembly/{folder_path}/{reference}.fasta'
     output:
         bam = 'output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.psort.pbn.bam',
@@ -150,17 +150,18 @@ def select_bwa_index(wildcards):
 
 rule bwa_strandseq_to_reference_alignment:
     input:
-        mate1 = 'input/fastq/strand-seq/{sts_reads}/{individual}_{sample_id}_1.fastq.gz',
-        mate2 = 'input/fastq/strand-seq/{sts_reads}/{individual}_{sample_id}_2.fastq.gz',
+        mate1 = 'input/fastq/{sts_reads}/{individual}_{sample_id}_1.fastq.gz',
+        mate2 = 'input/fastq/{sts_reads}/{individual}_{sample_id}_2.fastq.gz',
         ref_index = select_bwa_index,
-        sts_reads = 'input/fastq/strand-seq/{sts_reads}.fofn'
+        sts_reads = 'input/fastq/{sts_reads}.fofn'
     output:
         bam = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{individual}_{sample_id}.filt.sam.bam'
     log:
         bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.bwa.log',
         samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.samtools.log',
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{{reference}}/{{sts_reads}}/{{individual}}_{{sample_id}}.t{}.rsrc'.format(config['num_cpu_low'])
+        os.path.join('run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}',
+                     '{individual}_{sample_id}.' + 't{}.rsrc'.format(config['num_cpu_low']))
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -304,7 +305,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
 rule minimap_contig_to_known_reference_alignment:
     input:
         contigs = 'output/{folder_path}/{reference}.fasta',
-        #preset = 'input/fastq/complete/{sample}.preset.minimap',
+        #preset = 'input/fastq/{sample}.preset.minimap',
         reference = 'references/assemblies/{aln_reference}.fasta'
     output:
         'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.psort.sam.bam'

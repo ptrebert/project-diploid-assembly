@@ -214,8 +214,8 @@ rule compute_wtdbg_nonhapres_assembly_layout:
     Non-haplotype resolved assembly = replaces known reference (such as hg38)
     """
     input:
-        fastq = 'input/fastq/complete/{sample}.fastq.gz',
-        preset = 'input/fastq/complete/{sample}.preset.wtdbg',
+        fastq = 'input/fastq/{sample}.fastq.gz',
+        preset = 'input/fastq/{sample}.preset.wtdbg',
         seq_info = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai'
     output:
         layout = 'output/reference_assembly/non-hap-res/layout/wtdbg2/{sample}/{sample}.ctg.lay.gz',
@@ -267,8 +267,8 @@ rule compute_flye_nonhapres_assembly:
     Non-haplotype resolved assembly = replaces known reference (such as hg38)
     """
     input:
-        fastq = 'input/fastq/complete/{sample}.fastq.gz',
-        preset = 'input/fastq/complete/{sample}.preset.flye',
+        fastq = 'input/fastq/{sample}.fastq.gz',
+        preset = 'input/fastq/{sample}.preset.flye',
         seq_info = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai'
     output:
         layout = directory('output/reference_assembly/non-hap-res/layout/flye/{sample}/00-assembly'),
@@ -331,7 +331,7 @@ rule compute_peregrine_nonhapres_assembly:
     """
     input:
         container = 'output/container/docker/cschin/peregrine_{}.sif'.format(config['peregrine_version']),
-        fofn = 'input/fastq/complete/{sample}.input.peregrine'
+        fofn = 'input/fastq/{sample}.input.peregrine'
     output:
         dir_seqdb = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/0-seqdb'),
         dir_index = directory('output/reference_assembly/non-hap-res/layout/peregrine/{sample}/1-index'),
@@ -372,8 +372,8 @@ rule compute_shasta_nonhapres_assembly:
     """
     input:
         shasta_exec = 'output/check_files/environment/shasta_version.ok',
-        fasta = 'input/fastq/complete/{sample}.fastq',
-        config = 'input/fastq/complete/{sample}.preset.shasta'
+        fasta = 'input/fastq/{sample}.fastq',
+        config = 'input/fastq/{sample}.preset.shasta'
     output:
         assm_files = expand('output/reference_assembly/non-hap-res/layout/shasta/{{sample}}/Assembly{assm_files}',
                             assm_files=['-BothStrands.gfa', '.gfa', 'GraphChainLengthHistogram.csv',
