@@ -16,7 +16,7 @@ sample_description_HG00171:
         readset: &sts_reads HG00171_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
     - short_reads:
-        readset: &short_reads HG00171_hgsvc_il25k-125pe_short
+        readset: &short_reads HG00171_hgsvc_ilnvs-150pe_short
         source_type: ftp
 
 
