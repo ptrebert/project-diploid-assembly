@@ -5,6 +5,7 @@ cores: 48
 latency-wait: 10
 keep-going: True
 rerun-incomplete: True
+keep-incomplete: True
 restart-times: 0
 use-conda: True
 use-envmodules: False

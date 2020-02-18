@@ -13,6 +13,7 @@ jobs: 40
 latency-wait: 600
 keep-going: True
 rerun-incomplete: True
+keep-incomplete: True
 restart-times: 1
 use-conda: True
 use-envmodules: False

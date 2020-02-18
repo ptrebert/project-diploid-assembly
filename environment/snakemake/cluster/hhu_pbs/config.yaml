@@ -11,6 +11,7 @@ local-cores: 1
 jobs: 50
 latency-wait: 300
 keep-going: True
+keep-incomplete: True
 rerun-incomplete: True
 restart-times: 1
 max-status-checks-per-second: 0.001
