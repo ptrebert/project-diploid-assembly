@@ -1,5 +1,6 @@
 
-localrules: run_afr_trios,
+localrules: run_na19036_individual,
+            run_afr_trios,
             run_yri_trio,
             run_yri_father,
             run_yri_mother,

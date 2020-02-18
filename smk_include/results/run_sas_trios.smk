@@ -1,6 +1,7 @@
 
-localrules: run_sas_trios,
-            run_hg03009_individual,
+localrules: run_hg03009_individual,
+            run_na20847_individual,
+            run_sas_trios,
             run_itu_trio,
             run_itu_mother,
             run_itu_child,
@@ -14,6 +15,13 @@ rule run_hg03009_individual:
     input:
         'output/targets/SAS_BEB_HG03009/HG03009.fofn'
     message: 'Running SAS-BEB-HG03009 individual'
+
+########################################################
+
+rule run_na20847_individual:
+    input:
+        'output/targets/SAS_GIH_NA20847/NA20847.fofn'
+    message: 'Running SAS-GIH-NA20847 individual'
 
 ########################################################
 
@@ -62,6 +70,7 @@ rule run_pjl_trio:
 rule run_sas_trios:
     input:
         rules.run_hg03009_individual.input,
+        rules.run_na20847_individual.input,
         rules.run_itu_trio.input,
         rules.run_stu_trio.input,
         rules.run_pjl_trio.input
