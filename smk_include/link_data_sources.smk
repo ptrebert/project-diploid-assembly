@@ -1,5 +1,11 @@
 
-localrules: master_link_data_sources
+CONFIG_FORCE_LOCAL_COPY = config.get('force_local_copy', False)
+
+if not CONFIG_FORCE_LOCAL_COPY:
+    # making copies can be I/O intensive,
+    # this should not run on a cluster submit node
+    localrules: master_link_data_sources
+
 
 rule master_link_data_sources:
     """
@@ -19,7 +25,11 @@ rule master_link_data_sources:
                                'between input and output: {} vs {}'.format(len(input_files), len(output_links)))
 
         import os
+        import shutil
         for input_file, output_link in zip(input_files, output_links):
-            assert os.path.isfile(input_file), 'Invalid path to input file for linking: {}'.format(input_file)
+            assert os.path.isfile(input_file), 'Invalid path to input file for linking/copying: {}'.format(input_file)
             os.makedirs(os.path.dirname(output_link), exist_ok=True)
-            os.symlink(input_file, output_link)
+            if CONFIG_FORCE_LOCAL_COPY:
+                shutil.copy(input_file, output_link)
+            else:
+                os.symlink(input_file, output_link)
