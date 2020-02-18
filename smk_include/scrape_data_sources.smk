@@ -58,7 +58,10 @@ def read_configured_data_sources():
             else:
                 if isinstance(setting, list):
                     setting = ' '.join(setting)
-                data_source_config[parameter] = setting
+                if parameter in default_parameters:
+                    data_source_config[parameter] = ''.join(['--', parameter.replace('_', '-')]) + ' ' + setting
+                else:
+                    data_source_config[parameter] = setting
 
         if data_source_output is None:
             sys.stderr.write('\nERROR: no output ("output: filename") file defined for data source: {}'.format(key))
@@ -94,7 +97,7 @@ def read_configured_data_sources():
 
 DATA_SOURCE_NAMES, DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS = read_configured_data_sources()
 
-MAP_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 1)[0], call) for source, call in zip(DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS))
+DATA_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 1)[0], call) for source, call in zip(DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS))
 
 
 rule master_scrape_data_sources:
@@ -118,6 +121,6 @@ rule scrape_data_source:
     conda:
         '../environment/conda/conda_pyscript.yml'
     params:
-        scrape_call = lambda wildcards: MAP_SOURCE_TO_CALL[wildcards.data_source]
+        scrape_call = lambda wildcards: DATA_SOURCE_TO_CALL[wildcards.data_source]
     shell:
         '{params.scrape_call}'

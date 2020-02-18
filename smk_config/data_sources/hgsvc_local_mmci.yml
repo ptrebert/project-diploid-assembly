@@ -7,7 +7,7 @@ data_source_pacbio_mmci_local:
   collect_files:
     - 'bam'
   sort_into:
-    - 'bam/partial/parts'
+    - 'bam'
   file_infix: 'hgsvc_pbsq2-'
   assume_pacbio_native: True
   assume_clr_subreads: True

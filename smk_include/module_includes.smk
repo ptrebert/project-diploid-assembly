@@ -5,6 +5,7 @@ include: 'aux_utilities.smk'
 include: 'environments.smk'
 include: 'link_data_sources.smk'
 include: 'scrape_data_sources.smk'
+include: 'query_data_repos.smk'
 include: 'handle_reference_download.smk'
 
 # input preparation stage, one or two dependencies to above modules

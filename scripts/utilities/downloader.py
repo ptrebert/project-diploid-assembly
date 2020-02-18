@@ -19,6 +19,20 @@ CMD_COPY_LOCAL = 'cp {remote_path} {output}'
 
 CMD_SYM_LINK = 'ln -s {remote_path} {output}'
 
+ENA_FILE_REPORT_URL = """
+https://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=
+{ENA_ACCESSION}
+&result=read_run&fields=
+study_accession,sample_accession,secondary_sample_accession
+,experiment_accession,run_accession,submission_accession
+,tax_id,scientific_name,instrument_platform,instrument_model
+,library_name,library_layout,library_strategy,library_source
+,library_selection,read_count,center_name,study_title,fastq_md5
+,study_alias,experiment_alias,run_alias,fastq_ftp,submitted_ftp
+,sample_alias,sample_title
+&format=tsv&download=txt
+"""
+
 
 def parse_command_line():
     """
@@ -173,7 +187,7 @@ def handle_request_file_download(req_file_path, output_path, parallel_conn, forc
     except sp.CalledProcessError as spe:
         logger.error('System call failed with exit code: {}'.format(spe.returncode))
         logger.error('Error output: ---')
-        logger.error(spe.output)
+        logger.error('>>>\n' + spe.output.decode('utf-8').strip() + '\n')
         raise spe
 
     return
@@ -188,6 +202,8 @@ def handle_ena_file_report_download(ena_dl_url, output_path, logger):
     """
     logger.debug('Creating folder hierarchy')
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
+    ena_dl_url = '"' + ENA_FILE_REPORT_URL.strip().replace('\n', '').format(**{'ENA_ACCESSION': ena_dl_url}) + '"'
 
     call = CMD_DL_COMPRESSED_SINGLE.format(
         **{
@@ -206,7 +222,7 @@ def handle_ena_file_report_download(ena_dl_url, output_path, logger):
     except sp.CalledProcessError as spe:
         logger.error('System call failed with exit code: {}'.format(spe.returncode))
         logger.error('Error output: ---')
-        logger.error(spe.output)
+        logger.error('>>>\n' + spe.output.decode('utf-8').strip() + '\n')
         raise spe
 
     return
@@ -289,7 +305,7 @@ def handle_shasta_executable_download(shasta_dl_url, shasta_local_path, shasta_v
         except sp.CalledProcessError as spe:
             logger.error('System call failed with exit code: {}'.format(spe.returncode))
             logger.error('Error output: ---')
-            logger.error(spe.output)
+            logger.error('>>>\n' + spe.output.decode('utf-8').strip() + '\n')
             raise spe
     logger.debug('Attempt of changing permissions to user-rwx for Shasta executable...')
     os.chmod(shasta_local_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)

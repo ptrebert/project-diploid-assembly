@@ -15,6 +15,11 @@ import ftplib as ftplib
 CCS_TECH_KEYWORDS = ['ccs', 'q20', 'hifi']
 CLR_TECH_KEYWORDS = ['clr']
 
+RE_LIBRARY_ID = '[A-Z0-9][A-Za-z0-9_\\-]+[A-Z0-9]'
+RE_MATE_PAIR = '(_R[12]_|_R[12]$|_[12]_|_[12]$)'
+RE_LANE_ID = '_L[0-9]+_'
+RE_ADAPTER_SEQ = '[ACGT]+'
+
 
 def parse_command_line():
     """
@@ -136,7 +141,7 @@ def extract_maximal_match(file_name):
     :param file_name:
     :return:
     """
-    lib_id = re.compile('[A-Za-z0-9_\\-]+')
+    lib_id = re.compile(RE_LIBRARY_ID)
     longest_match = 0
     matched_string = ''
     for match in re.finditer(lib_id, file_name):
@@ -146,6 +151,36 @@ def extract_maximal_match(file_name):
             matched_string = current_match
     if longest_match == 0:
         raise ValueError('Could not match name/library identifier in file name: {}'.format(file_name))
+
+    # clean library ID of potential useless info
+    mate_num = re.compile(RE_MATE_PAIR)
+    mobj = mate_num.search(matched_string)
+    if mobj is not None:
+        matched_string = matched_string.replace(mobj.group(0), '_')
+    lane_num = re.compile(RE_LANE_ID)
+    mobj = lane_num.search(matched_string)
+    if mobj is not None:
+        matched_string = matched_string.replace(mobj.group(0), '_')
+
+    adapter_seq = re.compile(RE_ADAPTER_SEQ)
+    adapter_replace = []
+    for match in re.finditer(adapter_seq, matched_string):
+        adapter_match = match.group(0)
+        if len(adapter_match) > 5:
+            adapter_replace.append(adapter_match)
+    for ar in adapter_replace:
+        matched_string.replace(ar, '_')
+
+    # remove dangling separators
+    matched_string = matched_string.strip('-_.')
+    separator_groups = []
+    for match in re.finditer('[_\-]+', matched_string):
+        sep_group = match.group(0)
+        if len(sep_group) > 1:
+            separator_groups.append(sep_group)
+    for sg in separator_groups:
+        matched_string.replace(sg, '-')
+    matched_string = matched_string.replace('_', '-')
     return matched_string
 
 
@@ -163,11 +198,13 @@ def collect_strong_tech_indicators(remote_files, skip_files):
     :return:
     """
     lib_tech_lut = dict()
+    lib_file_lut = dict()
     for full_path in remote_files:
         path, name = os.path.split(full_path)
         if any([x in name.lower() for x in skip_files]):
             continue
         library_id = extract_maximal_match(name)
+        lib_file_lut[name] = library_id
         if any([x in name.lower() for x in CCS_TECH_KEYWORDS]):
             tech = 'ccs'
         elif any([x in name.lower() for x in CLR_TECH_KEYWORDS]):
@@ -189,7 +226,7 @@ def collect_strong_tech_indicators(remote_files, skip_files):
                 lib_tech_lut[library_id] = tech
         else:
             lib_tech_lut[library_id] = tech
-    return lib_tech_lut
+    return lib_tech_lut, lib_file_lut
 
 
 def annotate_remote_files(remote_files, cargs, logger):
@@ -205,7 +242,7 @@ def annotate_remote_files(remote_files, cargs, logger):
     file_collector = col.defaultdict(list)
 
     logger.debug('Collecting strong tech indicators per library')
-    tech_collector = collect_strong_tech_indicators(remote_files, meta_files + aux_files)
+    tech_collector, lib_file_map = collect_strong_tech_indicators(remote_files, meta_files + aux_files)
     libraries = set(tech_collector.keys())
     logger.debug('Identified {} libraries in remote files'.format(len(tech_collector)))
 
@@ -240,7 +277,7 @@ def annotate_remote_files(remote_files, cargs, logger):
         elif tech is None and 'subreads' in name.lower() and cargs.clr_subreads:
             # need to check if library ID is associated with a strong tech indicator
             for lib in libraries:
-                if lib in name:
+                if lib in name or lib in name.replace('_', '-'):
                     tech = tech_collector[lib]
                     if tech is None:
                         logger.warning('Assuming CLR/subreads file: {}'.format(name))
@@ -271,25 +308,15 @@ def annotate_remote_files(remote_files, cargs, logger):
             file_ext = 'sam.bam'
         else:
             pass
+        assert tech is not None, 'Undetermined tech for file {}'.format(name)
         if cargs.file_suffix is None:
             file_prefix_components = [individual, cargs.file_infix + tech]
         elif cargs.file_suffix == 'library_id':
-            library_id = None
-            for lib in libraries:
-                if lib in name:
-                    library_id = lib
-                    break
-            if library_id is None:
-                raise ValueError('Did not identify library ID for file: {}'.format(name))
+            library_id = lib_file_map[name]
             # some clean up
             library_id = library_id.replace(individual, '')
             # custom...
             library_id = library_id.replace('sequence', '')
-            if cargs.paired_reads:
-                # mate indicator will be added automatically
-                match_mate = re.search('(R[12]_|_[12]_)', library_id)
-                if match_mate is not None:
-                    library_id = library_id.replace(match_mate.group(0), '')
             library_id = library_id.strip('_-.')
             file_prefix_components = [individual, cargs.file_infix + tech, library_id]
         else:
@@ -302,6 +329,8 @@ def annotate_remote_files(remote_files, cargs, logger):
         logger.debug('Adding file to collection: {}'.format(name))
 
         if cargs.local_path_suffix is not None:
+            if individual.startswith('GM'):
+                individual = individual.replace('GM', 'NA')
             logger.debug('Adding suffix to local path')
             path_suffix = cargs.local_path_suffix.format(**{
                 'individual': individual,
