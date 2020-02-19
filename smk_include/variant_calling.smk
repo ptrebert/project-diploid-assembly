@@ -219,15 +219,17 @@ rule call_variants_deepvariant:
         reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
         ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
         seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
-        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.pbn.bam',
-        aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.pbn.bam.bai'
+        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai'
     output:
         vcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf',
         gvcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.gvcf',
     log:
         'log/output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/deepvar/{{reference}}/{{sts_reads}}/processing/10-norm/splits/{{vc_reads}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
+        os.path.join('run/output/variant_calls/deepvar',
+                     '{reference}/{sts_reads}/processing/10-norm/splits',
+                     '{vc_reads}.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_high']))
     envmodules:
         config['env_module_singularity']
     threads: config['num_cpu_high']

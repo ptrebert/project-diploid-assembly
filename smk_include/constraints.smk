@@ -51,6 +51,20 @@ def build_input_data_wildcard_constraint(input_type, readset_selectors):
     return wildcard_regexp
 
 
+CONSTRAINT_PACBIO_SAMPLES = build_input_data_wildcard_constraint(
+    input_type='long_reads',
+    readset_selectors={
+        'technology': ['pacbio']
+    }
+)
+
+CONSTRAINT_NANOPORE_SAMPLES = build_input_data_wildcard_constraint(
+    input_type='long_reads',
+    readset_selectors={
+        'technology': ['ont']
+    }
+)
+
 CONSTRAINT_ALL_PBN_INPUT_SAMPLES = build_input_data_wildcard_constraint(
     input_type='long_reads',
     readset_selectors={

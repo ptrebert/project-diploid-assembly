@@ -1,5 +1,7 @@
 
-localrules: master_run_alignments
+localrules: master_run_alignments,
+            derive_minimap_parameter_preset,
+            derive_pbmm2_parameter_preset
 
 
 rule master_run_alignments:
@@ -39,6 +41,10 @@ rule derive_minimap_parameter_preset:
 
 
 rule derive_pbmm2_parameter_preset:
+    """
+    https://github.com/PacificBiosciences/pbmm2
+    The --min-length option is a custom addition
+    """
     input:
         '{filepath}.pbn.bam'
     output:
@@ -49,9 +55,9 @@ rule derive_pbmm2_parameter_preset:
         tech_spec = filename.split('_')[2]
         preset = ''
         if '-clr' in tech_spec:
-            preset = 'SUBREAD'
+            preset = 'SUBREAD --min-length 5000 '
         elif '-ccs' in tech_spec:
-            preset = 'CCS'
+            preset = 'CCS --min-length 5000 '
         else:
             raise ValueError('No pbmm2 preset for file: {}'.format(filename))
 
@@ -71,13 +77,16 @@ rule minimap_reads_to_reference_alignment:
         st_sort = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.st-sort.log',
         st_view = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.st-view.log',
     benchmark:
-        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.t{}.rsrc'.format(config['num_cpu_high'])
+        os.path.join('run/output/alignments/reads_to_reference/{folder_path}',
+                     '{sample}_map-to_{reference}' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda:
         '../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = CONSTRAINT_NANOPORE_SAMPLES
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(65536 / config['num_cpu_high']),
-        mem_total_mb = 65536,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((55296 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 55296 * attempt,
         runtime_hrs = 71,
         mem_sort_mb = 8192
     params:
@@ -96,7 +105,7 @@ rule minimap_reads_to_reference_alignment:
             'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
 
 
-rule pbmm2_reads_to_reference_alignment:
+rule pbmm2_reads_to_reference_alignment_pacbio_native:
     input:
         reads = 'input/bam/{sample}.pbn.bam',
         preset = 'input/bam/{sample}.preset.pbmm2',
@@ -106,18 +115,17 @@ rule pbmm2_reads_to_reference_alignment:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbn.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbn.t{}.rsrc'.format(config['num_cpu_high'])
+        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_pbtools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = int(98304 / config['num_cpu_high']),
-        mem_total_mb = 98304,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
         runtime_hrs = 71
     params:
         align_threads = config['num_cpu_high'] - 2,
         sort_threads = 2,
-        sort_memory_mb = int((98304 / config['num_cpu_high']) * 2),
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.sample.split('_')[0],
         tempdir = lambda wildcards: os.path.join(
@@ -125,9 +133,45 @@ rule pbmm2_reads_to_reference_alignment:
                                         wildcards.sample, wildcards.reference)
     shell:
         'TMPDIR={params.tempdir} '
-        'pbmm2 align --log-level INFO --sort --sort-memory {params.sort_memory_mb}M --no-bai '
+        'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
             ' --preset {params.preset} --sample {params.individual} '
+            ' {input.reference} {input.reads} {output.bam} &> {log}'
+
+
+rule pbmm2_reads_to_reference_alignment_pacbio_fastq:
+    input:
+        reads = 'input/fastq/{sample}.fastq.gz',
+        preset = 'input/fastq/{sample}.preset.pbmm2',
+        reference = 'output/reference_assembly/{folder_path}/{reference}.fasta'
+    output:
+        bam = 'output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.psort.sam.bam',
+    log:
+        'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbmm2.log'
+    benchmark:
+        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../environment/conda/conda_pbtools.yml'
+    wildcard_constraints:
+        sample = CONSTRAINT_PACBIO_SAMPLES
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
+        runtime_hrs = 71
+    params:
+        align_threads = config['num_cpu_high'] - 2,
+        sort_threads = 2,
+        preset = load_preset_file,
+        individual = lambda wildcards: wildcards.sample.split('_')[0],
+        tempdir = lambda wildcards: os.path.join(
+                                        'temp', 'pbmm2', wildcards.folder_path,
+                                        wildcards.sample, wildcards.reference)
+    shell:
+        'TMPDIR={params.tempdir} '
+        'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
+            ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
+            ' --preset {params.preset} --rg "@RG\\tID:1\\tSM:{params.individual}" --sample {params.individual} '
             ' {input.reference} {input.reads} {output.bam} &> {log}'
 
 
