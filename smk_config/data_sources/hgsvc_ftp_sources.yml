@@ -146,20 +146,20 @@ data_source_UM_pacbio:
   assume_clr_subreads: True
 
 
-#data_source_JAX_illumina:
-#  comment: "HGSVC FTP source for Illumina short read data (JAX)"
-#  output: 'hgsvc_JAX_illumina.json'
-#  server: 'ftp.1000genomes.ebi.ac.uk'
-#  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20191004_Illumina'
-#  collect_files:
-#    - 'fastq.gz'
-#  sort_into:
-#    - 'fastq'
-#  file_infix: 'hgsvc_ilnxs-'
-#  fix_tech: '150pe'
-#  file_suffix: 'library_id'
-#  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}_short'
-#  assume_paired_reads: True
+data_source_JAX_illumina:
+  comment: "HGSVC FTP source for Illumina short read data (JAX)"
+  output: 'hgsvc_JAX_illumina.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20191004_Illumina'
+  collect_files:
+    - 'fastq.gz'
+  sort_into:
+    - 'fastq'
+  file_infix: 'hgsvc_ilnvs-'
+  fix_tech: '150pe'
+  file_suffix: 'library_id'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}_short'
+  assume_paired_reads: True
 
 
 data_source_EMBL_strandseq:
