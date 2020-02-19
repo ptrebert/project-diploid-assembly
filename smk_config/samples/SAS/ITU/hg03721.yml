@@ -9,9 +9,9 @@ sample_description_HG03721:
   data_sources:
     - long_reads:
         readset: HG03721_hgsvc_pbsq2-clr
+        technology: pacbio
         data_type: pacbio_native
         load_type: parts
-        source_type: ftp
     - strandseq:
         readset: &sts_reads HG03721_hgsvc_ilnxs-80pe_sseq
         source_type: ftp

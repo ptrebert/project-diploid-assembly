@@ -9,14 +9,14 @@ sample_description_NA19239:
   data_sources:
     - long_reads:
         readset: NA19239_hgsvc_pbsq2-ccs
-        data_type: pacbio_native
+        technology: pacbio
+        data_type: fastq
         load_type: parts
-        source_type: ftp
     - long_reads:
         readset: NA19239_hgsvc_pbsq2-clr
+        technology: pacbio
         data_type: pacbio_native
         load_type: parts
-        source_type: ftp
     - strandseq:
         readset: &sts_reads NA19239_1kg_il25k-npe_sseq
         source_type: ena

@@ -9,6 +9,7 @@ sample_description_NA12878:
   data_sources:
     - long_reads:
         readset: NA12878_giab_pbsq2-ccs
+        technology: pacbio
         data_type: fastq
         load_type: parts
         source_type: ena
