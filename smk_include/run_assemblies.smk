@@ -343,13 +343,14 @@ rule compute_peregrine_nonhapres_assembly:
         pereg = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.log',
         copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
     benchmark:
-        'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-pereg.t{}.rsrc'.format(config['num_cpu_high'])
+        os.path.join('run/output/reference_assembly/non-hap-res',
+                     '{sample}_nhr-pereg' + '.t{}.rsrc'.format(config['num_cpu_max']))
     envmodules:
         config['env_module_singularity']
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((499712 if attempt <= 1 else 749568 * (attempt - 1)) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 499712 if attempt <= 1 else 749568 * (attempt - 1),
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
+        mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
         runtime_hrs = lambda wildcards, attempt: 35 if attempt <= 1 else 24 * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
