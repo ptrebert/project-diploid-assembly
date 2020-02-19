@@ -204,7 +204,14 @@ def check_target_modifier_match(target_spec, check_keys, check_values, check_kee
     :return:
     """
     modify_target = check_keep
-    for key in set(target_spec.keys()).intersection(check_keys):
+    shared_keys = set(target_spec.keys()).intersection(check_keys)
+    if len(shared_keys) < len(check_keys) and check_keep:
+        # for keeping a target spec, everything attribute  has to be true;
+        # if a target spec is missing a required key, it must not
+        # be selected
+        modify_target = False  # this is a misnomer
+        shared_keys = set()  # to skip over loop
+    for key in shared_keys:
         current_value = target_spec[key]
         if isinstance(current_value, str):
             if check_keep:
