@@ -347,20 +347,19 @@ rule compute_peregrine_nonhapres_assembly:
                      '{sample}_nhr-pereg' + '.t{}.rsrc'.format(config['num_cpu_max']))
     envmodules:
         config['env_module_singularity']
-    threads: config['num_cpu_max']
+    threads: int(config['num_cpu_max'] // 2)
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
         runtime_hrs = lambda wildcards, attempt: 35 if attempt <= 1 else 24 * attempt
     params:
-        ovl_cpu = max(1, int(config['num_cpu_max'] * 0.5)),  # memory-intensive part, scale down
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
         singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
         '{params.singularity}'
         '(yes yes || true) | singularity run --bind {params.bind_folder}:/wd {input.container} '
-            ' asm {input.fofn} {threads} {threads} {params.ovl_cpu} {params.ovl_cpu} {threads} {threads} {threads} {threads} {threads} '
+            ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
             ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
