@@ -1,8 +1,9 @@
 
-def build_input_data_wildcard_constraint(input_type, readset_selectors):
+def build_input_data_wildcard_constraint(input_type, readset_selectors, add_sampling_numbers=False):
     """
     :param input_type:
     :param readset_selectors:
+    :param add_sampling_numbers:
     :return:
     """
     import sys
@@ -47,6 +48,8 @@ def build_input_data_wildcard_constraint(input_type, readset_selectors):
         wildcard_regexp = '^$'
     else:
         wildcard_regexp = '(' + '|'.join(sorted(selected_readsets)) + ')'
+        if add_sampling_numbers:
+            wildcard_regexp += '_[0-9]+'
 
     return wildcard_regexp
 
@@ -55,14 +58,16 @@ CONSTRAINT_PACBIO_SAMPLES = build_input_data_wildcard_constraint(
     input_type='long_reads',
     readset_selectors={
         'technology': ['pacbio']
-    }
+    },
+    add_sampling_numbers=True
 )
 
 CONSTRAINT_NANOPORE_SAMPLES = build_input_data_wildcard_constraint(
     input_type='long_reads',
     readset_selectors={
         'technology': ['ont']
-    }
+    },
+    add_sampling_numbers=True
 )
 
 CONSTRAINT_ALL_PBN_INPUT_SAMPLES = build_input_data_wildcard_constraint(
