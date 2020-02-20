@@ -15,6 +15,7 @@ sample_description_HG03683:
     - strandseq:
         readset: &sts_reads HG03683_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
+        library_fractions: one
     - short_reads:
         readset: &short_reads HG03683_hgsvc_ilnvs-150pe_short
         source_type: ftp

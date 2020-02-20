@@ -18,6 +18,7 @@ sample_description_NA12878:
         readset: &sts_reads NA12878_eriba_il25k-100pe_sseq
         source_type: ena
         bioproject: PRJEB14185
+        library_fractions: one
 
 
 sample_targets_NA12878:
