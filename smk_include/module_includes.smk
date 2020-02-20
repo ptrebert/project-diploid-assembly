@@ -16,8 +16,8 @@ include: 'preprocess_references.smk'
 include: 'variant_calling.smk'
 include: 'integrative_phasing.smk'
 
-include: 'strandseq_dga_joint.smk'
 include: 'strandseq_dga_split.smk'
+include: 'strandseq_dga_joint.smk'
 
 # actual pipeline processing steps
 include: 'collect_statistics.smk'

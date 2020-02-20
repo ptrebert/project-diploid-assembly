@@ -1,5 +1,6 @@
 
-localrules: master_strandseq_dga_joint
+localrules: master_strandseq_dga_joint,
+            write_haploid_split_reads_fofn
 
 """
 Components:
@@ -7,129 +8,137 @@ vc_reads = FASTQ file used for variant calling relative to reference
 hap_reads = FASTQ file to be used for haplotype reconstruction
 sts_reads = FASTQ file used for strand-seq phasing
 """
-PATH_STRANDSEQ_DGA_JOINT = 'diploid_assembly/strandseq_joint/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}'
+PATH_STRANDSEQ_DGA_JOINT = 'diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}'
+PATH_STRANDSEQ_DGA_JOINT_PROTECTED = PATH_STRANDSEQ_DGA_JOINT.replace('{', '{{').replace('}', '}}')
 
 
 rule master_strandseq_dga_joint:
     input:
+        []
+
+def collect_haploid_split_reads(wildcards, glob_collect, file_ext):
+    """
+    :param wildcards:
+    :param glob_collect:
+    :param file_ext:
+    :return:
+    """
+    import os
+
+    read_format = {
+        'fastq.gz': 'fastq',
+        'pbn.bam': 'bam'
+    }
+
+    source_path = os.path.join('output',
+                               PATH_STRANDSEQ_DGA_SPLIT,
+                               'draft/haploid_' + read_format[file_ext],
+                               '{hap_reads}.{hap}.{sequence}.' + file_ext)
+
+    # pay attention to not merge the untagged reads twice here
+    haplotypes = [wildcards.hap]
+    if wildcards.hap.endswith('-un'):
+        haplotypes = wildcards.hap.split('-')
+
+    hap_read_splits = []
+
+    if glob_collect:
+        import glob
+        for h in haplotypes:
+            pattern = source_path.replace('{sequence}', '*')
+            known_values = dict(wildcards)
+            known_values['hap'] = h
+            pattern = pattern.format(**known_values)
+            hap_files = glob.glob(pattern)
+
+            if not hap_files:
+                raise RuntimeError('{}: collect_haploid_split_reads: no files collected with pattern {}'.format(h, pattern))
+            hap_read_splits.extend(hap_files)
+
+    else:
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
+                                                                        reference=wildcards.reference).output[0]
+        checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
+
+        hap_read_splits = expand(
+            source_path,
+            var_caller=wildcards.var_caller,
+            gq=wildcards.gq,
+            qual=wildcards.qual,
+            reference=wildcards.reference,
+            vc_reads=wildcards.vc_reads,
+            sts_reads=wildcards.sts_reads,
+            hap_reads=wildcards.hap_reads,
+            hap=haplotypes,  # note here: haplotype replacement
+            sequence=checkpoint_wildcards.sequence
+        )
+    return hap_read_splits
 
 
-rule strandseq_dga_joint_haplo_tagging:
+def collect_haploid_split_reads_any(wildcards, glob_collect=False):
+    """
+    :param wildcards:
+    :param glob_collect:
+    :return:
+    """
+    if wildcards.subfolder == 'bam':
+        collected_files = collect_haploid_split_reads(wildcards, glob_collect, 'pbn.bam')
+    elif wildcards.subfolder == 'fastq':
+        collected_files = collect_haploid_split_reads(wildcards, glob_collect, 'fastq.gz')
+    else:
+        raise ValueError('collect_haploid_split_reads_any: cannot process wildcards: {}'.format(wildcards))
+    return sorted(collected_files)
+
+
+rule write_haploid_split_reads_fofn:
     input:
-        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
-        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam',
-        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
-        fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
+        read_splits = collect_haploid_split_reads_any
     output:
-        bam = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagged.sam.bam',
-        tags = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tags.fq.tsv',
-    log:
-        'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.fq.log',
-    benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.fq.rsrc'
-    resources:
-        runtime_hrs = 12,
-        mem_total_mb = 4096,
-        mem_per_cpu_mb = 4096
-    shell:
-        "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_{subfolder}/{hap_reads}.{hap}.fofn',
+    run:
+        import os
+        try:
+            validate_checkpoint_output(input.read_splits)
+            split_files = input.read_splits
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            split_files = collect_haploid_split_reads_any(wildcards, glob_collect=True)
+
+        with open(output.fofn, 'w') as dump:
+            for file_path in sorted(split_files):
+                if not os.path.isfile(file_path):
+                    import sys
+                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+                _ = dump.write(file_path + '\n')
 
 
-rule strandseq_dga_joint_haplo_splitting:
+rule concat_haploid_fastq:
     input:
-        fastq = 'input/fastq/{hap_reads}.fastq.gz',
-        tags = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tags.fq.tsv',
+        fofn = os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_fastq/{hap_reads}.{hap}.fofn')
     output:
-        h1 = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.h1.fastq.gz',
-        h2 = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.h2.fastq.gz',
-        un = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.un.fastq.gz',
-        hist = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.rlen-hist.fq.tsv'
-    log:
-        'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.splitting.fq.log',
-    benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.splitting.fq.rsrc'
+        os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_fastq/{hap_reads}.{hap}.fastq.gz')
+    conda:
+         '../environment/conda/conda_shelltools.yml'
     resources:
-        runtime_hrs = 12,
-        mem_total_mb = 4096,
-        mem_per_cpu_mb = 4096
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        splits = lambda wildcards, input: load_fofn_file(input)
     shell:
-        "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
+         'cat {params.splits} > {output}'
 
 
-rule strandseq_dga_joint_haplo_tagging_pacbio_native:
+rule concat_haploid_pbn_bam:
     input:
-        vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz',
-        tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam',
-        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
-        fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
+        fofn = os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_bam/{hap_reads}.{hap}.fofn')
     output:
-        bam = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagged.pbn.bam',
-        tags = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tags.pbn.tsv',
-    log:
-        'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.pbn.log',
-    benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tagging.pbn.rsrc'
+        os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_bam/{hap_reads}.{hap}.pbn.bam')
+    conda:
+         '../environment/conda/conda_shelltools.yml'
     resources:
-        runtime_hrs = 12,
-        mem_total_mb = 4096,
-        mem_per_cpu_mb = 4096
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    params:
+        bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
     shell:
-        "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
-
-
-rule strandseq_dga_joint_haplo_splitting_pacbio_native:
-    input:
-        pbn_bam = 'input/bam/{hap_reads}.pbn.bam',
-        pbn_idx = 'input/bam/{hap_reads}.pbn.bam.bai',
-        tags = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haplotags/{hap_reads}.tags.pbn.tsv',
-    output:
-        h1 = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h1.pbn.bam',
-        h2 = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h2.pbn.bam',
-        un = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.un.pbn.bam',
-        hist = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.rlen-hist.pbn.tsv'
-    log:
-        'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.splitting.pbn.log',
-    benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.splitting.pbn.rsrc',
-    resources:
-        runtime_hrs = 12,
-        mem_total_mb = 4096,
-        mem_per_cpu_mb = 4096
-    shell:
-        "whatshap --debug split --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.pbn_bam} {input.tags} &> {log}"
-
-
-rule strandseq_dga_joint_merge_tag_groups_pacbio_native:
-    input:
-        hap = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}.pbn.bam',
-        un = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.un.pbn.bam',
-    output:
-        'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.pbn.bam',
-    log:
-        'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.pbn.mrg.log',
-    benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.pbn.mrg.rsrc',
-    resources:
-        runtime_hrs = 3
-    wildcard_constraints:
-        haplotype = '(1|2)'
-    shell:
-        'bamtools merge -in {input.hap} -in {input.un} -out {output} &> {log}'
-
-
-rule strandseq_dga_joint_merge_tag_groups:
-    input:
-        hap = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}.fastq.gz',
-        un = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.un.fastq.gz',
-    output:
-        'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.h{haplotype}-un.fastq.gz'
-    benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_bam/{hap_reads}.h{haplotype}-un.fq.mrg.rsrc',
-    resources:
-        runtime_hrs = 3
-    wildcard_constraints:
-        haplotype = '(1|2)'
-    shell:
-        'cat {input.hap} {input.un} > {output}'
+        'bamtools merge {params.bam_parts} -out {output}'

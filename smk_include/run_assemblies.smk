@@ -508,6 +508,52 @@ rule compute_flye_haploid_assembly:
             ' && '
             'cp {output.assm_source} {output.assembly}'
 
+
+rule compute_shasta_haploid_assembly:
+    """
+    Note that for Shasta, the output directory MUST NOT exist at invocation time, which
+    is incompatible with Snakemake's default behavior - rm output dir before start...
+    """
+    input:
+        shasta_exec = 'output/check_files/environment/shasta_version.ok',
+        fasta = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.{hap}.fastq',
+        config = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_fastq/{hap_reads}.{hap}.preset.shasta',
+    output:
+        assm_files = expand('output/' + PATH_STRANDSEQ_DGA_JOINT_PROTECTED + '/draft/temp/layout/shasta/{{hap_reads}}.{{hap}}/Assembly{assm_files}',
+                            assm_files=['-BothStrands.gfa', '.gfa', 'GraphChainLengthHistogram.csv',
+                                        'Graph-Final.dot', 'Summary.csv', 'Summary.html', 'Summary.json']
+                            ),
+        aux_files = expand('output/' + PATH_STRANDSEQ_DGA_JOINT_PROTECTED + '/draft/temp/layout/shasta/{{hap_reads}}.{{hap}}/{aux_files}',
+                            aux_files=['Binned-ReadLengthHistogram.csv', 'MarkerGraphEdgeCoverageHistogram.csv',
+                                        'MarkerGraphVertexCoverageHistogram.csv', 'PalindromicReads.csv',
+                                        'ReadGraphComponents.csv', 'ReadLengthHistogram.csv', 'ReadSummary.csv',
+                                        'shasta.conf']
+                           ),
+        assm_source = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/temp/layout/shasta/{hap_reads}.{hap}/Assembly.fasta',
+        assembly = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_assembly/{hap_reads}-shasta.{hap}.fasta',
+    log:
+        'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_assembly/{hap_reads}-shasta.{hap}.log',
+    benchmark:
+        os.path.join('run/output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_assembly',
+                     '{hap_reads}-shasta.{hap}' + '.t{}.rsrc'.format(config['num_cpu_max']))
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_max']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
+        mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
+        runtime_hrs = lambda wildcards, attempt: 12 if attempt <= 1 else 71
+    params:
+        out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
+    shell:
+        'rm -rfd {params.out_prefix} && '
+        'shasta --input {input.fasta} --assemblyDirectory {params.out_prefix} --command assemble '
+            ' --memoryMode anonymous --memoryBacking 4K --threads {threads} '
+            ' --config {input.config} &> {log}'
+            ' && '
+            'cp {output.assm_source} {output.assembly}'
+
+
 # Why do we need dedicated rules for computing the assemblies per haploid cluster/split?
 # Setting the approx. assembly length requires accessing the respective reference
 # FASTA index file
