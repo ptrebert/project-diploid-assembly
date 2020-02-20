@@ -280,10 +280,14 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
     else:
         requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
 
+        # this is a bit tricky given that there are different varieties of Strand-seq libraries
+        glob_pattern = '_'.join([individual, project, platform + '-{spec}', '{lib_id}'])
+
         if wildcards.sts_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
-            search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_{run_id}_1.request')
+            glob_pattern += '_{run_id,[A-Z0-9]+}_1.request'
         else:
-            search_path = os.path.join(requests_dir, '{individual}_{project}_{platform_spec}_{lib_id}_1.request')
+            glob_pattern += '_1.request'
+        search_path = os.path.join(requests_dir, glob_pattern)
 
         checkpoint_wildcards = glob_wildcards(search_path)
 
