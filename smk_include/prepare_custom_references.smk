@@ -139,9 +139,9 @@ rule samtools_position_sort_strandseq_reads:
     samtools sort rule with lower resource requirements
     """
     input:
-        '{folder_path}/temp/mrg/{sample}.mrg.sam.bam'
+        '{folder_path}/temp/mrg/{sts_library}.mrg.sam.bam'
     output:
-        temp('{folder_path}/temp/sort/{sample}.mrg.psort.sam.bam')
+        temp('{folder_path}/temp/sort/{sts_library}.mrg.psort.sam.bam')
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -157,11 +157,11 @@ rule mark_duplicate_reads_strandseq:
     input:
         rules.samtools_position_sort_strandseq_reads.output[0]
     output:
-        '{folder_path}/{sample}.mrg.psort.mdup.sam.bam'
+        '{folder_path}/{sts_library}.mrg.psort.mdup.sam.bam'
     log:
-        'log/{folder_path}/{sample}.mrg.psort.mdup.log'
+        'log/{folder_path}/{sts_library}.mrg.psort.mdup.log'
     benchmark:
-        'run/{folder_path}/{sample}.mrg.psort.mdup.rsrc'
+        'run/{folder_path}/{sts_library}.mrg.psort.mdup.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -321,9 +321,9 @@ rule write_reference_fasta_clusters_fofn:
 
 rule merge_reference_fasta_clusters:
     input:
-        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sample}_nhr-{assembler}.clusters.fofn'
+        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sts_library}_nhr-{assembler}.clusters.fofn'
     output:
-        expand('output/reference_assembly/clustered/{{sts_reads}}/{{sample}}_scV{version}-{{assembler}}.fasta',
+        expand('output/reference_assembly/clustered/{{sts_reads}}/{{sts_library}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
     conda:
         '../environment/conda/conda_shelltools.yml'
