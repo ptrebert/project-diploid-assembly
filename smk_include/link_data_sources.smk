@@ -1,5 +1,5 @@
 
-CONFIG_FORCE_LOCAL_COPY = config.get('force_local_copy', False)
+CONFIG_FORCE_LOCAL_COPY = bool(config.get('force_local_copy', False))
 
 if not CONFIG_FORCE_LOCAL_COPY:
     # making copies can be I/O intensive,
