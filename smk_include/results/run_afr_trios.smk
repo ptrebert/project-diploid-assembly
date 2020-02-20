@@ -25,19 +25,19 @@ rule run_na19036_individual:
 
 rule run_yri_mother:
     input:
-        'output/targets/AMR_YRI_Y117/NA19238.fofn'
+        'output/targets/AFR_YRI_Y117/NA19238.fofn'
     message: 'Running AFR-YRI-Y117 mother'
 
 
 rule run_yri_father:
     input:
-        'output/targets/AMR_YRI_Y117/NA19239.fofn'
+        'output/targets/AFR_YRI_Y117/NA19239.fofn'
     message: 'Running AFR-YRI-Y117 father'
 
 
 rule run_yri_child:
     input:
-        'output/targets/AMR_YRI_Y117/NA19240.fofn'
+        'output/targets/AFR_YRI_Y117/NA19240.fofn'
     message: 'Running AFR-YRI-Y117 child'
 
 
