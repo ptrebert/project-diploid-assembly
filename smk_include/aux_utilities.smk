@@ -28,9 +28,9 @@ rule gunzip_fastq_copy:
 
 rule samtools_index_bam_alignment:
     input:
-        bam = '{filepath}'
+        bam = '{filepath}.bam'
     output:
-        bai = '{filepath}.bai'
+        bai = '{filepath}.bam.bai'
     benchmark:
         'run/{{filepath}}.idx-bai.t{}.rsrc'.format(config['num_cpu_low'])
     threads: config['num_cpu_low']

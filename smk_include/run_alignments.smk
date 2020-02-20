@@ -1,7 +1,8 @@
 
 localrules: master_run_alignments,
             derive_minimap_parameter_preset,
-            derive_pbmm2_parameter_preset
+            derive_pbmm2_parameter_preset_pbn,
+            derive_pbmm2_parameter_preset_fastq
 
 
 rule master_run_alignments:
@@ -40,13 +41,40 @@ rule derive_minimap_parameter_preset:
             _ = dump.write(preset)
 
 
-rule derive_pbmm2_parameter_preset:
+rule derive_pbmm2_parameter_preset_pbn:
     """
+    TODO (see below)
     https://github.com/PacificBiosciences/pbmm2
     The --min-length option is a custom addition
     """
     input:
         '{filepath}.pbn.bam'
+    output:
+        '{filepath}.preset.pbmm2'
+    run:
+        import os
+        filename = os.path.basename(input[0])
+        tech_spec = filename.split('_')[2]
+        preset = ''
+        if '-clr' in tech_spec:
+            preset = 'SUBREAD --min-length 5000 '
+        elif '-ccs' in tech_spec:
+            preset = 'CCS --min-length 5000 '
+        else:
+            raise ValueError('No pbmm2 preset for file: {}'.format(filename))
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write(preset)
+
+
+rule derive_pbmm2_parameter_preset_fastq:
+    """
+    TODO (see above)
+    https://github.com/PacificBiosciences/pbmm2
+    The --min-length option is a custom addition
+    """
+    input:
+        '{filepath}.fastq.gz'
     output:
         '{filepath}.preset.pbmm2'
     run:
