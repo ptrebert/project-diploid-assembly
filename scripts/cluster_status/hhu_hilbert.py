@@ -3,6 +3,7 @@
 import os
 import sys
 import re
+import time
 import random
 import logging
 from logging.handlers import RotatingFileHandler
@@ -12,10 +13,26 @@ random.seed()
 
 FILE_PATH_STATUS_LOG = None
 
+# Change here: frequent I/O hiccups on HILBERT
+# leading to a FileNotFoundError for abspath.
+# Quite annoying...
+try:
+    script_path = os.path.abspath(__file__)
+except FileNotFoundError:
+    time.sleep(0.5)  # not sure if Snakemake has a timeout on the status call
+    try:
+        script_path = os.path.abspath(__file__)
+    except FileNotFoundError:
+        # to avoid an error condition because of an temp. I/O
+        # problem, tell Snakemake everything is fine
+        sys.stdout.write('{}\n'.format('running'))
+        sys.exit(0)
+
+
 if FILE_PATH_STATUS_LOG is None:
     FILE_PATH_STATUS_LOG = os.path.join(
         os.path.dirname(
-            os.path.abspath(__file__)),
+            os.path.abspath(script_path)),
         'log', 'cluster_status.log'
     )
 
