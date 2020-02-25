@@ -344,12 +344,12 @@ rule compute_peregrine_nonhapres_assembly:
         copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
     benchmark:
         os.path.join('run/output/reference_assembly/non-hap-res',
-                     '{sample}_nhr-pereg' + '.t{}.rsrc'.format(config['num_cpu_max']))
+                     '{sample}_nhr-pereg' + '.t{}.rsrc'.format(config['num_cpu_high']))
     envmodules:
         config['env_module_singularity']
-    threads: int(config['num_cpu_max'] // 2)
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
         runtime_hrs = lambda wildcards, attempt: 35 if attempt <= 1 else 24 * attempt
     params:
