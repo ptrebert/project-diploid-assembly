@@ -92,7 +92,7 @@ rule hac_write_strandseq_merge_fofn:
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            bam_files = collect_strandseq_merge_files(wildcards, glob_collect=True)
+            bam_files = hac_collect_strandseq_merge_files(wildcards, glob_collect=True)
 
         if len(bam_files) != 2:
             raise RuntimeError('(hac) Missing merge partner for strand-seq BAM files {} / {}: '
@@ -437,7 +437,7 @@ rule hac_write_haploid_assembly_clustered_fasta_fofn:
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True)
+            fasta_files = collect_haploid_clustered_fasta_sequences(wildcards, glob_collect=True)
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(fasta_files):
