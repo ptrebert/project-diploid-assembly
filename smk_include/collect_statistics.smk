@@ -114,6 +114,30 @@ rule compute_statistics_split_cluster_fasta:
          '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
+rule compute_statistics_joint_cluster_fasta:
+    input:
+         fasta = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq',
+         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
+    output:
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.pck',
+          summary = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.t2.rsrc'
+    threads: 2
+    resources:
+             runtime_hrs= 1,
+             mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+             mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
+    conda:
+         '../environment/conda/conda_pyscript.yml'
+    params:
+          script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
+    shell:
+         '{params.script_exec} --debug --input-files {input.fasta} '
+         '--output {output.dump} --summary-output {output.summary} '
+         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
+
+
 rule compute_statistics_complete_input_bam:
     input:
         bam = 'input/bam/{sample}.pbn.bam',
