@@ -79,6 +79,6 @@ rule plot_saarclust_haploid_assembly_diagnostic_output:
         script_exec = lambda wildcards: find_script_path('plot_saarclust_diagnostics.R'),
         out_prefix = lambda wildcards: os.path.join(
             'output', 'plotting', 'saarclust_diagnostics', wildcards.folder_path,
-            wildcards.reference + '_map-to_' + wildcards.aln_reference)
+            wildcards.file_name + '_map-to_' + wildcards.aln_reference)
     shell:
          '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} TRUE &> {log}'
