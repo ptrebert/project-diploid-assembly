@@ -443,6 +443,7 @@ rule minimap_contig_to_known_reference_alignment:
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.file_name.split('_')[0],
+        readgroup_id = lambda wildcards: wildcards.file_name.replace('.', '_'),
         discard_flag = config['minimap_contigref_aln_discard'],
         tempdir = lambda wildcards: os.path.join(
                                         'temp', 'minimap', wildcards.folder_path,
@@ -451,7 +452,7 @@ rule minimap_contig_to_known_reference_alignment:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
         'minimap2 -t {threads} '
             '--secondary=no --eqx -Y -ax asm20 -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
-            '-R "@RG\\tID:{wildcards.reference}\\tSM:{params.individual}" '
+            '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
             '{input.reference} {input.contigs} 2> {log.minimap} | '
             'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
             'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
