@@ -13,21 +13,23 @@ include: 'handle_data_download.smk'
 include: 'preprocess_input.smk'
 include: 'preprocess_references.smk'
 
+# actual pipeline processing steps
 include: 'variant_calling.smk'
 include: 'integrative_phasing.smk'
 
 include: 'strandseq_dga_split.smk'
 include: 'strandseq_dga_joint.smk'
 
-# actual pipeline processing steps
 include: 'collect_statistics.smk'
 include: 'run_alignments.smk'
 include: 'run_assemblies.smk'
 include: 'prepare_custom_references.smk'
 
-include: 'arrow_polishing.smk'
-include: 'racon_polishing.smk'
+include: 'run_polishing.smk'
 
+include: 'haploid_assembly_clustering.smk'
+
+include: 'create_plots.smk'
 include: 'eval_known_reference.smk'
 
 include: 'targets.smk'

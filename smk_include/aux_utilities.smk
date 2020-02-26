@@ -214,17 +214,17 @@ checkpoint create_assembly_sequence_files:
 
 rule generate_bwa_index:
     input:
-        reference = '{folder_path}/{reference}.fasta'
+        reference = '{folder_path}/{file_name}.fasta'
     output:
-        '{folder_path}/{reference}/bwa_index/{reference}.amb',
-        '{folder_path}/{reference}/bwa_index/{reference}.ann',
-        '{folder_path}/{reference}/bwa_index/{reference}.bwt',
-        '{folder_path}/{reference}/bwa_index/{reference}.pac',
-        '{folder_path}/{reference}/bwa_index/{reference}.sa'
+        '{folder_path}/{file_name}/bwa_index/{file_name}.amb',
+        '{folder_path}/{file_name}/bwa_index/{file_name}.ann',
+        '{folder_path}/{file_name}/bwa_index/{file_name}.bwt',
+        '{folder_path}/{file_name}/bwa_index/{file_name}.pac',
+        '{folder_path}/{file_name}/bwa_index/{file_name}.sa'
     log:
-        'log/{folder_path}/bwa_index/{reference}.log'
+        'log/{folder_path}/bwa_index/{file_name}.log'
     benchmark:
-        'run/{folder_path}/bwa_index/{reference}.rsrc'
+        'run/{folder_path}/bwa_index/{file_name}.rsrc'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,

@@ -72,7 +72,7 @@ rule write_strandseq_merge_fofn:
         fofn = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.fofn'
     wildcard_constraints:
         sts_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES,
-        lib_id = 'P[A-Z0-9]+'
+        #lib_id = 'P[A-Z0-9]+'
     run:
         import os
         pattern = '[empty]'
@@ -144,6 +144,8 @@ rule samtools_position_sort_strandseq_reads:
         temp('{folder_path}/temp/sort/{sts_library}.mrg.psort.sam.bam')
     conda:
         '../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sts_library = '[A-Za-z0-9\-_]+'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt,
@@ -164,6 +166,8 @@ rule mark_duplicate_reads_strandseq:
         'run/{folder_path}/{sts_library}.mrg.psort.mdup.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sts_library = '[A-Za-z0-9\-_]+'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt,
@@ -331,56 +335,3 @@ rule merge_reference_fasta_clusters:
         fasta_clusters = lambda wildcards, input: load_fofn_file(input)
     shell:
         'cat {params.fasta_clusters} > {output}'
-
-
-# Below: create a diagnostic plot (SaaRclust) package, requires contig to reference alignment
-
-rule dump_contig_to_reference_alignment_to_bed:
-    input:
-        'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.psort.sam.bam'
-    output:
-        'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.bed'
-    log:
-        'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.dump-bed.log'
-    benchmark:
-        'run/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.dump-bed.rsrc'
-    conda:
-        '../environment/conda/conda_biotools.yml'
-    resources:
-        runtime_hrs = lambda wildcards, attempt: attempt,
-        mem_total_mb = 2048,
-        mem_per_cpu_mb = 2048
-    shell:
-        'bedtools bamtobed -i {input} > {output} 2> {log}'
-
-
-rule plot_saarclust_diagnostic_output:
-    """
-    The default for SaaRclust is to concatenate all individual contigs
-    per cluster into a single sequence. During this process, ordering
-    information is lost, hence the following output is not part of this rule:
-    ordering = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.ordering.pdf',
-    """
-    input:
-        setup_ok = 'output/check_files/R_setup/saarclust_ver-{}.ok'.format(config['git_commit_saarclust']),
-        ctg_ref_aln = 'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.bed'
-    output:
-        clustering = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.clustering.pdf',
-        orienting = 'output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.orienting.pdf',
-    log:
-       'log/output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.log'
-    benchmark:
-        'run/output/plotting/saarclust_diagnostics/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
-    conda:
-        '../environment/conda/conda_rscript.yml'
-    resources:
-        runtime_hrs = lambda wildcards, attempt: attempt,
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt
-    params:
-        script_exec = lambda wildcards: find_script_path('plot_saarclust_diagnostics.R'),
-        out_prefix = lambda wildcards: os.path.join(
-            'output', 'plotting', 'saarclust_diagnostics', wildcards.folder_path,
-            wildcards.reference + '_map-to_' + wildcards.aln_reference)
-    shell:
-         '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} FALSE &> {log}'

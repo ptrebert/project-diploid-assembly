@@ -250,6 +250,52 @@ rule bwa_strandseq_to_reference_alignment:
             ' samtools view -b -F {params.discard_flag} /dev/stdin > {output.bam} 2> {log.samtools}'
 
 
+rule bwa_strandseq_to_haploid_assembly_alignment:
+    input:
+        mate1 = 'input/fastq/{sts_reads}/{individual}_{library_id}_1.fastq.gz',
+        mate2 = 'input/fastq/{sts_reads}/{individual}_{library_id}_2.fastq.gz',
+        ref_index = os.path.join('output', 'diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}',
+                                 'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fasta'),
+        sts_reads = 'input/fastq/{sts_reads}.fofn'
+    output:
+        bam = os.path.join(
+            'output/alignments/strandseq_to_phased_assembly',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
+            'temp/aln/{individual}_{library_id}.filt.sam.bam')
+    log:
+        bwa = os.path.join(
+            'log', 'output/alignments/strandseq_to_phased_assembly',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
+            'temp/aln/{individual}_{library_id}.bwa.log'),
+        samtools = os.path.join(
+            'log', 'output/alignments/strandseq_to_phased_assembly',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
+            'temp/aln/{individual}_{library_id}.samtools.log')
+    benchmark:
+        os.path.join(
+            'run', 'output/alignments/strandseq_to_phased_assembly',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
+            'temp/aln/{individual}_{library_id}.bwa' + 't{}.rsrc'.format(config['num_cpu_low']))
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
+        mem_total_mb = 8192
+    params:
+        idx_prefix = lambda wildcards, input: input.ref_index.split('.')[0],
+        discard_flag = config['bwa_strandseq_aln_discard']
+    shell:
+        'bwa mem -t {threads}'
+            ' -R "@RG\\tID:{wildcards.individual}_{wildcards.sample_id}\\tPL:Illumina\\tSM:{wildcards.individual}"'
+            ' -v 2 {params.idx_prefix} {input.mate1} {input.mate2} 2> {log.bwa} | '
+            ' samtools view -b -F {params.discard_flag} /dev/stdin > {output.bam} 2> {log.samtools}'
+
+
 rule minimap_racon_polish_alignment_pass1:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
@@ -376,17 +422,17 @@ rule pbmm2_arrow_polish_alignment_pass1:
 
 rule minimap_contig_to_known_reference_alignment:
     input:
-        contigs = 'output/{folder_path}/{reference}.fasta',
+        contigs = 'output/{folder_path}/{file_name}.fasta',
         #preset = 'input/fastq/{sample}.preset.minimap',
         reference = 'references/assemblies/{aln_reference}.fasta'
     output:
-        'output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.psort.sam.bam'
+        'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.psort.sam.bam'
     log:
-        minimap = 'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.minimap.log',
-        st_sort = 'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.st-sort.log',
-        st_view = 'log/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}.st-view.log',
+        minimap = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.minimap.log',
+        st_sort = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-sort.log',
+        st_view = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-view.log',
     benchmark:
-        '.'.join(['run/output/alignments/contigs_to_reference/{folder_path}/{reference}_map-to_{aln_reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
+        '.'.join(['run/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -396,11 +442,11 @@ rule minimap_contig_to_known_reference_alignment:
         runtime_hrs = 71,
         mem_sort_mb = 8192
     params:
-        individual = lambda wildcards: wildcards.reference.split('_')[0],
+        individual = lambda wildcards: wildcards.file_name.split('_')[0],
         discard_flag = config['minimap_contigref_aln_discard'],
         tempdir = lambda wildcards: os.path.join(
                                         'temp', 'minimap', wildcards.folder_path,
-                                        wildcards.reference, wildcards.aln_reference)
+                                        wildcards.file_name, wildcards.aln_reference)
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
         'minimap2 -t {threads} '
@@ -409,3 +455,25 @@ rule minimap_contig_to_known_reference_alignment:
             '{input.reference} {input.contigs} 2> {log.minimap} | '
             'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
             'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
+
+
+rule dump_contig_to_reference_alignment_to_bed:
+    """
+    Needed to create SaaRclust diagnostic plots - see create_plots module
+    """
+    input:
+        'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.psort.sam.bam'
+    output:
+        'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.bed'
+    log:
+        'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.dump-bed.log'
+    benchmark:
+        'run/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.dump-bed.rsrc'
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt,
+        mem_total_mb = 2048,
+        mem_per_cpu_mb = 2048
+    shell:
+        'bedtools bamtobed -i {input} > {output} 2> {log}'

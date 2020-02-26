@@ -47,6 +47,19 @@ TARGET_PATHS = {
         "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.fasta"
     ),
 
+    "BUILD_POLISHED_CLUSTERED_HAPLOID_ASSEMBLY": os.path.join(
+        "output", "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sts_reads}",
+        "polishing",
+        "{pol_reads}",
+        "clustering",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.scV{git_commit_version}.fasta"
+    ),
+
     "REPORT_NHR_ASSEMBLY": os.path.join(
         "output", "evaluation", "quastlg_busco",
         "{eval_known_ref}-{eval_gene_model}",
@@ -146,6 +159,46 @@ TARGET_PATHS = {
         "{sts_reads}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.orienting.pdf",
     ),
+
+    "PLOT_SAARCLUST_DIAG_HAPLOID_ASSEMBLY_CLUSTERING": os.path.join(
+        "output", "plotting", "saarclust_diagnostics", "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sts_reads}",
+        "polishing",
+        "{pol_reads}",
+        "clustering",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.scV{git_commit_version}_map-to_{eval_align_ref}.clustering.pdf",
+    ),
+
+    "PLOT_SAARCLUST_DIAG_HAPLOID_ASSEMBLY_ORDERING": os.path.join(
+        "output", "plotting", "saarclust_diagnostics", "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sts_reads}",
+        "polishing",
+        "{pol_reads}",
+        "clustering",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.scV{git_commit_version}_map-to_{eval_align_ref}.ordering.pdf",
+    ),
+
+    "PLOT_SAARCLUST_DIAG_HAPLOID_ASSEMBLY_ORIENTING": os.path.join(
+        "output", "plotting", "saarclust_diagnostics", "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sts_reads}",
+        "polishing",
+        "{pol_reads}",
+        "clustering",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.scV{git_commit_version}_map-to_{eval_align_ref}.orienting.pdf",
+    ),
+
 }
 
 

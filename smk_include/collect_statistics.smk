@@ -144,29 +144,6 @@ rule compute_statistics_complete_input_bam:
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
-rule plot_input_long_reads_statistics:
-    input:
-        'output/statistics/stat_dumps/{sample}.{file_ext}.pck'
-    output:
-        'output/plotting/statistics/input_reads/{sample}.{file_ext}.stats.pdf'
-    conda:
-         '../environment/conda/conda_pyscript.yml'
-    priority: 200
-    params:
-        script_exec = lambda wildcards: find_script_path('plot_sample_stats.py'),
-        lower_bound = 6000,
-        upper_bound = lambda wildcards: {'ccs': 25000, 'clr': 100000, 'ul': 100000}[wildcards.sample.split('_')[2].split('-')[-1]],
-        step_size = lambda wildcards: {'ccs': 500, 'clr': 1000, 'ul': 1000}[wildcards.sample.split('_')[2].split('-')[-1]]
-    shell:
-        '{params.script_exec} '
-        '--pck-input {input} --text-size 11 '
-        '--sample-name {wildcards.sample} '
-        '--lowest-bin {params.lower_bound} '
-        '--highest-bin {params.upper_bound} '
-        '--step-size {params.step_size} '
-        '--output {output} '
-
-
 def collect_tag_lists(wildcards, glob_collect=False):
     """
     :param wildcards:
