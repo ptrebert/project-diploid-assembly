@@ -1,5 +1,6 @@
 
 import os
+import sys
 
 localrules: master_haploid_assembly_clustering
 
@@ -40,12 +41,31 @@ def hac_collect_strandseq_merge_files(wildcards, glob_collect=False):
             raise RuntimeError('hac_collect_strandseq_merge_files: no files collected with pattern {}'.format(pattern))
 
     else:
-        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
-        search_pattern = '_'.join([individual, project, platform + '-{spec}', lib_id, '{run_id}', '1'])
+        # avoid unnecessarily triggering this checkpoint late in the pipeline
+        # because Snakemake tends to reprocess a lot if rules are added to
+        # the pipeline; evades me if that is desired behavior, probably a bug
+        requests_dir = os.path.join('input', 'fastq', wildcards.sts_reads, 'requests')
 
+        search_pattern = '_'.join([individual, project, platform + '-{spec}', lib_id, '{run_id}', '1'])
         search_path = os.path.join(requests_dir, search_pattern + '.request')
 
-        checkpoint_wildcards = glob_wildcards(search_path)
+        eval_checkpoint = False
+        if os.path.isdir(requests_dir):
+            checkpoint_wildcards = glob_wildcards(search_path)
+            if len(checkpoint_wildcards.run_id) < 1 or len(checkpoint_wildcards.spec) < 1:
+                eval_checkpoint = True
+        else:
+            eval_checkpoint = True
+
+        if eval_checkpoint:
+            sys.stderr.write('\nWARNING: evaluating checkpoint create_input_data_data_download_requests'
+                             ' for Strand-seq sample {}\n'.format(wildcards.sts_reads))
+            chk_requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
+
+            assert chk_requests_dir == requests_dir, \
+                'hac_collect_strandseq_merge_files: request dir mismatch: {} / {}'.format(chk_requests_dir, requests_dir)
+
+            checkpoint_wildcards = glob_wildcards(search_path)
 
         bam_files = expand(
             source_path,
