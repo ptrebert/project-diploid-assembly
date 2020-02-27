@@ -208,6 +208,11 @@ checkpoint create_assembly_sequence_files:
             for line in fai:
                 seq_name = line.split('\t')[0]
                 output_path = os.path.join(output_dir, seq_name + '.seq')
+                if os.path.isfile(output_path):
+                    with open(output_path, 'r') as seq_file:
+                        seq_entry = seq_file.read().strip()
+                        if seq_entry == line.strip():
+                            continue
                 with open(output_path, 'w') as dump:
                     _ = dump.write(line)
 
