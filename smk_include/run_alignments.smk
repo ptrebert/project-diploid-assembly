@@ -255,7 +255,7 @@ rule bwa_strandseq_to_haploid_assembly_alignment:
         mate1 = 'input/fastq/{sts_reads}/{individual}_{library_id}_1.fastq.gz',
         mate2 = 'input/fastq/{sts_reads}/{individual}_{library_id}_2.fastq.gz',
         ref_index = os.path.join('output', 'diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}',
-                                 'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fasta'),
+                                 'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}/bwa_index/{hap_reads}-{assembler}.{hap}.{pol_pass}.bwt'),
         sts_reads = 'input/fastq/{sts_reads}.fofn'
     output:
         bam = os.path.join(
@@ -287,7 +287,7 @@ rule bwa_strandseq_to_haploid_assembly_alignment:
         mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
         mem_total_mb = 8192
     params:
-        idx_prefix = lambda wildcards, input: input.ref_index.split('.')[0],
+        idx_prefix = lambda wildcards, input: input.ref_index.rsplit('.', 1)[0],
         discard_flag = config['bwa_strandseq_aln_discard']
     shell:
         'bwa mem -t {threads}'
