@@ -210,6 +210,12 @@ def select_bwa_index(wildcards):
 
     assert sts_individual == ref_individual, 'Mixed individual match (bwa index): {}'.format(wildcards)
 
+    # make sure that this gives only a result for the rule bwa_strandseq_to_reference_alignment
+    expected_keys = {'sts_reads', 'reference', 'individual', 'sample_id'}
+    received_keys = set(dict(wildcards).keys())
+    assert len(received_keys - expected_keys) == 0, \
+        'select_bwa_index received unexpected input: {} vs {}'.format(sorted(expected_keys), sorted(received_keys))
+
     if '_nhr-' in wildcards.reference:
         # non-haplotype resolved assembly / collapsed assembly
         idx = 'output/reference_assembly/non-hap-res/{}/bwa_index/{}.bwt'.format(wildcards.reference, wildcards.reference)
