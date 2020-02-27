@@ -67,6 +67,12 @@ rule write_fastq_input_parts_fofn:
 
 
 rule merge_fastq_input_parts:
+    """
+    Why this compression overhead?
+    pysam has issues iterating through gzip files
+    that are the result of a simple concat.
+    So, merge by gunzip and gzip again...
+    """
     input:
         fofn = 'input/fastq/{mrg_sample}_1000.fofn'
     output:
@@ -78,11 +84,11 @@ rule merge_fastq_input_parts:
     conda:
         '../environment/conda/conda_shelltools.yml'
     resources:
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
     params:
         fastq_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'cat {params.fastq_parts} > {output} 2> {log}'
+        'gzip -d -c {params.fastq_parts} | gzip > {output} 2> {log}'
 
 
 def collect_pacbio_bam_input_parts(wildcards, glob_collect=False):
