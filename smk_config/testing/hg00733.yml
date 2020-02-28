@@ -1,4 +1,6 @@
 
+force_local_copy: True
+
 sample_description_HG00733:
   individual: HG00733
   sex: female
