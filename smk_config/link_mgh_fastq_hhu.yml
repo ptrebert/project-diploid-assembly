@@ -46,6 +46,52 @@ link_data_input:
   - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2.cluster7.fastq.gz
   - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2.cluster8.fastq.gz
   - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2.cluster9.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster10.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster11.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster12.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster13.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster14.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster15.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster16.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster17.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster18.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster19.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster1.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster20.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster21.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster22.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster23.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster2.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster3.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster4.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster5.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster6.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster7.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster8.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster9.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster10.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster11.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster12.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster13.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster14.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster15.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster16.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster17.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster18.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster19.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster1.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster20.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster21.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster22.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster23.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster2.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster3.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster4.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster5.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster6.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster7.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster8.fastq.gz
+  - /gpfs/project/ebertp/data/maryam/splitted_fastq_renamed/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster9.fastq.gz
 
 
 link_data_output:
@@ -95,3 +141,49 @@ link_data_output:
   - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2.cluster7.fastq.gz
   - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2.cluster8.fastq.gz
   - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2.cluster9.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster10.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster11.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster12.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster13.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster14.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster15.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster16.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster17.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster18.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster19.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster1.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster20.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster21.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster22.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster23.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster2.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster3.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster4.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster5.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster6.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster7.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster8.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h1-un.cluster9.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster10.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster11.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster12.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster13.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster14.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster15.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster16.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster17.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster18.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster19.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster1.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster20.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster21.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster22.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster23.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster2.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster3.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster4.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster5.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster6.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster7.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster8.fastq.gz
+  - output/diploid_assembly/strandseq_split/deepvar_QUAL10_GQ100/HG00733_mgh_pbsq2-ccs_1000_scV8-pereg/HG00733_mgh_pbsq2-ccs_1000/HG00733_1kg_il25k-npe_sseq/draft/haploid_fastq/HG00733_mgh_pbsq2-ccs_1000.h2-un.cluster9.fastq.gz
