@@ -134,7 +134,5 @@ CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES = build_input_data_wildcard_constraint
 
 CONSTRAINT_STRANDSEQ_SAMPLES = build_input_data_wildcard_constraint(
     input_type='strandseq',
-    readset_selectors={
-        'source_type': ['ena', 'ftp']
-    }
+    readset_selectors={}
 )
