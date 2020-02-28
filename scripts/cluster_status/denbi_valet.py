@@ -11,7 +11,7 @@ import subprocess as sp
 random.seed()
 
 log_msg_format = "%(asctime)s | %(levelname)s | %(message)s"
-cluster_status_log = '/beeond/projects/diploid-assembly/log/cluster_status.log'
+cluster_status_log = '/beeond/projects/run_folder/log/cluster_status.log'
 os.makedirs(os.path.dirname(cluster_status_log), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,

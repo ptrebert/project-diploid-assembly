@@ -8,7 +8,7 @@
     "run_hrs": "{resources.runtime_hrs}",
     "run_min": "{resources.runtime_min}"
   },
-  "handle_partial_pbn_bam_download_request": {
+  "handle_partial_fastq_download_request": {
     "cores": "36",
     "mem_mb": "{resources.mem_total_mb}",
     "name": "{jobid}_{rule}",
@@ -17,7 +17,7 @@
     "run_hrs": "{resources.runtime_hrs}",
     "run_min": "{resources.runtime_min}"
   },
-  "merge_pacbio_native_bams": {
+  "merge_fastq_input_parts": {
     "cores": "36",
     "mem_mb": "{resources.mem_total_mb}",
     "name": "{jobid}_{rule}",
@@ -26,8 +26,8 @@
     "run_hrs": "{resources.runtime_hrs}",
     "run_min": "{resources.runtime_min}"
   },
-  "pb_bam2x_dump_fastq": {
-    "cores": "36",
+  "strandseq_dga_split_merge_tag_groups": {
+    "cores": "18",
     "mem_mb": "{resources.mem_total_mb}",
     "name": "{jobid}_{rule}",
     "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
@@ -35,25 +35,7 @@
     "run_hrs": "{resources.runtime_hrs}",
     "run_min": "{resources.runtime_min}"
   },
-  "pb_bam2x_dump_haploid_fastq": {
-    "cores": "36",
-    "mem_mb": "{resources.mem_total_mb}",
-    "name": "{jobid}_{rule}",
-    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
-    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
-    "run_hrs": "{resources.runtime_hrs}",
-    "run_min": "{resources.runtime_min}"
-  },
-  "strandseq_dga_split_merge_tag_groups_pacbio_native": {
-    "cores": "36",
-    "mem_mb": "{resources.mem_total_mb}",
-    "name": "{jobid}_{rule}",
-    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
-    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
-    "run_hrs": "{resources.runtime_hrs}",
-    "run_min": "{resources.runtime_min}"
-  },
-  "strandseq_dga_split_haplo_tagging_pacbio_native": {
+  "strandseq_dga_split_haplo_tagging": {
     "cores": "36",
     "mem_mb": "{resources.mem_total_mb}",
     "name": "{jobid}_{rule}",

@@ -1,6 +1,6 @@
 # Default runtime profile for deNBI Tuebingen infrastructure / PBS-TORQUE cluster
 
-directory: /beeond/projects/diploid-assembly
+directory: /beeond/projects/run_folder
 cluster: >-
   qsub
   -d /beeond/projects/diploid-assembly
@@ -10,10 +10,10 @@ cluster-config: environment/snakemake/cluster/denbi_tu_pbs/denbi_cluster.json
 cluster-status: /beeond/user/code/project-diploid-assembly/scripts/cluster_status/denbi_valet.py
 local-cores: 2
 jobs: 40
-latency-wait: 600
+latency-wait: 300
 keep-going: True
 rerun-incomplete: True
-keep-incomplete: True
+keep-incomplete: False
 restart-times: 1
 use-conda: True
 use-envmodules: False
