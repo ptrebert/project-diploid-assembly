@@ -1,0 +1,55 @@
+
+sample_description_NA24385:
+  individual: NA24385
+  sex: male
+  super_population: UNK
+  population: AJ
+  family: UNK
+  member: child
+  data_sources:
+    - long_reads:
+        readset: NA24385_hpg_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        source_type: amazon
+    - strandseq:
+        readset: &sts_reads NA24385_hpg_il25k-80pe_sseq
+        source_type: local
+        library_fractions: one
+
+
+sample_targets_NA24385:
+  - aliases:
+      1: &ccs_reads NA24385_hpg_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sts_reads: *sts_reads
+      pol_reads: *ccs_reads
+      pol_pass: racon-p2
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: pereg
+      hap_assembler: pereg
+      var_caller: deepvar
+
+
+sample_data_sources_NA24385:
+  input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part1:
+    local_path: input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part1.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/PacBio_HiFi/15kb/m64012_190920_173625.Q20.fastq
+  input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part10:
+    local_path: input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part2.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/PacBio_HiFi/15kb/m64012_190921_234837.Q20.fastq
+  input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part11:
+    local_path: input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part3.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/PacBio_HiFi/20kb/m64011_190830_220126.Q20.fastq
+  input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part12:
+    local_path: input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part4.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/PacBio_HiFi/20kb/m64011_190901_095311.Q20.fastq
