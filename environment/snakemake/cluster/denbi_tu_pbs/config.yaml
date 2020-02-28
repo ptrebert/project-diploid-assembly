@@ -7,7 +7,7 @@ cluster: >-
   -l walltime={cluster.run_hrs}:{cluster.run_min}:00,nodes=1:ppn={cluster.cores},mem={cluster.mem_mb}M
   -N {cluster.name} -o {cluster.output} -e {cluster.error}
 cluster-config: environment/snakemake/cluster/denbi_tu_pbs/denbi_cluster.json
-cluster-status: /beeond/user/code/project-diploid-assembly/scripts/cluster_status/denbi_valet.py
+cluster-status: scripts/cluster_status/denbi_valet.py
 local-cores: 2
 jobs: 40
 latency-wait: 300
