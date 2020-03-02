@@ -633,9 +633,9 @@ rule compute_flye_haploid_split_assembly:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((24576 if '-ccs' in wildcards.hap_reads else 81920 + attempt * 20480) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 24576 if '-ccs' in wildcards.hap_reads else 81920 + attempt * 20480,
-        runtime_hrs = lambda wildcards, attempt: 0 if '-ccs' in wildcards.hap_reads else 4 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416 * (attempt - 1)) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416 * (attempt - 1),
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
     params:
         param_preset = load_preset_file,
         seq_len = load_seq_length_file,
