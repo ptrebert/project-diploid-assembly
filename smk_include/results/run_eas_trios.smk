@@ -2,6 +2,7 @@
 localrules: run_hg01596_individual,
             run_na18534_individual,
             run_na18939_individual,
+            run_hg00864_individual,
             run_eas_trios,
             run_chs_trio,
             run_chs_father,
@@ -29,6 +30,13 @@ rule run_na18939_individual:
     input:
         'output/targets/EAS_JPT_NA18939/NA18939.fofn'
     message: 'Running EAS-JPT-NA18939 individual'
+
+#####################################################
+
+rule run_hg00864_individual:
+    input:
+        'output/targets/EAS_CDX_HG00864/HG00864.fofn'
+    message: 'Running EAS-CDX-HG00864 individual'
 
 #####################################################
 
@@ -77,6 +85,7 @@ rule run_eas_trios:
         rules.run_hg01596_individual.input,
         rules.run_na18534_individual.input,
         rules.run_na18939_individual.input,
+        rules.run_hg00864_individual.input,
         rules.run_chs_trio.input,
         rules.run_khv_trio.input
     message: 'Running EAS trios'
