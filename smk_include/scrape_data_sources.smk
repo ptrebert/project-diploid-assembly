@@ -20,6 +20,7 @@ def read_configured_data_sources():
     COMMAND_SCAN_PATH_CALL += '&> {{log}}'
 
     default_parameters = {
+        'file_infix': '',
         'file_suffix': '',
         'local_path_suffix': '',
         'fix_tech': '',
