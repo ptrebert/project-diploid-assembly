@@ -15,7 +15,7 @@ sample_description_NA24385:
         source_type: amazon
         comment: "github.com/human-pangenomics/HG002_Data_Freeze_v1.0"
     - strandseq:
-        readset: &sts_reads NA24385_hpg_il25k-80pe_sseq
+        readset: &sts_reads NA24385_hpg_ilnxs-80pe_sseq
         source_type: local
         library_fractions: one
 
