@@ -32,6 +32,26 @@ sample_description_HG00733:
         source_type: ena
         bioproject: PRJEB12849
         library_fractions: two
+    - strandseq:
+        readset: &sts_reads_sub80 HG00733_sub80_il25k-npe_sseq
+        source_type: local
+        library_fractions: two
+        comment: "annotation/HG00733_sub80_libraries_sseq.txt"
+    - strandseq:
+        readset: &sts_reads_sub60 HG00733_sub60_il25k-npe_sseq
+        source_type: local
+        library_fractions: two
+        comment: "annotation/HG00733_sub60_libraries_sseq.txt"
+    - strandseq:
+        readset: &sts_reads_sub40 HG00733_sub40_il25k-npe_sseq
+        source_type: local
+        library_fractions: two
+        comment: "annotation/HG00733_sub40_libraries_sseq.txt"
+    - strandseq:
+        readset: &sts_reads_sub20 HG00733_sub20_il25k-npe_sseq
+        source_type: local
+        library_fractions: two
+        comment: "annotation/HG00733_sub20_libraries_sseq.txt"
     - short_reads:
         readset: &short_reads HG00733_1kg_il25k-125pe_short
         source_type: ena
@@ -128,6 +148,24 @@ sample_targets_HG00733:
       nhr_assembler: shasta
       hap_assembler: shasta
       var_caller: longshot
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: pereg
+      var_caller: deepvar
+      sts_reads:
+        - *sts_reads
+        - *sts_reads_sub20
+        - *sts_reads_sub40
+        - *sts_reads_sub60
+        - *sts_reads_sub80
 
 
 sample_data_sources_HG00733:
