@@ -13,7 +13,7 @@ def read_configured_data_sources():
     COMMAND_SCAN_PATH_CALL = '{{script_exec}} --debug --output {{output}} '
     COMMAND_SCAN_PATH_CALL += '--server {server} --data-source {data_source} '
     COMMAND_SCAN_PATH_CALL += '--collect-files {collect_files} --sort-into {sort_into} '
-    COMMAND_SCAN_PATH_CALL += '--file-infix {file_infix} {file_suffix} '
+    COMMAND_SCAN_PATH_CALL += '{file_infix} {file_suffix} '
     COMMAND_SCAN_PATH_CALL += '{local_path_suffix} {fix_tech} '
     COMMAND_SCAN_PATH_CALL += '{assume_pacbio_native} {assume_clr_subreads} '
     COMMAND_SCAN_PATH_CALL += '{assume_paired_reads} {assume_correct_filenames} '
