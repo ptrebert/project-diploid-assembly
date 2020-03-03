@@ -96,7 +96,6 @@ def parse_command_line():
         "--file-infix",
         "-in",
         type=str,
-        required=True,
         dest="file_infix",
         help="Define the infix for the output files."
     )
@@ -124,6 +123,16 @@ def parse_command_line():
         dest="local_path_suffix",
         help="Specify a suffix for the local (folder) path, possibly consisting of the following "
              "placeholders: individual, file_infix, tech, file_suffix."
+    )
+    parser.add_argument(
+        "--assume-correct-filenames",
+        "-acf",
+        action="store_true",
+        default=False,
+        dest="correct_filenames",
+        help="Assume that the input files are already well-behaved and can be used as-is "
+             "for the pipeline. Any subfolder underneath '--data-source' will also be "
+             "taken into account (effectively replacing the '--local-path-suffix' option)."
     )
     parser.add_argument(
         "--output",
@@ -430,6 +439,41 @@ def traverse_local_path(local_path, logger):
     return local_files
 
 
+def match_filenames_to_sort_folder(data_files, cargs, logger):
+    """
+    :param data_files:
+    :param cargs:
+    :param logger:
+    :return:
+    """
+    output = dict()
+    for file_ext, sort_folder in zip(cargs.collect_files, cargs.sort_into):
+        matching_files = [df for df in data_files if df.endswith(file_ext)]
+        logger.debug('Matched {} files to file extension {}'.format(len(matching_files), file_ext))
+        path_prefix = sort_folder
+        if not sort_folder.startswith('input'):
+            path_prefix = os.path.join('input', sort_folder)
+        for data_file in matching_files:
+            data_file_name = os.path.basename(data_file)
+            remote_path = data_file
+            if cargs.server == 'localhost':
+                # check if the file is actually just a symlink
+                # created by the user for easier renaming
+                if os.path.islink(data_file):
+                    remote_path = os.readlink(data_file)
+            # check if there are subfolders that need to be taken into account
+            sub_path = os.path.split(data_file)[0].replace(cargs.data_source, '').strip('/')
+            if sub_path:
+                logger.debug('Using the following subfolder for file {}: {}'.format(data_file_name, sub_path))
+            local_path = os.path.join(path_prefix, sub_path, data_file_name)
+            file_key = local_path.replace(file_ext, '').strip('.')
+            output[file_key] = {
+                "remote_path": remote_path,
+                "local_path": local_path
+            }
+    return output
+
+
 def main(logger, cargs):
     """
     :param logger:
@@ -460,9 +504,16 @@ def main(logger, cargs):
         except:
             pass
 
-    file_groups = annotate_remote_files(data_files, cargs, logger)
+    if cargs.correct_filenames:
+        logger.debug('Assuming well-formed file names...')
+        output = match_filenames_to_sort_folder(data_files, cargs, logger)
+    else:
+        assert cargs.file_infix, 'Dynamic derivation of file names requires to set a "--file-infix"'
+        logger.debug('Deriving file names dynamically...')
 
-    output = enumerate_file_parts(file_groups, cargs, logger)
+        file_groups = annotate_remote_files(data_files, cargs, logger)
+
+        output = enumerate_file_parts(file_groups, cargs, logger)
 
     if not output:
         raise RuntimeError('Output empty / no source data collected')
