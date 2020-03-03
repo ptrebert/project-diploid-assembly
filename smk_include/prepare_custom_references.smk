@@ -325,9 +325,9 @@ rule write_reference_fasta_clusters_fofn:
 
 rule merge_reference_fasta_clusters:
     input:
-        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{sts_library}_nhr-{assembler}.clusters.fofn'
+        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sts_reads}/{hap_reads}_nhr-{assembler}.clusters.fofn'
     output:
-        expand('output/reference_assembly/clustered/{{sts_reads}}/{{sts_library}}_scV{version}-{{assembler}}.fasta',
+        expand('output/reference_assembly/clustered/{{sts_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
     conda:
         '../environment/conda/conda_shelltools.yml'
