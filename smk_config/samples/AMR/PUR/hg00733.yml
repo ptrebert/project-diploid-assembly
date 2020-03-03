@@ -161,7 +161,6 @@ sample_targets_HG00733:
       nhr_assembler: pereg
       var_caller: deepvar
       sts_reads:
-        - *sts_reads
         - *sts_reads_sub20
         - *sts_reads_sub40
         - *sts_reads_sub60
