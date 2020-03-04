@@ -111,7 +111,7 @@ rule hac_merge_mono_dinucleotide_fraction:
     different input data
     """
     input:
-        fofn = rules.write_strandseq_merge_fofn.output.fofn
+        fofn = rules.hac_write_strandseq_merge_fofn.output.fofn
     output:
         temp(
             os.path.join(

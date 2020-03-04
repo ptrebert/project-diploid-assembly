@@ -208,13 +208,16 @@ def select_bwa_index(wildcards):
     sts_individual = wildcards.sts_reads.split('_')[0]
     ref_individual = wildcards.reference.split('_')[0]
 
-    assert sts_individual == ref_individual, 'Mixed individual match (bwa index): {}'.format(wildcards)
+    if sts_individual != ref_individual:
+        raise ValueError('Mixed individual match (bwa index): {}'.format(wildcards))
 
-    # make sure that this gives only a result for the rule bwa_strandseq_to_reference_alignment
+    # make sure that this gives only a result for the rule bwa_strandseq_to_reference_alignment,
+    # should be ensured via output file naming of the two bwa rules, but better safe than sorry...
     expected_keys = {'sts_reads', 'reference', 'individual', 'sample_id'}
     received_keys = set(dict(wildcards).keys())
-    assert len(received_keys - expected_keys) == 0, \
-        'select_bwa_index received unexpected input: {} vs {}'.format(sorted(expected_keys), sorted(received_keys))
+    if len(received_keys - expected_keys) != 0:
+        raise ValueError('select_bwa_index received unexpected input: '
+                         '{} vs {}'.format(sorted(expected_keys), sorted(received_keys)))
 
     if '_nhr-' in wildcards.reference:
         # non-haplotype resolved assembly / collapsed assembly
@@ -239,7 +242,7 @@ rule bwa_strandseq_to_reference_alignment:
         samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.samtools.log',
     benchmark:
         os.path.join('run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}',
-                     '{individual}_{sample_id}.' + 't{}.rsrc'.format(config['num_cpu_low']))
+                     '{individual}_{sample_id}' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -285,7 +288,7 @@ rule bwa_strandseq_to_haploid_assembly_alignment:
             'run', 'output/alignments/strandseq_to_phased_assembly',
             'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
-            'temp/aln/{individual}_{library_id}.bwa' + 't{}.rsrc'.format(config['num_cpu_low']))
+            'temp/aln/{individual}_{library_id}.bwa' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
