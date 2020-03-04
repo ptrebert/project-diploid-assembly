@@ -300,7 +300,7 @@ rule bwa_strandseq_to_haploid_assembly_alignment:
         discard_flag = config['bwa_strandseq_aln_discard']
     shell:
         'bwa mem -t {threads}'
-            ' -R "@RG\\tID:{wildcards.individual}_{wildcards.sample_id}\\tPL:Illumina\\tSM:{wildcards.individual}"'
+            ' -R "@RG\\tID:{wildcards.individual}_{wildcards.library_id}\\tPL:Illumina\\tSM:{wildcards.individual}"'
             ' -v 2 {params.idx_prefix} {input.mate1} {input.mate2} 2> {log.bwa} | '
             ' samtools view -b -F {params.discard_flag} /dev/stdin > {output.bam} 2> {log.samtools}'
 
