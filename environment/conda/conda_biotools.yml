@@ -24,6 +24,7 @@ dependencies:
   - minimap2=2.17
   - mummer4
   - sambamba=0.7.1  # FIX github.com/biod/sambamba/issues/393 - DO NOT DOWNGRADE
+  - ldc=1.13.0=h02c9852_1  # FIX https://github.com/bcbio/bcbio-nextgen/issues/3032 - DO NOT UP- or DOWNGRADE
   - htslib=1.9
   - libdeflate=1.3  # v1.0 may trigger pysam import error - DO NOT DOWNGRADE
   - pysam=0.15.3
@@ -36,7 +37,7 @@ dependencies:
   - freebayes=1.3.1
   - longshot=0.4.0
   - wtdbg=2.5
-  - flye=2.6
+  - flye=2.7
   - canu=1.9
   - racon=1.4.10
   - lighter=1.1.2
