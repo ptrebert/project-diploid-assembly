@@ -123,6 +123,10 @@ rule merge_mono_dinucleotide_fraction:
 
 
 rule link_strandseq_monofraction_samples:
+    """
+    Switch to copying here because sym linking seems to cause
+    trouble (not recognized) on certain file systems
+    """
     input:
         'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{library_id}.filt.sam.bam'
     output:
@@ -130,7 +134,7 @@ rule link_strandseq_monofraction_samples:
     wildcard_constraints:
         sts_reads = CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES
     shell:
-        'ln -s {input} {output}'
+        'cp {input} {output}'
 
 
 rule samtools_position_sort_strandseq_reads:
