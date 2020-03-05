@@ -237,7 +237,7 @@ rule generate_bwa_index:
     conda:
          '../environment/conda/conda_biotools.yml'
     params:
-        prefix = lambda wildcards, output: output[0].split('.')[0]
+        prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0]
     shell:
         'bwa index -p {params.prefix} {input.reference} &> {log}'
 
