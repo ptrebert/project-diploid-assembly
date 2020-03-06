@@ -2,6 +2,7 @@
 select_targets:
   nhr_assembler:
     - shasta
+    - flye
   var_caller:
     - longshot
   name:
