@@ -474,3 +474,14 @@ up to you how you organize your configuration files.
 The given Snakemake target `master_custom` triggers a pipeline run for all possible targets (=output files) for
 all samples that are found in the configuration (i.e., for each `sample_description_` entry with specified targets
 and data sources).
+
+#### Step 3
+To simplify collecting the most important results from a successful pipeline run, the full (!) paths of all
+produced targets are dumped to a single file located here:
+
+```bash
+/work_dir/run_folder/output/targets/<SUPER-POPULATION>_<POPULATION>_<FAMILY>/<INDIVIDUAL>.fofn
+```
+
+This simplifies copying the most important results to a permanent storage location by reading the file paths
+from the above "file of filenames" (fofn).
