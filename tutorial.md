@@ -1,9 +1,9 @@
 # Pipeline tutorial: how to run a diploid genome assembly
 
 The following step-by-step instructions describe how to configure and run the diploid genome assembly pipeline
-either on new/custom data, or to reproduce the HGSVC assemblies. This tutorial covers all generic configuration steps,
-and should thus also be read before running the pipeline [demo](demo.md) dataset. Pipeline execution is **only**
-supported on **Linux systems**.
+either on new/custom data, or on the preconfigured HGSVC data to reproduce the HGSVC assemblies.
+This tutorial covers all generic configuration steps, and should thus also be read before running
+the pipeline [demo](demo.md) dataset. Pipeline execution is **only** supported on **Linux systems**.
 
 ## Required input data
 The pipeline has been tested with PacBio CLR, HiFi, and Oxford Nanopore ultra-long reads. The expected input formats
@@ -28,7 +28,7 @@ Clone the pipeline git repository and **(TODO)** switch to the development branc
 /work_dir/project-diploid-assembly$ git checkout development
 ```
 
-## Snakemake environment configuration
+## Snakemake execution environment
 
 Running the pipeline requires [`Conda`](https://docs.conda.io/en/latest/miniconda.html) and a working
 [`Snakemake`](https://snakemake.readthedocs.io/en/stable/) installation. For convenience, a suitable
@@ -49,7 +49,7 @@ After successful setup, the Conda environment can be activated as follows:
 Snakemake uses the concept of a [profile](https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles)
 to configure its own behavior depending on the compute environment.
 
-#### Single server
+#### Running on a single server
 **Only recommended for testing purposes or to run the demo data**: please refer to the Snakemake documentation
 for all possible configurations. You can find an example of a single-server profile here:
 
@@ -69,7 +69,7 @@ resources:
 The option `mem_total_mb` is necessary to avoid running high-memory jobs, e.g., a whole-genome `flye`
 assembly of CLR data, if only insufficient resources are available. 
 
-#### Compute cluster (recommended)
+#### Running on a compute cluster (recommended)
 Please refer to the Snakemake documentation for all options allowed in a Snakemake profile.
 You can find an example of a compute cluster profile here:
 
@@ -93,8 +93,8 @@ default-resources:
 ```
 
 The default resources should be chosen such that small jobs can be scheduled to the fastest queue available
-on the cluster (typically with a walltime limit of only two or four hours). Currently, jobs that are
-configured for cluster submission using only default resources require only one CPU core and less than 2048 MB
+on the cluster (typically with a walltime limit of only a few hours). Currently, pipeline jobs that are
+configured for cluster submission using default resources require only one CPU core and less than 2048 MB
 of memory.
 
 Additionally, Snakemake supports checking for the status of submitted jobs using a so-called
@@ -105,10 +105,14 @@ You can find an example for a PBS Pro-compatible script here:
 /work_dir$ less project-diploid-assembly/scripts/cluster_status/hhu_hilbert.py
 ```
 
-## Pipeline environment configuration
-Since the efficiency of the pipeline strongly depends on how many independent jobs can be run in parallel,
+**Important reminder: the above YAML configuration file is a Snakemake *profile* (supplied at the Snakemake
+command line via `--profile`). All files described in the following are regular configuration files
+(supplied at the Snakemake command line via `--configfiles`)** 
+
+## Pipeline run environment configuration
+Since the efficiency of the pipeline strongly depends on how many independent jobs can run in parallel,
 and this is determined by the the type of machines available in a compute cluster, the pipeline requires an
-additional Snakemake YAML configuration file with the following entries:
+additional Snakemake configuration file with the following entries:
 
 ```yaml
 num_cpu_max: <NUM>
@@ -124,7 +128,7 @@ num_cpu_low: <NUM>
 
 Additionally, if the compute cluster supports [environment `modules`](http://modules.sourceforge.net), the module
 name for the [`Singularity` container runtime](https://sylabs.io/singularity/) has to be specified here
-(mandatory for using the Peregrine assembler and the DeepVariant variant caller). An example for a complete
+(mandatory for using the Peregrine assembler and the DeepVariant variant caller). An example for a complete run
 environment configuration file can be found here:
 
 ```bash
@@ -141,18 +145,22 @@ environment configuration file can be found here:
 ```
 
 ## Pipeline sample configuration
+Configuring sample data for the pipeline can be logically split into three parts: (i) specifying the sample
+and the types of associated input read sets; (ii) specifying which read sets to use for which step of the pipeline;
+(iii) specifying the data source for each read set (e.g., local or FTP).
 
-#### Sample and read set specification
-Configuring sample data for the pipeline can be logically split into two parts, i.e., (i) specifying the sample
-and what output to produce for it, and (ii) specifying where the input data are supposed to come from (the sources
-for the long reads and the Strand-seq data).
-
-Note that, internally, Snakemake merges all configuration files that are supplied via `--configfiles`, so the
-following can all be put in a single YAML file (to be correct, also all of the above configuration except for the
-Snakemake profile could be copied into the same file. This of course interferes with reusing some parts of
+Note that, internally, Snakemake merges all configuration files that are supplied via `--configfiles`. The three
+sections mentioned above are described separately, but can be put into the same configuration file if it seems
+reasonable to do so. (Note: to be correct, also all of the above configuration except for the
+Snakemake profile could be placed in the same file. This of course interferes with reusing some parts of
 the configuration for other pipeline runs).
 
-A minimal sample configuration YAML is structured as follows (using an HGSVC sample as example here):
+#### (i) Sample and read set specification
+
+This section describes which read sets are associated with the same sample (there are a few places in the pipeline
+where it is checked that only read sets from the same individual are processed together).
+
+A minimal sample configuration is structured as follows (using an HGSVC sample as example here):
 
 ```yaml
 sample_description_HG02011:
@@ -171,14 +179,20 @@ sample_description_HG02011:
         library_fractions: one
 ```
 
+> You can find the original file here:
+> ```bash
+> /work_dir$ less project-diploid-assembly/smk_config/samples/AFR/ACB/hg02011.yml
+> ```
+
+
 The entry `individual` must match the sample name at the end of `sample_description_`.
 The actual values for `super_population`, `population`, and `family` are irrelevant, and are only
-used to sort the output for this sample.  
+used to sort the output for this sample together with other potential family members.  
 The `data_sources` entry must contain at least one of each `long_reads` and `strandseq`, but is otherwise
 unlimited, i.e., many different read sets for the same individual can be configured at once.
 
-For **long-read** read sets, the name has to be specified in the form `individual_project_platform`. In the above example,
-that is:
+For **long-read** read sets, the name has to be of the form `individual_project_platform`.
+In the above example, that is:
 - individual: HG02011
 - project: hgsvc
 - platform: pbsq2-clr (PacBio Sequel2, CLR data)
@@ -187,10 +201,12 @@ Currently supported platforms are:
 - pb (for Pacbio) with any suffix (sq2, sq1 etc.) for the read types `-clr` and `-ccs`
 - ont (for Oxford Nanopore) with any suffix for the read types `-ul` or `-any`.
 
-The remaining information for long-read read sets basically determines the initial processing steps:
+The remaining information for long-read read sets basically determines the (pre-) processing steps:
 
-- technology: `pacbio` or `nanopore`; PacBio will always be aligned with `pbmm2` instead of `minimap2`
-- data_type: `pacbio_native` or `fastq`
+- technology: `pacbio` or `nanopore`; PacBio reads will always be aligned with `pbmm2` instead of `minimap2`
+- data_type: `pacbio_native` or `fastq`; only PacBio-native input reads can be used for arrow polishing. Note that
+"pacbio-native" BAM files are identified by the extension ".pbn.bam", whereas other BAM files have the extension
+".sam.bam" (this is mandatory in the pipeline context).
 - load_type: `parts` or `complete`; input data coming in parts, e.g., one BAM file per SMRT cell, will be merged
 to simplify downstream processing
 
@@ -202,10 +218,10 @@ Since older Strand-seq data may have been prepared as two libraries that need to
 supports both current mono-fraction samples (`library_fractions: one`) and older libraries
 (`library_fractions: two`).
 
-#### Target specification
+#### (ii) Sample target specification
 The pipeline is configured to produce a number of `targets` (a term borrowed from Snakemake), where each target
-simply represents an output file, e.g., the phased assemblies or the variant calls. The current set of target
-specifications can be examined in:
+simply represents an output file, e.g., the phased assemblies or the variant calls. The current set of all
+preconfigured target specifications can be examined in:
 
 ```bash
 /work_dir$ less project-diploid-assembly/smk_include/targets.smk
@@ -213,7 +229,7 @@ specifications can be examined in:
 
 Since Snakemake is a filename-driven workflow engine, it is mandatory to specify the full path of the requested
 output file to trigger its production. Given the large number of useful output files produced by a single
-pipeline run, this would be cumbersome. Hence, it is sufficient to specify the respective
+pipeline run, this would be cumbersome. Hence, it is sufficient to specify the
 [wildcard](https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#wildcards) values needed to
 automatically build all output file paths. This is achieved as follows:
 
@@ -241,9 +257,14 @@ sample_targets_HG02011:
       var_caller: freebayes
 ```
 
+> You can find the original file here:
+> ```bash
+> /work_dir$ less project-diploid-assembly/smk_config/samples/AFR/ACB/hg02011.yml
+> ```
+
 The sample target section of the config is composed of two entry types: `defaults` and `target`. Default values
 are used repeatedly for each following target section (to avoid repetition). The above configures the pipeline
-to produce two "target sets" for the same input reads (listed under defaults), one target set uses the `flye`
+to produce two "target sets" for the same input reads: one target set uses the `flye`
 assembler and the `longshot` variant caller, and the other uses the `shasta` assembler and the `freebayes`
 variant caller (whether or not that is a reasonable choice is beyond this tutorial).
 
@@ -266,4 +287,190 @@ The abbreviations refer to the following:
 - hap_assembler: tool for haploid assembly
 - var_caller: tool for variant calling
 
-#### Data source configuration
+> **Important note**: if you happen to forget (or omit) a wildcard, the respective target cannot be produced
+> by the pipeline. In this case, you will see a WARNING message during the pipeline start-up. Consider the
+> case of omitting the wildcard "pol_pass: arrow-p1": no targets requiring a polished phased assembly can be
+> build w/o that information, but all other targets will be created as usual. This is one possible way of
+> stopping the pipeline early, e.g., to examine the draft haploid assembly before proceeding with the
+> polishing step.
+
+#### (iii) Data source configuration
+The last piece of information pertains to the question where the pipeline should retrieve its input data from.
+For all preconfigured HGSVC samples, this is currently either an FTP server or EBI/ENA.
+The following descriptions thus focuses on locally available data (both long read and Strand-seq input files).
+
+##### (iii-A) Long-read input data
+We assume you have a local folder hierarchy where you collect the output data for all your sequencing experiments.
+Because the output file names are meaningful for your internal file tracking, you cannot rename the original files.
+
+For one single sample, it looks like this:
+
+```bash
+/seq_experiments/HG02011/HG02011_EDEVI_20200207_S64049_PL100149417-1_A01.subreads.bam
+/seq_experiments/HG02011/HG02011_EDEVI_20200211_S64049_PL100149417-1_A01.subreads.bam
+```
+
+Because you cannot rename the files, you simply create symbolic links with appropriate names:
+
+```bash
+/linked_experiments/HG02011_hgsvc_pbsq2-clr/HG02011_hgsvc_pbsq2-clr.part1.pbn.bam
+/linked_experiments/HG02011_hgsvc_pbsq2-clr/HG02011_hgsvc_pbsq2-clr.part2.pbn.bam
+```
+
+> Reminder: "pbn" is short for "pacbio-native" and is used within the pipeline context
+> to separate "pacbio-native" from "non pacbio-native" BAM files (with file extension ".sam.bam")
+
+Since the above symbolic links (names) are supposed to be used as-is by the pipeline, and the input data is coming
+in parts (as indicated in the sample description, see part (i) above), it is necessary to
+create the subfolder `HG02011_hgsvc_pbsq2-clr` where the individual `part` files will be placed.
+
+Now you can configure the data source as follows:
+
+```yaml
+data_source_HG02011_local:
+  comment: "OPTIONAL: annotate your data source"
+  output: 'HG02011_local.json'
+  server: 'localhost'
+  data_source: '/linked_experiments'
+  collect_files:
+    - 'pbn.bam'
+  sort_into:
+    - 'bam'
+  assume_correct_filenames: True
+```
+
+> **Important remark**: there is no need to have one data source configuration per sample. If there is a collection
+> of samples locally available, they can all be configured in the same data source
+> configuration file by placing a whole hierarchy of symbolic links under "/linked_experiments"
+
+"collect_files" specifies which files to collect based on their file extension. "sort_into" tells the pipeline
+where to put these files (here: under `input/bam`, plus the subfolder `HG02011_hgsvc_pbsq2-clr`). If the input data
+were PacBio CCS/HiFi or Oxford Nanopore reads with the input format FASTQ, the above would change to `fastq.gz` and
+`fastq`. Note that you can have BAM and FASTQ mixed in the same folder, there just has to be a one-to-one
+correspondence between the entries in "collect_files" and "sort_into".
+The import option here is `assume_correct_filenames: True`, which tells the pipeline to skip any attempt to
+infer appropriate file names.
+
+##### (iii-B) Strand-seq input data
+In principle, the configuration of a local data source for Strand-seq data is quite similar to the above.
+The only change required is that, because the individual Strand-seq FASTQ files are never merged into a single
+FASTQ file for downstream processing, and Strand-seq data are assumed to be paired-end (short) reads, the file naming
+scheme is slightly different:
+
+```bash
+/linked_experiments/HG02011_hgsvc_ilnxs-80pe_sseq/HG02011_hgsvc_ilnxs-80pe_RUN-ID_1.fastq.gz
+/linked_experiments/HG02011_hgsvc_ilnxs-80pe_sseq/HG02011_hgsvc_ilnxs-80pe_RUN-ID_2.fastq.gz
+(and so one)
+```
+
+> **Important note**: the above is only valid for mono-fraction Strand-seq libraries.
+
+Since unique file names are required, there has to be a unique ID in each file name after the usual
+`individual_project_platform` part, but before the mate indicators (`_1` and `_2`), i.e., what is indicated
+above as "RUN-ID".  
+Also note the suffix `sseq` at the end of the subfolder. It is noteworthy that both long-read and Strand-seq input
+data can be collected (symlinked) in the same folder hierarchy provided that their file names can be used as-is
+
+#### Q and A concerning data input
+
+##### QA-1: how do I know which files were the original input for my pipeline?
+Internally, the pipeline uses so-called *request* files to keep track of each original file source (remote or local).
+These request files can be found in `input/FORMAT/READSET/requests`.
+
+##### QA-2: my file names are quite well-behaved, do I have to create intermediate symbolic links?
+You can try playing around with the data scraping script located here:
+```bash
+/work_dir$ less project-diploid-assembly/scripts/scan_remote_path.py
+```
+This script is for internal use only (mainly to rename the HGSVC data located on the 1000G FTP server).
+To give an example, the long-read input files listed under (iii-A) could probably be renamed automatically
+using the following call to the script:
+
+```bash
+scan_remote_path.py --debug \
+    --server localhost \
+    --data-source /seq_experiments \
+    --collect-files "bam" \
+    --sort-into "bam" \
+    --assume-pacbio-native \
+    --assume-clr-subreads \
+    --file-infix "hgsvc-pbsq2-" \
+    --local-path-suffix "{individual}_{file_infix}{tech}" \
+    --output hg02011_local.json
+```
+
+If the output file names (in the JSON) adhere to the naming scheme as required by the pipeline, then the data
+source can also be specified as follows (i.e., avoiding the intermediate step of symlinking with appropriate names):
+
+```yaml
+data_source_HG02011_local:
+  comment: "OPTIONAL: annotate your data source"
+  output: 'HG02011_local.json'
+  server: 'localhost'
+  data_source: '/seq_experiments'
+  collect_files:
+    - 'bam'
+  sort_into:
+    - 'bam'
+  assume_pacbio_native: True
+  assume_clr_subreads: True
+  file_infix: "hgsvc_pbsq2-"
+  local_path_suffix:  "{{individual}}_{{file_infix}}{{tech}}"
+```
+
+##### QA-3: are locally available input files copied?
+Generally no. If symbolic links turn out to be problematic for some reason, placing a
+`force_local_copy: True` in any of the Snakemake config files will trigger copying input files.
+
+## Running the pipeline
+
+#### Step 1 (optional)
+Snakemake supports creating Conda environments on the fly to isolate software installations. This feature is used
+in the pipeline, which leads to some overhead when the individual environments are created. Since software setup is
+also a common point of failure, the whole Conda environment creation can be done before executing the pipeline.
+
+This can be achieved as follows (always perform a dry run first):
+
+```bash
+/work_dir$ conda activate ./smk_env
+(smk_env)/work_dir$ cd project-diploid-assembly
+(smk_env)/work_dir/project-diploid-assembly$ snakemake \
+    --dry-run \
+    --directory ../run_folder \
+    --profile path_to_your_profile/ \
+    --configfiles path_to_your_run_env/run_env.yml smk_config/params/smk_cfg_params_RV8.yml \
+    --cluster-status path_to_your_cluster_status_script.py \
+    setup_env
+```
+
+The above command (even as dry run) will issue a couple of warning, e.g., because no data sources were configured.
+These can be safely ignored.  
+Note that the environment setup also checks the presence of the Singularity container runtime only needed for
+the Peregrine assembler and the DeepVariant variant caller. If these two tools are not to be used for any
+pipeline run, a failed check can be ignored. 
+
+#### Step 2
+After a successful environment setup, a pipeline run can be started as follows (again, do a dry run first):
+
+```bash
+(smk_env)/work_dir/project-diploid-assembly$ snakemake \
+    --dry-run \
+    --directory ../run_folder \
+    --profile path_to_your_profile/ \
+    --configfiles path_to_your_run_env/run_env.yml \
+                    smk_config/params/smk_cfg_params_RV8.yml \
+                    smk_config/ref_data/reference_data_sources.yml \
+                    path_to_your_sample_config.yml \
+                    path_to_your_data_source_config.yml \
+    --cluster-status path_to_your_cluster_status_script.py \
+    master_custom
+```
+
+Note that the above assumes that you create two configuration files, one only for the sample description and
+target specification (`path_to_your_sample_config.yml`), and a second one to define the data sources
+(`path_to_your_data_source_config`). As already mentioned, all config files are merged by Snakemake, so it is
+up to you how you organize your configuration files.
+
+The given Snakemake target `master_custom` triggers a pipeline run for all possible targets (=output files) for
+all samples that are found in the configuration (i.e., for each `sample_description_` entry with specified targets
+and data sources).
