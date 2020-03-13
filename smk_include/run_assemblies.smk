@@ -58,7 +58,7 @@ rule derive_flye_parameter_preset:
         _, _, platform_spec = file_name.split('_')[:3]
         if platform_spec.startswith('pb'):
             if 'ccs' in platform_spec:
-                preset += '--pacbio-corr'
+                preset += '--pacbio-hifi'
             elif 'clr' in platform_spec:
                 preset += '--pacbio-raw'
             else:
