@@ -266,7 +266,7 @@ def complete_fastq_samples_mock_merger(wildcards):
 
     requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder, readset=readset).output[0]
 
-    req_file_path = os.path.join(requested_input, readset + '.request')
+    req_file_path = os.path.join(requested_input, readset + '_1000.request')
 
     return req_file_path
 
