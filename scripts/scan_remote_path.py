@@ -429,8 +429,10 @@ def traverse_local_path(local_path, logger):
     """
     logger.debug('Traversing local path (no symlinks followed): {}'.format(local_path))
 
+    base_path = os.path.abspath(local_path)
+
     local_files = []
-    for root, dirs, files in os.walk(local_path, followlinks=False):
+    for root, dirs, files in os.walk(base_path, followlinks=False):
         full_paths = [os.path.abspath(os.path.join(root, f)) for f in files]
         local_files.extend(full_paths)
 
@@ -446,6 +448,7 @@ def match_filenames_to_sort_folder(data_files, cargs, logger):
     :param logger:
     :return:
     """
+    abs_source_path = os.path.abspath(cargs.data_source)
     output = dict()
     for file_ext, sort_folder in zip(cargs.collect_files, cargs.sort_into):
         matching_files = [df for df in data_files if df.endswith(file_ext)]
@@ -462,7 +465,7 @@ def match_filenames_to_sort_folder(data_files, cargs, logger):
                 if os.path.islink(data_file):
                     remote_path = os.readlink(data_file)
             # check if there are subfolders that need to be taken into account
-            sub_path = os.path.split(data_file)[0].replace(cargs.data_source, '').strip('/')
+            sub_path = os.path.split(data_file)[0].replace(abs_source_path, '').strip('/')
             if sub_path:
                 logger.debug('Using the following subfolder for file {}: {}'.format(data_file_name, sub_path))
             local_path = os.path.join(path_prefix, sub_path, data_file_name)
