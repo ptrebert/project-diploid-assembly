@@ -2,6 +2,8 @@
 notify: False
 notify_email: pebert@mpi-inf.mpg.de
 
+force_local_copy: True
+
 env_module_singularity: False
 
 num_cpu_max: 36
