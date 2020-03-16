@@ -95,6 +95,21 @@ TARGET_PATHS = {
         "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/report.pdf"
     ),
 
+    "REPORT_POLISHED_CLUSTERED_HAPLOID_ASSEMBLY": os.path.join(
+        "output", "evaluation", "quastlg_busco",
+        "{eval_known_ref}-{eval_gene_model}",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sts_reads}",
+        "polishing",
+        "{pol_reads}",
+        "clustering",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.scV{git_commit_version}/report.pdf"
+    ),
+
     "STATS_SAMPLE_SUMMARY": os.path.join(
         "output", "statistics", "stat_dumps",
         "{hap_reads}.{file_ext}.pck"
