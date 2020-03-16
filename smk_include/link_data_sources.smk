@@ -13,7 +13,7 @@ rule master_link_data_sources:
     into the pipeline via symlinking
     """
     input:
-        ancient(config.get('link_data_input', []))
+        ancient([os.path.abspath(fp) for fp in config.get('link_data_input', [])])
     output:
         config.get('link_data_output', [])
     run:
