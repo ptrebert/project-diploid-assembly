@@ -165,8 +165,10 @@ rule hac_link_strandseq_monofraction_samples:
             'temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.sam.bam')
     wildcard_constraints:
         sts_reads = CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES
+    params:
+        shell_cmd = lambda wildcards: 'cp' if bool(config.get('force_local_copy', False)) else 'ln -s'
     shell:
-        'ln -s {input} {output}'
+        '{params.shell_cmd} {input} {output}'
 
 
 rule hac_samtools_position_sort_strandseq_reads:
