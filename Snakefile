@@ -30,8 +30,8 @@ wildcard_constraints:
     # allowed variant callers
     var_caller = '(freebayes|longshot|deepvar)',
     # allowed assembly tools
-    # assemblers redbean and *27b are temp until flye v2.7 has been established
-    assembler = '(wtdbg|canu|flye|pereg|shasta|redbean|uw27b|jax27b)',
+    # regexp [a-z0-9]+ to link pre-computed collapsed assemblies
+    assembler = '(wtdbg|canu|flye|pereg|shasta|[a-z0-9]+)',
     # polisher
     polisher = '(arrow|racon)',
     pol_pass ='(arrow|racon)\-p[12]',
