@@ -355,7 +355,8 @@ def define_file_targets(wildcards):
             raise ValueError('Sample description individual does not '
                              'match requested individual: {} vs {}'.format(individual, sample_desc['individual']))
     except KeyError as ke:
-        sys.stderr.write('\nWARNING: no sample description for individual [sample_description_] {} in config\n'.format(individual))
+        if bool(config.get('show_warnings', False)):
+            sys.stderr.write('\nWARNING: no sample description for individual [sample_description_] {} in config\n'.format(individual))
         return []
 
     try:
@@ -400,14 +401,16 @@ def define_file_targets(wildcards):
                     CONFIG_TARGETS_SELECTED_KEYS,
                     CONFIG_TARGETS_SELECTED_VALUES,
                     True):
-                sys.stderr.write('\nWARNING: discarding target spec: {}\n'.format(target_spec))
+                if bool(config.get('show_warnings', False)):
+                    sys.stderr.write('\nWARNING: discarding target spec: {}\n'.format(target_spec))
                 continue
 
             if check_target_modifier_match(tmp,
                 CONFIG_TARGETS_SKIPPED_KEYS,
                 CONFIG_TARGETS_SKIPPED_VALUES,
                 False):
-                sys.stderr.write('\nWARNING: skipping over target spec: {}\n'.format(target_spec))
+                if bool(config.get('show_warnings', False)):
+                    sys.stderr.write('\nWARNING: skipping over target spec: {}\n'.format(target_spec))
                 continue
 
             for target_name, target_path in TARGET_PATHS.items():
@@ -428,9 +431,10 @@ def define_file_targets(wildcards):
                 try:
                     complete_targets = expand(target_path, **tmp)
                 except (KeyError, WildcardError) as error:
+                    if bool(config.get('show_warnings', False)):
                         sys.stderr.write('\nMissing parameter values for target {}: '
                                          '(known: {}) - {} [Skipping]\n'.format(target_name, tmp, str(error)))
-                        continue
+                    continue
                 else:
                     for entry in complete_targets:
                         assert len(entry) > 1, 'Define file targets: looks like iterating over ' \

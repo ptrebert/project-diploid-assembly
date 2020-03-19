@@ -89,7 +89,8 @@ def read_configured_data_sources():
         raise ValueError('Duplicate data source output file.')
 
     if not source_names:
-        sys.stderr.write('\nWARNING: no data sources configured\n')
+        if bool(config.get('show_warnings', False)):
+            sys.stderr.write('\nWARNING: no data sources configured\n')
 
     if not len(source_names) == len(source_outputs) == len(source_syscalls):
         raise RuntimeError('Length mismatch for data sources: \n'

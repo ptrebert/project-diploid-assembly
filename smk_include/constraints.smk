@@ -15,15 +15,17 @@ def build_input_data_wildcard_constraint(input_type, readset_selectors, add_samp
         try:
             sources = settings['data_sources']
         except KeyError:
-            sys.stderr.write('\nWARNING: no data sources configured for sample: {}\n'.format(settings['individual']))
+            if bool(config.get('show_warnings', False)):
+                sys.stderr.write('\nWARNING: no data sources configured for sample: {}\n'.format(settings['individual']))
             continue
         for source in sources:
             if input_type not in source:
                 continue
             source_spec = source[input_type]
             if 'readset' not in source_spec:
-                sys.stderr.write('\nWARNING: no key "readset" found in data '
-                                 'source specification: {} / {} / {}\n'.format(settings['individual'], input_type, readset_selectors))
+                if bool(config.get('show_warnings', False)):
+                    sys.stderr.write('\nWARNING: no key "readset" found in data '
+                                     'source specification: {} / {} / {}\n'.format(settings['individual'], input_type, readset_selectors))
                 continue
             select = True
             for select_key, select_values in readset_selectors.items():
@@ -43,8 +45,9 @@ def build_input_data_wildcard_constraint(input_type, readset_selectors, add_samp
                 selected_readsets.append(source_spec['readset'])
 
     if not selected_readsets:
-        sys.stderr.write('\nWARNING: no wildcard constraint created '
-                         'for readset selectors: {} / {}\n'.format(input_type, readset_selectors))
+        if bool(config.get('show_warnings', False)):
+            sys.stderr.write('\nWARNING: no wildcard constraint created '
+                             'for readset selectors: {} / {}\n'.format(input_type, readset_selectors))
         wildcard_regexp = '^$'
     else:
         wildcard_regexp = '(' + '|'.join(sorted(selected_readsets)) + ')'
