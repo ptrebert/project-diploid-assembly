@@ -284,11 +284,16 @@ The abbreviations refer to the following:
 - hap_assm_mode: haploid assembly mode, either per cluster/haplotype (`split`) or only per haplotype (`joint`)
 - hap: haplotypes to assemble, four possible combinations as listed above
 - nhr_assembler: tool for non-haplotype resolved (collapsed) assembly
+  - supported values: flye, wtdbg, pereg (= Peregrine), shasta
+  - for expert users: any value matched by `[a-z0-9]+`
 - hap_assembler: tool for haploid assembly
+  - supported values: flye, wtdbg, pereg (= Peregrine), shasta, canu
 - var_caller: tool for variant calling
+  - supported values: longshot, freebayes, deepvar (= DeepVariant)
 
 > **Important note**: if you happen to forget (or omit) a wildcard, the respective target cannot be produced
-> by the pipeline. In this case, you will see a WARNING message during the pipeline start-up. Consider the
+> by the pipeline. There won't be a message about this unless you set `show_warnings: True` in one of your
+> config files (e.g., in the pipeline run environment configuration). Consider the
 > case of omitting the wildcard "pol_pass: arrow-p1": no targets requiring a polished phased assembly can be
 > build w/o that information, but all other targets will be created as usual. This is one possible way of
 > stopping the pipeline early, e.g., to examine the draft haploid assembly before proceeding with the
@@ -443,8 +448,6 @@ This can be achieved as follows (always perform a dry run first):
     setup_env
 ```
 
-The above command (even as dry run) will issue a couple of warning, e.g., because no data sources were configured.
-These can be safely ignored.  
 Note that the environment setup also checks the presence of the Singularity container runtime only needed for
 the Peregrine assembler and the DeepVariant variant caller. If these two tools are not to be used for any
 pipeline run, a failed check can be ignored. 
