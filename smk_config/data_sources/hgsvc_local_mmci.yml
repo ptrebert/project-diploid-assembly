@@ -3,7 +3,7 @@ data_source_pacbio_mmci_local:
   comment: "HGSVC local MMCI source for Sequel2 PacBio CLR data"
   output: 'hgsvc_local_mmci_pacbio.json'
   server: 'localhost'
-  data_source: '/scratch/bioinf/users/pebert/share'
+  data_source: '/scratch/bioinf/users/pebert/data_sources/uw_hgsvc_pbsq2-clr'
   collect_files:
     - 'bam'
   sort_into:
