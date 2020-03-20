@@ -83,7 +83,9 @@ rule run_breakpointr:
     log:
         'log/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.log'
     benchmark:
-        'run/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.rsrc'
+        os.path.join('run/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}',
+                     'breakpointr.t{}.rsrc'.format(config['num_cpu_high'])
+                     )
     conda:
         '../environment/conda/conda_rscript.yml'
     threads: config['num_cpu_high']
@@ -167,7 +169,9 @@ rule run_strandphaser:
     log:
         stp = 'log/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.log',
     benchmark:
-        'run/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.rsrc'
+        os.path.join('run/output/integrative_phasing/processing/strandphaser',
+                     PATH_INTEGRATIVE_PHASING + '.phased.t{}.rsrc'.format(conifg['num_cpu_high'])
+                     )
     conda:
         '../environment/conda/conda_rscript.yml'
     threads: config['num_cpu_high']

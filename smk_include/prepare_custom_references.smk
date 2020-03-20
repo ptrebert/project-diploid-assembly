@@ -255,7 +255,7 @@ checkpoint run_saarclust_assembly_clustering:
     log:
         'log/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.log'
     benchmark:
-        'run/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.run'
+        'run/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sts_reads}/saarclust.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
     resources:

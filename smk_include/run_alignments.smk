@@ -250,7 +250,7 @@ rule bwa_strandseq_to_reference_alignment:
         mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
         mem_total_mb = 8192
     params:
-        idx_prefix = lambda wildcards, input: input.ref_index.split('.')[0],
+        idx_prefix = lambda wildcards, input: input.ref_index.rsplit('.', 1)[0],
         discard_flag = config['bwa_strandseq_aln_discard']
     shell:
         'bwa mem -t {threads}'
