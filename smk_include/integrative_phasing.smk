@@ -170,7 +170,7 @@ rule run_strandphaser:
         stp = 'log/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.log',
     benchmark:
         os.path.join('run/output/integrative_phasing/processing/strandphaser',
-                     PATH_INTEGRATIVE_PHASING + '.phased.t{}.rsrc'.format(conifg['num_cpu_high'])
+                     PATH_INTEGRATIVE_PHASING + '.phased.t{}.rsrc'.format(config['num_cpu_high'])
                      )
     conda:
         '../environment/conda/conda_rscript.yml'
