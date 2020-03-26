@@ -26,6 +26,8 @@ min_region_to_order: 500000
 bin_size: 200000
 step_size: 200000
 prob_threshold: 0.25
+init_clusters: 100
+desired_clusters: 24
 
 # VARIANT CALLING
 # Postprocessing parameters

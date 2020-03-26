@@ -202,7 +202,9 @@ rule write_saarclust_config_file:
         min_contig_size = config['min_contig_size'],
         bin_size = config['bin_size'],
         step_size = config['step_size'],
-        prob_threshold = config['prob_threshold']
+        prob_threshold = config['prob_threshold'],
+        init_clusters = config['init_clusters'],
+        desired_clusters = config.get('desired_clusters', None)
     run:
         import os
 
@@ -225,7 +227,7 @@ rule write_saarclust_config_file:
             'pairedReads = TRUE',
             'store.data.obj = TRUE',
             'reuse.data.obj = TRUE',
-            'num.clusters = 100',
+            'num.clusters = ' + str(params.init_clusters),
             'bin.method = "dynamic"',
             'assembly.fasta = "' + input.reference + '"',
             'concat.fasta = TRUE',
@@ -234,7 +236,7 @@ rule write_saarclust_config_file:
         ]
 
         if int(config['git_commit_version']) > 7:
-            config_rows.append('desired.num.clusters = 24')
+            config_rows.append('desired.num.clusters = ' + str(params.desired_clusters))
 
         with open(output.cfg, 'w') as dump:
             _ = dump.write('\n'.join(config_rows) + '\n')

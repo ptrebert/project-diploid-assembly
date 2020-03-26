@@ -20,12 +20,15 @@ shasta_target_coverage: 60  # tech-independent recommendation: cov between 40x a
 flye_target_coverage: 50  # dev recommendation: ~30x, but we have enough RAM to go a bit higher
 
 # SaaRclust parameter sets
-# goal is to obtain 24 clusters
+# goal is to obtain approx.
+# 24 clusters (for human)
 min_contig_size: 100000
 min_region_to_order: 500000
 bin_size: 200000
 step_size: 200000
 prob_threshold: 0.25
+init_clusters: 100
+desired_clusters: 24
 
 # VARIANT CALLING
 # Postprocessing parameters
