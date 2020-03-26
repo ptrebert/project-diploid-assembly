@@ -289,7 +289,7 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
         glob_pattern = '_'.join([individual, project, platform + '-{spec,[0-9a-z]+}', '{lib_id}'])
 
         if wildcards.sts_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
-            glob_pattern += '_{run_id,[A-Z0-9]+}_1.request'
+            glob_pattern += '_{run_id,[a-zA-Z0-9]+}_1.request'
         else:
             glob_pattern += '_1.request'
         search_path = os.path.join(requests_dir, glob_pattern)
