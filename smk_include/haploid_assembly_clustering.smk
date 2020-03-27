@@ -342,13 +342,13 @@ rule hac_write_saarclust_config_file:
         non_default_params = config.get('sample_non_default_parameters', dict())
         if individual in non_default_params:
             sample_non_defaults = non_default_params[individual]
-            min_contig_size = str(sample_non_defaults.get('min_contig_size'), min_contig_size)
-            min_region_size = str(sample_non_defaults.get('min_region_size'), min_region_size)
-            bin_size = str(sample_non_defaults.get('bin_size'), bin_size)
+            min_contig_size = str(sample_non_defaults.get('min_contig_size', min_contig_size))
+            min_region_size = str(sample_non_defaults.get('min_region_size', min_region_size))
+            bin_size = str(sample_non_defaults.get('bin_size', bin_size))
             step_size = str(sample_non_defaults.get('step_size', step_size))
             prob_threshold = str(sample_non_defaults.get('prob_threshold', prob_threshold))
             init_clusters = str(sample_non_defaults.get('init_clusters', init_clusters))
-            desired_clusters = str(sample_non_defaults.get('desired_clusters'), desired_clusters)
+            desired_clusters = str(sample_non_defaults.get('desired_clusters', desired_clusters))
 
         config_rows = [
             '[SaaRclust]',
