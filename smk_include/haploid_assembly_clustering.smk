@@ -314,7 +314,9 @@ rule hac_write_saarclust_config_file:
         min_region_size = config['min_region_to_order'],
         bin_size = config['bin_size'],
         step_size = config['step_size'],
-        prob_threshold = config['prob_threshold']
+        prob_threshold = config['prob_threshold'],
+        init_clusters = config['init_clusters'],
+        desired_clusters = config.get('desired_clusters', 0)
     run:
         import os
 
@@ -328,17 +330,37 @@ rule hac_write_saarclust_config_file:
 
         outfolder = os.path.dirname(bam_files[0])
 
+        min_contig_size = str(params.min_contig_size)
+        min_region_size = str(params.min_region_size)
+        bin_size = str(params.bin_size)
+        step_size = str(params.step_size)
+        prob_threshold = str(params.prob_threshold)
+        init_clusters = str(params.init_clusters)
+        desired_clusters = str(params.desired_clusters)
+
+        individual = wildcards.sts_reads.split('_')[0]
+        non_default_params = config.get('sample_non_default_parameters', dict())
+        if individual in non_default_params:
+            sample_non_defaults = non_default_params[individual]
+            min_contig_size = str(sample_non_defaults.get('min_contig_size'), min_contig_size)
+            min_region_size = str(sample_non_defaults.get('min_region_size'), min_region_size)
+            bin_size = str(sample_non_defaults.get('bin_size'), bin_size)
+            step_size = str(sample_non_defaults.get('step_size', step_size))
+            prob_threshold = str(sample_non_defaults.get('prob_threshold', prob_threshold))
+            init_clusters = str(sample_non_defaults.get('init_clusters', init_clusters))
+            desired_clusters = str(sample_non_defaults.get('desired_clusters'), desired_clusters)
+
         config_rows = [
             '[SaaRclust]',
-            'min.contig.size = ' + str(params.min_contig_size),
-            'min.region.to.order = ' + str(params.min_region_size),
-            'bin.size = ' + str(params.bin_size),
-            'step.size = ' + str(params.step_size),
-            'prob.th = ' + str(params.prob_threshold),
+            'min.contig.size = ' + min_contig_size,
+            'min.region.to.order = ' + min_region_size,
+            'bin.size = ' + bin_size,
+            'step.size = ' + step_size,
+            'prob.th = ' + prob_threshold,
             'pairedReads = TRUE',
             'store.data.obj = TRUE',
             'reuse.data.obj = FALSE',
-            'num.clusters = 100',
+            'num.clusters = ' + init_clusters,
             'bin.method = "dynamic"',
             'ord.method = "greedy"',
             'assembly.fasta = "' + input.reference + '"',
@@ -348,7 +370,7 @@ rule hac_write_saarclust_config_file:
         ]
 
         if int(config['git_commit_version']) > 7:
-            config_rows.append('desired.num.clusters = 24')
+            config_rows.append('desired.num.clusters = ' + desired_clusters)
 
         with open(output.cfg, 'w') as dump:
             _ = dump.write('\n'.join(config_rows) + '\n')

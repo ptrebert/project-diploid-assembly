@@ -29,6 +29,13 @@ prob_threshold: 0.25
 init_clusters: 100
 desired_clusters: 24
 
+# this solves a known HET inversion located on chr8
+sample_non_default_parameters:
+  HG00733:
+    init_clusters: 150
+    desired_clusters: 25
+
+
 # VARIANT CALLING
 # Postprocessing parameters
 filter_vcf_qual: 10
