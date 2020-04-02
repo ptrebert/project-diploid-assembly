@@ -7,19 +7,56 @@ SHORT_READS_METADATA = '/home/pebert/work/code/github/project-diploid-assembly/a
 
 URL_RECORDS = dict()
 
+if config.get('run_hap', 'foo') == 'one':
+    haps= [1]
+elif config.get('run_hap', 'foo') == 'two':
+    haps = [2]
+else:
+    haps = [1, 2]
+
+
+rule clr_qv_alignments:
+    input:
+        expand('output/alignments/{individual}_short_aln-to_HG00514_{tech}_hap{haps}.mdup.sort.bam{ext}',
+               individual=['HG00512', 'HG00513', 'HG00514'],
+               tech=['clr'],
+               haps=haps,
+               ext=['', '.bai']),
+        expand('output/alignments/{individual}_ccs_aln-to_HG00514_{tech}_hap{haps}.mdup.sort.bam{ext}',
+               individual=['HG00512', 'HG00513', 'HG00514'],
+               tech=['clr'],
+               haps=haps,
+               ext=['', '.bai']),
+
+
+rule revision_analysis:
+    input:
+         expand('output/variant_calls/30-gtfilter/{individual}_{reads}_aln-to_{individual}_{tech}_hap{haps}.{var_type}.{genotype}.vcf.bgz.tbi',
+                individual='NA12878',
+                reads=['short', 'ccs'],
+                tech=['ccs', 'whd'],
+                haps=haps,
+                var_type=['snv', 'indels'],
+                genotype=['hom', 'het']),
+         expand('output/variant_calls/30-gtfilter/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{tech}_hap{haps}.{var_type}.{genotype}.vcf.bgz.tbi',
+                child='HG00733',
+                parent1='HG00731',
+                parent2='HG00732',
+                reads=['short', 'ccs'],
+                tech=['ccs', 'ont'],
+                haps=haps,
+                var_type=['snv', 'indels'],
+                genotype=['hom', 'het'])
+    priority: 1000
+
+
 rule master_assembly_qv:
     input:
-        expand('input/fastq/{individual}_1kg_il25k-125pe_short_{mate}.fastq.gz',
-               individual=['HG00733', 'HG00732', 'HG00731'],
-               mate=[1, 2]),
-        expand('output/alignments/{individual}_short_aln-to_HG00733_hap{num}.mdup.sort.bam{ext}',
-               individual=['HG00733', 'HG00732', 'HG00731'],
-               num=[1, 2],
-               ext=['', '.bai']),
-        expand('output/alignments/{individual}_ccs_aln-to_HG00733_hap{num}.mdup.sort.bam{ext}',
-               individual=['HG00733', 'HG00732', 'HG00731'],
-               num=[1, 2],
-               ext=['', '.bai']),
+        expand('input/fastq/{individual}_short_{mate}.fastq.gz',
+                individual=['HG00733', 'HG00732', 'HG00731', 'NA12878', 'HG00512', 'HG00513', 'HG00514'],
+                mate=[1, 2]),
+        rules.clr_qv_alignments.input,
+        rules.revision_analysis.input
 
 
 rule link_supp_data:
@@ -33,18 +70,52 @@ rule link_supp_data:
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200313_Sequel2-CCS_HG00731_HG00732_polished/HG00731_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.fasta'),
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200313_Sequel2-CCS_HG00731_HG00732_polished/HG00731_hgsvc_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta'),
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200313_Sequel2-CCS_HG00731_HG00732_polished/HG00732_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.fasta'),
-        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200313_Sequel2-CCS_HG00731_HG00732_polished/HG00732_hgsvc_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta')
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200313_Sequel2-CCS_HG00731_HG00732_polished/HG00732_hgsvc_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/HG00512_hgsvc_pbsq2-ccs_1000.fastq.gz'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/HG00513_hgsvc_pbsq2-ccs_1000.fastq.gz'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/HG00514_hgsvc_pbsq2-ccs_1000.fastq.gz'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/NA19238_hgsvc_pbsq2-ccs_1000.fastq.gz'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/NA19239_hgsvc_pbsq2-ccs_1000.fastq.gz'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/NA19240_hgsvc_pbsq2-ccs_1000.fastq.gz'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200318_ONT_HG00733_assemblies/HG00733_hpg_ontpm-ul_1000-flye.h1-un.helpol-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200318_ONT_HG00733_assemblies/HG00733_hpg_ontpm-ul_1000-flye.h2-un.helpol-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200309_Sequel2-CLR_HG00512_polished/HG00512_hgsvc_pbsq2-clr_1000-flye.h1-un.arrow-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200309_Sequel2-CLR_HG00512_polished/HG00512_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200311_Sequel2-CLR_HG00513_polished/HG00513_hgsvc_pbsq2-clr_1000-flye.h1-un.arrow-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200311_Sequel2-CLR_HG00513_polished/HG00513_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200302_Sequel2-CLR_HG00514_polished/HG00514_hgsvc_pbsq2-clr_0526-flye.h1-un.arrow-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200302_Sequel2-CLR_HG00514_polished/HG00514_hgsvc_pbsq2-clr_0526-flye.h2-un.arrow-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200306_Sequel2-CCS_NA12878_NA24385_polished/NA12878_giab_pbsq2-ccs_1000-pereg.h1-un.racon-p2.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200306_Sequel2-CCS_NA12878_NA24385_polished/NA12878_giab_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/NA12878_giab_pbsq2-ccs_1000.fastq.gz')
     output:
         'input/fastq/HG00731_ccs.fastq.gz',
         'input/fastq/HG00732_ccs.fastq.gz',
         'input/fastq/HG00733_ccs.fastq.gz',
         'references/hg38.fasta',
-        'references/HG00733_hap1.fasta',
-        'references/HG00733_hap2.fasta',
-        'references/HG00731_hap1.fasta',
-        'references/HG00731_hap2.fasta',
-        'references/HG00732_hap1.fasta',
-        'references/HG00732_hap2.fasta',
+        'references/HG00733_ccs_hap1.fasta',
+        'references/HG00733_ccs_hap2.fasta',
+        'references/HG00731_ccs_hap1.fasta',
+        'references/HG00731_ccs_hap2.fasta',
+        'references/HG00732_ccs_hap1.fasta',
+        'references/HG00732_ccs_hap2.fasta',
+        'input/fastq/HG00512_ccs.fastq.gz',
+        'input/fastq/HG00513_ccs.fastq.gz',
+        'input/fastq/HG00514_ccs.fastq.gz',
+        'input/fastq/NA19238_ccs.fastq.gz',
+        'input/fastq/NA19239_ccs.fastq.gz',
+        'input/fastq/NA19240_ccs.fastq.gz',
+        'references/HG00733_ont_hap1.fasta',
+        'references/HG00733_ont_hap2.fasta',
+        'references/HG00512_clr_hap1.fasta',
+        'references/HG00512_clr_hap2.fasta',
+        'references/HG00513_clr_hap1.fasta',
+        'references/HG00513_clr_hap2.fasta',
+        'references/HG00514_clr_hap1.fasta',
+        'references/HG00514_clr_hap2.fasta',
+        'references/NA12878_ccs_hap1.fasta',
+        'references/NA12878_ccs_hap2.fasta',
+        'input/fastq/NA12878_ccs.fastq.gz'
     run:
         for infile, outfile in zip(input, output):
             os.symlink(infile, outfile)
@@ -92,8 +163,27 @@ rule merge_illumina_fastq_files:
         select_short_read_fastq_parts
     output:
         'input/fastq/{sample}_short_{mate}.fastq.gz'
+    wildcard_constraints:
+        sample = '(HG00731|HG00732|HG00733|HG00512|HG00513|HG00514)'
     shell:
         'gzip -d -c {input} | gzip > {output}'
+
+
+rule load_na12878_data:
+    """
+    bioproject source: PRJEB3381
+    alternative: PRJNA200694
+    """
+    output:
+        'input/fastq/NA12878_short_1.fastq.gz',
+        'input/fastq/NA12878_short_2.fastq.gz'
+    params:
+        url1 = lambda wildcards: "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_1.fastq.gz",
+        url2 = lambda wildcards: "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_2.fastq.gz"
+    shell:
+        'wget --no-verbose -O {output[0]} {params.url1}'
+        ' && '
+        'wget --no-verbose -O {output[1]} {params.url2}'
 
 
 rule generate_bwa_index:
@@ -115,8 +205,8 @@ rule generate_bwa_index:
 
 rule bwa_short_reads_to_reference_alignment:
     input:
-         mate1 = 'input/fastq/{individual}_1kg_il25k-125pe_short_1.fastq.gz',
-         mate2 = 'input/fastq/{individual}_1kg_il25k-125pe_short_2.fastq.gz',
+         mate1 = 'input/fastq/{individual}_short_1.fastq.gz',
+         mate2 = 'input/fastq/{individual}_short_2.fastq.gz',
          ref_idx = 'references/{assembly}/bwa_index/{assembly}.bwt'
     output:
           bam = 'output/alignments/{individual}_short_aln-to_{assembly}.sort.bam'
@@ -146,7 +236,7 @@ rule pbmm2_long_reads_to_reference_alignment:
     threads: 48
     params:
         tempdir = lambda wildcards: os.path.join('temp', 'pbmm2', wildcards.assembly, wildcards.individual, wildcards.tech),
-        preset = lambda wildcards: 'CCS' if wildcards.tech == 'ccs' else 'SUBREAD'
+        preset = lambda wildcards: 'CCS --min-length 5000 ' if wildcards.tech == 'ccs' else 'SUBREAD --min-length 5000 '
     shell:
          'TMPDIR={params.tempdir} '
          'pbmm2 align --log-level INFO --sort --sort-memory 16384M --no-bai '
@@ -162,9 +252,12 @@ rule mark_duplicate_reads:
         'output/alignments/{alignment}.mdup.sort.bam'
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads: 8
+    threads: 12
     shell:
-        'sambamba markdup -t {threads} --overflow-list-size 600000 {input} {output}'
+        'sambamba markdup -t {threads} '
+        '--overflow-list-size 1000000 '  # default 200 000 ; increase to avoid "too many open files" issue
+        '--hash-table-size 524288 '  # default 262 144 ; increase to avoid "too many open files" issue
+        '{input} {output}'
 
 
 rule index_bam_alignment:
@@ -179,4 +272,352 @@ rule index_bam_alignment:
          "samtools index -@ {threads} {input.bam}"
 
 
-# rule align_long_reads_to_haploid_assembly:
+rule index_fasta_reference:
+    input:
+        'references/{reference}.fasta'
+    output:
+        'references/{reference}.fasta.fai'
+    wildcard_constraints:
+        reference = '\w+'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'samtools faidx {input[0]}'
+
+
+rule create_tbi_index:
+    input:
+         '{filepath}.vcf.bgz'
+    output:
+          '{filepath}.vcf.bgz.tbi'
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    shell:
+         'bcftools index --tbi {input}'
+
+
+checkpoint generate_sequence_files:
+    input:
+        'references/{assembly}.fasta.fai'
+    output:
+        directory('references/{assembly}/sequences/')
+    wildcard_constraints:
+        assembly = '\w+'
+    run:
+        import os
+        os.makedirs(output[0], exist_ok=True)
+        with open(input[0], 'r') as index:
+            for line in index:
+                seq_file = os.path.join(output[0], line.split()[0] + '.seq')
+                with open(seq_file, 'w') as dump:
+                    _ = dump.write(line)
+
+
+rule compute_alignments_stats:
+    input:
+        bam = 'output/alignments/{reads}_aln-to_{assembly}.mdup.sort.bam',
+        bai = 'output/alignments/{reads}_aln-to_{assembly}.mdup.sort.bam.bai',
+        seq = 'references/{assembly}/sequences/{seq}.seq'
+    output:
+        'output/alignments/{reads}_aln-to_{assembly}/rmdup_stats/{seq}.stats'
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    threads: 2
+    shell:
+        'samtools stats --remove-dups --threads {threads} {input.bam} {wildcards.seq} > {output}'
+
+
+def select_sequence_stats_files(wildcards):
+
+    stats_files = expand('output/alignments/{individual}_{tech}_aln-to_{assembly}/rmdup_stats/{seq}.stats',
+                         individual = wildcards.individuals.split('_'),
+                         tech = wildcards.tech,
+                         assembly = wildcards.assembly,
+                         seq = wildcards.seq)
+    return sorted(stats_files)
+
+
+def weighted_avg_and_std(values, weights):
+    """
+    https://stackoverflow.com/questions/2413522/weighted-standard-deviation-in-numpy
+    Return the weighted average and standard deviation.
+    values, weights -- Numpy ndarrays with the same shape.
+    """
+    import numpy as np
+    try:
+        average = np.average(values, weights=weights)
+    except ZeroDivisionError:
+        return 0, 0
+    # Fast and numerically precise:
+    variance = np.average((values-average)**2, weights=weights)
+    return average, np.sqrt(variance)
+
+
+rule compute_coverage_statistics:
+    input:
+        stats_files = select_sequence_stats_files,
+        seq_info = 'references/{assembly}/sequences/{seq}.seq'
+    output:
+        'output/alignments/{individuals}_{tech}_aln-to_{assembly}/cov_stats/{seq}.cov'
+    run:
+        import numpy as np
+
+        with open(input.seq_info, 'r') as faidx:
+            seqlen = int(faidx.readline().split()[1])
+
+        num_inputs = len(list(input.stats_files))
+
+        # coverage range from [ 0 ... 1001 ]
+        coverages = np.zeros(1002, dtype=np.int32)
+
+        for stats_file in input.stats_files:
+            with open(stats_file, 'r') as stats:
+                for line in stats:
+                    if not line.startswith('COV'):
+                        continue
+                    _, cov_range, cov, count = line.strip().split()
+                    if '<' in cov_range:
+                        cov = 1001
+                    else:
+                        cov = int(cov)
+                    coverages[cov] += int(count)
+        # samtools stats excludes bases with coverage 0
+        # so the following is the (average) number of bases
+        # covered with at least one read per input alignment
+        non_zero_cov_bp = int(round(coverages.sum() / num_inputs, 0))
+
+        # compute number of zero coverage bases
+        coverages[0] = seqlen * num_inputs - coverages.sum()
+
+        observed_coverage_values = np.array(coverages > 0, dtype=np.bool)
+        cov_values = np.array(range(1002), dtype=np.int32)[observed_coverage_values]
+        cov_counts = coverages[observed_coverage_values]
+        avg, std = weighted_avg_and_std(cov_values, cov_counts)
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write('cov_mean\t{}\n'.format(round(avg, 2)))
+            _ = dump.write('cov_std\t{}\n'.format(round(std, 2)))
+            _ = dump.write('cov_nonzero\t{}\n'.format(non_zero_cov_bp))
+            _ = dump.write('seq_length\t{}\n'.format(seqlen))
+
+
+def select_cov_stats_files(wildcards):
+    collect_path = 'output/alignments/{alignment}/cov_stats/{seq}.cov'
+
+    reads, assembly = wildcards.alignment.split('_aln-to_')
+
+    checkpoint_dir = checkpoints.generate_sequence_files.get(assembly=assembly).output[0]
+
+    checkpoint_wildcards = glob_wildcards(os.path.join(checkpoint_dir, '{seq}.seq'))
+
+    stats_files = expand(collect_path,
+                         alignment=wildcards.alignment,
+                         seq=checkpoint_wildcards.seq)
+
+    return stats_files
+
+
+rule summarize_average_coverage:
+    input:
+        select_cov_stats_files
+    output:
+        'output/alignments/{alignment}.mdup.sort.cov_stats'
+    run:
+        import numpy
+
+        out_lines = [('sequence', 'length', 'cov_mean', 'cov_std', 'cov_nonzero'), ('genome_wide', 'placeholder')]
+        averages = []
+        weights = []
+        total_length = 0
+        total_nonzero = 0
+
+        for sf in sorted(input):
+            contig_name = os.path.basename(sf).split('.')[0]
+            with open(sf, 'r') as stats:
+                _, mean = stats.readline().strip().split()
+                _, std = stats.readline().strip().split()
+                _, nz_cov = stats.readline().strip().split()
+                _, length = stats.readline().strip().split()
+                out_lines.append((contig_name, length, mean, std, nz_cov))
+                averages.append(float(mean))
+                weights.append(int(length))
+
+                total_length += int(length)
+                total_nonzero += int(nz_cov)
+
+        averages = numpy.array(averages, dtype=numpy.float32)
+        weights = numpy.array(weights, dtype=numpy.int32)
+
+        gw_avg, gw_std = weighted_avg_and_std(averages, weights)
+        out_lines[1] = (
+            'genome',
+            str(total_length),
+            str(round(gw_avg, 2)),
+            str(round(gw_std, 2)),
+            str(total_nonzero)
+        )
+
+        with open(output[0], 'w') as table:
+            _ = table.write('#')
+            _ = table.write('\n'.join(['\t'.join(record) for record in out_lines]))
+
+
+def compute_coverage_limit(cov_file, sd_mult):
+
+    with open(cov_file, 'r') as cov_info:
+        _, cov_mean = cov_info.readline().split()
+        _, cov_stddev = cov_info.readline().split()
+
+    cov_limit = int(round(float(cov_mean) + sd_mult * float(cov_stddev), 0))
+    cov_limit = max(cov_limit, 1)  # not sure if freebayes could work with 0
+    return str(cov_limit)
+
+
+rule freebayes_call_variants_trio:
+    input:
+        child_bam = 'output/alignments/{child}_{reads}_aln-to_{assembly}.mdup.sort.bam',
+        child_bai = 'output/alignments/{child}_{reads}_aln-to_{assembly}.mdup.sort.bam.bai',
+        parent1_bam = 'output/alignments/{parent1}_{reads}_aln-to_{assembly}.mdup.sort.bam',
+        parent1_bai = 'output/alignments/{parent1}_{reads}_aln-to_{assembly}.mdup.sort.bam.bai',
+        parent2_bam = 'output/alignments/{parent2}_{reads}_aln-to_{assembly}.mdup.sort.bam',
+        parent2_bai = 'output/alignments/{parent2}_{reads}_aln-to_{assembly}.mdup.sort.bam.bai',
+        ref = 'references/{assembly}.fasta',
+        seq = 'references/{assembly}/sequences/{seq}.seq',
+        cov = 'output/alignments/{child}_{parent1}_{parent2}_{reads}_aln-to_{assembly}/cov_stats/{seq}.cov'
+    output:
+        'output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{assembly}/splits/{seq}.vcf.bgz'
+    log:
+       'log/output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{assembly}/splits/{seq}.freebayes.log'
+    params:
+        skip_coverage = lambda wildcards, input: compute_coverage_limit(input.cov, 2)
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'freebayes --bam {input.child_bam} --bam {input.parent1_bam} --bam {input.parent2_bam} '
+        '--fasta-reference {input.ref} --region {wildcards.seq} --vcf /dev/stdout '
+        '--strict-vcf --use-best-n-alleles 6 --skip-coverage {params.skip_coverage} 2> {log} '
+        ' | bgzip -c /dev/stdin > {output}'
+
+
+rule freebayes_call_variants_single:
+    input:
+         child_bam = 'output/alignments/{individual}_{reads}_aln-to_{assembly}.mdup.sort.bam',
+         child_bai = 'output/alignments/{individual}_{reads}_aln-to_{assembly}.mdup.sort.bam.bai',
+         ref = 'references/{assembly}.fasta',
+         seq = 'references/{assembly}/sequences/{seq}.seq',
+         cov = 'output/alignments/{individual}_{reads}_aln-to_{assembly}/cov_stats/{seq}.cov'
+    output:
+          'output/variant_calls/00-raw/{individual}_{reads}_aln-to_{assembly}/splits/{seq}.vcf.bgz'
+    log:
+       'log/output/variant_calls/00-raw/{individual}_{reads}_aln-to_{assembly}/splits/{seq}.freebayes.log'
+    wildcard_constraints:
+        individual = '[A-Z0-9]+'
+    params:
+        skip_coverage = lambda wildcards, input: compute_coverage_limit(input.cov, 2)
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    shell:
+         'freebayes --bam {input.child_bam} '
+         '--fasta-reference {input.ref} --region {wildcards.seq} --vcf /dev/stdout '
+         '--strict-vcf --use-best-n-alleles 4 --skip-coverage {params.skip_coverage} 2> {log} '
+         ' | bgzip -c /dev/stdin > {output}'
+
+
+def collect_callset_splits(wildcards):
+    collect_path = 'output/variant_calls/00-raw/{callset}/splits/{seq}.vcf.bgz{ext}'
+
+    _, assembly = wildcards.callset.split('_aln-to_')
+
+    seq_dir = checkpoints.generate_sequence_files.get(assembly=assembly).output[0]
+
+    checkpoint_wildcards = glob_wildcards(os.path.join(seq_dir, '{seq}.seq'))
+
+    vcf_splits = expand(collect_path,
+                        callset=wildcards.callset,
+                        seq=checkpoint_wildcards.seq,
+                        ext=['', '.tbi'])
+    return vcf_splits
+
+
+rule write_callset_splits_fofn:
+    input:
+         collect_callset_splits
+    output:
+          'output/variant_calls/00-raw/{callset}.fofn'
+    run:
+        import os
+        if len(input) < 1:
+            raise ValueError('No splits to merge')
+        with open(output[0], 'w') as fofn:
+            for file_path in sorted(input):
+                if file_path.endswith('.tbi'):
+                    continue
+                _ = fofn.write(file_path + '\n')
+
+
+rule merge_callset_splits:
+    input:
+         'output/variant_calls/00-raw/{callset}.fofn'
+    output:
+          protected('output/variant_calls/00-raw/{callset}.vcf.bgz')
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    shell:
+         'bcftools concat --output /dev/stdout --output-type v --file-list {input} | bgzip -c /dev/stdin > {output}'
+
+
+rule quality_filter_callsets:
+    input:
+        'output/variant_calls/00-raw/{reads}_aln-to_{assembly}.vcf.bgz',
+        'output/variant_calls/00-raw/{reads}_aln-to_{assembly}.vcf.bgz.tbi',
+        'references/{assembly}.fasta'
+    output:
+        'output/variant_calls/10-qfilter/{reads}_aln-to_{assembly}.vcf.bgz'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bcftools filter --output-type u --include "QUAL>=10" {input[0]} | '
+        'bcftools norm --fasta-ref {input[2]} --output /dev/stdout --output-type v | '
+        'bgzip -c /dev/stdin > {output}'
+
+
+rule split_callsets_by_type:
+    input:
+        'output/variant_calls/10-qfilter/{callset}.vcf.bgz',
+        'output/variant_calls/10-qfilter/{callset}.vcf.bgz.tbi'
+    output:
+        'output/variant_calls/20-typefilter/{callset}.snv.vcf.bgz',
+        'output/variant_calls/20-typefilter/{callset}.indels.vcf.bgz',
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bcftools view --types snps --max-alleles 4 '
+        '--output-type v --output-file /dev/stdout {input[0]} | '
+        'bgzip -c /dev/stdin > {output[0]}'
+        ' && '
+        'bcftools view --types indels --max-alleles 4 '
+        '--output-type v --output-file /dev/stdout {input[0]} | '
+        'bgzip -c /dev/stdin > {output[1]}'
+
+
+rule split_callsets_by_genotype:
+    input:
+         'output/variant_calls/20-typefilter/{callset}.{var_type}.vcf.bgz',
+         'output/variant_calls/20-typefilter/{callset}.{var_type}.vcf.bgz.tbi'
+    output:
+          'output/variant_calls/30-gtfilter/{callset}.{var_type}.hom.vcf.bgz',
+          'output/variant_calls/30-gtfilter/{callset}.{var_type}.het.vcf.bgz',
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    shell:
+         'bcftools view --genotype hom '
+         '--output-type v --output-file /dev/stdout {input[0]} | '
+         'bgzip -c /dev/stdin > {output[0]}'
+         ' && '
+         'bcftools view --genotype het '
+         '--output-type v --output-file /dev/stdout {input[0]} | '
+         'bgzip -c /dev/stdin > {output[1]}'
+
+# bcftools view -m 2 -M 2 --types snps HG00733_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p1/20-qfilter/HG0073F_hgsvc_pbsq2-ccs.Q10.vcf | bcftools query -f '[%SAMPLE=%GT\t]\n' |sort |uniq -c |sort -k1n
+#
+#
