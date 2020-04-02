@@ -32,8 +32,10 @@ desired_clusters: 24
 # this solves a known HET inversion located on chr8
 sample_non_default_parameters:
   HG00733:
-    init_clusters: 150
-    desired_clusters: 25
+    use_only_in:
+      write_saarclust_config_file:
+        init_clusters: 150
+        desired_clusters: 25
 
 
 # VARIANT CALLING

@@ -2,7 +2,7 @@
 # === Software setup settings ===
 # Specify git commits for SaaRclust
 # and StrandPhaseR setup
-git_commit_saarclust: a3f8288
+git_commit_saarclust: ba65b53
 git_commit_strandphaser: e608407
 git_commit_breakpointr: 268d99d
 # arbitrarily tying a version number
@@ -29,12 +29,15 @@ step_size: 200000
 prob_threshold: 0.25
 init_clusters: 100
 desired_clusters: 24
+min_mapq: 10
 
 # this solves a known HET inversion located on chr8
 sample_non_default_parameters:
   HG00733:
-    init_clusters: 150
-    desired_clusters: 25
+    use_only_in:
+      write_saarclust_config_file:
+        init_clusters: 150
+        desired_clusters: 25
 
 # VARIANT CALLING
 # Postprocessing parameters
