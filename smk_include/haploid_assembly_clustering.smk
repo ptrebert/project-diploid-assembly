@@ -316,7 +316,8 @@ rule hac_write_saarclust_config_file:
         step_size = config['step_size'],
         prob_threshold = config['prob_threshold'],
         init_clusters = config['init_clusters'],
-        desired_clusters = config.get('desired_clusters', 0)
+        desired_clusters = config.get('desired_clusters', 0),
+        min_mapq = config.get('min_mapq', 0)
     run:
         import os
 
@@ -330,6 +331,13 @@ rule hac_write_saarclust_config_file:
 
         outfolder = os.path.dirname(bam_files[0])
 
+        # Note to self: duplicated code somewhat needed atm
+        # if non-default parameters are set for a sample.
+        # Current upside: Snakemake can detect missing config values
+        # in a dry run if accessed in "params" section, but not if
+        # accessed in a "run" block -> fails early
+        # Get rid of this via...
+        # TODO: implement a (config) parameter load function to hide this
         min_contig_size = str(params.min_contig_size)
         min_region_size = str(params.min_region_size)
         bin_size = str(params.bin_size)
@@ -337,18 +345,27 @@ rule hac_write_saarclust_config_file:
         prob_threshold = str(params.prob_threshold)
         init_clusters = str(params.init_clusters)
         desired_clusters = str(params.desired_clusters)
+        min_mapq = str(params.min_mapq)
 
         individual = wildcards.sts_reads.split('_')[0]
         non_default_params = config.get('sample_non_default_parameters', dict())
         if individual in non_default_params:
             sample_non_defaults = non_default_params[individual]
-            min_contig_size = str(sample_non_defaults.get('min_contig_size', min_contig_size))
-            min_region_size = str(sample_non_defaults.get('min_region_size', min_region_size))
-            bin_size = str(sample_non_defaults.get('bin_size', bin_size))
-            step_size = str(sample_non_defaults.get('step_size', step_size))
-            prob_threshold = str(sample_non_defaults.get('prob_threshold', prob_threshold))
-            init_clusters = str(sample_non_defaults.get('init_clusters', init_clusters))
-            desired_clusters = str(sample_non_defaults.get('desired_clusters', desired_clusters))
+            use_non_defaults = True
+            if 'use_only_in' in sample_non_defaults:
+                try:
+                    sample_non_defaults = sample_non_defaults['use_only_in']['hac_write_saarclust_config_file']
+                except KeyError:
+                    use_non_defaults = False
+            if use_non_defaults:
+                min_contig_size = str(sample_non_defaults.get('min_contig_size', min_contig_size))
+                min_region_size = str(sample_non_defaults.get('min_region_size', min_region_size))
+                bin_size = str(sample_non_defaults.get('bin_size', bin_size))
+                step_size = str(sample_non_defaults.get('step_size', step_size))
+                prob_threshold = str(sample_non_defaults.get('prob_threshold', prob_threshold))
+                init_clusters = str(sample_non_defaults.get('init_clusters', init_clusters))
+                desired_clusters = str(sample_non_defaults.get('desired_clusters', desired_clusters))
+                min_mapq = str(sample_non_defaults.get('min_mapq', min_mapq))
 
         config_rows = [
             '[SaaRclust]',
@@ -371,6 +388,9 @@ rule hac_write_saarclust_config_file:
 
         if int(config['git_commit_version']) > 7:
             config_rows.append('desired.num.clusters = ' + desired_clusters)
+
+        if int(config['git_commit_version']) > 8:
+            config_rows.append('min.mapq = ' + min_mapq)
 
         with open(output.cfg, 'w') as dump:
             _ = dump.write('\n'.join(config_rows) + '\n')
