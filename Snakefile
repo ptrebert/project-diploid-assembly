@@ -53,16 +53,6 @@ wildcard_constraints:
     genemodel = 'GRCh38[A-Za-z0-9_]+'
 
 
-rule master:
-    input:
-        rules.run_afr_trios.input,
-        rules.run_amr_trios.input,
-        rules.run_eur_trios.input,
-        rules.run_eas_trios.input,
-        rules.run_sas_trios.input
-    message: 'Default run: processing all HGSVC samples'
-
-
 def collect_all_configured_samples(wildcards):
     """
     :return:
@@ -85,10 +75,20 @@ def collect_all_configured_samples(wildcards):
     return configured_samples
 
 
-rule master_custom:
+rule master:
     input:
         collect_all_configured_samples
-    message: 'Custom run: processing only samples in loaded configuration'
+    message: 'Default run: processing only samples in loaded configuration'
+
+
+rule master_hgsvc:
+    input:
+         rules.run_afr_trios.input,
+         rules.run_amr_trios.input,
+         rules.run_eur_trios.input,
+         rules.run_eas_trios.input,
+         rules.run_sas_trios.input
+    message: 'HGSVC run: processing all HGSVC samples'
 
 
 rule setup_env:
@@ -153,12 +153,12 @@ def make_log_useful(log_path, status):
 
 
 onsuccess:
-    make_log_useful(log, 'SUCCESS')
-    if config['notify']:
+    if config.get('notify', False):
+        make_log_useful(log, 'SUCCESS')
         shell('mail -s "[Snakemake] DGA - SUCCESS" {} < {{log}}'.format(config['notify_email']))
 
 
 onerror:
-    make_log_useful(log, 'ERROR')
-    if config['notify']:
+    if config.get('notify', False):
+        make_log_useful(log, 'ERROR')
         shell('mail -s "[Snakemake] DGA - ERRROR" {} < {{log}}'.format(config['notify_email']))
