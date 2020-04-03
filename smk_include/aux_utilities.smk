@@ -332,7 +332,7 @@ def validate_checkpoint_output(check_output, expected_type='list_of_files'):
         elif isinstance(check_output, str):
             if os.path.isdir(check_output):
                 # this is the reported case, handle in particular
-                raise RuntimeError('Checkpoint evaluation failed, '
+                raise RuntimeError('Caught Snakemake error #55: checkpoint evaluation failed, '
                                    'returned single str / directory: {}'.format(check_output))
             else:
                 raise ValueError('Single string returned from checkpoint evaluation, '
