@@ -1,4 +1,6 @@
 
+import platform
+
 workdir: '/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/run_folder'
 
 WORKDIR = '/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/run_folder'
@@ -7,56 +9,92 @@ SHORT_READS_METADATA = '/home/pebert/work/code/github/project-diploid-assembly/a
 
 URL_RECORDS = dict()
 
-if config.get('run_hap', 'foo') == 'one':
-    haps= [1]
-elif config.get('run_hap', 'foo') == 'two':
-    haps = [2]
+machine = platform.uname().node
+
+work_share = {
+    'd3compute03': ([1], ['short'], ['ccs']),
+    'd3compute05': ([2], ['short'], ['ccs']),
+    'd3compute06': ([1, 2], ['short'], ['clr']),
+    'd3compute07': ([1], ['short'], ['ccs', 'whd']),
+    'd3compute08': ([2], ['short'], ['ccs', 'whd'])
+}
+
+haps, reads, assembly = work_share[machine]
+print(machine)
+print(haps)
+print(reads)
+print(assembly)
+
+# rule clr_qv_alignments:
+#     input:
+#         expand('output/alignments/{individual}_short_aln-to_HG00514_{tech}_hap{haps}.mdup.sort.bam{ext}',
+#                individual=['HG00512', 'HG00513', 'HG00514'],
+#                tech=['clr'],
+#                haps=haps,
+#                ext=['', '.bai']),
+#         expand('output/alignments/{individual}_ccs_aln-to_HG00514_{tech}_hap{haps}.mdup.sort.bam{ext}',
+#                individual=['HG00512', 'HG00513', 'HG00514'],
+#                tech=['clr'],
+#                haps=haps,
+#                ext=['', '.bai']),
+
+
+if machine in ['d3compute03', 'd3compute05', 'd3compute06']:
+    if machine == 'd3compute06':
+        rule revision_analysis_trio_no_parent:
+            input:
+                expand('output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.vcf.bgz.tbi',
+                        child='HG00733',
+                        parent1='HG00731',
+                        parent2='HG00732',
+                        reads=reads,
+                        assembly=assembly,
+                        haps=haps)
+            priority: 1000
+
+    else:
+        rule revision_analysis_trio_single_parent:
+            input:
+                expand('output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.vcf.bgz.tbi',
+                        child='HG00733',
+                        parent1='HG00731',
+                        parent2='HG00732',
+                        reads=reads,
+                        assembly=assembly,
+                        haps=haps),
+                expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
+                        individual='HG00732',
+                        reads=reads,
+                        assembly=assembly,
+                        haps=haps),
+                expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
+                        individual='HG00731',
+                        reads=reads,
+                        assembly=assembly,
+                        haps=haps),
+            priority: 1000
+
+
+elif machine in ['d3compute07', 'd3compute08']:
+    rule revision_analysis_na12878:
+        input:
+            expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
+                    individual='NA12878',
+                    reads=reads,
+                    assembly=assembly,
+                    haps=haps),
+        priority: 1000
 else:
-    haps = [1, 2]
+    raise RuntimeError('Unknown machine')
 
 
-rule clr_qv_alignments:
-    input:
-        expand('output/alignments/{individual}_short_aln-to_HG00514_{tech}_hap{haps}.mdup.sort.bam{ext}',
-               individual=['HG00512', 'HG00513', 'HG00514'],
-               tech=['clr'],
-               haps=haps,
-               ext=['', '.bai']),
-        expand('output/alignments/{individual}_ccs_aln-to_HG00514_{tech}_hap{haps}.mdup.sort.bam{ext}',
-               individual=['HG00512', 'HG00513', 'HG00514'],
-               tech=['clr'],
-               haps=haps,
-               ext=['', '.bai']),
-
-
-rule revision_analysis:
-    input:
-         expand('output/variant_calls/30-gtfilter/{individual}_{reads}_aln-to_{individual}_{tech}_hap{haps}.{var_type}.{genotype}.vcf.bgz.tbi',
-                individual='NA12878',
-                reads=['short', 'ccs'],
-                tech=['ccs', 'whd'],
-                haps=haps,
-                var_type=['snv', 'indels'],
-                genotype=['hom', 'het']),
-         expand('output/variant_calls/30-gtfilter/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{tech}_hap{haps}.{var_type}.{genotype}.vcf.bgz.tbi',
-                child='HG00733',
-                parent1='HG00731',
-                parent2='HG00732',
-                reads=['short', 'ccs'],
-                tech=['ccs', 'ont'],
-                haps=haps,
-                var_type=['snv', 'indels'],
-                genotype=['hom', 'het'])
-    priority: 1000
-
-
-rule master_assembly_qv:
-    input:
-        expand('input/fastq/{individual}_short_{mate}.fastq.gz',
-                individual=['HG00733', 'HG00732', 'HG00731', 'NA12878', 'HG00512', 'HG00513', 'HG00514'],
-                mate=[1, 2]),
-        rules.clr_qv_alignments.input,
-        rules.revision_analysis.input
+# rule master_assembly_qv:
+#     input:
+#         expand('input/fastq/{individual}_short_{mate}.fastq.gz',
+#                 individual=['HG00733', 'HG00732', 'HG00731', 'NA12878', 'HG00512', 'HG00513', 'HG00514'],
+#                 mate=[1, 2]),
+#         rules.clr_qv_alignments.input,
+#         rules.revision_analysis.input
 
 
 rule link_supp_data:
@@ -65,8 +103,8 @@ rule link_supp_data:
         ancient('/scratch/bioinf/users/pebert/data_sources/pur_trio_hifi/HG00731_hgsvc_pbsq2-ccs.fastq.gz'),
         ancient('/scratch/bioinf/users/pebert/data_sources/pur_trio_hifi/HG00731_hgsvc_pbsq2-ccs.fastq.gz'),
         ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/references/assemblies/hg38_GCA_p13.fasta'),
-        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200309_Sequel2-CCS_HG00733_V8/HG00733_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.fasta'),
-        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200309_Sequel2-CCS_HG00733_V8/HG00733_hgsvc_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200330_Sequel2-CCS_HG00733_v9_data-collection/haploid_assemblies/HG00733_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200330_Sequel2-CCS_HG00733_v9_data-collection/haploid_assemblies/HG00733_hgsvc_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta'),
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200313_Sequel2-CCS_HG00731_HG00732_polished/HG00731_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.fasta'),
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200313_Sequel2-CCS_HG00731_HG00732_polished/HG00731_hgsvc_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta'),
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200313_Sequel2-CCS_HG00731_HG00732_polished/HG00732_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.fasta'),
@@ -87,7 +125,9 @@ rule link_supp_data:
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200302_Sequel2-CLR_HG00514_polished/HG00514_hgsvc_pbsq2-clr_0526-flye.h2-un.arrow-p1.fasta'),
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200306_Sequel2-CCS_NA12878_NA24385_polished/NA12878_giab_pbsq2-ccs_1000-pereg.h1-un.racon-p2.fasta'),
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200306_Sequel2-CCS_NA12878_NA24385_polished/NA12878_giab_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta'),
-        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/NA12878_giab_pbsq2-ccs_1000.fastq.gz')
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/NA12878_giab_pbsq2-ccs_1000.fastq.gz'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200402_Sequel1-CLR_HG00733/HG00733_sra_pbsq1-clr_1000-flye.h1-un.arrow-p1.fasta'),
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200402_Sequel1-CLR_HG00733/HG00733_sra_pbsq1-clr_1000-flye.h2-un.arrow-p1.fasta')
     output:
         'input/fastq/HG00731_ccs.fastq.gz',
         'input/fastq/HG00732_ccs.fastq.gz',
@@ -115,7 +155,9 @@ rule link_supp_data:
         'references/HG00514_clr_hap2.fasta',
         'references/NA12878_ccs_hap1.fasta',
         'references/NA12878_ccs_hap2.fasta',
-        'input/fastq/NA12878_ccs.fastq.gz'
+        'input/fastq/NA12878_ccs.fastq.gz',
+        'references/HG00733_clr_hap1.fasta',
+        'references/HG00733_clr_hap2.fasta'
     run:
         for infile, outfile in zip(input, output):
             os.symlink(infile, outfile)
@@ -564,60 +606,3 @@ rule merge_callset_splits:
          '../../environment/conda/conda_biotools.yml'
     shell:
          'bcftools concat --output /dev/stdout --output-type v --file-list {input} | bgzip -c /dev/stdin > {output}'
-
-
-rule quality_filter_callsets:
-    input:
-        'output/variant_calls/00-raw/{reads}_aln-to_{assembly}.vcf.bgz',
-        'output/variant_calls/00-raw/{reads}_aln-to_{assembly}.vcf.bgz.tbi',
-        'references/{assembly}.fasta'
-    output:
-        'output/variant_calls/10-qfilter/{reads}_aln-to_{assembly}.vcf.bgz'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    shell:
-        'bcftools filter --output-type u --include "QUAL>=10" {input[0]} | '
-        'bcftools norm --fasta-ref {input[2]} --output /dev/stdout --output-type v | '
-        'bgzip -c /dev/stdin > {output}'
-
-
-rule split_callsets_by_type:
-    input:
-        'output/variant_calls/10-qfilter/{callset}.vcf.bgz',
-        'output/variant_calls/10-qfilter/{callset}.vcf.bgz.tbi'
-    output:
-        'output/variant_calls/20-typefilter/{callset}.snv.vcf.bgz',
-        'output/variant_calls/20-typefilter/{callset}.indels.vcf.bgz',
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    shell:
-        'bcftools view --types snps --max-alleles 4 '
-        '--output-type v --output-file /dev/stdout {input[0]} | '
-        'bgzip -c /dev/stdin > {output[0]}'
-        ' && '
-        'bcftools view --types indels --max-alleles 4 '
-        '--output-type v --output-file /dev/stdout {input[0]} | '
-        'bgzip -c /dev/stdin > {output[1]}'
-
-
-rule split_callsets_by_genotype:
-    input:
-         'output/variant_calls/20-typefilter/{callset}.{var_type}.vcf.bgz',
-         'output/variant_calls/20-typefilter/{callset}.{var_type}.vcf.bgz.tbi'
-    output:
-          'output/variant_calls/30-gtfilter/{callset}.{var_type}.hom.vcf.bgz',
-          'output/variant_calls/30-gtfilter/{callset}.{var_type}.het.vcf.bgz',
-    conda:
-         '../../environment/conda/conda_biotools.yml'
-    shell:
-         'bcftools view --genotype hom '
-         '--output-type v --output-file /dev/stdout {input[0]} | '
-         'bgzip -c /dev/stdin > {output[0]}'
-         ' && '
-         'bcftools view --genotype het '
-         '--output-type v --output-file /dev/stdout {input[0]} | '
-         'bgzip -c /dev/stdin > {output[1]}'
-
-# bcftools view -m 2 -M 2 --types snps HG00733_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p1/20-qfilter/HG0073F_hgsvc_pbsq2-ccs.Q10.vcf | bcftools query -f '[%SAMPLE=%GT\t]\n' |sort |uniq -c |sort -k1n
-#
-#
