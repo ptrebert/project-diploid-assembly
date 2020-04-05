@@ -166,6 +166,8 @@ rule link_supp_data:
         'references/HG00733_zev_hap2.fasta'
     run:
         for infile, outfile in zip(input, output):
+            if os.path.islink(outfile):
+                continue
             os.symlink(infile, outfile)
 
 
