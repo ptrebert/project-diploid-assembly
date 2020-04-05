@@ -12,6 +12,8 @@ URL_RECORDS = dict()
 machine = platform.uname().node
 
 work_share = {
+    'd3compute01': ([1], ['short'], ['zev']),
+    'd3compute02': ([2], ['short'], ['zev']),
     'd3compute03': ([1], ['short'], ['ccs']),
     'd3compute05': ([2], ['short'], ['ccs']),
     'd3compute06': ([1, 2], ['short'], ['clr']),
@@ -39,8 +41,8 @@ print(assembly)
 #                ext=['', '.bai']),
 
 
-if machine in ['d3compute03', 'd3compute05', 'd3compute06']:
-    if machine == 'd3compute06':
+if machine in ['d3compute03', 'd3compute05', 'd3compute06', 'd3compute01', 'd3compute02']:
+    if machine in ['d3compute06', 'd3compute01', 'd3compute02']:
         rule revision_analysis_trio_no_parent:
             input:
                 expand('output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.vcf.bgz.tbi',
@@ -127,7 +129,9 @@ rule link_supp_data:
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200306_Sequel2-CCS_NA12878_NA24385_polished/NA12878_giab_pbsq2-ccs_1000-pereg.h2-un.racon-p2.fasta'),
         ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/test_ccs/run_folder/input/fastq/NA12878_giab_pbsq2-ccs_1000.fastq.gz'),
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200402_Sequel1-CLR_HG00733/HG00733_sra_pbsq1-clr_1000-flye.h1-un.arrow-p1.fasta'),
-        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200402_Sequel1-CLR_HG00733/HG00733_sra_pbsq1-clr_1000-flye.h2-un.arrow-p1.fasta')
+        ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200402_Sequel1-CLR_HG00733/HG00733_sra_pbsq1-clr_1000-flye.h2-un.arrow-p1.fasta'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/ext_data/HG00733_zev_hap1.fasta'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/ext_data/HG00733_zev_hap2.fasta'),
     output:
         'input/fastq/HG00731_ccs.fastq.gz',
         'input/fastq/HG00732_ccs.fastq.gz',
@@ -157,7 +161,9 @@ rule link_supp_data:
         'references/NA12878_ccs_hap2.fasta',
         'input/fastq/NA12878_ccs.fastq.gz',
         'references/HG00733_clr_hap1.fasta',
-        'references/HG00733_clr_hap2.fasta'
+        'references/HG00733_clr_hap2.fasta',
+        'references/HG00733_zev_hap1.fasta',
+        'references/HG00733_zev_hap2.fasta'
     run:
         for infile, outfile in zip(input, output):
             os.symlink(infile, outfile)
