@@ -51,9 +51,15 @@ if machine in ['d3compute03', 'd3compute05', 'd3compute06', 'd3compute01', 'd3co
                         parent2='HG00732',
                         reads=reads,
                         assembly=assembly,
-                        haps=haps)
+                        haps=haps),
+                expand('output/alignments/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.mdup.sort.cov_stats',
+                       child='HG00733',
+                       parent1='HG00731',
+                       parent2='HG00732',
+                       reads=reads,
+                       assembly=assembly,
+                       haps=haps)
             priority: 1000
-
     else:
         rule revision_analysis_trio_single_parent:
             input:
@@ -64,13 +70,20 @@ if machine in ['d3compute03', 'd3compute05', 'd3compute06', 'd3compute01', 'd3co
                         reads=reads,
                         assembly=assembly,
                         haps=haps),
-                expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
-                        individual='HG00732',
+                expand('output/alignments/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.mdup.sort.cov_stats',
+                        child='HG00733',
+                        parent1='HG00731',
+                        parent2='HG00732',
                         reads=reads,
                         assembly=assembly,
                         haps=haps),
                 expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
-                        individual='HG00731',
+                        individual=['HG00731', 'HG00732'],
+                        reads=reads,
+                        assembly=assembly,
+                        haps=haps),
+                expand('output/alignments/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.mdup.sort.cov_stats',
+                        individual=['HG00731', 'HG00732'],
                         reads=reads,
                         assembly=assembly,
                         haps=haps),
@@ -81,6 +94,11 @@ elif machine in ['d3compute07', 'd3compute08']:
     rule revision_analysis_na12878:
         input:
             expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
+                    individual='NA12878',
+                    reads=reads,
+                    assembly=assembly,
+                    haps=haps),
+            expand('output/alignments/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.mdup.sort.cov_stats',
                     individual='NA12878',
                     reads=reads,
                     assembly=assembly,
