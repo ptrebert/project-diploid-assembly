@@ -1,5 +1,7 @@
 
 import os
+import math
+import itertools
 
 workdir: '/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/run_folder'
 
@@ -33,20 +35,13 @@ rule master_qv_estimate:
                 haps=[1, 2],
                 var_type=['snv', 'indels'],
                 genotype=['hom', 'het']),
-        expand('output/variant_calls/50-highconf/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.snv.hg38.hc-in.bed',
-                child='HG00733',
-                parent1='HG00731',
-                parent2='HG00732',
-                reads=['short'],
-                assembly=['ont'],
-                haps=[1, 2]),
-        expand('output/variant_calls/60-complete/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.snv.hg38rev.other.bed',
-                child='HG00733',
-                parent1='HG00731',
-                parent2='HG00732',
-                reads=['short'],
-                assembly=['zev', 'ont'],
-                haps=[1, 2]),
+        expand('output/qv_estimates/{individual}_{parent1}_{parent2}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.qv_stats',
+               individual='HG00733',
+               parent1='HG00731',
+               parent2='HG00732',
+               reads=['short'],
+               assembly=['zev', 'clr', 'ont'],
+               haps=[1, 2]),
 
         # individual call sets
         expand('output/variant_calls/20-typefilter/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.{var_type}.vcf.stats',
@@ -75,18 +70,27 @@ rule master_qv_estimate:
 
 
 
-collect_callsets = sorted([os.path.join('output/variant_calls/00-raw', x) for x in filter(lambda x: x.endswith('vcf.bgz'), os.listdir('output/variant_calls/00-raw'))])
-collect_assemblies = sorted([os.path.join('references', x) for x in filter(lambda x: '_hap' in x and x.endswith('.fasta'), os.listdir('references'))])
-collect_cov_stats = sorted([os.path.join('output/alignments', x) for x in filter(lambda x: x.endswith('.mdup.sort.cov_stats'), os.listdir('output/alignments'))])
+collect_callsets = sorted(filter(lambda x: x.endswith('vcf.bgz'), os.listdir('output/variant_calls/00-raw')))
+collect_assemblies = sorted(filter(lambda x: '_hap' in x and x.endswith('.fasta'), os.listdir('references')))
+collect_cov_stats = sorted(filter(lambda x: x.endswith('.mdup.sort.cov_stats'), os.listdir('output/alignments')))
 print('Available call sets')
 for c in collect_callsets:
     print(c)
 
 rule produce_precomputed_input:
+    input:
+        callsets = ancient(sorted([os.path.join('output/variant_calls/00-raw', x) for x in collect_callsets])),
+        assemblies = ancient(sorted([os.path.join('references', x) for x in collect_assemblies])),
+        cov_stats = ancient(sorted([os.path.join('output/alignments', x) for x in collect_cov_stats]))
     output:
-        protected(collect_callsets),
-        protected(collect_assemblies),
-        protected(collect_cov_stats)
+        sorted([os.path.join('output/variant_calls/linked/calls', x) for x in collect_callsets]),
+        sorted([os.path.join('output/variant_calls/linked/assemblies', x) for x in collect_assemblies]),
+        sorted([os.path.join('output/variant_calls/linked/stats', x) for x in collect_cov_stats]),
+    run:
+        for i, o in zip(input, output):
+            if os.path.islink(os.path.abspath(o)):
+                continue
+            os.symlink(os.path.abspath(i), os.path.abspath(o))
 
 
 rule download_highconf_regions:
@@ -114,7 +118,7 @@ rule intersect_highconf_files:
 
 rule create_bgzip_tbi_index:
     input:
-         '{filepath}.vcf.bgz'
+         ancient('{filepath}.vcf.bgz')
     output:
           '{filepath}.vcf.bgz.tbi'
     conda:
@@ -191,7 +195,7 @@ rule split_callsets_by_genotype:
 
 rule compute_callset_stats:
     input:
-        '{filepath}.vcf.bgz',
+        ancient('{filepath}.vcf.bgz'),
         '{filepath}.vcf.bgz.tbi'
     output:
         '{filepath}.vcf.stats'
@@ -354,7 +358,6 @@ rule extract_original_sample_order:
 
 
 def comp_qv(num_error_bp, bp_ref=3200000000):
-    import math
     p = (num_error_bp / (bp_ref * 2))
     try:
         q = -10 * math.log10(p)
@@ -363,22 +366,45 @@ def comp_qv(num_error_bp, bp_ref=3200000000):
     return int(round(q, 0))
 
 
-def parse_bed_vcf_row(row):
+def parse_bed_vcf_row(row, samples):
 
     assert row['format'].startswith('GT'), 'No genotype field: {} / {}'.format(file_indicator, row)
-    genotype = row['sample'].split(':')[0]
-    infos = {}
-    for item in row['info'].split(';'):
-        if not (item.startswith('LEN') or item.startswith('TYPE')):
-            continue
-        key, value = item.split('=')
-        infos[key] = value
+    genotypes = dict()
+    for s in samples:
+        gt = row[s].split(':')[0]
+        if gt == '.':
+            gt = 'N/A'
+        genotypes[s] = gt.replace('/', '')
+
+    infos = dict(item.split('=') for item in row['info'].split(';'))
     try:
         infos['LEN'] = int(infos['LEN'])
     except ValueError:
-        return genotype, infos['TYPE'], -1
+        infos['LEN'] = -1
+    return genotypes, infos['TYPE'], infos['LEN']
+
+
+def determine_trio_error(child, parent1, parent2):
+
+    if child == 'NA':
+        if parent1 != 'NA' and parent2 != 'NA':
+            call_class = 'AMBIG'
+        else:
+            call_class = 'SKIP'  # child plus parent missing GT
     else:
-        return genotype, infos['TYPE'], infos['LEN']
+        if parent1 != 'NA' and parent2 != 'NA':
+            possible_genotypes = set()
+            for allele1, allele2 in itertools.product(list(parent1), list(parent2)):
+                possible_genotypes.add(allele1 + allele2)
+                possible_genotypes.add(allele2 + allele1)
+            if child in possible_genotypes:
+                call_class = 'OK'
+            else:
+                call_class = 'ERROR'
+        else:
+            # this means one parent is GT missing
+            call_class = 'OK'
+    return call_class
 
 
 rule compute_qv_estimate:
@@ -393,6 +419,9 @@ rule compute_qv_estimate:
     run:
         import collections as col
         import csv
+        import operator as op
+
+        descendent_samples = ['NA12878', 'HG00733', 'HG00514', 'NA19240']
 
         region_types = {
             'hc-in': 'high-confidence',
@@ -400,17 +429,26 @@ rule compute_qv_estimate:
             'other': 'not-lifted'
         }
 
-        fieldnames = ['contig', 'start', 'end', 'identifier', 'qual', 'ref', 'alt',
-                      'filter', 'info', 'format', 'sample']
-
         info_counter = col.Counter()
 
-        genotypes = {
-            '1/1': 'HOM',
-            '0/0': 'HOM',
-            '0/1': 'HET',
-            '1/0': 'HET'
-        }
+        with open(input.sample_order, 'r') as foo:
+            samples = foo.readline().strip().split()[9:]
+        assert len(samples) == 1 or len(samples) == 3, 'Can only handle single or trio: {}'.format(samples)
+
+        if len(samples) == 3:
+            descendant = [s for s in samples if s in descendent_samples]
+            ancestors = sorted([s for s in samples if s not in descendent_samples])
+            # for consistent ordering in output
+            trio = descendant + ancestors
+            info_counter[('SAMPLES', '-'.join(trio))] = 3
+            get_genotypes = op.itemgetter(*tuple(trio))
+        else:
+            info_counter[('SAMPLES', samples[0])] = 1
+            get_genotypes = op.itemgetter(*tuple(samples))
+
+        fieldnames = ['contig', 'start', 'end', 'identifier', 'qual', 'ref', 'alt',
+                      'filter', 'info', 'format']
+        fieldnames.extend(samples)
 
         observed_genotypes = set()
 
@@ -423,37 +461,61 @@ rule compute_qv_estimate:
                 for row in reader:
                     ln += 1
                     info_counter[('record', region_type)] += 1
-                    assert row['format'].startswith('GT'), 'No genotype field: {} / {}'.format(file_indicator, row)
-                    genotype, var_type, var_length = parse_bed_vcf_row(row)
-                    observed_genotypes.add(genotype)
+                    genotypes, var_type, var_length = parse_bed_vcf_row(row, samples)
+                    [observed_genotypes.add(gt) for gt in genotypes.values()]
                     if var_length < 0:
-                        info_counter[('SKIP', genotype, var_type, region_type, 'count')] += 1
+                        if len(samples) == 1:
+                            info_counter[('SKIP', get_genotypes(genotypes), var_type, region_type, 'count')] += 1
+                        else:
+                            info_counter[('SKIP', '-'.join(get_genotypes(genotypes)), var_type, region_type, 'count')] += 1
                         continue
-                    call_class = genotypes.get(genotype, 'N/A')
-                    info_counter[(call_class, var_type, region_type, 'num-bp')] += var_length
-                    info_counter[(call_class, var_type, 'any', 'num-bp')] += var_length
-                    info_counter[(call_class, 'any', region_type, 'num-bp')] += var_length
-                    info_counter[(call_class, 'any', 'any', 'num-bp')] += var_length
+                    if len(samples) == 1:
+                        gt = get_genotypes(genotypes)
+                        call_class = 'ERROR' if get_genotypes(genotypes) in ['00', '11'] else 'OK'
+                    else:
+                        f, p1, p2 = get_genotypes(genotypes)
+                        gt = '-'.join([f, p1, p2])
+                        if f in ['00', '11']:
+                            call_class = 'ERROR'
+                        else:
+                            call_class = determine_trio_error(f, p1, p2)
+                    info_counter[(call_class, gt, var_type, region_type, 'num-bp')] += var_length
+                    info_counter[(call_class, gt, var_type, 'any', 'num-bp')] += var_length
+                    info_counter[(call_class, gt, 'any', region_type, 'num-bp')] += var_length
+                    info_counter[(call_class, gt, 'any', 'any', 'num-bp')] += var_length
 
         key_sets = {
-            ('QV', 'snp', 'HOM', 'high-conf'): [('HOM', 'snp', 'high-confidence', 'num-bp')],
-            ('QV', 'snp', 'HOM', 'hc-or-not-lifted'): [
-                ('HOM', 'snp', 'high-confidence', 'num-bp'),
-                ('HOM', 'snp', 'not-lifted', 'num-bp')
-            ],
-            ('QV', 'snp', 'HOM', 'all'): [('HOM', 'snp', 'any', 'num-bp')],
+            ('QV', 'snp', 'error', 'high-conf'): [('ERROR', 'snp', 'high-confidence')],
+            ('QV', 'snp', 'error_ambig', 'high-conf'): [('ERROR', 'snp', 'high-confidence'),
+                                                        ('AMBIG', 'snp', 'high-confidence')],
+            ('QV', 'snp', 'error', 'hc-or-not-lifted'): [('ERROR', 'snp', 'high-confidence'),
+                                                         ('ERROR', 'snp', 'not-lifted')],
+            ('QV', 'snp', 'error_ambig', 'hc-or-not-lifted'): [('ERROR', 'snp', 'high-confidence'),
+                                                               ('AMBIG', 'snp', 'high-confidence'),
+                                                               ('ERROR', 'snp', 'not-lifted'),
+                                                               ('AMBIG', 'snp', 'not-lifted')],
 
-            ('QV', 'all', 'HOM', 'high-conf'): [('HOM', 'any', 'high-confidence', 'num-bp')],
-            ('QV', 'all', 'HOM', 'hc-or-not-lifted'): [
-                ('HOM', 'any', 'high-confidence', 'num-bp'),
-                ('HOM', 'any', 'not-lifted', 'num-bp')
-            ],
-            ('QV', 'all', 'HOM', 'all'): [('HOM', 'any', 'any', 'num-bp')]
+            ('QV', 'all', 'error', 'high-conf'): [('ERROR', 'high-confidence')],
+            ('QV', 'all', 'error_ambig', 'high-conf'): [('ERROR', 'high-confidence'),
+                                                        ('AMBIG', 'high-confidence')],
+            ('QV', 'all', 'error', 'hc-or-not-lifted'): [('ERROR', 'high-confidence'),
+                                                         ('ERROR', 'not-lifted')],
+            ('QV', 'all', 'error_ambig', 'hc-or-not-lifted'): [('ERROR', 'high-confidence'),
+                                                               ('AMBIG', 'high-confidence'),
+                                                               ('ERROR', 'not-lifted'),
+                                                               ('AMBIG', 'not-lifted')],
         }
 
+        counter_keys = list(info_counter.keys())
         for label, key_set in key_sets.items():
-            total_num_bp = sum([info_counter[k] for k in key_set])
+            all_selected_keys = []
+            for keys in key_set:
+                selected_keys = filter(lambda x: all(k in x for k in keys), counter_keys)
+                all_selected_keys.extend(selected_keys)
+            total_num_bp = sum([info_counter[k] for k in all_selected_keys])
             info_counter[label] = comp_qv(total_num_bp)
+            input_num_bp = *label, 'num-bp'
+            info_counter[input_num_bp] = total_num_bp
 
         with open(output[0], 'w') as stats:
             for key in sorted(info_counter.keys()):
