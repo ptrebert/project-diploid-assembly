@@ -1,19 +1,27 @@
 # Pipeline tutorial: how to run a diploid genome assembly
 
-The following step-by-step instructions describe how to configure and run the diploid genome assembly pipeline
-either on new/custom data, or on the preconfigured HGSVC data to reproduce the HGSVC assemblies.
-This tutorial covers all generic configuration steps, and should thus also be read before running
-the pipeline [demo](demo.md) dataset. Pipeline execution is **only** supported on **Linux systems**.
+The following step-by-step instructions describe how to configure and run the diploid genome assembly pipeline.
+This tutorial covers three different use cases:
+1. running the pipeline on the pre-configured HGSVC samples to reproduce published results
+2. running the pipeline on a small [demo](demo.md) dataset ("proof of operability")
+3. running the pipeline on locally available data (custom run) 
+
+Since some parts of the pipeline setup are Snakemake-specific, certain sections of this tutorial
+describe configurations that are mandatory for all three use cases (sections will be marked as such).
+In general, pipeline execution is **only** supported on **Linux systems**.
 
 ## Required input data
+*(This is given for the pre-configured HGSVC and the demo data. Required for all use cases)*
+
 The pipeline has been tested with PacBio CLR, HiFi, and Oxford Nanopore ultra-long reads. The expected input formats
 are as follows:
 - PacBio CLR: ["pacbio-native"](https://pacbiofileformats.readthedocs.io/en/5.1/BAM.html) BAM
-- PacBio HiFi/CCS: FASTQ
-- Oxford Nanopore: FASTQ
-- Strand-seq: FASTQ
+- PacBio HiFi/CCS: FASTQ (gzipped)
+- Oxford Nanopore: FASTQ (gzipped)
+- Strand-seq: FASTQ (gzipped)
 
 ## Get the pipeline code
+*(Always required)*
 
 For the rest of this guide, we assume `work_dir` to be our top-level directory:
 ```bash
@@ -29,6 +37,7 @@ Clone the pipeline git repository and **(TODO)** switch to the development branc
 ```
 
 ## Snakemake execution environment
+*(Always required)*
 
 Running the pipeline requires [`Conda`](https://docs.conda.io/en/latest/miniconda.html) and a working
 [`Snakemake`](https://snakemake.readthedocs.io/en/stable/) installation. For convenience, a suitable
@@ -49,8 +58,12 @@ After successful setup, the Conda environment can be activated as follows:
 Snakemake uses the concept of a [profile](https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles)
 to configure its own behavior depending on the compute environment.
 
-#### Running on a single server
-**Only recommended for testing purposes or to run the demo data**: please refer to the Snakemake documentation
+#### Execution environment: single server
+**Only recommended for testing purposes or for running the demo data**
+
+TODO [continue here]
+
+please refer to the Snakemake documentation
 for all possible configurations. You can find an example of a single-server profile here:
 
 ```bash
