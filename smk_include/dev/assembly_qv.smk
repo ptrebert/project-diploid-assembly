@@ -13,8 +13,9 @@ machine = platform.uname().node
 
 work_share = {
     'd3compute01': ([1], ['short'], ['zev']),
-    'd3compute02': ([2], ['short'], ['zev']),
+    'd3compute02': ([1], ['short'], ['ccs', 'whd']),
     'd3compute03': ([1], ['short'], ['ccs']),
+    'd3compute04': ([2], ['short'], ['ccs', 'whd']),
     'd3compute05': ([2], ['short'], ['ccs']),
     'd3compute06': ([1, 2], ['short'], ['clr']),
     'd3compute07': ([1], ['short'], ['ccs', 'whd']),
@@ -41,8 +42,8 @@ print(assembly)
 #                ext=['', '.bai']),
 
 
-if machine in ['d3compute03', 'd3compute05', 'd3compute06', 'd3compute01', 'd3compute02']:
-    if machine in ['d3compute06', 'd3compute01', 'd3compute02']:
+if machine in ['d3compute03', 'd3compute05', 'd3compute06']:
+    if machine in ['d3compute06', 'd3compute01']:
         rule revision_analysis_trio_no_parent:
             input:
                 expand('output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.vcf.bgz.tbi',
@@ -90,7 +91,7 @@ if machine in ['d3compute03', 'd3compute05', 'd3compute06', 'd3compute01', 'd3co
             priority: 1000
 
 
-elif machine in ['d3compute07', 'd3compute08']:
+elif machine in ['d3compute02', 'd3compute04']:
     rule revision_analysis_na12878:
         input:
             expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
@@ -103,6 +104,20 @@ elif machine in ['d3compute07', 'd3compute08']:
                     reads=reads,
                     assembly=assembly,
                     haps=haps),
+            expand('output/variant_calls/00-raw/{individual}_{parent1}_{parent2}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
+                    individual='NA12878',
+                    parent1='NA12891',
+                    parent2='NA12892',
+                    reads=reads,
+                    assembly=assembly,
+                    haps=haps),
+            expand('output/alignments/{individual}_{parent1}_{parent2}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.mdup.sort.cov_stats',
+                   individual='NA12878',
+                   parent1='NA12891',
+                   parent2='NA12892',
+                   reads=reads,
+                   assembly=assembly,
+                   haps=haps),
         priority: 1000
 else:
     raise RuntimeError('Unknown machine')
@@ -237,21 +252,27 @@ rule merge_illumina_fastq_files:
         'gzip -d -c {input} | gzip > {output}'
 
 
+ceph_family_short_reads_url = {
+    ('NA12878', '1'): "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_1.fastq.gz",  # daughter
+    ('NA12878', '2'): "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_2.fastq.gz",
+    ('NA12891', '1'): "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194160/ERR194160_1.fastq.gz",  # father
+    ('NA12891', '2'): "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194160/ERR194160_2.fastq.gz",
+    ('NA12892', '1'): "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194161/ERR194161_1.fastq.gz",
+    ('NA12892', '2'): "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194161/ERR194161_2.fastq.gz"
+}
+
+
 rule load_na12878_data:
     """
     bioproject source: PRJEB3381
     alternative: PRJNA200694
     """
     output:
-        'input/fastq/NA12878_short_1.fastq.gz',
-        'input/fastq/NA12878_short_2.fastq.gz'
+        'input/fastq/{individual}_short_{mate}.fastq.gz',
     params:
-        url1 = lambda wildcards: "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_1.fastq.gz",
-        url2 = lambda wildcards: "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR194/ERR194147/ERR194147_2.fastq.gz"
+        url = lambda wildcards: ceph_family_short_reads_url[(wildcards.individual, wildcards.mate)]
     shell:
-        'wget --no-verbose -O {output[0]} {params.url1}'
-        ' && '
-        'wget --no-verbose -O {output[1]} {params.url2}'
+        'wget --no-verbose -O {output} {params.url}'
 
 
 rule generate_bwa_index:
