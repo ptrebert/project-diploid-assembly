@@ -269,6 +269,8 @@ rule load_na12878_data:
     """
     output:
         'input/fastq/{individual}_short_{mate}.fastq.gz',
+    wildcard_constraints:
+        individual = '(NA12878|NA12891|NA12892)'
     params:
         url = lambda wildcards: ceph_family_short_reads_url[(wildcards.individual, wildcards.mate)]
     shell:
