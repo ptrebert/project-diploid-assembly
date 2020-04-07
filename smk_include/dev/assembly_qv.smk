@@ -120,7 +120,7 @@ elif machine in ['d3compute02', 'd3compute04']:
                    haps=haps),
         priority: 1000
 else:
-    raise RuntimeError('Unknown machine')
+    print('parameters not specified - manually setting target required...')
 
 
 # rule master_assembly_qv:
