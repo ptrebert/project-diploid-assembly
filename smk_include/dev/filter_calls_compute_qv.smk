@@ -508,6 +508,9 @@ rule compute_qv_estimate:
 
         counter_keys = list(info_counter.keys())
         for label, key_set in key_sets.items():
+            if len(samples) == 1 and '_ambig' in label[2]:
+                # no ambig calls for single callsets
+                continue
             all_selected_keys = []
             for keys in key_set:
                 selected_keys = filter(lambda x: all(k in x for k in keys), counter_keys)
