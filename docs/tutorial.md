@@ -4,7 +4,8 @@ The following step-by-step instructions describe how to configure and run the di
 This tutorial covers three different use cases:
 1. running the pipeline on the pre-configured HGSVC samples to reproduce published results
 2. running the pipeline on a small [demo](demo.md) dataset ("proof of operability")
-3. running the pipeline on locally available data (custom run) 
+3. running the pipeline on locally available data (custom run), either creating the necessary
+configuration files manually or via using the `autoconf.py` script.
 
 Since some parts of the pipeline setup are Snakemake-specific, certain sections of this tutorial
 describe configurations that are mandatory for all three use cases (sections will be marked as such).
@@ -122,11 +123,22 @@ You can find an example for a PBS Pro-compatible script here:
 command line via `--profile`). All files described in the remainder of this tutorial are "regular"
 configuration files (supplied at the Snakemake command line via `--configfiles`)**
 
+## How to proceed...
+
+If you want to **run the demo dataset** with just the default environment configuration,
+you can immediately [switch to the respective instructions](demo.md).
+
+If you want to reproduce published results using HGSVC samples, or run the pipeline on your
+own data, please keep reading this tutorial. If you want to use the [`autoconf.py`](autoconf.md)
+script to generate a suitable configuration file, you should still read the next section ("*Pipeline
+run environment configuration*") to better understand resource settings. Afterwards, you
+can switch to the [`autoconf.py`](autoconf.md) documentation.
+
 ## Pipeline run environment configuration
-*(Not required for the demo or if the `autoconf.py` script is used)*
+*(Not required for the demo or if the [`autoconf.py`](autoconf.md) script is used)*
 
 Since the efficiency of the pipeline strongly depends on how many independent jobs can run in parallel,
-the pipeline requires an additional Snakemake configuration file with the following entries:
+the pipeline requires an additional Snakemake configuration file containing more info about CPU resources:
 
 ```yaml
 num_cpu_max: <NUM>
@@ -135,10 +147,14 @@ num_cpu_medium: <NUM>
 num_cpu_low: <NUM>
 ```
 
-- max cpu: jobs like whole-genome assemblies (usually also requiring a lot of memory)
-- high cpu: jobs like whole-genome read alignment with minimap2 or pbmm2
-- medium cpu: jobs like a QUAST analysis of an assembly
-- low cpu: jobs like Strand-seq alignments
+- max cpu: jobs like whole-genome assemblies (usually also requiring a lot of memory) will use this many
+CPU cores. This should be the maximal number of CPU cores available in a single machine.
+- high cpu: jobs like whole-genome read alignment with minimap2 or pbmm2 will use this many CPU cores.
+Ideally, this number should be larger than 20.
+- medium cpu: jobs like a QUAST analysis of an assembly will use this many CPU cores. Ideally, this
+number should be between 10 and 20.
+- low cpu: jobs like Strand-seq alignments will use this many CPU cores. Ideally, this number
+should be between 4 and 10.
 
 Additionally, if the compute cluster supports [environment `modules`](http://modules.sourceforge.net), the module
 name for the [`Singularity` container runtime](https://sylabs.io/singularity/) has to be specified here
@@ -159,16 +175,18 @@ You can examine an example for a complete run environment configuration file her
 /work_dir$ less project-diploid-assembly/smk_config/run_env/smk_cfg_env-hhu.yml
 ```
 
-[TODO: continue here...]
-
 ## Pipeline parameter and reference data configuration
 
-**TODO** For human data (and either GRCh37 or GRCh38 for evaluation), the following files can be used as-is:
+The current development release of the pipeline supports only human data
+(either GRCh37 or GRCh38 genome reference used for evaluation) out of the box.
+The following configuration files can thus be used as-is:
 
 ```bash
 /work_dir$ less project-diploid-assembly/smk_config/params/smk_cfg_params_RV9.yml
 /work_dir$ less project-diploid-assembly/smk_config/ref_data/reference_data_sources.yml
 ```
+
+TODO: continue from here
 
 ## Pipeline sample configuration
 Configuring sample data for the pipeline can be logically split into three parts: (i) specifying the sample
