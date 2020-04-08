@@ -28,7 +28,7 @@ For the rest of this guide, we assume `work_dir` to be our top-level directory:
 /work_dir$
 ```
 
-Clone the pipeline git repository and **(TODO)** switch to the development branch:
+Clone the pipeline git repository and **(TODO: merge with master)** switch to the development branch:
 
 ```bash
 /work_dir$ git clone https://github.com/ptrebert/project-diploid-assembly.git
@@ -56,21 +56,21 @@ After successful setup, the Conda environment can be activated as follows:
 ```
 
 Snakemake uses the concept of a [profile](https://snakemake.readthedocs.io/en/stable/executing/cli.html#profiles)
-to configure its own behavior depending on the compute environment.
+to configure its own behavior depending on the compute environment. A Snakemake *profile* is simply
+a configuration file containing Snakemake command line parameters to avoid retyping them at every
+Snakemake pipeline invocation. Please refer to the Snakemake help linked above for a complete list
+of possible parameters for a Snakemake *profile*.
 
 #### Execution environment: single server
 **Only recommended for testing purposes or for running the demo data**
 
-TODO [continue here]
-
-please refer to the Snakemake documentation
-for all possible configurations. You can find an example of a single-server profile here:
+You can examine an example for a Snakemake *profile* suitable for single-server execution here:
 
 ```bash
 /work_dir$ less project-diploid-assembly/environment/snakemake/server/d3compute/config.yaml
 ```
 
-The following options are required to be set in the profile:
+The following options must be set in the profile:
 
 ```yaml
 cores: <NUM_CPUS>
@@ -82,9 +82,9 @@ resources:
 The option `mem_total_mb` is necessary to avoid running high-memory jobs, e.g., a whole-genome `flye`
 assembly of CLR data, if only insufficient resources are available. 
 
-#### Running on a compute cluster (recommended)
-Please refer to the Snakemake documentation for all options allowed in a Snakemake profile.
-You can find an example of a compute cluster profile here:
+#### Execution environment: compute cluster (recommended)
+
+You can examine an example for a Snakemake *profile* suitable for single-server execution here:
 
 ```bash
 /work_dir$ less project-diploid-assembly/environment/snakemake/cluster/hhu_pbs/config.yaml
@@ -106,7 +106,7 @@ default-resources:
 ```
 
 The default resources should be chosen such that small jobs can be scheduled to the fastest queue available
-on the cluster (typically with a walltime limit of only a few hours). Currently, pipeline jobs that are
+on the cluster (typically with a time limit of only a few hours). Currently, pipeline jobs that are
 configured for cluster submission using default resources require only one CPU core and less than 2048 MB
 of memory.
 
@@ -118,14 +118,15 @@ You can find an example for a PBS Pro-compatible script here:
 /work_dir$ less project-diploid-assembly/scripts/cluster_status/hhu_hilbert.py
 ```
 
-**Important reminder: the above YAML configuration file is a Snakemake *profile* (supplied at the Snakemake
-command line via `--profile`). All files described in the following are regular configuration files
-(supplied at the Snakemake command line via `--configfiles`)** 
+**Important reminder: the above configuration file is a Snakemake *profile* (supplied at the Snakemake
+command line via `--profile`). All files described in the remainder of this tutorial are "regular"
+configuration files (supplied at the Snakemake command line via `--configfiles`)**
 
 ## Pipeline run environment configuration
+*(Not required for the demo or if the `autoconf.py` script is used)*
+
 Since the efficiency of the pipeline strongly depends on how many independent jobs can run in parallel,
-and this is determined by the the type of machines available in a compute cluster, the pipeline requires an
-additional Snakemake configuration file with the following entries:
+the pipeline requires an additional Snakemake configuration file with the following entries:
 
 ```yaml
 num_cpu_max: <NUM>
@@ -141,19 +142,31 @@ num_cpu_low: <NUM>
 
 Additionally, if the compute cluster supports [environment `modules`](http://modules.sourceforge.net), the module
 name for the [`Singularity` container runtime](https://sylabs.io/singularity/) has to be specified here
-(mandatory for using the Peregrine assembler and the DeepVariant variant caller). An example for a complete run
-environment configuration file can be found here:
+(mandatory for using the Peregrine assembler and the DeepVariant variant caller). Alternatively, you can set this
+option to `False`:
+
+```yaml
+num_cpu_max: <NUM>
+num_cpu_high: <NUM>
+num_cpu_medium: <NUM>
+num_cpu_low: <NUM>
+env_module_singularity: False  # or name of Singularity module
+```
+
+You can examine an example for a complete run environment configuration file here:
 
 ```bash
 /work_dir$ less project-diploid-assembly/smk_config/run_env/smk_cfg_env-hhu.yml
 ```
+
+[TODO: continue here...]
 
 ## Pipeline parameter and reference data configuration
 
 **TODO** For human data (and either GRCh37 or GRCh38 for evaluation), the following files can be used as-is:
 
 ```bash
-/work_dir$ less project-diploid-assembly/smk_config/params/smk_cfg_params_RV8.yml
+/work_dir$ less project-diploid-assembly/smk_config/params/smk_cfg_params_RV9.yml
 /work_dir$ less project-diploid-assembly/smk_config/ref_data/reference_data_sources.yml
 ```
 
