@@ -528,11 +528,11 @@ rule write_callset_splits_fofn:
 
 rule merge_callset_splits:
     input:
-        'output/variant_calls/00-raw/{callset}.fofn',
-        'output/alignments/{callset}.mdup.sort.cov_stats'  # just to trigger creating this
+        fofn = 'output/variant_calls/00-raw/{callset}.fofn',
+        stats = 'output/alignments/{callset}.mdup.sort.cov_stats'  # just to trigger creating this
     output:
           protected('output/variant_calls/00-raw/{callset}.vcf.bgz')
     conda:
          '../../environment/conda/conda_biotools.yml'
     shell:
-         'bcftools concat --output /dev/stdout --output-type v --file-list {input} | bgzip -c /dev/stdin > {output}'
+         'bcftools concat --output /dev/stdout --output-type v --file-list {input.fofn} | bgzip -c /dev/stdin > {output}'
