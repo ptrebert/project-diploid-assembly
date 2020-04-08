@@ -648,7 +648,8 @@ rule write_callset_splits_fofn:
 
 rule merge_callset_splits:
     input:
-         'output/variant_calls/00-raw/{callset}.fofn'
+        'output/variant_calls/00-raw/{callset}.fofn',
+        'output/alignments/{callset}.mdup.sort.cov_stats'  # just to trigger creating this
     output:
           protected('output/variant_calls/00-raw/{callset}.vcf.bgz')
     conda:
