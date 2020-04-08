@@ -1,6 +1,0 @@
-snakemake \
-    --directory /gpfs/project/ebertp/projects/rfdga/<FOLDER> \
-    --configfiles smk_config/run_env/smk_cfg_env-hhu_test.yml smk_config/params/smk_cfg_params.yml smk_config/samples/<SAMPLES>
-    --profile environment/snakemake/cluster/hhu_pbs/ \
-    --cluster-config $PWD/environment/snakemake/cluster/hhu_pbs/hilbert_cluster.json \
-    --cluster-status <PATH_TO_FOLDER>/hhu_hilbert.py

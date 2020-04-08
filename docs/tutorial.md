@@ -1,9 +1,11 @@
-# Pipeline tutorial: how to run a diploid genome assembly
+# TUTORIAL
+
+## Pipeline tutorial: how to run a diploid genome assembly
 
 The following step-by-step instructions describe how to configure and run the diploid genome assembly pipeline.
 This tutorial covers three different use cases:
 1. running the pipeline on the pre-configured HGSVC samples to reproduce published results
-2. running the pipeline on a small [demo](demo.md) dataset ("proof of operability")
+2. running the pipeline on a small [demo](demo.md) dataset ("proof of function")
 3. running the pipeline on locally available data (custom run), either creating the necessary
 configuration files manually or via using the `autoconf.py` script.
 

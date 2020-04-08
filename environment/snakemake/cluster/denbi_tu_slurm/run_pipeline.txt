@@ -1,1 +1,0 @@
-snakemake --configfile smk_cfg_denbi_bibigrid.yml --profile environment/snakemake/cluster/denbi_tu_slurm --nolock

@@ -1,1 +1,0 @@
-snakemake --configfiles smk_config/data/smk_cfg_params_use-sgl.yml smk_config/data/smk_cfg_samples.yml smk_config/run_env/smk_cfg_env-europa.yml --profile environment/snakemake/server/denbi_europa --nolock --use-conda -n

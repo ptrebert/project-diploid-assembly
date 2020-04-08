@@ -1,3 +1,0 @@
-# Execute in Snakefile folder
-
-snakemake --configfiles smk_config/data/smk_cfg_params_no-sgl.yml smk_config/data/smk_cfg_samples.yml smk_config/run_env/smk_cfg_env-lap1372.yml --profile environment/snakemake/testing/lap1372 --nolock --use-conda -n
