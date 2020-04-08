@@ -1,6 +1,4 @@
 
-import platform
-
 workdir: '/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/run_folder'
 
 WORKDIR = '/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/run_folder'
@@ -9,128 +7,10 @@ SHORT_READS_METADATA = '/home/pebert/work/code/github/project-diploid-assembly/a
 
 URL_RECORDS = dict()
 
-machine = platform.uname().node
-
-work_share = {
-    'd3compute01': ([1], ['short'], ['zev']),
-    'd3compute02': ([1], ['short'], ['ccs', 'whd']),
-    'd3compute03': ([1], ['short'], ['ccs']),
-    'd3compute04': ([2], ['short'], ['ccs', 'whd']),
-    'd3compute05': ([2], ['short'], ['ccs']),
-    'd3compute06': ([1, 2], ['short'], ['clr']),
-    'd3compute07': ([1], ['short'], ['ccs', 'whd']),
-    'd3compute08': ([2], ['short'], ['ccs', 'whd'])
-}
-
-haps, reads, assembly = work_share[machine]
-print(machine)
-print(haps)
-print(reads)
-print(assembly)
-
-# rule clr_qv_alignments:
-#     input:
-#         expand('output/alignments/{individual}_short_aln-to_HG00514_{tech}_hap{haps}.mdup.sort.bam{ext}',
-#                individual=['HG00512', 'HG00513', 'HG00514'],
-#                tech=['clr'],
-#                haps=haps,
-#                ext=['', '.bai']),
-#         expand('output/alignments/{individual}_ccs_aln-to_HG00514_{tech}_hap{haps}.mdup.sort.bam{ext}',
-#                individual=['HG00512', 'HG00513', 'HG00514'],
-#                tech=['clr'],
-#                haps=haps,
-#                ext=['', '.bai']),
-
-
-if machine in ['d3compute03', 'd3compute05', 'd3compute06']:
-    if machine in ['d3compute06', 'd3compute01']:
-        rule revision_analysis_trio_no_parent:
-            input:
-                expand('output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.vcf.bgz.tbi',
-                        child='HG00733',
-                        parent1='HG00731',
-                        parent2='HG00732',
-                        reads=reads,
-                        assembly=assembly,
-                        haps=haps),
-                expand('output/alignments/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.mdup.sort.cov_stats',
-                       child='HG00733',
-                       parent1='HG00731',
-                       parent2='HG00732',
-                       reads=reads,
-                       assembly=assembly,
-                       haps=haps)
-            priority: 1000
-    else:
-        rule revision_analysis_trio_single_parent:
-            input:
-                expand('output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.vcf.bgz.tbi',
-                        child='HG00733',
-                        parent1='HG00731',
-                        parent2='HG00732',
-                        reads=reads,
-                        assembly=assembly,
-                        haps=haps),
-                expand('output/alignments/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.mdup.sort.cov_stats',
-                        child='HG00733',
-                        parent1='HG00731',
-                        parent2='HG00732',
-                        reads=reads,
-                        assembly=assembly,
-                        haps=haps),
-                expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
-                        individual=['HG00731', 'HG00732'],
-                        reads=reads,
-                        assembly=assembly,
-                        haps=haps),
-                expand('output/alignments/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.mdup.sort.cov_stats',
-                        individual=['HG00731', 'HG00732'],
-                        reads=reads,
-                        assembly=assembly,
-                        haps=haps),
-            priority: 1000
-
-
-elif machine in ['d3compute02', 'd3compute04']:
-    rule revision_analysis_na12878:
-        input:
-            expand('output/variant_calls/00-raw/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
-                    individual='NA12878',
-                    reads=reads,
-                    assembly=assembly,
-                    haps=haps),
-            expand('output/alignments/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.mdup.sort.cov_stats',
-                    individual='NA12878',
-                    reads=reads,
-                    assembly=assembly,
-                    haps=haps),
-            expand('output/variant_calls/00-raw/{individual}_{parent1}_{parent2}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.vcf.bgz.tbi',
-                    individual='NA12878',
-                    parent1='NA12891',
-                    parent2='NA12892',
-                    reads=reads,
-                    assembly=assembly,
-                    haps=haps),
-            expand('output/alignments/{individual}_{parent1}_{parent2}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.mdup.sort.cov_stats',
-                   individual='NA12878',
-                   parent1='NA12891',
-                   parent2='NA12892',
-                   reads=reads,
-                   assembly=assembly,
-                   haps=haps),
-        priority: 1000
-else:
-    print('parameters not specified - manually setting target required...')
-
-
-# rule master_assembly_qv:
-#     input:
-#         expand('input/fastq/{individual}_short_{mate}.fastq.gz',
-#                 individual=['HG00733', 'HG00732', 'HG00731', 'NA12878', 'HG00512', 'HG00513', 'HG00514'],
-#                 mate=[1, 2]),
-#         rules.clr_qv_alignments.input,
-#         rules.revision_analysis.input
-
+rule master_assembly_qv:
+    input:
+        []
+    message: 'Manual target specification is required'
 
 rule link_supp_data:
     input:
