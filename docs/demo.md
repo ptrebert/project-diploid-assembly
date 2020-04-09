@@ -30,18 +30,17 @@ smk_env/
 ```
 
 The pipeline repository contains a Snakemake *profile* that specifies a compute environment
-with **16 CPU cores** and **128 GB of main memory** (depending on the overall system load,
-64 GB may also be sufficient to run the demo). You can either use the Snakemake *profile* and the
-pipeline run environment configuration (see the [tutorial](tutorial.md)) that are
-available in the repository, or you can use your own based on the information
-given in the [tutorial](tutorial.md). In both cases, please proceed to the instructions
-how to [execute the pipeline](execute.md).
+with **16 CPU cores** and **48 GB of main memory** (depending on the overall system load,
+32 GB may also be sufficient to run the demo). You can either use the Snakemake *profile* and the
+pipeline run environment configuration that are shipped with the pipeline code in the repository,
+or you can use your own based on the information given in the [tutorial](tutorial.md).
+In both cases, please proceed to the instructions how to [execute the pipeline](execute.md).
 
 ## How to interpret the results of the demo
 
 In all brevity, just don't. The demo data is a heavily downsampled version of a publicly
 available PacBio Sequel-2 HiFi/CCS dataset retrieved from EBI/ENA (PRJNA540705),
-and of the necessary Strand-seq data (PRJEB14185). The objective was to obtain a dataset
+and of the respective Strand-seq data (PRJEB14185). The objective was to create a dataset
 that could be processed from start to finish with moderate resources and within a reasonable
 amount of time (less than 24 hours). A successful run of the demo data is a "proof of function"
 for the pipeline, but it does not generate "biologically interesting" results.
