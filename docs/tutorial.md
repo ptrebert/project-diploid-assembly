@@ -78,12 +78,7 @@ The following options must be set in the profile:
 ```yaml
 cores: <NUM_CPUS>
 use-conda: True
-resources:
-  mem_total_mb=<TOTAL_RAM_IN_MEGABYTE>
 ```
-
-The option `mem_total_mb` is necessary to avoid running high-memory jobs, e.g., a whole-genome `flye`
-assembly of CLR data, if only insufficient resources are available. 
 
 #### Execution environment: compute cluster (recommended)
 
@@ -188,9 +183,10 @@ The following configuration files can thus be used as-is:
 /work_dir$ less project-diploid-assembly/smk_config/ref_data/reference_data_sources.yml
 ```
 
-TODO: continue from here
-
 ## Pipeline sample configuration
+*(Only required for running the pipeline on custom data and if the `autconf.py` script cannot or should
+not be used)*
+
 Configuring sample data for the pipeline can be logically split into three parts: (i) specifying the sample
 and the types of associated input read sets; (ii) specifying which read sets to use for which step of the pipeline;
 (iii) specifying the data source for each read set (e.g., local or FTP).
@@ -409,128 +405,28 @@ FASTQ file for downstream processing, and Strand-seq data are assumed to be pair
 scheme is slightly different:
 
 ```bash
-/linked_experiments/HG02011_hgsvc_ilnxs-80pe_sseq/HG02011_hgsvc_ilnxs-80pe_RUN-ID_1.fastq.gz
-/linked_experiments/HG02011_hgsvc_ilnxs-80pe_sseq/HG02011_hgsvc_ilnxs-80pe_RUN-ID_2.fastq.gz
+/linked_experiments/HG02011_hgsvc_ilnxs-80pe_sseq/HG02011_hgsvc_ilnxs-80pe_RUN-ID-A_1.fastq.gz
+/linked_experiments/HG02011_hgsvc_ilnxs-80pe_sseq/HG02011_hgsvc_ilnxs-80pe_RUN-ID-A_2.fastq.gz
+/linked_experiments/HG02011_hgsvc_ilnxs-80pe_sseq/HG02011_hgsvc_ilnxs-80pe_RUN-ID-B_1.fastq.gz
+/linked_experiments/HG02011_hgsvc_ilnxs-80pe_sseq/HG02011_hgsvc_ilnxs-80pe_RUN-ID-B_2.fastq.gz
 (and so one)
 ```
 
 > **Important note**: the above is only valid for mono-fraction Strand-seq libraries.
 
+As you can see, the file naming for Strand-seq data follows the pattern:
+
+- subfolder: `{individual}_{project}_{platform}_sseq`
+- file name: `{individual}_{project}_{platform}_{uniqe-id}_{mate_number}.fastq.gz`
+
 Since unique file names are required, there has to be a unique ID in each file name after the usual
 `individual_project_platform` part, but before the mate indicators (`_1` and `_2`), i.e., what is indicated
-above as "RUN-ID".  
-Also note the suffix `sseq` at the end of the subfolder. It is noteworthy that both long-read and Strand-seq input
-data can be collected (symlinked) in the same folder hierarchy provided that their file names can be used as-is
+above as `RUN-ID-A` and `RUN-ID-B`.  
+Also note the suffix `sseq` at the end of the subfolder (but not as part of the file names).
+It is noteworthy that both long-read and Strand-seq input data can be collected (symlinked)
+in the same folder hierarchy provided that their file names can be used as-is.
 
-#### Q and A concerning data input
+## How to proceed
 
-##### QA-1: how do I know which files were the original input for my pipeline?
-Internally, the pipeline uses so-called *request* files to keep track of each original file source (remote or local).
-These request files can be found in `input/FORMAT/READSET/requests`.
-
-##### QA-2: my file names are quite well-behaved, do I have to create intermediate symbolic links?
-You can try playing around with the data scraping script located here:
-```bash
-/work_dir$ less project-diploid-assembly/scripts/scan_remote_path.py
-```
-This script is for internal use only (mainly to rename the HGSVC data located on the 1000G FTP server).
-To give an example, the long-read input files listed under (iii-A) could probably be renamed automatically
-using the following call to the script:
-
-```bash
-scan_remote_path.py --debug \
-    --server localhost \
-    --data-source /seq_experiments \
-    --collect-files "bam" \
-    --sort-into "bam" \
-    --assume-pacbio-native \
-    --assume-clr-subreads \
-    --file-infix "hgsvc-pbsq2-" \
-    --local-path-suffix "{individual}_{file_infix}{tech}" \
-    --output hg02011_local.json
-```
-
-If the output file names (in the JSON) adhere to the naming scheme as required by the pipeline, then the data
-source can also be specified as follows (i.e., avoiding the intermediate step of symlinking with appropriate names):
-
-```yaml
-data_source_HG02011_local:
-  comment: "OPTIONAL: annotate your data source"
-  output: 'HG02011_local.json'
-  server: 'localhost'
-  data_source: '/seq_experiments'
-  collect_files:
-    - 'bam'
-  sort_into:
-    - 'bam'
-  assume_pacbio_native: True
-  assume_clr_subreads: True
-  file_infix: "hgsvc_pbsq2-"
-  local_path_suffix:  "{{individual}}_{{file_infix}}{{tech}}"
-```
-
-##### QA-3: are locally available input files copied?
-Generally no. If symbolic links turn out to be problematic for some reason, placing a
-`force_local_copy: True` in any of the Snakemake config files will trigger copying input files.
-
-## Running the pipeline
-
-#### Step 1 (optional)
-Snakemake supports creating Conda environments on the fly to isolate software installations. This feature is used
-in the pipeline, which leads to some overhead when the individual environments are created. Since software setup is
-also a common point of failure, the whole Conda environment creation can be done before executing the pipeline.
-
-This can be achieved as follows (always perform a dry run first):
-
-```bash
-/work_dir$ conda activate ./smk_env
-(smk_env)/work_dir$ cd project-diploid-assembly
-(smk_env)/work_dir/project-diploid-assembly$ snakemake \
-    --dry-run \
-    --directory ../run_folder \
-    --profile path_to_your_profile/ \
-    --configfiles path_to_your_run_env/run_env.yml smk_config/params/smk_cfg_params_RV8.yml \
-    --cluster-status path_to_your_cluster_status_script.py \
-    setup_env
-```
-
-Note that the environment setup also checks the presence of the Singularity container runtime only needed for
-the Peregrine assembler and the DeepVariant variant caller. If these two tools are not to be used for any
-pipeline run, a failed check can be ignored. 
-
-#### Step 2
-After a successful environment setup, a pipeline run can be started as follows (again, do a dry run first):
-
-```bash
-(smk_env)/work_dir/project-diploid-assembly$ snakemake \
-    --dry-run \
-    --directory ../run_folder \
-    --profile path_to_your_profile/ \
-    --configfiles path_to_your_run_env/run_env.yml \
-                    smk_config/params/smk_cfg_params_RV8.yml \
-                    smk_config/ref_data/reference_data_sources.yml \
-                    path_to_your_sample_config.yml \
-                    path_to_your_data_source_config.yml \
-    --cluster-status path_to_your_cluster_status_script.py \
-    master_custom
-```
-
-Note that the above assumes that you create two configuration files, one only for the sample description and
-target specification (`path_to_your_sample_config.yml`), and a second one to define the data sources
-(`path_to_your_data_source_config`). As already mentioned, all config files are merged by Snakemake, so it is
-up to you how you organize your configuration files.
-
-The given Snakemake target `master_custom` triggers a pipeline run for all possible targets (=output files) for
-all samples that are found in the configuration (i.e., for each `sample_description_` entry with specified targets
-and data sources).
-
-#### Step 3
-To simplify collecting the most important results from a successful pipeline run, the full (!) paths of all
-produced targets are dumped to a single file located here:
-
-```bash
-/work_dir/run_folder/output/targets/<SUPER-POPULATION>_<POPULATION>_<FAMILY>/<INDIVIDUAL>.fofn
-```
-
-This simplifies copying the most important results to a permanent storage location by reading the file paths
-from the above "file of filenames" (fofn).
+Assuming that you created all necessary configuration files, you can now proceed to the docs describing
+how to [execute the actual pipeline run](execute.md).
