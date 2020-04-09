@@ -23,7 +23,7 @@ rule master_qv_estimate:
                 parent1='HG00731',
                 parent2='HG00732',
                 reads=['short'],
-                assembly=['ont'],
+                assembly=['ont', 'clr', 'ccs', 'zev'],
                 haps=[1, 2],
                 var_type=['snv', 'indels']),
         expand('output/variant_calls/30-gtfilter/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.{var_type}.{genotype}.vcf.stats',
@@ -31,7 +31,7 @@ rule master_qv_estimate:
                 parent1='HG00731',
                 parent2='HG00732',
                 reads=['short'],
-                assembly=['ont'],
+                assembly=['ont', 'clr', 'ccs', 'zev'],
                 haps=[1, 2],
                 var_type=['snv', 'indels'],
                 genotype=['hom', 'het']),
@@ -40,7 +40,7 @@ rule master_qv_estimate:
                parent1='HG00731',
                parent2='HG00732',
                reads=['short'],
-               assembly=['zev', 'clr', 'ont'],
+               assembly=['zev', 'clr', 'ont', 'ccs'],
                haps=[1, 2]),
 
         # individual call sets
@@ -141,6 +141,7 @@ rule quality_filter_callsets:
     input:
         vcf = ancient('output/variant_calls/00-raw/{reads}_aln-to_{assembly}.vcf.bgz'),
         tbi = 'output/variant_calls/00-raw/{reads}_aln-to_{assembly}.vcf.bgz.tbi',
+        vcf_stats = 'output/variant_calls/00-raw/{reads}_aln-to_{assembly}.vcf.stats',
         ref = ancient('references/{assembly}.fasta'),
         cov = ancient('output/alignments/{reads}_aln-to_{assembly}.mdup.sort.cov_stats')
     output:
@@ -158,7 +159,8 @@ rule quality_filter_callsets:
 rule split_callsets_by_type:
     input:
          'output/variant_calls/10-qfilter/{callset}.vcf.bgz',
-         'output/variant_calls/10-qfilter/{callset}.vcf.bgz.tbi'
+         'output/variant_calls/10-qfilter/{callset}.vcf.bgz.tbi',
+         'output/variant_calls/10-qfilter/{callset}.vcf.stats'
     output:
           'output/variant_calls/20-typefilter/{callset}.snv.vcf.bgz',
           'output/variant_calls/20-typefilter/{callset}.indels.vcf.bgz',
