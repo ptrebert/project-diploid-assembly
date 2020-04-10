@@ -7,8 +7,7 @@ localrules: run_hg00171_individual,
             run_ceu_child,
             run_ibs_trio,
             run_ibs_child,
-            run_giab_ceu_trio,
-            run_giab_ceu_child
+
 
 rule run_hg00171_individual:
     input:
@@ -43,18 +42,6 @@ rule run_ceu_trio:
 
 ########################################################
 
-rule run_giab_ceu_child:
-    input:
-        'output/targets/EUR_CEU_1463/NA12878.fofn'
-    message: 'Running EUR-CEU-1463 child'
-
-rule run_giab_ceu_trio:
-    input:
-        rules.run_giab_ceu_child.input,
-    message: 'Running EUR-CEU-1463 trio'
-
-########################################################
-
 rule run_ibs_child:
     input:
         'output/targets/EUR_IBS_IBS002/HG01505.fofn'
@@ -74,5 +61,4 @@ rule run_eur_trios:
         rules.run_hg00096_individual.input,
         rules.run_ceu_trio.input,
         rules.run_ibs_trio.input,
-        rules.run_giab_ceu_trio.input,
     message: 'Running EUR trios'
