@@ -18,14 +18,6 @@ rule master_qv_estimate:
         'references/hg38_giab_highconf.bed',
 
         # trio call sets
-        expand('output/variant_calls/20-typefilter/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.{var_type}.vcf.stats',
-                child='HG00733',
-                parent1='HG00731',
-                parent2='HG00732',
-                reads=['short'],
-                assembly=['ont', 'clr', 'ccs', 'zev'],
-                haps=[1, 2],
-                var_type=['snv', 'indels']),
         expand('output/variant_calls/30-gtfilter/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.{var_type}.{genotype}.vcf.stats',
                 child='HG00733',
                 parent1='HG00731',
@@ -42,14 +34,24 @@ rule master_qv_estimate:
                reads=['short'],
                assembly=['zev', 'clr', 'ont', 'ccs'],
                haps=[1, 2]),
+        expand('output/variant_calls/30-gtfilter/{child}_{parent1}_{parent2}_{reads}_aln-to_{child}_{assembly}_hap{haps}.{var_type}.{genotype}.vcf.stats',
+                child='HG00733',
+                parent1='HG00731',
+                parent2='HG00732',
+                reads=['ccs'],
+                assembly=['ccs'],
+                haps=[1, 2],
+                var_type=['snv', 'indels'],
+                genotype=['hom', 'het']),
+        expand('output/qv_estimates/{individual}_{parent1}_{parent2}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.qv_stats',
+               individual='HG00733',
+               parent1='HG00731',
+               parent2='HG00732',
+               reads=['ccs'],
+               assembly=['ccs'],
+               haps=[1, 2]),
 
         # individual call sets
-        expand('output/variant_calls/20-typefilter/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.{var_type}.vcf.stats',
-                individual='NA12878',
-                reads=['short'],
-                assembly=['ccs', 'whd'],
-                haps=[1, 2],
-                var_type=['snv', 'indels']),
         expand('output/variant_calls/30-gtfilter/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.{var_type}.{genotype}.vcf.stats',
                individual='NA12878',
                reads=['short'],
@@ -57,16 +59,36 @@ rule master_qv_estimate:
                haps=[1, 2],
                var_type=['snv', 'indels'],
                genotype=['hom', 'het']),
-        expand('output/variant_calls/60-complete/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.snv.hg38rev.other.bed',
-               individual='NA12878',
-               reads=['short'],
-               assembly=['ccs', 'whd'],
-               haps=[1, 2]),
         expand('output/qv_estimates/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.qv_stats',
                individual='NA12878',
                reads=['short'],
                assembly=['ccs', 'whd'],
                haps=[1, 2]),
+
+        expand('output/variant_calls/30-gtfilter/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.{var_type}.{genotype}.vcf.stats',
+                individual=['HG00731', 'HG00732', 'HG00733'],
+                reads=['short'],
+                assembly=['ccs'],
+                haps=[1, 2],
+                var_type=['snv', 'indels'],
+                genotype=['hom', 'het']),
+        expand('output/qv_estimates/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.qv_stats',
+                individual=['HG00731', 'HG00732', 'HG00733'],
+                reads=['short'],
+                assembly=['ccs'],
+                haps=[1, 2]),
+        expand('output/variant_calls/30-gtfilter/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.{var_type}.{genotype}.vcf.stats',
+                individual=['HG00733'],
+                reads=['short'],
+                assembly=['ont', 'clr', 'zev'],
+                haps=[1, 2],
+                var_type=['snv', 'indels'],
+                genotype=['hom', 'het']),
+        expand('output/qv_estimates/{individual}_{reads}_aln-to_{individual}_{assembly}_hap{haps}.qv_stats',
+                individual=['HG00733'],
+                reads=['short'],
+                assembly=['ont', 'clr', 'zev'],
+                haps=[1, 2]),
 
 
 
@@ -127,12 +149,17 @@ rule create_bgzip_tbi_index:
          'bcftools index --tbi {input}'
 
 
-def load_gw_avg_cov_limit(cov_stats, std_mult):
+def load_gw_avg_cov_limit(cov_stats, std_mult, readset):
+
+    samples, read_type = readset.rsplit('_', 1)
+    assert read_type in ['ccs', 'short'], 'Unexpected readset: {}'.format(readset)
+
+    num_samples = len(samples.split('_'))
 
     with open(cov_stats, 'r') as table:
         _ = table.readline()
         genome_row_cols = table.readline().split()
-        gw_mean = float(genome_row_cols[2])
+        gw_mean = float(genome_row_cols[2]) * num_samples
         gw_stddev = float(genome_row_cols[3])
     return int(round(gw_mean + std_mult * gw_stddev))
 
@@ -149,7 +176,7 @@ rule quality_filter_callsets:
     conda:
         '../../environment/conda/conda_biotools.yml'
     params:
-        cov_limit = lambda wildcards, input: load_gw_avg_cov_limit(input.cov, 3)
+        cov_limit = lambda wildcards, input: load_gw_avg_cov_limit(input.cov, 3, wildcards.reads)
     shell:
         'bcftools filter --output-type u --include "QUAL>=10 && INFO/DP<{params.cov_limit}" {input.vcf} | '
         'bcftools norm --fasta-ref {input.ref} --output /dev/stdout --output-type v | '

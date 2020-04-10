@@ -433,18 +433,19 @@ rule summarize_average_coverage:
             _ = table.write('\n'.join(['\t'.join(record) for record in out_lines]))
 
 
-def compute_coverage_limit(cov_file, read_type, num_samples, sd_mult):
+def compute_coverage_limit(cov_file, num_samples, sd_mult):
+
+    # coverages for Illumina data varies wildly, and freebayes' runtime
+    # seems to be very sensitive to coverage. Set some
+    # hard limit no matter what the observed coverage actually is
+    BOGUS_LIMIT = 400
 
     with open(cov_file, 'r') as cov_info:
         _, cov_mean = cov_info.readline().split()
         _, cov_stddev = cov_info.readline().split()
 
-    if read_type == 'ccs':
-        cov_limit = int(round(float(cov_mean) * num_samples + sd_mult * float(cov_stddev), 0))
-        cov_limit = max(cov_limit, 1)
-    else:
-        cov_limit = int(round(float(cov_mean) + sd_mult * float(cov_stddev), 0))
-        cov_limit = max(cov_limit, 1)  # not sure if freebayes could work with 0
+    cov_limit = int(round(float(cov_mean) * num_samples + sd_mult * float(cov_stddev), 0))
+    cov_limit = max(min(cov_limit, BOGUS_LIMIT), 1)  # max 1: not sure if freebayes would handle 0 correctly
     return str(cov_limit)
 
 
@@ -464,7 +465,7 @@ rule freebayes_call_variants_trio:
     log:
        'log/output/variant_calls/00-raw/{child}_{parent1}_{parent2}_{reads}_aln-to_{assembly}/splits/{seq}.freebayes.log'
     params:
-        skip_coverage = lambda wildcards, input: compute_coverage_limit(input.cov, wildcards.reads, 3, 2)
+        skip_coverage = lambda wildcards, input: compute_coverage_limit(input.cov, 3, 2)
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
@@ -488,7 +489,7 @@ rule freebayes_call_variants_single:
     wildcard_constraints:
         individual = '[A-Z0-9]+'
     params:
-        skip_coverage = lambda wildcards, input: compute_coverage_limit(input.cov, wildcards.reads, 1, 2)
+        skip_coverage = lambda wildcards, input: compute_coverage_limit(input.cov, 1, 2)
     conda:
          '../../environment/conda/conda_biotools.yml'
     shell:
