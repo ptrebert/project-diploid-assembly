@@ -127,7 +127,115 @@ run can be started as follows (assumed infrastructure is a compute cluster):
 
 #### Reproduce HGSVC results
 
-TODO
+All PacBio HiFi/CCS or CLR data produced in the HGSVC-consortium context have been preconfigured in the
+pipeline to enable straightforward replication of published pipeline results such as phased and
+polished assemblies. Note that using the HGSVC configuration presets shipped with the pipeline repository
+always triggers the download of the raw data (at the time of writing: from the IGSR/HGSVC FTP).
+
+Running all HGSVC data (3 family trios for PacBio HiFi/CCS, 26 samples for PacBio CLR) can only be
+accomplished on a compute cluster (at least a small one for PacBio HiFi data), which is the assumed
+infrastructure in the following examples.
+
+##### Example: run all HGSVC samples with PacBio/HiFi or PacBio CLR data available
+
+Note that reproducing the pipeline results for all samples with available PacBio HiFi data requires using
+the Peregrine assembler and the DeepVariant variant caller. Both these tools are executed as `Singularity`
+containers in the pipeline.
+
+```bash
+ (smk_env)/work_dir/project-diploid-assembly$ snakemake \
+     --dry-run \
+     --directory ../run_folder \
+     --profile PATH_TO_YOUR_SNAKEMAKE_PROFILE \
+     --configfiles PATH_TO_YOUR_PIPELINE_RUN_ENVIRONMENT_CONFIG \
+                    smk_config/params/smk_cfg_params_RV9.yml \
+                    smk_config/data_sources/hgsvc_ftp_sources.yml \
+                    smk_config/ref_data/reference_data_sources.yml \
+                    `ls smk_config/samples/hgsvc/*/*/*.yml` \  # note the backticks here
+                    smk_config/selectors/hgsvc_ccs_run.yml \
+     --cluster-status PATH_TO_YOUR_CLUSTER_STATUS_SCRIPT
+ ```
+
+The line ``` `ls smk_config/samples/hgsvc/*/*/*.yml` ``` (note the backticks) is expanded by the shell
+before the Snakemake call is executed; it simply collects all HGSVC sample configuration files. The
+configuration file `smk_config/selectors/hgsvc_ccs_run.yml` contains a couple of keywords that select
+those sample targets (= Snakemake wildcard values) that match PacBio/HiFi runs, i.e., that define using
+the Peregrine assembler and the DeepVariant variant caller (this is advanced configuration of the
+pipeline and not important in the context of this tutorial).
+
+In order to switch to selecting only samples with PacBio CLR data available, replace this
+configuration file
+
+```bash
+smk_config/selectors/hgsvc_ccs_run.yml
+```
+
+with this one
+
+```bash
+smk_config/selectors/hgsvc_clr_run.yml
+```
+
+##### Example: run one specific HGSVC sample with PacBio/HiFi or PacBio CLR data available
+
+Replace the following line from the above example
+
+```bash
+`ls smk_config/samples/hgsvc/*/*/*.yml`
+```
+with the path to the sample configuration file you want to run, e.g.,
+
+```bash
+smk_config/samples/hgsvc/AMR/PUR/hg00733.yml
+```
+Switching between PacBio/HiFi and PacBio/CLR runs works in the same way as above.
+
+##### Example (beta status): run specific HGSVC samples by family
+
+If you know what family your sample belongs to, but you don't want to look up the sample
+ID number (e.g., NA19240), you can select individual samples or families as follows:
+
+```bash
+ (smk_env)/work_dir/project-diploid-assembly$ snakemake \
+     --dry-run \
+     --directory ../run_folder \
+     --profile PATH_TO_YOUR_SNAKEMAKE_PROFILE \
+     --configfiles PATH_TO_YOUR_PIPELINE_RUN_ENVIRONMENT_CONFIG \
+                    smk_config/params/smk_cfg_params_RV9.yml \
+                    smk_config/data_sources/hgsvc_ftp_sources.yml \
+                    smk_config/ref_data/reference_data_sources.yml \
+                    `ls smk_config/samples/hgsvc/*/*/*.yml` \ # note: collect all configs
+                    smk_config/selectors/hgsvc_ccs_run.yml \ # switch between CCS and CLR as before
+     --cluster-status PATH_TO_YOUR_CLUSTER_STATUS_SCRIPT \
+     run_yri_child
+ ```
+
+The pipeline will automatically collect the correct sample. Since Snakemake supports specifying
+multiple targets at once, you can list several family members or whole trios:
+
+```bash
+    [omitted]
+                    `ls smk_config/samples/hgsvc/*/*/*.yml` \  # note: collect all configs
+                    smk_config/selectors/hgsvc_ccs_run.yml \  # switch between CCS and CLR as before
+     --cluster-status PATH_TO_YOUR_CLUSTER_STATUS_SCRIPT \
+     run_yri_child \
+     run_chs_trio \
+     run_pur_mother
+ ```
+
+Naturally, this approach is of limited use for individuals who are not part of a family and can thus
+not be "identified" via their relationships as above.
+
+```bash
+    [omitted]
+                    `ls smk_config/samples/hgsvc/*/*/*.yml` \  # note: collect all configs
+                    smk_config/selectors/hgsvc_clr_run.yml \  # switch between CCS and CLR as before
+     --cluster-status PATH_TO_YOUR_CLUSTER_STATUS_SCRIPT \
+     run_hg01596_individual
+ ```
+
+The only benefit here is that you don't have to specify the one correct sample configuration file,
+but rather let the pipeline sort that out for you.
 
 ## Collect results
 
