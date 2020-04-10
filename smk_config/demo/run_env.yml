@@ -1,6 +1,6 @@
 
-num_cpu_max: 16
-num_cpu_high: 16
+num_cpu_max: 24
+num_cpu_high: 24
 num_cpu_medium: 12
 num_cpu_low: 4
 

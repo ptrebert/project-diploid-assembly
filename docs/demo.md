@@ -30,8 +30,7 @@ smk_env/
 ```
 
 The pipeline repository contains a Snakemake *profile* that specifies a compute environment
-with **16 CPU cores** and **48 GB of main memory** (depending on the overall system load,
-32 GB may also be sufficient to run the demo). You can either use the Snakemake *profile* and the
+with **24 CPU cores** and **64 GB of main memory**. You can either use the Snakemake *profile* and the
 pipeline run environment configuration that are shipped with the pipeline code in the repository,
 or you can use your own based on the information given in the [tutorial](tutorial.md).
 In both cases, please proceed to the instructions how to [execute the pipeline](execute.md).
