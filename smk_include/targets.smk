@@ -274,7 +274,7 @@ def check_target_modifier_match(target_spec, check_keys, check_values, check_kee
     modify_target = check_keep
     shared_keys = set(target_spec.keys()).intersection(check_keys)
     if len(shared_keys) < len(check_keys) and check_keep:
-        # for keeping a target spec, everything attribute  has to be true;
+        # for keeping a target spec, every attribute has to be true;
         # if a target spec is missing a required key, it must not
         # be selected
         modify_target = False  # this is a misnomer
