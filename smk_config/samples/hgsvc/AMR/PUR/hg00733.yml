@@ -97,11 +97,14 @@ sample_targets_HG00733:
         - h1
         - h2
   - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
+  - target:
       nhr_assembler:
-       - flye
-       - jax27b
-       - uw27b
-       - redbean
+        - jax27b
+        - uw27b
+        - redbean
       hap_assembler: flye
       var_caller: longshot
   - defaults:
@@ -174,6 +177,7 @@ sample_targets_HG00733:
         - h1
         - h2
   - target:
+      name: hifi_subsampling
       nhr_assembler: pereg
       var_caller: deepvar
       sts_reads:

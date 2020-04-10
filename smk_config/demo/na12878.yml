@@ -48,7 +48,6 @@ data_source_NA12878_demo:
   assume_correct_filenames: True
 
 force_local_copy: False
-select_target_path: "REPORT_DRAFT_HAPLOID_ASSEMBLY"
 
 link_data_input:
   - '../demo_data/NA12878_demo_reference.fasta'
