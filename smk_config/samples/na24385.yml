@@ -14,6 +14,13 @@ sample_description_NA24385:
         load_type: parts
         source_type: amazon
         comment: "github.com/human-pangenomics/HG002_Data_Freeze_v1.0"
+    - long_reads:
+        readset: NA24385_hpg_ontpm-ul
+        technology: nanopore
+        data_type: fastq
+        load_type: parts
+        source_type: amazon
+        comment: "github.com/human-pangenomics/HG002_Data_Freeze_v1.0"
     - strandseq:
         readset: &sseq_reads NA24385_hpg_ilnxs-80pe_sseq
         source_type: local
@@ -23,6 +30,7 @@ sample_description_NA24385:
 sample_targets_NA24385:
   - aliases:
       1: &ccs_reads NA24385_hpg_pbsq2-ccs_1000
+      2: &ont_reads NA24385_hpg_ontpm-ul_1000
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
@@ -39,6 +47,21 @@ sample_targets_NA24385:
       nhr_assembler: pereg
       hap_assembler: pereg
       var_caller: deepvar
+  - defaults:
+      nhr_reads: *ccs_reads
+      hap_reads: *ont_reads
+      vc_reads: *ccs_reads
+      sseq_reads: *sseq_reads
+      pol_reads: *ccs_reads
+      pol_pass: racon-p2
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: pereg
+      hap_assembler: flye
+      var_caller: deepvar
 
 
 sample_data_sources_NA24385:
@@ -54,3 +77,9 @@ sample_data_sources_NA24385:
   input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part4:
     local_path: input/fastq/NA24385_hpg_pbsq2-ccs/NA24385_hpg_pbsq2-ccs.part4.fastq.gz
     remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/PacBio_HiFi/20kb/m64011_190901_095311.Q20.fastq
+  input/fastq/NA24385_hpg_ontpm-ul/NA24385_hpg_ontpm-ul.part1:
+    local_path: input/fastq/NA24385_hpg_ontpm-ul/NA24385_hpg_ontpm-ul.part1.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/nanopore/downsampled/greater_than_100kb/HG002_giab_ULfastqs_guppy3.2.4_lt100kb.fastq.gz
+  input/fastq/NA24385_hpg_ontpm-ul/NA24385_hpg_ontpm-ul.part2:
+    local_path: input/fastq/NA24385_hpg_ontpm-ul/NA24385_hpg_ontpm-ul.part2.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/nanopore/downsampled/greater_than_100kb/HG002_ucsc_ONT_lt100kb.fastq.gz
