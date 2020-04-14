@@ -23,21 +23,3 @@ for this pipeline. First-time users should start by reading the [tutorial](docs/
 If you encounter any problems or "strange behaviour" during pipeline execution, please check
 the [FAQ](docs/faq.md) for explanations and solutions. If this does not help, please open a
 [github issue](https://guides.github.com/features/issues).
-
-
-## Common points of failure
-
-1. Snakemake
-  - The pipeline heavily uses Snakemake's `checkpoint` feature for data-dependent execution of
-    subsequent rules. Unfortunately, this more or less recent feature is not yet as mature*
-    as the older parts of Snakemake's code. A start-to-finish run of the pipeline may
-    fail in between because of a faulty checkpoint evaluation. In this case, waiting for all
-    remaining jobs to finish and restarting the pipeline often leads to a successful run.
-      - *see, e.g., here:
-        - [github issue #16](https://github.com/snakemake/snakemake/issues/16)
-        - [github issue #55](https://github.com/snakemake/snakemake/issues/55)
-2. URLs to data sources
-  - The pipeline is designed as a self-contained piece of software that attempts downloading
-    all necessary reference and data files from public sources/databases. It has happened
-    in the past that unstable URLs lead to pipeline errors. This is obviously uncontrollable
-    and requires manual correction of the affected URLs.
