@@ -47,21 +47,6 @@ sample_targets_NA24385:
       nhr_assembler: pereg
       hap_assembler: pereg
       var_caller: deepvar
-  - defaults:
-      nhr_reads: *ccs_reads
-      hap_reads: *ont_reads
-      vc_reads: *ccs_reads
-      sseq_reads: *sseq_reads
-      pol_reads: *ccs_reads
-      pol_pass: racon-p2
-      hap_assm_mode: split
-      hap:
-        - h1-un
-        - h2-un
-  - target:
-      nhr_assembler: pereg
-      hap_assembler: flye
-      var_caller: deepvar
 
 
 sample_data_sources_NA24385:
