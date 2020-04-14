@@ -710,6 +710,8 @@ def generate_run_env(args):
 
 def generate_data_source(args):
 
+    bam_extension = 'pbn.bam' if args.lr_input_format == 'pacbio_native' else 'bam'
+
     data_source = {
         'data_source_{}'.format(args.sample_name): {
             'output': '{}_local_data.json'.format(args.sample_name),
@@ -717,7 +719,7 @@ def generate_data_source(args):
             'data_source': os.path.join(args.exec_folder, 'autoconf_linked_data'),
             'collect_files': [
                 'fastq.gz',
-                'bam'
+                bam_extension
             ],
             'sort_into': [
                 'fastq',
