@@ -21,7 +21,8 @@ rule derive_minimap_parameter_preset:
         path, filename = os.path.split(input[0])
         tech_spec = filename.split('_')[2]
         if tech_spec.startswith('ont'):
-            preset += 'map-ont --secondary=no'
+            # https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/nanopore/GIAB_Ultralong_OxfordNanopore_README.txt
+            preset += 'map-ont --secondary=no -z 600,200'
         elif '-clr' in tech_spec:
             # as per recommendation in help
             preset += 'map-pb -H --secondary=no'
@@ -35,7 +36,10 @@ rule derive_minimap_parameter_preset:
         # note that even for CCS reads, the PacBio preset is used
         # Recommended by Aaron Wenger
         if all([x in path for x in ['diploid_assembly', 'draft', 'haploid_fastq']]):
-            preset = ' -x map-pb --eqx -m 5000 --secondary=no '
+            # polishing for ONT is not yet included in the pipeline,
+            # but to prevent errors in the future...
+            if tech_spec.startswith('pb'):
+                preset = ' -x map-pb --eqx -m 5000 --secondary=no '
 
         with open(output[0], 'w') as dump:
             _ = dump.write(preset)
