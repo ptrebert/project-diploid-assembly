@@ -1,0 +1,9 @@
+
+select_targets:
+  nhr_assembler:
+    - flye
+    - shasta
+  var_caller:
+    - longshot
+  name:
+    - pacbio_test

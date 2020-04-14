@@ -10,8 +10,9 @@ import pickle as pck
 
 import numpy as np
 import matplotlib as mpl
-mpl.use('TkAgg')
+mpl.use('Agg')
 import matplotlib.pyplot as plt
+log.getLogger('matplotlib.font_manager').disabled = True
 
 
 def parse_command_line():
@@ -49,8 +50,12 @@ def parse_command_line():
         type=str,
         default='3G',
         dest="genome_length",
-        help="Specify genome size to compute the (approx.) x-fold read coverage. "
-             "Suffix G, M, or K is recognized."
+        help="Specify genome length to compute the (approx.) x-fold read coverage. "
+             "Suffix G, M, or K is recognized. Can also be a FASTA index file "
+             "(.fai), all values in the second column will be summed up. Note "
+             "that if the value 'genome_size' is part of the the pickle dump "
+             "loaded, this value will take precedence over the '--genome-length' "
+             "parameter. Default: 3G"
     )
     parser.add_argument(
         "--output",
@@ -101,6 +106,14 @@ def parse_command_line():
     )
 
     plot_params = parser.add_argument_group("Customize plot appearance")
+    plot_params.add_argument(
+        "--color",
+        "-c",
+        type=str,
+        default="darkgrey",
+        dest="color",
+        help="Specify plot color (only matplotlib names supported). Default: darkgrey"
+    )
     plot_params.add_argument(
         "--title-size",
         "-ts",
@@ -156,30 +169,23 @@ def parse_command_line():
     return parser.parse_args()
 
 
-def normalize_genome_length(user_value):
-    """
-    :param user_value:
-    :return:
-    """
-    try:
-        genome_length = int(user_value)
-    except ValueError:
-        suffix = {'g': 1e9,
-                  'm': 1e6,
-                  'k': 1e3}
-        multiplier = suffix[user_value[-1].lower()]
-        digits = user_value[:-1]
-        genome_length = int(int(digits) * multiplier)
-    return genome_length
-
-
-def compute_read_statistics(base_counts, read_counts, read_lengths, genome_length, user_length):
+def compute_read_statistics(base_counts, read_counts, read_lengths, genome_length):
     """
     :param base_counts:
     :param read_counts:
     :param genome_length:
     :return:
     """
+
+    if genome_length > 1e9:
+        simple_length = str(round(genome_length / 1e9, 1)) + ' Gbp'
+    elif genome_length > 1e6:
+        simple_length = str(round(genome_length / 1e6, 1)) + ' Mbp'
+    elif genome_length > 1e3:
+        simple_length = str(round(genome_length / 1e3, 1)) + ' kbp'
+    else:
+        simple_length = str(genome_length) + ' bp'
+
     sample_infos = []
 
     total_base_pair = base_counts.sum()
@@ -189,7 +195,7 @@ def compute_read_statistics(base_counts, read_counts, read_lengths, genome_lengt
     sample_infos.append('Total reads: {}'.format(total_reads))
 
     xfold_cov = round(total_base_pair / genome_length, 2)
-    sample_infos.append('Coverage: ~{}x (at {})'.format(xfold_cov, user_length))
+    sample_infos.append('Coverage: ~{}x (at {})'.format(xfold_cov, simple_length))
 
     sample_infos.append('Shortest read: {}'.format(read_lengths.min()))
     sample_infos.append('Longest read: {}'.format(read_lengths.max()))
@@ -246,11 +252,14 @@ def create_read_length_axis(read_lengths, axis, cargs, genome_length):
     x_labels = list(map(str, [x // 1000 for x in lower[1:]]))
     x_labels = [x if i % cargs.every_nth == 0 else ' ' for i, x in enumerate(x_labels)]
 
-    axis.bar(x_pos, base_count_bins, width=0.8, align='center')
+    axis.bar(x_pos, base_count_bins, width=0.8, align='center', color=cargs.color)
     axis.set_xlabel('Read length < X kbp', fontsize=cargs.label_size)
     axis.set_xticks(x_pos)
     axis.set_xticklabels(x_labels, fontsize=cargs.tick_size)
     axis.set_ylabel('Base count', fontsize=cargs.label_size)
+
+    axis.text(x=0.5, y=0.8, s='Read length max:\n' + str(int(length_values.max())),
+              transform=axis.transAxes, fontdict={'fontsize': cargs.text_size, 'color': 'black'})
 
     tt = axis.set_title('Read length distribution', fontsize=cargs.title_size)
     axis.spines['top'].set_visible(False)
@@ -261,7 +270,6 @@ def create_read_length_axis(read_lengths, axis, cargs, genome_length):
         read_counts,
         length_values,
         genome_length,
-        cargs.genome_length
     )
 
     return axis, tt, read_stats
@@ -277,7 +285,7 @@ def create_gc_content_axis(binned_gc, axis, cargs):
     bins.sort()
     counts = np.array([binned_gc[b] for b in bins], dtype=np.int32)
     axis.ticklabel_format(axis='y', style='sci', scilimits=(0, 5))
-    axis.bar(bins, counts, width=1)
+    axis.bar(bins, counts, width=1, color=cargs.color)
     axis.set_xlabel('G+C content (% ; binned)', fontsize=cargs.label_size)
     axis.set_ylabel('Read count', fontsize=cargs.label_size)
     axis.tick_params(axis='both', which='major', labelsize=cargs.tick_size)
@@ -295,7 +303,7 @@ def create_sequenced_bases_axis(base_count, axis, cargs):
     """
     count = [base_count[b] for b in 'ACGT']
     xpos = list(range(4))
-    axis.bar(xpos, count, width=0.4, align='center')
+    axis.bar(xpos, count, width=0.4, align='center', color=cargs.color)
     axis.set_xticks(xpos)
     axis.set_xticklabels(['A', 'C', 'G', 'T'], fontsize=cargs.tick_size)
     axis.set_xlabel('Nucleotide', fontsize=cargs.label_size)
@@ -306,41 +314,125 @@ def create_sequenced_bases_axis(base_count, axis, cargs):
     return axis, tt
 
 
-def create_multi_panel_plot(cargs, stats, logger):
+def create_multi_panel_plot(cargs, stats, genome_length, logger):
 
     fig, axes = plt.subplots(figsize=tuple(cargs.figsize), ncols=2, nrows=2,
                              sharex='none', sharey='none')
     plt.subplots_adjust(hspace=0.3, wspace=0.4)
-
-    genome_length = normalize_genome_length(cargs.genome_length)
-    logger.debug('Genome length set to: {}'.format(genome_length))
+    fig_tt = fig.suptitle(cargs.sample_name, fontsize=cargs.title_size)
 
     (sb_ax, gc_ax), (rl_ax, txt_ax) = axes
     sb_ax, sb_ax_tt = create_sequenced_bases_axis(stats['nuc_stats'], sb_ax, cargs)
     gc_ax, gc_ax_tt = create_gc_content_axis(stats['gc_bins'], gc_ax, cargs)
     rl_ax, rl_ax_tt, stats_text = create_read_length_axis(stats['len_stats'], rl_ax, cargs, genome_length)
 
-    txt_ax.spines['top'].set_visible(False)
-    txt_ax.spines['left'].set_visible(False)
-    txt_ax.spines['right'].set_visible(False)
-    txt_ax.spines['bottom'].set_visible(False)
+    if 'summary' in stats:
+        logger.debug('Plotting summary info')
 
-    logger.debug('Adding sample info text')
+        plot_values = [t for t in stats['summary'] if t[0].startswith('cov_geq_')]
+        x_values = np.array([int(t[0].split('_')[-1]) for t in plot_values], dtype=np.float16)
+        if x_values[1] >= 1000:
+            x_values /= 1000
+            x_label = 'Read length > X kbp'
+        else:
+            x_label = 'Read length > x bp'
+        x_values = x_values.astype(np.int32)
+        txt_ax.set_xlabel(x_label, fontsize=cargs.label_size)
 
-    txt_ax.tick_params(axis='both', bottom=False, top=False,
-                       left=False, right=False, labeltop=False,
-                       labelbottom=False, labelleft=False, labelright=False)
+        txt_ax.set_ylabel('x-fold coverage', fontsize=cargs.label_size)
+        y_values = np.array([float(t[1]) for t in plot_values])
 
-    sample_info = [cargs.sample_name] + stats_text
-    sample_info = '\n'.join(sample_info)
+        txt_ax.plot(x_values, y_values, linestyle='dotted', marker='x', color=cargs.color)
+        n50_rlen = [t for t in stats['summary'] if 'read_length_N50' in t[0]]
+        n50_rlen = n50_rlen[0][1]
+        txt_ax.text(x=0.5, y=0.8, s='Read length N50:\n' + str(n50_rlen), transform=txt_ax.transAxes,
+                    fontdict={'fontsize': cargs.text_size, 'color': 'black'})
 
-    txt_ax.text(x=0., y=0.5, s=sample_info, transform=txt_ax.transAxes,
-                horizontalalignment='left', verticalalignment='center',
-                fontdict={
-                    'fontsize': cargs.text_size,
-                }, linespacing=0.11 * cargs.text_size)
+        txt_ax.spines['top'].set_visible(False)
+        txt_ax.spines['right'].set_visible(False)
+        txt_ax_tt = txt_ax.set_title('Min. read length for x-fold cov.', fontsize=cargs.title_size)
 
-    return fig, [sb_ax_tt, gc_ax_tt, rl_ax_tt]
+    else:
+        logger.debug('No summary info available, adding textual info...')
+
+        txt_ax.spines['top'].set_visible(False)
+        txt_ax.spines['left'].set_visible(False)
+        txt_ax.spines['right'].set_visible(False)
+        txt_ax.spines['bottom'].set_visible(False)
+
+        logger.debug('Adding sample info text')
+
+        txt_ax.tick_params(axis='both', bottom=False, top=False,
+                           left=False, right=False, labeltop=False,
+                           labelbottom=False, labelleft=False, labelright=False)
+
+        sample_info = [cargs.sample_name] + stats_text
+        sample_info = '\n'.join(sample_info)
+
+        txt_ax.text(x=0., y=0.5, s=sample_info, transform=txt_ax.transAxes,
+                    horizontalalignment='left', verticalalignment='center',
+                    fontdict={
+                        'fontsize': cargs.text_size,
+                    }, linespacing=0.11 * cargs.text_size)
+
+    return fig, [fig_tt, sb_ax_tt, gc_ax_tt, rl_ax_tt, txt_ax_tt]
+
+
+def load_genome_size_from_fai(file_path):
+    """
+    :param file_path:
+    :return:
+    """
+    genome_length = 0
+    with open(file_path, 'r') as fai:
+        for line in fai:
+            chrom_length = int(line.split()[1])
+            genome_length += chrom_length
+    return genome_length
+
+
+def parse_genome_length_string(gen_len_param):
+    """
+    :param gen_len_param:
+    :return:
+    """
+    factors = {
+        'G': 1e9,
+        'M': 1e6,
+        'K': 1e3
+    }
+    try:
+        genome_length = int(gen_len_param)
+    except ValueError:
+        numeric, factor = gen_len_param[:-1], gen_len_param[-1]
+        genome_length = int(int(numeric) * factors[factor.upper()])
+    return genome_length
+
+
+def derive_genome_length(cargs, stats, logger):
+    """
+    :param cargs:
+    :param stats:
+    :param logger:
+    :return:
+    """
+    if 'genome_size' in stats:
+        logger.debug('Using genome size from loaded pickle dump')
+        genome_length = int(stats['genome_size'])
+    elif os.path.isfile(cargs.genome_length):
+        logger.debug('Loading genome size from specified file: {}'.format(cargs.genome_length))
+        genome_length = load_genome_size_from_fai(cargs.genome_length)
+    elif 'genome_size_file' in stats:
+        if os.path.isfile(stats['genome_size_file']):
+            logger.debug('Loading genome size from previously used file: {}'.format(stats['genome_size_file']))
+            genome_length = load_genome_size_from_fai(stats['genome_size_file'])
+        else:
+            logger.debug('Inferring genome length from string parameter {}'.format(cargs.genome_length))
+            genome_length = parse_genome_length_string(cargs.genome_length)
+    else:
+        logger.debug('Inferring genome length from string parameter {}'.format(cargs.genome_length))
+        genome_length = parse_genome_length_string(cargs.genome_length)
+    return genome_length
 
 
 def main(logger, cargs):
@@ -353,18 +445,21 @@ def main(logger, cargs):
 
     with open(cargs.input, 'rb') as pickled_stats:
         stats = pck.load(pickled_stats)
+    logger.debug('Stats successfully loaded')
+
+    genome_length = derive_genome_length(cargs, stats, logger)
+    logger.debug('Genome length set to: {} bp'.format(genome_length))
 
     if not cargs.sample_name:
         setattr(cargs, 'sample_name', os.path.basename(cargs.input).rsplit('.', 1)[0])
 
-    logger.debug('Stats successfully loaded')
     if cargs.step_size > cargs.highest_bin or cargs.step_size < 0:
         raise ValueError('User-specified value for step size is unreasonable: {}'.format(cargs.step_size))
     if cargs.highest_bin % cargs.step_size != 0:
         raise ValueError('Please specify a "highest bin" boundary that is an '
                          'integer multiple of the step size: {} / {}'.format(cargs.step_size, cargs.highest_bin))
 
-    fig, extra_artists = create_multi_panel_plot(cargs, stats, logger)
+    fig, extra_artists = create_multi_panel_plot(cargs, stats, genome_length, logger)
 
     logger.debug('Figure created')
 

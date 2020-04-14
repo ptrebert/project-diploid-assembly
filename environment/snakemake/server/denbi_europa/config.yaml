@@ -1,0 +1,13 @@
+# Default runtime profile for deNBI Tuebingen infrastructure / single VM
+
+directory: /mnt/vol/quobyte/projects/diploid-assembly
+jobs: 36
+latency-wait: 300
+keep-going: True
+rerun-incomplete: True
+restart-times: 0
+default-resources:
+  - runtime_hrs=1
+  - runtime_min=59
+  - mem_per_cpu_mb=2048
+  - mem_total_mb=4096

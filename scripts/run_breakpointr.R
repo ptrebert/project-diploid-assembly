@@ -26,4 +26,6 @@ exportRegions(
     state="wc"
 )
 
+warnings()
+
 quit(save='no')

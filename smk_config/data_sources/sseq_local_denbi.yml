@@ -1,0 +1,13 @@
+
+data_source_strandseq_denbi_local:
+  comment: "deNBI local Strand-seq source for NA24385 and sub-sampled HG00733"
+  output: 'strandseq_local_denbi.json'
+  server: 'localhost'
+  data_source: '/beeond/data/strandseq'
+  collect_files:
+    - 'fastq.gz'
+  sort_into:
+    - 'fastq'
+  assume_correct_filenames: True
+
+

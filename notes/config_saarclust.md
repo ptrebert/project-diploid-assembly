@@ -45,3 +45,86 @@ z.limit  =  3
 remove.always.WC  =  FALSE 
 
 ```
+
+Update sent by David via e-mail on 2019-10-27
+
+```
+scaffoldDenovoAssembly(bamfolder = ...,
+                       outputfolder = "...",
+                       store.data.obj = TRUE,
+                       reuse.data.obj = TRUE,
+                       pairedEndReads = TRUE,
+                       bin.size = 100000,
+                       step.size = 50000,
+                       bin.method = 'dynamic',
+                       min.contig.size = 100000,
+                       assembly.fasta = assembly.fasta,
+                       concat.fasta = FALSE,
+                       num.clusters = 100,
+                       remove.always.WC = TRUE,
+                       mask.regions = FALSE)
+```
+
+Update sent by David via e-mail on 2019-10-31
+
+```
+scaffoldDenovoAssembly(bamfolder = bamfolder,
+                       outputfolder = "...",
+                       store.data.obj = TRUE,
+                       reuse.data.obj = TRUE,
+                       pairedEndReads = TRUE,
+                       bin.size = 500000,
+                       step.size = 50000,
+                       prob.th = 0.5,
+                       bin.method = 'dynamic',
+                       min.contig.size = 100000,
+                       assembly.fasta = assembly.fasta,
+                       concat.fasta = FALSE,
+                       num.clusters = 100,
+                       remove.always.WC = TRUE,
+                       mask.regions = FALSE)
+```
+
+Update sent by David via e-mail on 2019-11-01
+Based on comment in e-mail and below name of output folder,
+switch to "fixed" binning strategy
+
+```
+scaffoldDenovoAssembly(bamfolder = bamfolder,
+                       outputfolder = "[...]/HG00733/SaaRclust_results_fixed500K_probTh0.5",
+                       store.data.obj = TRUE,
+                       reuse.data.obj = TRUE,
+                       pairedEndReads = TRUE,
+                       bin.size = 500000,
+                       step.size = 50000,
+                       prob.th=0.5,
+                       bin.method = 'dynamic', (<-- switch to fixed)
+                       min.contig.size = 100000,
+                       assembly.fasta = assembly.fasta,
+                       concat.fasta = FALSE,
+                       num.clusters = 100,
+                       remove.always.WC = TRUE,
+                       mask.regions = FALSE)
+```
+
+Update sent by David via e-mail on 2019-11-08
+
+```
+## So far the preferred params for SaaRclust
+scaffoldDenovoAssembly(bamfolder = bamfolder,
+                       outputfolder = <>,
+                       store.data.obj = TRUE,
+                       reuse.data.obj = TRUE,
+                       pairedEndReads = TRUE,
+                       bin.size = 200000,
+                       step.size = 200000,
+                       prob.th = 0.25,
+                       bin.method = 'dynamic',
+                       min.contig.size = 100000,
+                       assembly.fasta = assembly.fasta,
+                       concat.fasta = TRUE,
+                       num.clusters = 100,
+                       remove.always.WC = TRUE,
+                       mask.regions = FALSE)
+
+```

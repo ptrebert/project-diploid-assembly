@@ -1,0 +1,42 @@
+
+sample_description_NA12878:
+  individual: NA12878
+  sex: female
+  super_population: EUR
+  population: CEU
+  family: 1463
+  member: child
+  data_sources:
+    - long_reads:
+        readset: NA12878_giab_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        source_type: ena
+        bioproject: PRJNA540705
+    - strandseq:
+        readset: &sts_reads NA12878_eriba_il25k-100pe_sseq
+        source_type: ena
+        bioproject: PRJEB14185
+        library_fractions: one
+
+
+sample_targets_NA12878:
+  - aliases:
+      1: &ccs_reads NA12878_giab_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sts_reads: *sts_reads
+      pol_reads: *ccs_reads
+      pol_pass: racon-p2
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: pereg
+      hap_assembler: pereg
+      var_caller: deepvar

@@ -16,8 +16,11 @@ strandPhaseR(
     configfile=config.file,
     outputfolder=output.folder,
     positions=variant.calls,
+    fillMissAllele=variant.calls,
     WCregions=wc.regions,
     exportVCF=sample.individual
 )
+
+warnings()
 
 quit(save='no')

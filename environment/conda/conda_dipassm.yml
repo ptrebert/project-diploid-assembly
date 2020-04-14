@@ -2,44 +2,10 @@ name: dipassm
 channels:
   - conda-forge
   - bioconda
-  - r
 dependencies:
   - Python=3.6.*
   - pip=19.2.3
-  - wget=1.19.4
-  - numpy=1.17.1
-  - matplotlib=3.1.1
-  - Snakemake=5.7.1
-  - aria2=1.34.0
-  - bwa=0.7.17
-  - minimap2=2.17
-  - pilon=1.23
-  - quast=5.0.2
-  - mummer4
-  - busco=3.0.2
-  - sambamba=0.6.6  # DO NOT UPDATE: github.com/biod/sambamba/issues/393
-  - samtools=1.9
-  - bamtools=2.5.1
-  - bedtools=2.29.0
-  - bcftools=1.9
-  - freebayes=1.3.1
-  - longshot=v0.3.5
-  - wtdbg=2.5
-  - racon=1.4.7
-  - pbgzip
-  - pigz=2.4
+  - openssl=1.0.2t
+  - Snakemake=5.10.0
   - drmaa=0.7.9
-  - r-base<3.6
-  - r-devtools=2.2.1
-  - r-usethis=1.5.1
-  - r-withr=2.1.2
-  - r-igraph=1.2.4.1
-  - r-zoo=1.8_6
-  - r-cluster=2.1.0
-  - r-doparallel=1.0.15
-  - r-foreach=1.4.7
-  - r-biocmanager=1.30.7
-  - bioconductor-rhtslib=1.14.1
-  - bioconductor-bamsignals=1.14.0
-  - pip:
-    - git+https://bitbucket.org/whatshap/whatshap
+  - pyyaml=5.3

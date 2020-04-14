@@ -10,4 +10,6 @@ scaffoldDenovoAssembly(
     outputfolder = args[3]
 )
 
+warnings()
+
 quit(save='no')

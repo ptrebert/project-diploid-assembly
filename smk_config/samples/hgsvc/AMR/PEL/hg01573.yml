@@ -1,0 +1,42 @@
+
+sample_description_HG01573:
+  individual: HG01573
+  sex: female
+  super_population: AMR
+  population: PEL
+  family: PEL003
+  member: child
+  data_sources:
+    - long_reads:
+        readset: HG01573_hgsvc_pbsq2-clr
+        technology: pacbio
+        data_type: pacbio_native
+        load_type: parts
+    - strandseq:
+        readset: &sts_reads HG01573_hgsvc_ilnxs-80pe_sseq
+        source_type: ftp
+        library_fractions: one
+    - short_reads:
+        readset: &short_reads HG01573_hgsvc_ilnvs-150pe_short
+        source_type: ftp
+
+
+sample_targets_HG01573:
+  - aliases:
+      2: &clr_hgsvc HG01573_hgsvc_pbsq2-clr_1000
+  - defaults:
+      hap_reads: *clr_hgsvc
+      vc_reads: *clr_hgsvc
+      sts_reads: *sts_reads
+      pol_reads: *clr_hgsvc
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot

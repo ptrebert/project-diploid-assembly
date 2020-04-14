@@ -1,0 +1,42 @@
+
+sample_description_HG02018:
+  individual: HG02018
+  sex: female
+  super_population: EAS
+  population: KHV
+  family: VN047
+  member: child
+  data_sources:
+    - long_reads:
+        readset: HG02018_hgsvc_pbsq2-clr
+        technology: pacbio
+        data_type: pacbio_native
+        load_type: parts
+    - strandseq:
+        readset: &sts_reads HG02018_hgsvc_ilnxs-80pe_sseq
+        source_type: ftp
+        library_fractions: one
+    - short_reads:
+        readset: &short_reads HG02018_hgsvc_ilnvs-150pe_short
+        source_type: ftp
+
+
+sample_targets_HG02018:
+  - aliases:
+      1: &clr_reads HG02018_hgsvc_pbsq2-clr_1000
+  - defaults:
+      hap_reads: *clr_reads
+      vc_reads: *clr_reads
+      sts_reads: *sts_reads
+      pol_reads: *clr_reads
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot

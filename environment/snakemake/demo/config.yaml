@@ -1,0 +1,17 @@
+
+cores: 24
+latency-wait: 120
+keep-going: True
+rerun-incomplete: True
+keep-incomplete: True
+restart-times: 0
+use-conda: True
+use-envmodules: False
+nolock: False
+resources:
+  mem_total_mb=131072
+default-resources:
+  - mem_per_cpu_mb=1024
+  - mem_total_mb=1024
+  - runtime_hrs=1
+  - runtime_min=59

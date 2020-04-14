@@ -1,0 +1,42 @@
+
+sample_description_NA20847:
+  individual: NA20847
+  sex: female
+  super_population: SAS
+  population: GIH
+  family: NA20847
+  member: unrelated
+  data_sources:
+    - long_reads:
+        readset: NA20847_hgsvc_pbsq2-clr
+        technology: pacbio
+        data_type: pacbio_native
+        load_type: parts
+    - strandseq:
+        readset: &sts_reads NA20847_hgsvc_ilnxs-80pe_sseq
+        source_type: ftp
+        library_fractions: one
+    - short_reads:
+        readset: &short_reads NA20847_hgsvc_ilnvs-150pe_short
+        source_type: ftp
+
+
+sample_targets_NA20847:
+  - aliases:
+      1: &clr_reads NA20847_hgsvc_pbsq2-clr_1000
+  - defaults:
+      hap_reads: *clr_reads
+      vc_reads: *clr_reads
+      sts_reads: *sts_reads
+      pol_reads: *clr_reads
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot

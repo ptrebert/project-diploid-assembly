@@ -1,1 +1,0 @@
-snakemake --configfile smk_cfg_denbi_unicore.yml --profile environment/snakemake/cluster/denbi_tu_pbs --nolock

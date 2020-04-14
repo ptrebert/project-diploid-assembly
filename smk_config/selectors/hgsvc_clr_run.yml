@@ -1,0 +1,13 @@
+
+select_targets:
+  nhr_assembler:
+    - flye
+  hap_assembler:
+    - flye
+  var_caller:
+    - longshot
+
+skip_targets:
+  name:
+    - pacbio_test
+    - nanopore_test

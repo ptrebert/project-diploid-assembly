@@ -6,6 +6,7 @@ dependencies:
   - python=2.7.*
   - python-consensuscore2=3.4.1
   - genomicconsensus=2.3.3
+  - pbgcpp=1.9.0
   - pbccs=3.4.1
   - pbbam=1.0.6
   - pbmm2=1.1.0

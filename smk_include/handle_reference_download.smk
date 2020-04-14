@@ -1,29 +1,25 @@
 
-CMD_DL_COMPRESSED_PARALLEL = 'aria2c --out={{output}} --file-allocation=none -s 4 -x 4 {remote_path} &>> {{log}}'
-
-CMD_DL_COMPRESSED_SINGLE = 'wget -O {{output}} {remote_path} &>> {{log}}'
-
-CMD_DL_UNCOMPRESSED_SINGLE = 'wget --quiet -O /dev/stdout {remote_path} 2>> {{log}} | gzip > {{output}}'
-
-localrules: master_handle_reference_download, create_reference_download_request
+localrules: master_handle_reference_download
 
 rule master_handle_reference_download:
     input:
+        []
 
 
 rule create_reference_download_request:
     output:
         'references/{subfolder}/{reference}.request'
     run:
-        import json as json
+        import os
+        ref_sources_info = config['reference_data_sources']
 
-        ref_sources_path = config['reference_sources']
-        assert os.path.isfile(ref_sources_path), 'No reference sources configured'
+        file_info = ref_sources_info[wildcards.reference]
 
-        with open(ref_sources_path, 'r') as annotation:
-            sources = json.load(annotation)
-
-        file_info = sources[wildcards.reference]
+        request_path = os.path.join('references', wildcards.subfolder)
+        if not file_info['local_path'].startswith(request_path):
+            raise ValueError('Reference file mismatch: '
+                             'requested path is {}, '
+                             'annotated is {}'.format(request_path, file_info['local_path']))
 
         try:
             md5 = file_info['md5']
@@ -44,26 +40,17 @@ rule handle_raw_fasta_reference_download_request:
         'references/downloads/{reference}.fa.gz'
     log:
         'log/references/downloads/{reference}.download.log'
-    threads: 2  # compromise between wget and aria2c
-    run:
-        with open(input[0], 'r') as req_file:
-            remote_path = req_file.readline().strip()
-            local_path = req_file.readline().strip()
+    conda:
+         '../environment/conda/conda_shelltools.yml'
+    threads: 2
+    params:
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else ''
+    shell:
+        '{params.script_exec} --debug {params.force_copy} '
+        '--request-file {input} --output {output} '
+        '--parallel-conn 1 &> {log}'
 
-        if remote_path.endswith('.gz'):
-            exec = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
-        else:
-            exec = CMD_DL_UNCOMPRESSED_SINGLE.format(**{'remote_path': remote_path})
-
-        with open(log[0], 'w') as logfile:
-            _ = logfile.write('Handling download request' + '\n')
-            _ = logfile.write('CMD: {}'.format(exec) + '\n\n')
-            if local_path != output[0]:
-                _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
-                raise RuntimeError
-
-        shell(exec)
-    # end of rule
 
 rule handle_gff_reference_download_request:
     input:
@@ -72,23 +59,13 @@ rule handle_gff_reference_download_request:
         'references/downloads/{reference}.gff3.gz'
     log:
         'log/references/downloads/{reference}.download.log'
-    threads: 2  # compromise between wget and aria2c
-    run:
-        with open(input[0], 'r') as req_file:
-            remote_path = req_file.readline().strip()
-            local_path = req_file.readline().strip()
-
-        if remote_path.endswith('.gz'):
-            exec = CMD_DL_COMPRESSED_PARALLEL.format(**{'remote_path': remote_path})
-        else:
-            exec = CMD_DL_UNCOMPRESSED_SINGLE.format(**{'remote_path': remote_path})
-
-        with open(log[0], 'w') as logfile:
-            _ = logfile.write('Handling download request' + '\n')
-            _ = logfile.write('CMD: {}'.format(exec) + '\n\n')
-            if local_path != output[0]:
-                _ = logfile.write('ERROR - output mismatch: {} vs {}'.format(local_path, output[0]))
-                raise RuntimeError
-
-        shell(exec)
-    # end of rule
+    conda:
+         '../environment/conda/conda_shelltools.yml'
+    threads: 2
+    params:
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else ''
+    shell:
+         '{params.script_exec} --debug {params.force_copy} '
+         '--request-file {input} --output {output} '
+         '--parallel-conn 1 &> {log}'

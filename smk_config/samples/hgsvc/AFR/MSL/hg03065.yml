@@ -1,0 +1,42 @@
+
+sample_description_HG03065:
+  individual: HG03065
+  sex: male
+  super_population: AFR
+  population: MSL
+  family: SL05
+  member: child
+  data_sources:
+    - long_reads:
+        readset: HG03065_hgsvc_pbsq2-clr
+        technology: pacbio
+        data_type: pacbio_native
+        load_type: parts
+    - strandseq:
+        readset: &sts_reads HG03065_hgsvc_ilnxs-80pe_sseq
+        source_type: ftp
+        library_fractions: one
+    - short_reads:
+        readset: &short_reads HG03065_hgsvc_ilnvs-150pe_short
+        source_type: ftp
+
+
+sample_targets_HG03065:
+  - aliases:
+      2: &clr_hgsvc HG03065_hgsvc_pbsq2-clr_1000
+  - defaults:
+      hap_reads: *clr_hgsvc
+      vc_reads: *clr_hgsvc
+      sts_reads: *sts_reads
+      pol_reads: *clr_hgsvc
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+        - h1
+        - h2
+  - target:
+      nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot

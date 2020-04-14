@@ -1,0 +1,16 @@
+
+data_source_pacbio_mmci_local:
+  comment: "HGSVC local MMCI source for Sequel2 PacBio CLR data"
+  output: 'hgsvc_local_mmci_pacbio.json'
+  server: 'localhost'
+  data_source: '/scratch/bioinf/users/pebert/data_sources/uw_hgsvc_pbsq2-clr'
+  collect_files:
+    - 'bam'
+  sort_into:
+    - 'bam'
+  file_infix: 'hgsvc_pbsq2-'
+  assume_pacbio_native: True
+  assume_clr_subreads: True
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+
+

@@ -1,0 +1,195 @@
+
+data_source_HG00514_pacbio:
+  comment: "HGSVC FTP source for Sequel2 HG00514 CCS/HiFi and CLR data"
+  output: 'hgsvc_HG00514_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20190508_HG00514_PacBioSequel2'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+  assume_clr_subreads: True
+
+
+data_source_HG00512_pacbio:
+  comment: "HGSVC FTP source for Sequel2 HG00512 CCS/HiFi data"
+  output: 'hgsvc_HG00512_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20191031_CHS_PacBio_HG00512_HiFi'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+
+
+data_source_HG00513_pacbio:
+  comment: "HGSVC FTP source for Sequel2 HG00513 CCS/HiFi data"
+  output: 'hgsvc_HG00513_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20191031_CHS_PacBio_HG00513_HiFi'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+
+
+data_source_pur_trio_pacbio:
+  comment: "HGSVC FTP source for Sequel2 PUR trio CCS/HiFi data"
+  output: 'hgsvc_pur-trio_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20190925_PUR_PacBio_HiFi'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+
+
+data_source_NA19240_pacbio:
+  comment: "HGSVC FTP source for Sequel2 NA19240 CCS/HiFi data"
+  output: 'hgsvc_NA19240_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20191005_YRI_PacBio_NA19240_HiFi'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+
+
+data_source_NA19238_pacbio:
+  comment: "HGSVC FTP source for Sequel2 NA19238 CCS/HiFi data"
+  output: 'hgsvc_NA19238_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20191205_YRI_PacBio_NA19238_HIFI'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+
+
+data_source_NA19239_pacbio:
+  comment: "HGSVC FTP source for Sequel2 NA19239 CCS/HiFi data"
+  output: 'hgsvc_NA19239_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20191205_YRI_PacBio_NA19239_HIFI'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+
+
+data_source_JAX_pacbio:
+  comment: "HGSVC FTP source for Sequel2 CLR data (JAX)"
+  output: 'hgsvc_JAX_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20200108_PacBio_CLR_JAX'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+  assume_clr_subreads: True
+
+
+data_source_UM_pacbio:
+  comment: "HGSVC FTP source for Sequel2 CLR data (UM)"
+  output: 'hgsvc_UM_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20200212_PacBio_CLR_Devine'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+  assume_clr_subreads: True
+
+
+data_source_UW_pacbio:
+  comment: "HGSVC FTP source for Sequel2 CLR data (UW-EEE)"
+  output: 'hgsvc_UW_pacbio.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20200203_PacBio_CLR_EEE/'
+  collect_files:
+    - 'bam'
+    - 'fastq.gz'
+  sort_into:
+    - 'bam'
+    - 'fastq'
+  file_infix: 'hgsvc_pbsq2-'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
+  assume_pacbio_native: True
+  assume_clr_subreads: True
+
+
+data_source_JAX_illumina:
+  comment: "HGSVC FTP source for Illumina short read data (JAX)"
+  output: 'hgsvc_JAX_illumina.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20191004_Illumina'
+  collect_files:
+    - 'fastq.gz'
+  sort_into:
+    - 'fastq'
+  file_infix: 'hgsvc_ilnvs-'
+  fix_tech: '150pe'
+  file_suffix: 'library_id'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}_short'
+  assume_paired_reads: True
+
+
+data_source_EMBL_strandseq:
+  comment: "HGSVC FTP source for Strand-seq data (EMBL)"
+  output: 'hgsvc_EMBL_strandseq.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20200120_Strandseq/fastq'
+  collect_files:
+    - 'fastq.gz'
+  sort_into:
+    - 'fastq'
+  file_infix: 'hgsvc_ilnxs-'
+  fix_tech: '80pe'
+  file_suffix: 'library_id'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}_sseq'
+  assume_paired_reads: True

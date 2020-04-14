@@ -1,0 +1,28 @@
+name: pyscript
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - Python=3.6.*
+  - pip=19.2.3
+  - wget=1.19.4
+  - openssl=1.0.2t
+  - libblas=3.8.0
+  - libcblas=3.8.0
+  - liblapack=3.8.0
+  - libopenblas=0.3.6
+  - libgfortran-ng=7.3.0
+  - libgcc-ng=9.1.0
+  - libstdcxx-ng=9.1.0
+  - libxml2=2.9.9
+  - libcurl=7.64.0
+  - lp_solve=5.5.2.5
+  - openblas=0.3.6
+  - make=4.2.1
+  - numpy=1.17.1
+  - matplotlib=3.1.1
+  - htslib=1.9
+  - libdeflate=1.3  # v1.0 may trigger pysam import error - DO NOT DOWNGRADE
+  - pysam=0.15.3
+  - dnaio=0.4.1
+  - biopython=1.76

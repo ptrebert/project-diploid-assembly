@@ -1,20 +1,20 @@
 
-include: 'handle_reference_download.smk'
-
 localrules: master_preprocess_references
 
 rule master_preprocess_references:
     input:
+        []
 
 
 rule normalize_reference_assembly_names:
     input:
-        'references/downloads/{ref_genome}.fa.gz'
+        'references/downloads/{known_ref}.fa.gz'
     output:
-        seq = 'references/assemblies/{ref_genome}.fasta',
-        table = 'references/assemblies/{ref_genome}.sizes'
-    wildcard_constraints:
-        ref_genome = 'GRCh38_[USCENKGCAv97]+_[a-z13]+'
+        seq = 'references/assemblies/{known_ref}.fasta',
+        table = 'references/assemblies/{known_ref}.sizes'
+    resources:
+        mem_total_mb = 12288,
+        mem_per_cpu_mb = 12288
     run:
         import gzip as gzip
         import re
@@ -101,10 +101,15 @@ rule normalize_reference_assembly_names:
 
 rule reduce_reference_to_main_chromosomes:
     input:
-        full_ref = 'references/assemblies/GRCh38_{ref_id}.fasta'
+        full_ref = 'references/assemblies/GRCh3{num}_{ref_id}.fasta'
     output:
-        red_ref = 'references/assemblies/hg38_{ref_id}.fasta',
-        red_sizes = 'references/assemblies/hg38_{ref_id}.sizes'
+        red_ref = 'references/assemblies/hg3{num}_{ref_id}.fasta',
+        red_sizes = 'references/assemblies/hg3{num}_{ref_id}.sizes'
+    wildcard_constraints:
+        num = '[0-9]'
+    resources:
+        mem_total_mb = 12288,
+        mem_per_cpu_mb = 12288
     run:
         chrom_set = config['main_chromosomes']
 

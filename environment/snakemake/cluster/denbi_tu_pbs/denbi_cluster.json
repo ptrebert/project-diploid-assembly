@@ -1,10 +1,47 @@
 {
-  "__default__":
-  {
+  "__default__": {
     "cores": "{threads}",
     "mem_mb": "{resources.mem_total_mb}",
     "name": "{jobid}_{rule}",
-    "output": "log/cluster_jobs/{jobid}_{rule}.stdout",
-    "error": "log/cluster_jobs/{jobid}_{rule}.stderr"
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
+  },
+  "handle_partial_fastq_download_request": {
+    "cores": "36",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
+  },
+  "merge_fastq_input_parts": {
+    "cores": "36",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
+  },
+  "strandseq_dga_split_merge_tag_groups": {
+    "cores": "18",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
+  },
+  "strandseq_dga_split_haplo_tagging": {
+    "cores": "36",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}"
   }
 }

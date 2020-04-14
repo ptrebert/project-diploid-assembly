@@ -1,3 +1,0 @@
-# Execute in Snakefile folder
-
-snakemake --profile environment/snakemake/umbriel --configfile snake_config.yml --use-conda --nolock

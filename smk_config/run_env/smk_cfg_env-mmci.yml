@@ -1,0 +1,10 @@
+
+notify: True
+notify_email: pebert@mpi-inf.mpg.de
+
+env_module_singularity: False
+
+num_cpu_max: 48
+num_cpu_high: 24
+num_cpu_medium: 12
+num_cpu_low: 6
