@@ -5,7 +5,7 @@ localrules: master_integrative_phasing,
             write_phased_vcf_splits_fofn
 
 
-PATH_INTEGRATIVE_PHASING = '{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}'
+PATH_INTEGRATIVE_PHASING = '{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}'
 
 
 rule master_integrative_phasing:
@@ -23,12 +23,12 @@ rule write_breakpointr_config_file:
     """
     input:
         setup_ok = rules.install_rlib_breakpointr.output.check,
-        reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        strandseq_reads = 'input/fastq/{sts_reads}.fofn',
+        reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
+        strandseq_reads = 'input/fastq/{sseq_reads}.fofn',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
-        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/breakpointr.config',
-        input_dir = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/breakpointr.input',
+        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/breakpointr.config',
+        input_dir = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/breakpointr.input',
     threads: 1
     params:
         bp_cpu = config['num_cpu_high']
@@ -73,17 +73,17 @@ rule run_breakpointr:
         cfg = rules.write_breakpointr_config_file.output.cfg,
         fofn = rules.write_breakpointr_config_file.output.input_dir
     output:
-        wc_reg = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
-        cfg = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/breakpointR.config',
-        rdme = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/README.txt',
-        bps = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/breakpoints'),
-        bwf = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/browserfiles'),
-        data = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/data'),
-        plots = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/run/plots')
+        wc_reg = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/{reference}.WCregions.txt',
+        cfg = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/run/breakpointR.config',
+        rdme = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/run/README.txt',
+        bps = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/run/breakpoints'),
+        bwf = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/run/browserfiles'),
+        data = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/run/data'),
+        plots = directory('output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/run/plots')
     log:
-        'log/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/breakpointr.log'
+        'log/output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/breakpointr.log'
     benchmark:
-        os.path.join('run/output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}',
+        os.path.join('run/output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}',
                      'breakpointr.t{}.rsrc'.format(config['num_cpu_high'])
                      )
     conda:
@@ -111,12 +111,12 @@ rule write_strandphaser_config_file:
     """
     input:
         setup_ok = rules.install_rlib_strandphaser.output.check,
-        reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        strandseq_reads = 'input/fastq/{sts_reads}.fofn',
+        reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
+        strandseq_reads = 'input/fastq/{sseq_reads}.fofn',
         bam = collect_strandseq_alignments  # from module: aux_utilities
     output:
-        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.config',
-        input_dir = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.input',
+        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/strandphaser.config',
+        input_dir = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/strandphaser.input',
     threads: 1
     params:
         sp_cpu = config['num_cpu_high']
@@ -155,10 +155,10 @@ rule write_strandphaser_config_file:
 
 rule run_strandphaser:
     input:
-        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.config',
-        fofn = 'output/integrative_phasing/processing/config_files/{reference}/{sts_reads}/strandphaser.input',
-        wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sts_reads}/{reference}.WCregions.txt',
-        variant_calls = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf'
+        cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/strandphaser.config',
+        fofn = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/strandphaser.input',
+        wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/{reference}.WCregions.txt',
+        variant_calls = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf'
     output:
         browser = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/browserFiles'),
         data = directory('output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/data'),
@@ -182,7 +182,7 @@ rule run_strandphaser:
     params:
         input_dir = lambda wildcards, input: load_fofn_file(input),
         output_dir = lambda wildcards, output: os.path.dirname(output.cfg),
-        individual = lambda wildcards: wildcards.sts_reads.split('_')[0],
+        individual = lambda wildcards: wildcards.sseq_reads.split('_')[0],
         script_exec = lambda wildcards: find_script_path('run_strandphaser.R')
     shell:
         '{params.script_exec} {params.input_dir} {input.cfg} '
@@ -245,12 +245,12 @@ rule run_integrative_phasing:
     as the producer for the individual VCF splits. So, merge, and split again...
     """
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz',
-        tbi = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam',
-        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
-        fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz',
+        tbi = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz.tbi',
+        bam = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam',
+        bai = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{hap_reads}_map-to_{reference}.psort.sam.bam.bai',
+        fasta = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
+        seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
         spr_phased = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.vcf'
     output:
         vcf = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.vcf'
@@ -287,7 +287,7 @@ def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=False):
             raise RuntimeError('intphase_collect_phased_vcf_split_files: no files collected with pattern {}'.format(pattern))
 
     else:
-        folder_path = 'output/reference_assembly/clustered/' + wildcards.sts_reads
+        folder_path = 'output/reference_assembly/clustered/' + wildcards.sseq_reads
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=folder_path, reference=wildcards.reference).output[0]
 
         checkpoint_wildcards = glob_wildcards(
@@ -301,7 +301,7 @@ def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=False):
             gq=wildcards.gq,
             qual=wildcards.qual,
             vc_reads=wildcards.vc_reads,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             hap_reads=wildcards.hap_reads,
             sequence=checkpoint_wildcards.sequence
             )

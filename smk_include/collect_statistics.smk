@@ -68,13 +68,13 @@ rule compute_statistics_complete_input_fasta:
 
 rule compute_statistics_split_cluster_fastq:
     input:
-         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
-         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
+         faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
     output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.pck',
-          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.t2.rsrc'
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.pck',
+          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.t2.rsrc'
     threads: 2
     resources:
              runtime_hrs= 1,
@@ -92,13 +92,13 @@ rule compute_statistics_split_cluster_fastq:
 
 rule compute_statistics_split_cluster_fasta:
     input:
-         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta',
-         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta',
+         faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
     output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.pck',
-          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.t2.rsrc'
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.pck',
+          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.t2.rsrc'
     threads: 2
     resources:
              runtime_hrs= 1,
@@ -116,13 +116,13 @@ rule compute_statistics_split_cluster_fasta:
 
 rule compute_statistics_joint_cluster_fasta:
     input:
-         fasta = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq',
-         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
+         fasta = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq',
+         faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai',
     output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.pck',
-          summary = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.t2.rsrc'
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.pck',
+          summary = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.t2.rsrc'
     threads: 2
     resources:
              runtime_hrs= 1,
@@ -189,7 +189,7 @@ def collect_tag_lists(wildcards, glob_collect=False):
             raise RuntimeError('collect_tag_lists: no files collected with pattern {}'.format(pattern))
 
     else:
-        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
         checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
@@ -200,7 +200,7 @@ def collect_tag_lists(wildcards, glob_collect=False):
                            qual=wildcards.qual,
                            reference=wildcards.reference,
                            vc_reads=wildcards.vc_reads,
-                           sts_reads=wildcards.sts_reads,
+                           sseq_reads=wildcards.sseq_reads,
                            hap_reads=wildcards.hap_reads,
                            sequence=checkpoint_wildcards.sequence,
                            tag_type=wildcards.tag_type)
@@ -211,9 +211,9 @@ rule summarize_tagging_splitting_statistics:
     input:
         tags = collect_tag_lists
     output:
-        'output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.tsv'
+        'output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.tsv'
     benchmark:
-        'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.rsrc'
+        'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.rsrc'
     priority: 200
     run:
         try:

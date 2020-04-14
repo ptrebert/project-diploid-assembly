@@ -19,7 +19,7 @@ TARGET_PATHS = {
 
     "BUILD_CLUSTERED_ASSEMBLY": os.path.join(
         "output", "reference_assembly", "clustered",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}.fasta",
     ),
 
@@ -29,7 +29,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "draft", "haploid_assembly",
         "{hap_reads}-{hap_assembler}.{hap}.fasta"
     ),
@@ -40,7 +40,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "haploid_assembly",
@@ -53,7 +53,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",
@@ -75,7 +75,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "draft", "haploid_assembly",
         "{hap_reads}-{hap_assembler}.{hap}/report.pdf"
     ),
@@ -88,7 +88,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "haploid_assembly",
@@ -103,7 +103,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",
@@ -119,7 +119,7 @@ TARGET_PATHS = {
         "output", "statistics", "variant_calls",
         "{var_caller}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{vc_reads}.snv.QUAL{filter_vcf_qual}.vcf.stats"
     ),
 
@@ -127,7 +127,7 @@ TARGET_PATHS = {
         "output", "statistics", "variant_calls",
         "{var_caller}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{vc_reads}.snv.QUAL{filter_vcf_qual}.GQ{filter_vcf_gq}.vcf.stats"
     ),
 
@@ -136,7 +136,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}.spr-phased.stats.tsv"
     ),
 
@@ -145,7 +145,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}.wh-phased.stats.tsv"
     ),
 
@@ -154,7 +154,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}.tags.{tag_source}.tsv"
     ),
 
@@ -165,13 +165,13 @@ TARGET_PATHS = {
 
     "PLOT_SAARCLUST_DIAG_ASSEMBLY_CLUSTERING": os.path.join(
         "output", "plotting", "saarclust_diagnostics", "reference_assembly", "clustered",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.clustering.pdf",
     ),
 
     "PLOT_SAARCLUST_DIAG_ASSEMBLY_ORIENTING": os.path.join(
         "output", "plotting", "saarclust_diagnostics", "reference_assembly", "clustered",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.orienting.pdf",
     ),
 
@@ -181,7 +181,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",
@@ -194,7 +194,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",
@@ -207,7 +207,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",

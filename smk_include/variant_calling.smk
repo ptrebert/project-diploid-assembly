@@ -70,17 +70,17 @@ rule call_variants_freebayes_parallel:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
-        reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
-        ref_regions = 'output/alignments/reads_to_reference/clustered/{sts_reads}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.regions'
+        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
+        reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
+        ref_idx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai',
+        ref_regions = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.regions'
     output:
-        'output/variant_calls/freebayes/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/freebayes/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/freebayes/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/freebayes/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/freebayes/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.rsrc'
+        'run/output/variant_calls/freebayes/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
@@ -101,17 +101,17 @@ rule call_variants_longshot:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
-        reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
-        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
+        reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
+        ref_idx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai',
+        seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
     output:
-        'output/variant_calls/longshot/{reference}/{sts_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/longshot/{reference}/{sseq_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/longshot/{reference}/{sts_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/longshot/{reference}/{sseq_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/longshot/{reference}/{sts_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.rsrc'
+        'run/output/variant_calls/longshot/{reference}/{sseq_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     params:
@@ -136,11 +136,11 @@ rule normalize_longshot_vcf:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        'output/variant_calls/longshot/{reference}/{sts_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/longshot/{reference}/{sseq_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.vcf'
     output:
-        'output/variant_calls/longshot/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/longshot/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/longshot/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/longshot/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
         mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
@@ -216,19 +216,19 @@ rule call_variants_deepvariant:
     """
     input:
         container = 'output/container/docker/google/deepvariant_{}.sif'.format(config['deepvariant_version']),
-        reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        ref_idx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
-        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
-        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai'
+        reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
+        ref_idx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai',
+        seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
+        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai'
     output:
-        vcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf',
-        gvcf = 'output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.gvcf',
+        vcf = 'output/variant_calls/deepvar/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf',
+        gvcf = 'output/variant_calls/deepvar/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.gvcf',
     log:
-        'log/output/variant_calls/deepvar/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/deepvar/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
         os.path.join('run/output/variant_calls/deepvar',
-                     '{reference}/{sts_reads}/processing/10-norm/splits',
+                     '{reference}/{sseq_reads}/processing/10-norm/splits',
                      '{vc_reads}.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_high']))
     envmodules:
         config['env_module_singularity']
@@ -239,7 +239,7 @@ rule call_variants_deepvariant:
         runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1)
     params:
         bind_folder = lambda wildcards: os.getcwd(),
-        temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sts_reads, wildcards.vc_reads, wildcards.sequence),
+        temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sseq_reads, wildcards.vc_reads, wildcards.sequence),
         singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
         '{params.singularity}'
@@ -255,13 +255,13 @@ rule filter_variant_calls_quality_biallelic_snps:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf.bgz',
-        tbi = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf.bgz.tbi',
-        reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta'
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf.bgz',
+        tbi = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.vcf.bgz.tbi',
+        reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta'
     output:
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
+        'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.log'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
@@ -278,16 +278,16 @@ rule whatshap_regenotype_variant_calls:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf',
-        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
-        aln_idx = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
-        reference = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta'
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf',
+        read_ref_aln = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam',
+        aln_idx = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{vc_reads}_map-to_{reference}.psort.sam.bam.bai',
+        reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta'
     output:
-       'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.vcf'
+       'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.rsrc'
+        'run/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
@@ -303,11 +303,11 @@ rule filter_retyped_by_genotype_quality:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.vcf'
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.vcf'
     output:
-        temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/35-filter-GQ{gq}/splits/{vc_reads}.{sequence}.vcf')
+        temp('output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/35-filter-GQ{gq}/splits/{vc_reads}.{sequence}.vcf')
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/35-filter-GQ{gq}/splits/{vc_reads}.{sequence}.log'
+        'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/35-filter-GQ{gq}/splits/{vc_reads}.{sequence}.log'
     conda:
         '../environment/conda/conda_biotools.yml'
     shell:
@@ -319,11 +319,11 @@ rule extract_heterozygous_variants:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        vcf_original = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf',
-        vcf_retyped = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/35-filter-GQ{gq}/splits/{vc_reads}.{sequence}.vcf'
+        vcf_original = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf',
+        vcf_retyped = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/35-filter-GQ{gq}/splits/{vc_reads}.{sequence}.vcf'
     output:
-        vcf_original = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf'),
-        vcf_retyped = temp('output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf'),
+        vcf_original = temp('output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf'),
+        vcf_retyped = temp('output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf'),
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
@@ -341,18 +341,18 @@ rule intersect_original_retyped_variant_calls:
     vc_reads = FASTQ file used for variant calling relative to reference
     """
     input:
-        original_vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf.bgz',
-        original_tbi = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf.bgz.tbi',
-        retyped_vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf.bgz',
-        retyped_tbi = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf.bgz.tbi',
+        original_vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf.bgz',
+        original_tbi = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-original.vcf.bgz.tbi',
+        retyped_vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf.bgz',
+        retyped_tbi = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/40-extract-het-GQ{gq}/splits/{vc_reads}.{sequence}.het-only-retyped.vcf.bgz.tbi',
     output:
-        uniq_original = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0000.vcf',
-        uniq_retyped = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0001.vcf',
-        shared_original = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf',
-        shared_retyped = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0003.vcf',
-        desc = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/README.txt',
+        uniq_original = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0000.vcf',
+        uniq_retyped = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0001.vcf',
+        shared_original = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf',
+        shared_retyped = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0003.vcf',
+        desc = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/README.txt',
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/{vc_reads}.{sequence}.isect.log'
+        'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/{vc_reads}.{sequence}.isect.log'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
@@ -368,7 +368,7 @@ def collect_final_vcf_splits(wildcards, glob_collect=False):
     """
     """
 
-    source_path = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf'
+    source_path = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf'
 
     if glob_collect:
         import glob
@@ -380,7 +380,7 @@ def collect_final_vcf_splits(wildcards, glob_collect=False):
             raise RuntimeError('collect_final_vcf_splits: no files collected with pattern {}'.format(pattern))
 
     else:
-        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
 
@@ -392,7 +392,7 @@ def collect_final_vcf_splits(wildcards, glob_collect=False):
             source_path,
             var_caller=wildcards.var_caller,
             reference=wildcards.reference,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             qual=wildcards.qual,
             gq=wildcards.gq,
             vc_reads=wildcards.vc_reads,
@@ -406,7 +406,7 @@ rule write_final_vcf_splits:
     input:
         vcf_splits = collect_final_vcf_splits
     output:
-        fofn = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
+        fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
     run:
         import os
 
@@ -429,11 +429,11 @@ rule write_final_vcf_splits:
 
 rule merge_final_vcf_splits:
     input:
-        fofn = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
+        fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
     output:
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf'
+        'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.concat.log'
+        'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.concat.log'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
@@ -445,11 +445,11 @@ rule merge_final_vcf_splits:
 
 rule compute_final_vcf_stats:
     input:
-        im_stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snv.QUAL{qual}.vcf.stats',
-        vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz',
-        idx = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz.tbi',
+        im_stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sseq_reads}/{vc_reads}.snv.QUAL{qual}.vcf.stats',
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz',
+        idx = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf.bgz.tbi',
     output:
-        stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snv.QUAL{qual}.GQ{gq}.vcf.stats'
+        stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sseq_reads}/{vc_reads}.snv.QUAL{qual}.GQ{gq}.vcf.stats'
     conda:
         '../environment/conda/conda_biotools.yml'
     priority: 200
@@ -462,7 +462,7 @@ rule compute_final_vcf_stats:
 def collect_intermediate_vcf_splits(wildcards, glob_collect=False):
     """
     """
-    source_path = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
+    source_path = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
 
     if glob_collect:
         import glob
@@ -475,7 +475,7 @@ def collect_intermediate_vcf_splits(wildcards, glob_collect=False):
 
     else:
 
-        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
 
@@ -487,7 +487,7 @@ def collect_intermediate_vcf_splits(wildcards, glob_collect=False):
             source_path,
             var_caller=wildcards.var_caller,
             reference=wildcards.reference,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             qual=wildcards.qual,
             vc_reads=wildcards.vc_reads,
             sequence=checkpoint_wildcards.sequence
@@ -500,7 +500,7 @@ rule write_intermediate_vcf_splits:
     input:
         vcf_splits = collect_intermediate_vcf_splits
     output:
-        fofn = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
+        fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
     run:
         import os
 
@@ -522,11 +522,11 @@ rule write_intermediate_vcf_splits:
 
 rule merge_intermediate_vcf_splits:
     input:
-        fofn = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
+        fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
     output:
-        'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.vcf'
+        'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.snv.vcf'
     log:
-        'log/output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.concat.log'
+        'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.concat.log'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
@@ -538,10 +538,10 @@ rule merge_intermediate_vcf_splits:
 
 rule compute_intermediate_vcf_stats:
     input:
-        vcf = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.vcf.bgz',
-        idx = 'output/variant_calls/{var_caller}/{reference}/{sts_reads}/QUAL{qual}/{vc_reads}.snv.vcf.bgz.tbi',
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.snv.vcf.bgz',
+        idx = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.snv.vcf.bgz.tbi',
     output:
-        stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sts_reads}/{vc_reads}.snv.QUAL{qual}.vcf.stats'
+        stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sseq_reads}/{vc_reads}.snv.QUAL{qual}.vcf.stats'
     conda:
         '../environment/conda/conda_biotools.yml'
     priority: 200

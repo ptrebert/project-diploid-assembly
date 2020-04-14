@@ -179,15 +179,15 @@ checkpoint create_input_data_download_requests:
 
 rule handle_strandseq_download_requests:
     input:
-        'input/fastq/{sts_reads}/requests/{req_file}.request'
+        'input/fastq/{sseq_reads}/requests/{req_file}.request'
     output:
-        'input/fastq/{sts_reads}/{req_file}.fastq.gz'
+        'input/fastq/{sseq_reads}/{req_file}.fastq.gz'
     log:
-        'log/input/fastq/{sts_reads}/{req_file}.download.log'
+        'log/input/fastq/{sseq_reads}/{req_file}.download.log'
     benchmark:
-        'run/input/fastq/{sts_reads}/{req_file}.download.rsrc'
+        'run/input/fastq/{sseq_reads}/{req_file}.download.rsrc'
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_SAMPLES
+        sseq_reads = CONSTRAINT_STRANDSEQ_SAMPLES
     conda:
          '../environment/conda/conda_shelltools.yml'
     threads: 2

@@ -205,7 +205,7 @@ rule pbmm2_reads_to_reference_alignment_pacbio_fastq:
 
 def select_bwa_index(wildcards):
 
-    sts_individual = wildcards.sts_reads.split('_')[0]
+    sts_individual = wildcards.sseq_reads.split('_')[0]
     ref_individual = wildcards.reference.split('_')[0]
 
     if sts_individual != ref_individual:
@@ -213,7 +213,7 @@ def select_bwa_index(wildcards):
 
     # make sure that this gives only a result for the rule bwa_strandseq_to_reference_alignment,
     # should be ensured via output file naming of the two bwa rules, but better safe than sorry...
-    expected_keys = {'sts_reads', 'reference', 'individual', 'sample_id'}
+    expected_keys = {'sseq_reads', 'reference', 'individual', 'sample_id'}
     received_keys = set(dict(wildcards).keys())
     if len(received_keys - expected_keys) != 0:
         raise ValueError('select_bwa_index received unexpected input: '
@@ -223,7 +223,7 @@ def select_bwa_index(wildcards):
         # non-haplotype resolved assembly / collapsed assembly
         idx = 'output/reference_assembly/non-hap-res/{}/bwa_index/{}.bwt'.format(wildcards.reference, wildcards.reference)
     elif '_scV{}-'.format(config['git_commit_version']) in wildcards.reference:
-        idx = 'output/reference_assembly/clustered/{}/{}/bwa_index/{}.bwt'.format(wildcards.sts_reads, wildcards.reference, wildcards.reference)
+        idx = 'output/reference_assembly/clustered/{}/{}/bwa_index/{}.bwt'.format(wildcards.sseq_reads, wildcards.reference, wildcards.reference)
     else:
         raise ValueError('Unexpected reference type: {} / {}'.format(wildcards.reference, wildcards))
     return idx
@@ -231,17 +231,17 @@ def select_bwa_index(wildcards):
 
 rule bwa_strandseq_to_reference_alignment:
     input:
-        mate1 = 'input/fastq/{sts_reads}/{individual}_{sample_id}_1.fastq.gz',
-        mate2 = 'input/fastq/{sts_reads}/{individual}_{sample_id}_2.fastq.gz',
+        mate1 = 'input/fastq/{sseq_reads}/{individual}_{sample_id}_1.fastq.gz',
+        mate2 = 'input/fastq/{sseq_reads}/{individual}_{sample_id}_2.fastq.gz',
         ref_index = select_bwa_index,
-        sts_reads = 'input/fastq/{sts_reads}.fofn'
+        sseq_reads = 'input/fastq/{sseq_reads}.fofn'
     output:
-        bam = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/temp/aln/{individual}_{sample_id}.filt.sam.bam'
+        bam = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/aln/{individual}_{sample_id}.filt.sam.bam'
     log:
-        bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.bwa.log',
-        samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{sample_id}.samtools.log',
+        bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{individual}_{sample_id}.bwa.log',
+        samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{individual}_{sample_id}.samtools.log',
     benchmark:
-        os.path.join('run/output/alignments/strandseq_to_reference/{reference}/{sts_reads}',
+        os.path.join('run/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}',
                      '{individual}_{sample_id}' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -261,32 +261,32 @@ rule bwa_strandseq_to_reference_alignment:
 
 rule bwa_strandseq_to_haploid_assembly_alignment:
     input:
-        mate1 = 'input/fastq/{sts_reads}/{individual}_{library_id}_1.fastq.gz',
-        mate2 = 'input/fastq/{sts_reads}/{individual}_{library_id}_2.fastq.gz',
-        ref_index = os.path.join('output', 'diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}',
+        mate1 = 'input/fastq/{sseq_reads}/{individual}_{library_id}_1.fastq.gz',
+        mate2 = 'input/fastq/{sseq_reads}/{individual}_{library_id}_2.fastq.gz',
+        ref_index = os.path.join('output', 'diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}',
                                  'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/bwa_index/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.bwt'),
-        sts_reads = 'input/fastq/{sts_reads}.fofn'
+        sseq_reads = 'input/fastq/{sseq_reads}.fofn'
     output:
         bam = os.path.join(
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/aln/{individual}_{library_id}.filt.sam.bam')
     log:
         bwa = os.path.join(
             'log', 'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/aln/{individual}_{library_id}.bwa.log'),
         samtools = os.path.join(
             'log', 'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/aln/{individual}_{library_id}.samtools.log')
     benchmark:
         os.path.join(
             'run', 'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/aln/{individual}_{library_id}.bwa' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda:
@@ -309,7 +309,7 @@ rule minimap_racon_polish_alignment_pass1:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    sseq_reads = FASTQ file used for strand-seq phasing
     pol_reads = FASTQ file used for Racon contig polishing
     """
     input:
@@ -352,7 +352,7 @@ rule minimap_racon_polish_alignment_pass2:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    sseq_reads = FASTQ file used for strand-seq phasing
     pol_reads = FASTQ file used for Racon contig polishing
     """
     input:

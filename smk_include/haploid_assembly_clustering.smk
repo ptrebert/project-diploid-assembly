@@ -14,7 +14,7 @@ def hac_collect_strandseq_merge_files(wildcards, glob_collect=False):
     """
     source_path = os.path.join(
         'output/alignments/strandseq_to_phased_assembly',
-        'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+        'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
         '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
         'temp/aln/{individual}_{project}_{platform}-{spec}_{lib_id}_{run_id}.filt.sam.bam')
 
@@ -23,8 +23,8 @@ def hac_collect_strandseq_merge_files(wildcards, glob_collect=False):
     project = wildcards.project
     lib_id = wildcards.lib_id
 
-    assert individual in wildcards.reference and individual in wildcards.sts_reads, \
-        'Wrong reference / sts_reads match: {} / {}'.format(wildcards.reference, wildcards.sts_reads)
+    assert individual in wildcards.reference and individual in wildcards.sseq_reads, \
+        'Wrong reference / sseq_reads match: {} / {}'.format(wildcards.reference, wildcards.sseq_reads)
 
     if glob_collect:
         import glob
@@ -37,7 +37,7 @@ def hac_collect_strandseq_merge_files(wildcards, glob_collect=False):
             raise RuntimeError('hac_collect_strandseq_merge_files: no files collected with pattern {}'.format(pattern))
 
     else:
-        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
+        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
 
         search_pattern = '_'.join([individual, project, platform + '-{spec}', lib_id, '{run_id}', '1'])
         search_path = os.path.join(requests_dir, search_pattern + '.request')
@@ -53,7 +53,7 @@ def hac_collect_strandseq_merge_files(wildcards, glob_collect=False):
             gq=[wildcards.gq, wildcards.gq],
             reference=[wildcards.reference, wildcards.reference],
             vc_reads=[wildcards.vc_reads, wildcards.vc_reads],
-            sts_reads=[wildcards.sts_reads, wildcards.sts_reads],
+            sseq_reads=[wildcards.sseq_reads, wildcards.sseq_reads],
             pol_reads=[wildcards.pol_reads, wildcards.pol_reads],
             hap_reads=[wildcards.hap_reads, wildcards.hap_reads],
             hap_assembler=[wildcards.hap_assembler, wildcards.hap_assembler],
@@ -77,12 +77,12 @@ rule hac_write_strandseq_merge_fofn:
     output:
         fofn = os.path.join(
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.fofn'
         )
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES,
+        sseq_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES,
         #lib_id = 'P[A-Z0-9]+'
     run:
         import os
@@ -120,7 +120,7 @@ rule hac_merge_mono_dinucleotide_fraction:
         temp(
             os.path.join(
                 'output/alignments/strandseq_to_phased_assembly',
-                'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+                'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
                 '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
                 'temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.sam.bam'
             )
@@ -128,19 +128,19 @@ rule hac_merge_mono_dinucleotide_fraction:
     log:
         os.path.join(
             'log', 'output/alignments/strandseq_to_phased_assembly',
-                'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+                'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
                 '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
                 'temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.log'
         )
     benchmark:
         os.path.join(
             'run', 'output/alignments/strandseq_to_phased_assembly',
-                'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+                'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
                 '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}', 'temp/mrg',
                 '{individual}_{project}_{platform}-{spec}_{lib_id}.mrg' + '.t{}.rsrc'.format(config['num_cpu_low'])
         )
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES
+        sseq_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -154,17 +154,17 @@ rule hac_link_strandseq_monofraction_samples:
     input:
         os.path.join(
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/aln/{individual}_{project}_{platform}-{spec}_{lib_id}.filt.sam.bam')
     output:
         os.path.join(
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.sam.bam')
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES
+        sseq_reads = CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES
     params:
         shell_cmd = lambda wildcards: 'cp' if bool(config.get('force_local_copy', False)) else 'ln -s'
     shell:
@@ -175,13 +175,13 @@ rule hac_samtools_position_sort_strandseq_reads:
     input:
         os.path.join(
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.sam.bam')
     output:
         temp(os.path.join(
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             'temp/sort/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.sam.bam')
         )
@@ -202,19 +202,19 @@ rule hac_mark_duplicate_reads_strandseq:
     output:
         os.path.join(
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             '{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup.sam.bam')
     log:
         os.path.join('log',
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             '{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup.log')
     benchmark:
         os.path.join('run',
             'output/alignments/strandseq_to_phased_assembly',
-            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+            'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
             '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
             '{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda:
@@ -236,12 +236,12 @@ def collect_haploid_assembly_strandseq_alignments(wildcards, glob_collect=False)
     """
     source_path = os.path.join(
         'output/alignments/strandseq_to_phased_assembly',
-        'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{pol_reads}',
+        'strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{pol_reads}',
         '{hap_reads}-{hap_assembler}.{hap}.{pol_pass}',
         '{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup.sam.bam{ext}'
     )
 
-    individual, project, platform_spec = wildcards.sts_reads.split('_')[:3]
+    individual, project, platform_spec = wildcards.sseq_reads.split('_')[:3]
     platform, spec = platform_spec.split('-')
 
     if glob_collect:
@@ -260,12 +260,12 @@ def collect_haploid_assembly_strandseq_alignments(wildcards, glob_collect=False)
             raise RuntimeError('collect_haploid_assembly_strandseq_alignments: no files collected with pattern {}'.format(pattern))
 
     else:
-        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
+        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
 
         # this is a bit tricky given that there are different varieties of Strand-seq libraries
         glob_pattern = '_'.join([individual, project, platform + '-{spec,[0-9a-z]+}', '{lib_id}'])
 
-        if wildcards.sts_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
+        if wildcards.sseq_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
             glob_pattern += '_{run_id,[A-Z0-9]+}_1.request'
         else:
             glob_pattern += '_1.request'
@@ -282,7 +282,7 @@ def collect_haploid_assembly_strandseq_alignments(wildcards, glob_collect=False)
             reference=wildcards.reference,
             vc_reads=wildcards.vc_reads,
             individual=individual,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             project=project,
             platform=platform,
             spec=spec,
@@ -302,13 +302,13 @@ rule hac_write_saarclust_config_file:
     """
     input:
         setup_ok = rules.install_rlib_saarclust.output.check,
-        reference = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.fasta',
-        ref_idx = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.fasta.fai',
-        strandseq_reads = 'input/fastq/{sts_reads}.fofn',
+        reference = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.fasta',
+        ref_idx = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.fasta.fai',
+        strandseq_reads = 'input/fastq/{sseq_reads}.fofn',
         bam =  collect_haploid_assembly_strandseq_alignments
     output:
-        cfg = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.config',
-        input_dir = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.input'
+        cfg = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.config',
+        input_dir = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.input'
     params:
         min_contig_size = config['min_contig_size'],
         min_region_size = config['min_region_to_order'],
@@ -347,7 +347,7 @@ rule hac_write_saarclust_config_file:
         desired_clusters = str(params.desired_clusters)
         min_mapq = str(params.min_mapq)
 
-        individual = wildcards.sts_reads.split('_')[0]
+        individual = wildcards.sseq_reads.split('_')[0]
         non_default_params = config.get('sample_non_default_parameters', dict())
         if individual in non_default_params:
             sample_non_defaults = non_default_params[individual]
@@ -404,14 +404,14 @@ checkpoint run_saarclust_haploid_assembly_clustering:
         cfg = rules.hac_write_saarclust_config_file.output.cfg,
         fofn = rules.hac_write_saarclust_config_file.output.input_dir
     output:
-        dir_fasta = directory('output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/clustered_assembly'),
-        dir_data = directory('output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/data'),
-        dir_plots = directory('output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/plots'),
-        cfg = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/SaaRclust.config',
+        dir_fasta = directory('output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/clustered_assembly'),
+        dir_data = directory('output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/data'),
+        dir_plots = directory('output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/plots'),
+        cfg = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/SaaRclust.config',
     log:
-        'log/output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.log'
+        'log/output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.log'
     benchmark:
-        'run/output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.rsrc'
+        'run/output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
     resources:
@@ -430,7 +430,7 @@ checkpoint run_saarclust_haploid_assembly_clustering:
 def collect_haploid_clustered_fasta_sequences(wildcards, glob_collect=False):
     """
     """
-    source_path = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/clustered_assembly/{sequence}.fasta'
+    source_path = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust_run/clustered_assembly/{sequence}.fasta'
 
     if glob_collect:
         import glob
@@ -455,7 +455,7 @@ def collect_haploid_clustered_fasta_sequences(wildcards, glob_collect=False):
             gq=wildcards.gq,
             reference=wildcards.reference,
             vc_reads=wildcards.vc_reads,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             pol_reads=wildcards.pol_reads,
             hap_reads=wildcards.hap_reads,
             hap_assembler=wildcards.hap_assembler,
@@ -474,7 +474,7 @@ rule hac_write_haploid_assembly_clustered_fasta_fofn:
     input:
         fasta = collect_haploid_clustered_fasta_sequences
     output:
-        fofn = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}' + '.scV{}.fofn'.format(config['git_commit_version'])
+        fofn = 'output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}' + '.scV{}.fofn'.format(config['git_commit_version'])
     run:
         try:
             validate_checkpoint_output(input.fasta)

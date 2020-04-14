@@ -20,10 +20,10 @@ sample_description_NA12878:
 sample_targets_NA12878:
   - aliases:
       1: &ccs_reads NA12878_demo_pbsq2-ccs_1000
-      2: &sts_reads NA12878_demo_il25k-100pe_sseq
+      2: &sseq_reads NA12878_demo_il25k-100pe_sseq
   - defaults:
       hap_reads: *ccs_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       vc_reads: *ccs_reads
       pol_reads: *ccs_reads
       hap_assm_mode: split

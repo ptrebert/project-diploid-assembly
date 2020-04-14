@@ -193,7 +193,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
     :return:
     """
     import os
-    source_path = 'input/fastq/{sts_reads}/{lib_id}.fastq.gz'
+    source_path = 'input/fastq/{sseq_reads}/{lib_id}.fastq.gz'
 
     if glob_collect:
         import glob
@@ -205,7 +205,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
             raise RuntimeError('collect_strandseq_libraries: no files collected with pattern {}'.format(pattern))
 
     else:
-        checkpoint_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
+        checkpoint_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
 
         glob_pattern = os.path.join(checkpoint_dir, '{lib_id}.request')
 
@@ -213,7 +213,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
 
         sseq_fastq = expand(
             source_path,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             lib_id=checkpoint_wildcards.lib_id
             )
 
@@ -222,16 +222,16 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
 
 rule merge_strandseq_libraries:
     """
-    To have a simple way of incorporating the sts_reads
+    To have a simple way of incorporating the sseq_reads
     wildcard into the workflow, create this file listing
     to be referred to downstream
     """
     input:
         sseq_libs = collect_strandseq_libraries
     output:
-        'input/fastq/{sts_reads}.fofn'
+        'input/fastq/{sseq_reads}.fofn'
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_SAMPLES
+        sseq_reads = CONSTRAINT_STRANDSEQ_SAMPLES
     run:
         try:
             validate_checkpoint_output(input.sseq_libs)

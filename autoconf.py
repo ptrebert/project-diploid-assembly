@@ -133,7 +133,7 @@ sample_targets_{sample_name}:
   - defaults:
       hap_reads: *long_reads
       vc_reads: *long_reads
-      sts_reads: *strandseq_reads
+      sseq_reads: *strandseq_reads
       pol_reads: *long_reads
       hap_assm_mode: split
       hap:
@@ -660,7 +660,7 @@ def define_default_polishing(args):
     return pol_pass
 
 
-def generate_sample_description(args, lr_readset, sts_readset):
+def generate_sample_description(args, lr_readset, sseq_readset):
 
     sample_desc = {
         'sample_description_{}'.format(args.sample_name): dict([
@@ -670,22 +670,22 @@ def generate_sample_description(args, lr_readset, sts_readset):
             ('family', args.family_name),
             ('data_sources', [
                 {'long_reads': lr_readset},
-                {'strandseq': sts_readset}
+                {'strandseq': sseq_readset}
             ])
         ])}
     return sample_desc
 
 
-def generate_sample_targets(args, lr_readset, sts_readset):
+def generate_sample_targets(args, lr_readset, sseq_readset):
 
     lr_readset_name = lr_readset + '_1000'
-    sts_readset_name = sts_readset
+    sseq_readset_name = sseq_readset
     polishing = define_default_polishing(args)
 
     sample_targets = sample_targets_template.format(**{
         'sample_name': args.sample_name,
         'long_reads': lr_readset_name,
-        'strandseq_reads': sts_readset_name,
+        'strandseq_reads': sseq_readset_name,
         'nhr_assembler': args.nhr_assembler,
         'hap_assembler': args.hap_assembler,
         'var_caller': args.var_caller,
@@ -735,19 +735,19 @@ def main():
     args = sanitize_user_input(args)
 
     lr_readset_config, lr_link_files = collect_long_read_input(args)
-    sts_readset_config, sts_link_files = collect_strandseq_input(args)
+    sseq_readset_config, sts_link_files = collect_strandseq_input(args)
 
     config_path = os.path.join(args.exec_folder, 'autoconf_config', 'run_assembly.yml')
     os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
     with open(config_path, 'w') as config_dump:
 
-        sample_desc = generate_sample_description(args, lr_readset_config, sts_readset_config)
+        sample_desc = generate_sample_description(args, lr_readset_config, sseq_readset_config)
         _ = config_dump.write('# SECTION: SAMPLE & READSET DESCRIPTION\n')
         _ = config_dump.write(yaml.dump(sample_desc, default_flow_style=False, sort_keys=False))
         _ = config_dump.write('\n\n')
 
-        sample_targets = generate_sample_targets(args, lr_readset_config['readset'], sts_readset_config['readset'])
+        sample_targets = generate_sample_targets(args, lr_readset_config['readset'], sseq_readset_config['readset'])
         _ = config_dump.write('# SECTION: SAMPLE TARGETS / SNAKEMAKE WILDCARDS\n')
         _ = config_dump.write(sample_targets)
         _ = config_dump.write('\n\n')

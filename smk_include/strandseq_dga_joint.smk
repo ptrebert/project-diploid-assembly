@@ -6,9 +6,9 @@ localrules: master_strandseq_dga_joint,
 Components:
 vc_reads = FASTQ file used for variant calling relative to reference
 hap_reads = FASTQ file to be used for haplotype reconstruction
-sts_reads = FASTQ file used for strand-seq phasing
+sseq_reads = FASTQ file used for strand-seq phasing
 """
-PATH_STRANDSEQ_DGA_JOINT = 'diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}'
+PATH_STRANDSEQ_DGA_JOINT = 'diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}'
 PATH_STRANDSEQ_DGA_JOINT_PROTECTED = PATH_STRANDSEQ_DGA_JOINT.replace('{', '{{').replace('}', '}}')
 
 
@@ -56,7 +56,7 @@ def collect_haploid_split_reads(wildcards, glob_collect, file_ext):
             hap_read_splits.extend(hap_files)
 
     else:
-        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
         checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
@@ -68,7 +68,7 @@ def collect_haploid_split_reads(wildcards, glob_collect, file_ext):
             qual=wildcards.qual,
             reference=wildcards.reference,
             vc_reads=wildcards.vc_reads,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             hap_reads=wildcards.hap_reads,
             hap=haplotypes,  # note here: haplotype replacement
             sequence=checkpoint_wildcards.sequence

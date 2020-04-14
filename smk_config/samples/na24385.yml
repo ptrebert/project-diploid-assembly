@@ -15,7 +15,7 @@ sample_description_NA24385:
         source_type: amazon
         comment: "github.com/human-pangenomics/HG002_Data_Freeze_v1.0"
     - strandseq:
-        readset: &sts_reads NA24385_hpg_ilnxs-80pe_sseq
+        readset: &sseq_reads NA24385_hpg_ilnxs-80pe_sseq
         source_type: local
         library_fractions: one
 
@@ -26,7 +26,7 @@ sample_targets_NA24385:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ccs_reads
       pol_pass: racon-p2
       hap_assm_mode: split

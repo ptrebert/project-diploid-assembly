@@ -28,27 +28,27 @@ sample_description_HG00733:
         data_type: fastq
         load_type: parts
     - strandseq:
-        readset: &sts_reads HG00733_1kg_il25k-npe_sseq
+        readset: &sseq_reads HG00733_1kg_il25k-npe_sseq
         source_type: ena
         bioproject: PRJEB12849
         library_fractions: two
     - strandseq:
-        readset: &sts_reads_sub80 HG00733_sub80_il25k-npe_sseq
+        readset: &sseq_reads_sub80 HG00733_sub80_il25k-npe_sseq
         source_type: local
         library_fractions: two
         comment: "annotation/HG00733_sub80_libraries_sseq.txt"
     - strandseq:
-        readset: &sts_reads_sub60 HG00733_sub60_il25k-npe_sseq
+        readset: &sseq_reads_sub60 HG00733_sub60_il25k-npe_sseq
         source_type: local
         library_fractions: two
         comment: "annotation/HG00733_sub60_libraries_sseq.txt"
     - strandseq:
-        readset: &sts_reads_sub40 HG00733_sub40_il25k-npe_sseq
+        readset: &sseq_reads_sub40 HG00733_sub40_il25k-npe_sseq
         source_type: local
         library_fractions: two
         comment: "annotation/HG00733_sub40_libraries_sseq.txt"
     - strandseq:
-        readset: &sts_reads_sub20 HG00733_sub20_il25k-npe_sseq
+        readset: &sseq_reads_sub20 HG00733_sub20_il25k-npe_sseq
         source_type: local
         library_fractions: two
         comment: "annotation/HG00733_sub20_libraries_sseq.txt"
@@ -67,7 +67,7 @@ sample_targets_HG00733:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ccs_reads
       pol_pass: racon-p2
       hap_assm_mode: split
@@ -87,7 +87,7 @@ sample_targets_HG00733:
   - defaults:
       hap_reads: *clr_hgsvc
       vc_reads: *clr_hgsvc
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *clr_hgsvc
       pol_pass: arrow-p1
       hap_assm_mode: split
@@ -110,7 +110,7 @@ sample_targets_HG00733:
   - defaults:
       hap_reads: *clr_sra
       vc_reads: *clr_sra
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *clr_sra
       pol_pass: arrow-p1
       hap_assm_mode: split
@@ -142,7 +142,7 @@ sample_targets_HG00733:
   - defaults:
       hap_reads: *ont_hpg
       vc_reads: *ont_hpg
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ont_hpg
       hap_assm_mode: joint
       hap:
@@ -156,7 +156,7 @@ sample_targets_HG00733:
   - defaults:
       hap_reads: *ont_hpg
       vc_reads: *ont_hpg
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ont_hpg
       hap_assm_mode: split
       hap:
@@ -180,11 +180,11 @@ sample_targets_HG00733:
       name: hifi_subsampling
       nhr_assembler: pereg
       var_caller: deepvar
-      sts_reads:
-        - *sts_reads_sub20
-        - *sts_reads_sub40
-        - *sts_reads_sub60
-        - *sts_reads_sub80
+      sseq_reads:
+        - *sseq_reads_sub20
+        - *sseq_reads_sub40
+        - *sseq_reads_sub60
+        - *sseq_reads_sub80
 
 
 sample_data_sources_HG00733:

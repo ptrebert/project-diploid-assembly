@@ -18,7 +18,7 @@ sample_description_NA19238:
         data_type: pacbio_native
         load_type: parts
     - strandseq:
-        readset: &sts_reads NA19238_1kg_il25k-npe_sseq
+        readset: &sseq_reads NA19238_1kg_il25k-npe_sseq
         source_type: ena
         bioproject: PRJEB12849
         library_fractions: two
@@ -35,7 +35,7 @@ sample_targets_NA19238:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ccs_reads
       pol_pass: racon-p2
       hap_assm_mode: split
@@ -55,7 +55,7 @@ sample_targets_NA19238:
   - defaults:
       hap_reads: *clr_reads
       vc_reads: *clr_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *clr_reads
       pol_pass: arrow-p1
       hap_assm_mode: split

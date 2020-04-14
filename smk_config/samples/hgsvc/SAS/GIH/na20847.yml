@@ -13,7 +13,7 @@ sample_description_NA20847:
         data_type: pacbio_native
         load_type: parts
     - strandseq:
-        readset: &sts_reads NA20847_hgsvc_ilnxs-80pe_sseq
+        readset: &sseq_reads NA20847_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
         library_fractions: one
     - short_reads:
@@ -27,7 +27,7 @@ sample_targets_NA20847:
   - defaults:
       hap_reads: *clr_reads
       vc_reads: *clr_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *clr_reads
       pol_pass: arrow-p1
       hap_assm_mode: split

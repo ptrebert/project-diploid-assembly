@@ -15,7 +15,7 @@ sample_description_NA12878:
         source_type: ena
         bioproject: PRJNA540705
     - strandseq:
-        readset: &sts_reads NA12878_eriba_il25k-100pe_sseq
+        readset: &sseq_reads NA12878_eriba_il25k-100pe_sseq
         source_type: ena
         bioproject: PRJEB14185
         library_fractions: one
@@ -27,7 +27,7 @@ sample_targets_NA12878:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ccs_reads
       pol_pass: racon-p2
       hap_assm_mode: split

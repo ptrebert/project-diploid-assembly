@@ -20,7 +20,7 @@ wildcard_constraints:
     # Reference genome or assembly
     reference = '[A-Za-z0-9_\-]+',
     # STS = STrand-Seq reads used for clustering and integrative phasing
-    sts_reads = '[A-Za-z0-9_\-]+',
+    sseq_reads = '[A-Za-z0-9_\-]+',
     # VC = variant calling, read set used for variant calling
     vc_reads = '[A-Za-z0-9_\-]+',
     # HAP = haplotype, read set that is tagged and split by haplotype

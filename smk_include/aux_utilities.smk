@@ -263,9 +263,9 @@ rule singularity_pull_container:
 def collect_strandseq_alignments(wildcards, glob_collect=False):
     """
     """
-    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sts_reads}/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup.sam.bam{ext}'
+    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup.sam.bam{ext}'
 
-    individual, project, platform_spec = wildcards.sts_reads.split('_')[:3]
+    individual, project, platform_spec = wildcards.sseq_reads.split('_')[:3]
     platform, spec = platform_spec.split('-')
 
     if glob_collect:
@@ -273,7 +273,7 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
         source_path = source_path.replace('{ext}', '*')
         source_path = source_path.replace('{lib_id}', '*')
         pattern = source_path.format(**{'reference': wildcards.reference,
-                                        'sts_reads': wildcards.sts_reads,
+                                        'sseq_reads': wildcards.sseq_reads,
                                         'individual': individual,
                                         'project': project,
                                         'platform': platform,
@@ -283,12 +283,12 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
             raise RuntimeError('collect_strandseq_alignments: no files collected with pattern {}'.format(pattern))
 
     else:
-        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
+        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
 
         # this is a bit tricky given that there are different varieties of Strand-seq libraries
         glob_pattern = '_'.join([individual, project, platform + '-{spec,[0-9a-z]+}', '{lib_id}'])
 
-        if wildcards.sts_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
+        if wildcards.sseq_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
             glob_pattern += '_{run_id,[a-zA-Z0-9]+}_1.request'
         else:
             glob_pattern += '_1.request'
@@ -300,7 +300,7 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
             source_path,
             reference=wildcards.reference,
             individual=individual,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             project=project,
             platform=platform,
             spec=spec,

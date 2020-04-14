@@ -8,7 +8,7 @@ rule master_eval_variant_calls:
 rule whatshap_compare_variant_phasings_by_caller:
     """
     hap_reads = FASTQ file to be used for haplotype reconstruction
-    dataset_info = depending on approach, combination of reference, vc_reads, and sts_reads
+    dataset_info = depending on approach, combination of reference, vc_reads, and sseq_reads
     """
     input:
         phasing1 = 'output/diploid_assembly/{approach}/{var_caller1}_GQ{gq}_DP{dp}/{dataset_info}/{hap_reads}.phased.vcf',
@@ -32,19 +32,19 @@ rule whatshap_compare_variant_phasings_by_approach:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    sseq_reads = FASTQ file used for strand-seq phasing
     """
     input:
         canonical = 'output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.phased.vcf',
-        strandseq = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.phased.vcf'
+        strandseq = 'output/diploid_assembly/strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.phased.vcf'
     output:
-        comp = 'output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sts_reads}.comp.tsv',
-        swerr = 'output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sts_reads}.swerr.bed',
-        block = 'output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sts_reads}.lblock.tsv',
+        comp = 'output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sseq_reads}.comp.tsv',
+        swerr = 'output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sseq_reads}.swerr.bed',
+        block = 'output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sseq_reads}.lblock.tsv',
     log:
-        'log/output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sts_reads}.comp.log'
+        'log/output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sseq_reads}.comp.log'
     benchmark:
-        'run/output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sts_reads}.comp.rsrc'
+        'run/output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sseq_reads}.comp.rsrc'
     priority: 200
     shell:
         'whatshap --debug compare --names {wildcards.var_caller}_canonical,{wildcards.var_caller}_strandseq ' \
