@@ -159,15 +159,23 @@ checkpoint create_input_data_download_requests:
     run:
         import sys
 
+        try:
+            json_dump_files = list(input.json_dump)
+        except AttributeError:
+            json_dump_files = []
+
+        try:
+            tsv_metadata_files = list(input.tsv_metadata)
+        except AttributeError:
+            tsv_metadata_files = []
+
         with open(log[0], 'w') as logfile:
-            json_dumps = list(input.json_dump)
-            _ = logfile.write('Processing {} JSON dumps\n'.format(len(json_dumps)))
-            json_triggered = create_request_files_from_json(json_dumps, output[0], logfile)
+            _ = logfile.write('Processing {} JSON dumps\n'.format(len(json_dump_files)))
+            json_triggered = create_request_files_from_json(json_dump_files, output[0], logfile)
             _ = logfile.write('JSON dump matched request: {}\n'.format(json_triggered))
 
-            tsv_files = list(input.tsv_metadata)
-            _ = logfile.write('Processing {} TSV files\n'.format(len(tsv_files)))
-            tsv_triggered = create_request_files_from_tsv(tsv_files, output[0], logfile)
+            _ = logfile.write('Processing {} TSV files\n'.format(len(tsv_metadata_files)))
+            tsv_triggered = create_request_files_from_tsv(tsv_metadata_files, output[0], logfile)
             _ = logfile.write('TSV file matched request: {}\n'.format(tsv_triggered))
 
 

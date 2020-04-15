@@ -16,7 +16,7 @@ sample_description_NA24385:
         comment: "github.com/human-pangenomics/HG002_Data_Freeze_v1.0"
     - long_reads:
         readset: NA24385_hpg_ontpm-ul
-        technology: nanopore
+        technology: ont
         data_type: fastq
         load_type: parts
         source_type: amazon
