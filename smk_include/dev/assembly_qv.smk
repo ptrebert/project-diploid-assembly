@@ -224,10 +224,14 @@ rule mark_duplicate_reads:
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: 12
+    params:
+        tempdir = lambda wildcards: '--tmpdir=/local' if os.path.isdir('/local') else ''
     shell:
         'sambamba markdup -t {threads} '
+        '--sort-buffer-size=8092 '
         '--overflow-list-size 1000000 '  # default 200 000 ; increase to avoid "too many open files" issue
         '--hash-table-size 524288 '  # default 262 144 ; increase to avoid "too many open files" issue
+        '{params.tempdir} '
         '{input} {output}'
 
 
