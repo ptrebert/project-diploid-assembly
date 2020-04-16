@@ -225,7 +225,7 @@ rule mark_duplicate_reads:
         '../../environment/conda/conda_biotools.yml'
     threads: 12
     params:
-        tempdir = lambda wildcards: '--tmpdir=/local' if os.path.isdir('/local') else ''
+        tempdir = lambda wildcards: '--tmpdir=/local/tmp' if os.path.isdir('/local/tmp') else ''
     shell:
         'sambamba markdup -t {threads} '
         '--sort-buffer-size=8092 '
