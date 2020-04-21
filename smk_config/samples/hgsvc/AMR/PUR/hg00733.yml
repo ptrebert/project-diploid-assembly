@@ -126,17 +126,7 @@ sample_targets_HG00733:
       var_caller: longshot
   - target:
       name: pacbio_test
-      nhr_assembler: shasta
-      hap_assembler: shasta
-      var_caller: longshot
-  - target:
-      name: pacbio_test
       nhr_assembler: flye
-      hap_assembler: canu
-      var_caller: longshot
-  - target:
-      name: pacbio_test
-      nhr_assembler: shasta
       hap_assembler: canu
       var_caller: longshot
   - defaults:
