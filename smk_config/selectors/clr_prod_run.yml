@@ -4,6 +4,8 @@ select_targets:
     - flye
     - uw27b
     - jax27b
+    - uw27r
+    - mpi27r
     - redbean
   var_caller:
     - longshot

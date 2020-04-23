@@ -94,14 +94,14 @@ sample_targets_HG00733:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: longshot
   - target:
       nhr_assembler:
+        - uw27r
+        - mpi27r
         - jax27b
         - uw27b
         - redbean
