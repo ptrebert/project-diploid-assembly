@@ -31,11 +31,16 @@ system_exe = [
 
 special_processes = [
     'sd-pam',
-    'ssh-agent'
+    'ssh-agent',
+    'ssh',
+    'sshd',
+    'screen',
+    'SCREEN'
 ]
 
 whitelist = [
-    '/smk_env/'
+    '/smk_env/',
+    '/globus/'
 ]
 
 
