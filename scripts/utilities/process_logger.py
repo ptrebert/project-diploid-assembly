@@ -42,6 +42,7 @@ whitelist = [
 def main():
 
     LOGFILE = '/home/ebertp/process.log'
+    USERNAME = 'ebertp'
 
     with open(LOGFILE, 'w') as logfile:
         pass
@@ -51,7 +52,7 @@ def main():
         suspects = []
         for process in psutil.process_iter(attrs=attributes, ad_value='N/A'):
             cache[process.info['pid']] = process.info['exe'], process.info['cmdline']
-            if process.info['username'] != 'pebert':
+            if process.info['username'] != USERNAME:
                 continue
             if any([sp in process.info['cmdline'][0] for sp in special_processes]):
                 continue
