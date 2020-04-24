@@ -135,7 +135,7 @@ in this case, "the right place" is the folder where collapsed assemblies are exp
 to be found. In principle, most (all?) of the pipeline results can be replaced by
 externally linked data, but listing all corresponding pipeline paths is of course not
 possible here.  
-Make sure that you also use this additional config file when you start the pipeline.
+**Make sure that you also use this additional config file when you start the pipeline**.
 
 Point 3: in your sample target specification, there is a Snakemake wildcard called
 `nhr_assembler` that tells the pipeline which assembler to use for building the
@@ -144,4 +144,9 @@ with your custom assembler name: `nhr_assembler: uw27b`
 When Snakemake is looking for the rule to produce your assembly
 (`HG00732_hgsvc_pbsq2-clr_1000_nhr-uw27b.fasta`), it will find the rule that triggers
 the symlinking of your assembly, which is sufficient for Snakemake to proceed with
-executing the pipeline using your custom assembly.
+executing the pipeline using your custom assembly.  
+If you want to check that the symlinking worked as expected before starting the complete
+pipeline run, start your pipeline (see the [execution](execute.md) part of the tutorial),
+and state the following rule name as Snakemake target: `master_link_data_sources`. This
+should only trigger linking your precomputed results to the right place in the pipeline
+folder hierarchy.

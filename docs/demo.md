@@ -12,8 +12,8 @@ project-diploid-assembly/
 smk_env/
 ```
 
-Please download the demo data **TODO**(add DOI) into your working directory (~ 6.2 GB),
-and extract the gzipped tar:
+Please download the [demo data (DOI: 10.5281/zenodo.3746293)](https://doi.org/10.5281/zenodo.3746293)
+into your working directory (~ 6.2 GB), and extract the gzipped tar:
 
 ```bash
 /work_dir$ tar xzvf pipeline_demo.tar.gz
