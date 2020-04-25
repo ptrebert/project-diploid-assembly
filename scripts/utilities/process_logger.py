@@ -26,7 +26,8 @@ system_exe = [
     '/usr/bin',
     '/lib',
     '/usr/lib',
-    '/usr/sbin'
+    '/usr/sbin',
+    '/opt/pbs'
 ]
 
 special_processes = [
