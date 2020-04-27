@@ -45,6 +45,8 @@ rule link_supp_data:
         ancient('/MMCI/TM/scratch/pebert/share/globus/out_hgsvc/20200402_Sequel1-CLR_HG00733/HG00733_sra_pbsq1-clr_1000-flye.h2-un.arrow-p1.fasta'),
         ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/ext_data/HG00733_zev_hap1.fasta'),
         ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/ext_data/HG00733_zev_hap2.fasta'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/ext_data/HG00733_uwwh_pbsq2-clr_1000-flye.h1-un.arrow-p1.fasta'),
+        ancient('/scratch/bioinf/projects/diploid-genome-assembly/pebert/assembly_qv/ext_data/HG00733_uwwh_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta')
     output:
         'input/fastq/HG00731_ccs.fastq.gz',
         'input/fastq/HG00732_ccs.fastq.gz',
@@ -76,7 +78,9 @@ rule link_supp_data:
         'references/HG00733_clr_hap1.fasta',
         'references/HG00733_clr_hap2.fasta',
         'references/HG00733_zev_hap1.fasta',
-        'references/HG00733_zev_hap2.fasta'
+        'references/HG00733_zev_hap2.fasta',
+        'references/HG00733_wh_hap1.fasta',
+        'references/HG00733_wh_hap2.fasta'
     run:
         for infile, outfile in zip(input, output):
             if os.path.islink(outfile):
