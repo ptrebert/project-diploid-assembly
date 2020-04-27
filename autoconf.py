@@ -161,6 +161,15 @@ def parse_command_line():
     )
 
     parser.add_argument(
+        '--unique-id-length',
+        '-uil',
+        default=15,
+        type=int,
+        dest='unique_id_length',
+        help='Use this many letters from the generated MD5 as unique ID for run and/or library.'
+    )
+
+    parser.add_argument(
         '--repository-folder',
         '-rf',
         default=option_defaults['repo_folder'],
@@ -505,12 +514,13 @@ def collect_long_read_input(args):
     return long_read_config, link_files
 
 
-def find_mate_pairs(strandseq_files):
+def find_mate_pairs(strandseq_files, unique_id_length):
     """
     Assume that second in pair is lexicographically
     closest to first in pair; just make a single confirmation
     (success or fail)
     :param strandseq_files: sorted list of Strand-seq input files
+    :param unique_id_length:
     :return:
     """
     pairs = []
@@ -531,7 +541,7 @@ def find_mate_pairs(strandseq_files):
                                  '{} / {} vs {}'.format(first_mate, second_mate, next_mate))
         except IndexError:
             pass
-        uniq_runid = hashlib.md5(common_substring.encode('utf-8')).hexdigest()[:9]
+        uniq_runid = hashlib.md5(common_substring.encode('utf-8')).hexdigest()[:unique_id_length]
         if uniq_runid in run_ids:
             raise ValueError('Created run ID is not unique: {} / {}'.format(uniq_runid, common_substring))
         run_ids.add(uniq_runid)
@@ -539,10 +549,11 @@ def find_mate_pairs(strandseq_files):
     return sorted(pairs, key=lambda x: x[2])
 
 
-def match_library_fractions(mate_pairs):
+def match_library_fractions(mate_pairs, unique_id_length):
     """
     This might also handle files with unreasonable names
     :param mate_pairs:
+    :param unique_id_length:
     :return:
     """
     last_fixed_id = mate_pairs[0][3]
@@ -562,9 +573,9 @@ def match_library_fractions(mate_pairs):
         sub_check, run_id_check = pair_check[2], pair_check[3]
         if run_id_fix != last_fixed_id:
             if matched_pair_ids is not None:
-                uniq_lib_id = hashlib.md5(longest_substring.encode('utf-8')).hexdigest()[:9]
+                uniq_lib_id = hashlib.md5(longest_substring.encode('utf-8')).hexdigest()[:unique_id_length]
                 if uniq_lib_id in generated_lib_ids:
-                    raise ValueError('Created lib ID is not unique: {} / {}'.format(uniq_lib_id, longest_substring))
+                    raise ValueError('Iter -> created lib ID is not unique: {} / {}'.format(uniq_lib_id, longest_substring))
                 # associate run id to lib id
                 run_to_lib_id[matched_pair_ids[0]] = uniq_lib_id
                 run_to_lib_id[matched_pair_ids[1]] = uniq_lib_id
@@ -591,9 +602,9 @@ def match_library_fractions(mate_pairs):
             longest_match = mobj.size
             longest_substring = sub_fix[mobj.b:mobj.b + mobj.size]
 
-    uniq_lib_id = hashlib.md5(longest_substring.encode('utf-8')).hexdigest()[:9]
+    uniq_lib_id = hashlib.md5(longest_substring.encode('utf-8')).hexdigest()[:unique_id_length]
     if uniq_lib_id in generated_lib_ids:
-        raise ValueError('Created lib ID is not unique: {} / {}'.format(uniq_lib_id, longest_substring))
+        raise ValueError('Last iter -> created lib ID is not unique: {} / {}'.format(uniq_lib_id, longest_substring))
     # associate run id to lib id
     run_to_lib_id[matched_pair_ids[0]] = uniq_lib_id
     run_to_lib_id[matched_pair_ids[1]] = uniq_lib_id
@@ -629,10 +640,10 @@ def collect_strandseq_input(args):
 
     strandseq_files = sorted(filter(lambda x: os.path.isfile(os.path.join(args.ss_folder, x)), os.listdir(args.ss_folder)))
 
-    pairs = find_mate_pairs(strandseq_files)
+    pairs = find_mate_pairs(strandseq_files, args.unique_id_length)
     lib_ids = None
     if args.ss_library_fractions > 1:
-        lib_ids = match_library_fractions(pairs)
+        lib_ids = match_library_fractions(pairs, args.unique_id_length)
 
     link_files = []
 
