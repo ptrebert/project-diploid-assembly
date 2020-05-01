@@ -12,6 +12,7 @@ sample_description_HG00096:
         technology: pacbio
         data_type: pacbio_native
         load_type: parts
+        comment: "seq_center:UMIGS"
     - strandseq:
         readset: &sseq_reads HG00096_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
@@ -38,5 +39,19 @@ sample_targets_HG00096:
         - h2
   - target:
       nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
+  - defaults:
+      hap_reads: *clr_reads
+      vc_reads: *clr_reads
+      sseq_reads: *sseq_reads
+      pol_reads: *clr_reads
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: jax27r
       hap_assembler: flye
       var_caller: longshot
