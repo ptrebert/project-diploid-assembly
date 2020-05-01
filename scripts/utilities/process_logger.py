@@ -60,10 +60,14 @@ def main():
             cache[process.info['pid']] = process.info['exe'], process.info['cmdline']
             if process.info['username'] != USERNAME:
                 continue
-            if any([sp in process.info['cmdline'][0] for sp in special_processes]):
-                continue
             if any([process.info['exe'].startswith(se) for se in system_exe]):
                 continue
+            try:
+                if any([sp in process.info['cmdline'][0] for sp in special_processes]):
+                    continue
+            except IndexError:
+                # process has no cmdline
+                pass
             if any([wl in process.info['exe'] for wl in whitelist]):
                 continue
             suspects.append(process.info)
