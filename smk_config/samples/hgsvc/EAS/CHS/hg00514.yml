@@ -17,6 +17,7 @@ sample_description_HG00514:
         technology: pacbio
         data_type: pacbio_native
         load_type: parts
+        comment: "seq_center:UMIGS"
     - strandseq:
         readset: &sseq_reads HG00514_1kg_il25k-npe_sseq
         source_type: ena
@@ -67,8 +68,4 @@ sample_targets_HG00514:
   - target:
       nhr_assembler: flye
       hap_assembler: flye
-      var_caller: longshot
-  - target:
-      nhr_assembler: shasta
-      hap_assembler: shasta
       var_caller: longshot

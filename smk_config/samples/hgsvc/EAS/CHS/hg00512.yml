@@ -17,6 +17,7 @@ sample_description_HG00512:
         technology: pacbio
         data_type: pacbio_native
         load_type: parts
+        comment: "seq_center:UMIGS"
     - strandseq:
         readset: &sseq_reads HG00512_1kg_il25k-npe_sseq
         source_type: ena
