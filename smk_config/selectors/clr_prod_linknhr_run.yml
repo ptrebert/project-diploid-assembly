@@ -1,0 +1,14 @@
+
+select_targets:
+  nhr_assembler:
+    - uw27r
+    - mpi27r
+    - jax27r
+    - hhu26
+  var_caller:
+    - longshot
+
+skip_targets:
+  name:
+    - pacbio_test
+    - nanopore_test
