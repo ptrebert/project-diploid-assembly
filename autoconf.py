@@ -12,6 +12,7 @@ import difflib
 import collections as col
 import itertools
 import hashlib
+import warnings
 
 import yaml
 
@@ -497,6 +498,12 @@ def collect_long_read_input(args):
         file_ext = '.pbn.bam'
     else:
         raise ValueError('Unexpected long-read data type: {}'.format(long_read_config['data_type']))
+
+    if args.lr_read_type == 'clr' and args.lr_input_format == 'fastq':
+        warnings.warn('Long-read data type was specified as FASTQ, but sequencing platform indicates '
+                      'CLR reads. Polishing CLR assemblies requires PacBio-specific quality information '
+                      'that is only contained in "pacbio-native" BAM files. You should absolutely be sure '
+                      'of what you are doing.')
 
     link_files = []
     if long_read_config['load_type'] == 'complete':
