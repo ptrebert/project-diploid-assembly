@@ -14,12 +14,15 @@ link_data_input:
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/HG02018/clr_flye_2.7b_jax_5/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/HG03009/clr_flye_2.7_jax_1/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/HG03683/clr_flye_2.7_jax_1/assembly.fasta
+  - /gpfs/project/ebertp/data/globus/assemblies/squashed/HG03721/clr_flye_2.6_hhu_1/assembly.fasta
+  - /gpfs/project/ebertp/data/globus/assemblies/squashed/HG03732/clr_flye_2.6_hhu_1/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/NA12329/clr_flye_2.7_jax_1/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/NA18534/clr_flye_2.7_jax_1/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/NA19036/clr_flye_2.7b_jax_3/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/NA19240/clr_flye_2.7_jax_3/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/NA19650/clr_flye_2.7_uw_1/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/NA20509/clr_flye_2.7_jax_1/assembly.fasta
+  - /gpfs/project/ebertp/data/globus/assemblies/squashed/NA20847/clr_flye_2.6_hhu_1/assembly.fasta
 
 
 link_data_output:
@@ -37,9 +40,12 @@ link_data_output:
   - output/reference_assembly/non-hap-res/HG02018_hgsvc_pbsq2-clr_1000_nhr-jax27b.fasta
   - output/reference_assembly/non-hap-res/HG03009_hgsvc_pbsq2-clr_1000_nhr-jax27r.fasta
   - output/reference_assembly/non-hap-res/HG03683_hgsvc_pbsq2-clr_1000_nhr-jax27r.fasta
+  - output/reference_assembly/non-hap-res/HG03721_hgsvc_pbsq2-clr_1000_nhr-hhu26.fasta
+  - output/reference_assembly/non-hap-res/HG03732_hgsvc_pbsq2-clr_1000_nhr-hhu26.fasta
   - output/reference_assembly/non-hap-res/NA12329_hgsvc_pbsq2-clr_1000_nhr-jax27r.fasta
   - output/reference_assembly/non-hap-res/NA18534_hgsvc_pbsq2-clr_1000_nhr-jax27r.fasta
   - output/reference_assembly/non-hap-res/NA19036_hgsvc_pbsq2-clr_1000_nhr-jax27b.fasta
   - output/reference_assembly/non-hap-res/NA19240_hgsvc_pbsq2-clr_1000_nhr-jax27r.fasta
   - output/reference_assembly/non-hap-res/NA19650_hgsvc_pbsq2-clr_1000_nhr-uw27r.fasta
   - output/reference_assembly/non-hap-res/NA20509_hgsvc_pbsq2-clr_1000_nhr-jax27r.fasta
+  - output/reference_assembly/non-hap-res/NA20847_hgsvc_pbsq2-clr_1000_nhr-hhu26.fasta
