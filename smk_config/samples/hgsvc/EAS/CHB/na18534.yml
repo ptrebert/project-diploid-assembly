@@ -41,3 +41,18 @@ sample_targets_NA18534:
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: longshot
+  - defaults:
+      hap_reads: *clr_reads
+      vc_reads: *clr_reads
+      sseq_reads: *sseq_reads
+      pol_reads: *clr_reads
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: jax27r
+      hap_assembler: flye
+      var_caller: longshot
+
