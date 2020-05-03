@@ -2,11 +2,10 @@
 select_targets:
   nhr_assembler:
     - flye
-    - uw27b
-    - jax27b
     - uw27r
     - mpi27r
-    - redbean
+    - jax27r
+    - hhu26
   var_caller:
     - longshot
 
