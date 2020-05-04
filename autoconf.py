@@ -84,7 +84,8 @@ option_help = col.OrderedDict([
     ('population', 'Name or ID of population [Default: {}]'.format(option_defaults['population'])),
     ('family_name', 'Name or ID of family [Default: {}]'.format(option_defaults['family_name'])),
     ('lr_folder', 'Full path to folder containing long-read input data. '
-                  'All files in this folder are assumed to be input files. '
+                  'All files in this folder are assumed to be long-read input files. '
+                  'ATTENTION: remove any index or other auxiliary files from this folder. '
                   'Path must not be identical with the input data path for Strand-seq data.'),
     ('lr_project', 'Project name for long-read input data [Default: {}]'.format(option_defaults['lr_project'])),
     ('lr_seq_platform', 'Specify long-read sequencing '
@@ -93,7 +94,8 @@ option_help = col.OrderedDict([
     ('lr_input_format', 'Specify input data format: {} (FASTQ must be '
                         'gzipped)'.format(option_constraints['lr_input_format']['check'])),
     ('ss_folder', 'Full path to folder containing Strand-seq input data (gzipped FASTQ). '
-                  'All files in this folder are assumed to be input files. '
+                  'All files in this folder are assumed to be Strand-seq read input files. '
+                  'ATTENTION: remove any index or other auxiliary files from this folder. '
                   'Path must not be identical with the input path for long-read input data.'),
     ('ss_project', 'Project name for Strand-seq input data [Default: {}]'.format(option_defaults['ss_project'])),
     ('ss_seq_platform', 'Specify Strand-seq platform [Default: '

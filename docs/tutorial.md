@@ -23,6 +23,8 @@ are as follows:
 - Oxford Nanopore: FASTQ (gzipped)
 - Strand-seq: FASTQ (gzipped)
 
+Note that index files for BAM input data are created by the pipeline if necessary.
+
 ## Get the pipeline code
 *(Always required)*
 
