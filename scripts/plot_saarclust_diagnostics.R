@@ -9,6 +9,10 @@ ref.genome = args[2]
 output.folder = args[3]
 contig.ordering = args[4]
 
+if (is.na(contig.ordering)) {
+    contig.ordering = FALSE
+}
+
 stopifnot(ref.genome == 'hg38')
 
 suppressMessages(library(BSgenome.Hsapiens.UCSC.hg38))
