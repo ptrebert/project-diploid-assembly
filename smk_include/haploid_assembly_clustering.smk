@@ -151,6 +151,10 @@ rule hac_merge_mono_dinucleotide_fraction:
 
 
 rule hac_link_strandseq_monofraction_samples:
+    """
+    Linking fails on HHU cluster - unclear if file system related or not
+    Do a full copy for now, just a few GB...
+    """
     input:
         os.path.join(
             'output/alignments/strandseq_to_phased_assembly',
@@ -168,7 +172,7 @@ rule hac_link_strandseq_monofraction_samples:
     params:
         shell_cmd = lambda wildcards: 'cp' if bool(config.get('force_local_copy', False)) else 'ln -s'
     shell:
-        '{params.shell_cmd} {input} {output}'
+        'cp {input} {output}'
 
 
 rule hac_samtools_position_sort_strandseq_reads:

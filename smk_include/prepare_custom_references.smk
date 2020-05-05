@@ -2,7 +2,6 @@
 localrules: master_prepare_custom_references,
             write_saarclust_config_file,
             write_reference_fasta_clusters_fofn,
-            link_strandseq_monofraction_samples
 
 
 rule master_prepare_custom_references:
