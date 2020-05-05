@@ -150,3 +150,14 @@ pipeline run, start your pipeline (see the [execution](execute.md) part of the t
 and state the following rule name as Snakemake target: `master_link_data_sources`. This
 should only trigger linking your precomputed results to the right place in the pipeline
 folder hierarchy.
+
+#### QA-9: there was a change in the software environment, do I need to recompute everything?
+Minor changes in any of the R scripts or in the Conda environments may require to run
+`setup_env` again. If those changes do not change the overall pipeline results, but
+may just fix a bug (say, in a plot), it is undesirable to rerun the entire pipeline, although
+Snakemake may insist. In this case, you can [execute the pipeline](execute.md) with the options
+`--touch --forceall`. This has the effect that Snakemake touches each existing output file to
+update its timestamp. Note that this can be dangerous if corrupted output files exist on the
+file system. Also note that a complete `touch` of all pipeline results can take several minutes
+(or much longer) to complete. It also triggers a large amount of small I/O operations, which can
+be particularly slow on network file systems. 
