@@ -41,6 +41,7 @@ rule plot_saarclust_nhr_assembly_diagnostic_output:
         'run/output/plotting/saarclust_diagnostics/reference_assembly/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
+    priority: 200
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -71,6 +72,7 @@ rule plot_saarclust_haploid_assembly_diagnostic_output:
         'run/output/plotting/saarclust_diagnostics/diploid_assembly/{folder_path}/{file_name}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
+    priority: 200
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
