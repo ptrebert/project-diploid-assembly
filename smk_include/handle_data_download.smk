@@ -7,7 +7,7 @@ rule master_handle_data_download:
         rules.master_link_data_sources.output,
 
 
-def create_request_files_from_json(json_dumps, request_path, logfile):
+def create_request_files_from_json(json_dumps, request_path, blacklist, logfile):
     """
     Process output of scan_remote_path scraping script
     :param json_dumps:
@@ -16,6 +16,7 @@ def create_request_files_from_json(json_dumps, request_path, logfile):
     :return:
     """
     import os
+    import errno
     import json as json
     import collections as col
 
@@ -62,8 +63,21 @@ def create_request_files_from_json(json_dumps, request_path, logfile):
             md5 = file_infos['md5']
         except KeyError:
             md5 = 'no_md5'
-        if os.path.isfile(req_file_path):
+
+        if blacklist and any([hint in file_infos['remote_path'] for hint in blacklist]):
+            _ = logfile.write('File blacklisted: {}\n'.format(file_infos['local_path']))
+            try:
+                os.remove(req_file_path)
+            except (OSError, IOError) as err:
+                if err.errno != errno.ENOENT:
+                    raise RuntimeError('Could not remove blacklisted request file {}: {}'.format(req_file_path, str(err)))
+            try:
+                os.remove(file_infos['local_path'])
+            except (OSError, IOError) as err:
+                if err.errno != errno.ENOENT:
+                    raise RuntimeError('Could not remove blacklisted data file {}: {}'.format(file_infos['local_path'], str(err)))
             continue
+
         with open(req_file_path, 'w') as req_file:
             _ = req_file.write(file_infos['remote_path'] + '\n')
             _ = req_file.write(file_infos['local_path'] + '\n')
@@ -71,7 +85,7 @@ def create_request_files_from_json(json_dumps, request_path, logfile):
     return requests_created
 
 
-def create_request_files_from_tsv(tsv_files, request_path, logfile):
+def create_request_files_from_tsv(tsv_files, request_path, blacklist, logfile):
     """
     Process output of downloader / ena-file-report
     Note that this relies on the fact that the relevant
@@ -83,6 +97,7 @@ def create_request_files_from_tsv(tsv_files, request_path, logfile):
     :return:
     """
     import os
+    import errno
     import csv
 
     requests_created = False
@@ -135,6 +150,20 @@ def create_request_files_from_tsv(tsv_files, request_path, logfile):
                     local_path = os.path.join(local_data_folder, local_name)
                     request_file = os.path.join(request_path, local_name.replace('.fastq.gz', '.request'))
 
+                    if blacklist and any([hint in ftp_path for hint in blacklist]):
+                        _ = logfile.write('File blacklisted: {}\n'.format(local_path))
+                        try:
+                            os.remove(request_file)
+                        except (OSError, IOError) as err:
+                            if err.errno != errno.ENOENT:
+                                raise RuntimeError('Could not remove blacklisted request file {}: {}'.format(request_file, str(err)))
+                        try:
+                            os.remove(local_path)
+                        except (OSError, IOError) as err:
+                            if err.errno != errno.ENOENT:
+                                raise RuntimeError('Could not remove blacklisted data file {}: {}'.format(local_path, str(err)))
+                        continue
+
                     _ = logfile.write('Creating request file at {}\n'.format(request_file))
                     try:
                         with open(request_file, 'w') as req:
@@ -146,6 +175,27 @@ def create_request_files_from_tsv(tsv_files, request_path, logfile):
     return requests_created
 
 
+def find_blacklist_file(given_path):
+
+    absolute_path = None
+    search_paths = [
+        given_path,
+        os.path.join(workflow.basedir, given_path),
+        os.path.join(os.getcwd(), given_path)
+    ]
+    searched_paths = []
+    for sp in search_paths:
+        if os.path.isfile(sp):
+            absolute_path = os.path.abspath(sp)
+            break
+        searched_paths.append(sp)
+
+    if absolute_path is None:
+        raise RuntimeError('Cannot locate blacklist file ({})'.format(searched_paths))
+
+    return absolute_path
+
+
 checkpoint create_input_data_download_requests:
     input:
         json_dump = rules.master_scrape_data_sources.input,
@@ -154,6 +204,8 @@ checkpoint create_input_data_download_requests:
         directory('input/{subfolder}/{readset}/requests')
     log:
         'log/input/{subfolder}/{readset}.requests.log'
+    params:
+        blacklist = lambda wildcards: None if 'file_download_blacklist' not in config else config['file_download_blacklist']
     wildcard_constraints:
         subfolder = '(fastq|bam)'
     run:
@@ -170,14 +222,30 @@ checkpoint create_input_data_download_requests:
             tsv_metadata_files = []
 
         with open(log[0], 'w') as logfile:
+            if params.blacklist is None:
+                blacklisted_files = set()
+            else:
+                blacklist_file_path = find_blacklist_file(params.blacklist)
+                with open(blacklist_file_path, 'r') as blacklist:
+                    blacklisted_files = set(blacklist.read().strip().split())
+                _ = logfile.write('Loaded {} files from blacklist annotation\n'.format(len(blacklisted_files)))
             _ = logfile.write('Processing {} JSON dumps\n'.format(len(json_dump_files)))
-            json_triggered = create_request_files_from_json(json_dump_files, output[0], logfile)
+            json_triggered = create_request_files_from_json(
+                                json_dump_files,
+                                output[0],
+                                blacklisted_files,
+                                logfile
+                            )
             _ = logfile.write('JSON dump matched request: {}\n'.format(json_triggered))
 
             _ = logfile.write('Processing {} TSV files\n'.format(len(tsv_metadata_files)))
-            tsv_triggered = create_request_files_from_tsv(tsv_metadata_files, output[0], logfile)
+            tsv_triggered = create_request_files_from_tsv(
+                                tsv_metadata_files,
+                                output[0],
+                                blacklisted_files,
+                                logfile
+                            )
             _ = logfile.write('TSV file matched request: {}\n'.format(tsv_triggered))
-
 
             if json_triggered and tsv_triggered:
                 msg = '\nWARNING: request path {} was active for both a JSON dump and a TSV metadata file\n'.format(output[0])
