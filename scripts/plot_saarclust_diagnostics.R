@@ -52,7 +52,7 @@ plot.orienting <- plotClusteredContigs(
 ggsave(filename = paste(output.folder, 'clustering.pdf', sep='.'), plot = plot.clustering, width = 16, height = 8)
 
 if (as.logical(contig.ordering)) {
-    ggsave(filename = paste(output.prefix, 'ordering.pdf', sep='.'), plot = plot.ordering, width = 16, height = 8)
+    ggsave(filename = paste(output.folder, 'ordering.pdf', sep='.'), plot = plot.ordering, width = 16, height = 8)
 }
 
 ggsave(filename = paste(output.folder, 'orienting.pdf', sep='.'), plot = plot.orienting, width = 16, height = 8)
