@@ -115,6 +115,13 @@ rule write_haploid_split_reads_fofn:
 
 
 rule concat_haploid_fastq:
+    """
+    Why this compression overhead?
+    pysam has issues iterating through gzip files
+    that are the result of a simple concat.
+    So, merge by gunzip and gzip again to avoid
+    problems downstream
+    """
     input:
         fofn = os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_fastq/{hap_reads}.{hap}.fofn')
     output:
@@ -126,7 +133,7 @@ rule concat_haploid_fastq:
     params:
         splits = lambda wildcards, input: load_fofn_file(input)
     shell:
-         'cat {params.splits} > {output}'
+         'gzip -d -c {params.splits} | gzip > {output}'
 
 
 rule concat_haploid_pbn_bam:

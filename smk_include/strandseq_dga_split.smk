@@ -152,9 +152,11 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
 
 rule strandseq_dga_split_merge_tag_groups:
     """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    fq_hap_reads = FASTQ file to be used for haplotype reconstruction
-    sseq_reads = FASTQ file used for strand-seq phasing
+    Why this compression overhead?
+    pysam has issues iterating through gzip files
+    that are the result of a simple concat.
+    So, merge by gunzip and gzip again to avoid
+    problems downstream
     """
     input:
         hap = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}.{sequence}.fastq.gz',
@@ -167,9 +169,11 @@ rule strandseq_dga_split_merge_tag_groups:
         '../environment/conda/conda_shelltools.yml'
     wildcard_constraints:
         haplotype = '(1|2)',
-        fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+',
+        fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt
     shell:
-        'cat {input.hap} {input.un} > {output}'
+        'gzip -d -c {input.hap} {input.un} | gzip > {output}'
 
 
 rule strandseq_dga_split_merge_tag_groups_pacbio_native:
