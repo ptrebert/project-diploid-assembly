@@ -38,11 +38,13 @@ dependencies:
   - longshot=0.4.0
   - wtdbg=2.5
   - flye=2.7
-  - canu=1.9
+  - canu=2.0
   - racon=1.4.10
   - lighter=1.1.2
-  - bcalm=2.2.1
-  - graphaligner=1.0.10
+  - bcalm=2.2.2
+  - bifrost=1.0.3
+  - graphaligner=1.0.11
+  - ucsc-bedgraphtobigwig=377
   - pigz=2.4
   - pip:
     - git+https://bitbucket.org/whatshap/whatshap@a3f8c91

@@ -60,6 +60,33 @@ TARGET_PATHS = {
         "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.scV{git_commit_version}.fasta"
     ),
 
+    "HAPLOID_READ_COVERAGE_HAP1": os.path.join(
+        "output", "cov_tracks", "hap_reads",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "{hap_reads}_map-to_{eval_align_ref}.h1.bigWig"
+    ),
+
+    "HAPLOID_READ_COVERAGE_HAP2": os.path.join(
+        "output", "cov_tracks", "hap_reads",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "{hap_reads}_map-to_{eval_align_ref}.h2.bigWig"
+    ),
+
+    "HAPLOID_READ_COVERAGE_UN": os.path.join(
+        "output", "cov_tracks", "hap_reads",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "{hap_reads}_map-to_{eval_align_ref}.un.bigWig"
+    ),
+
     "REPORT_NHR_ASSEMBLY": os.path.join(
         "output", "evaluation", "quastlg_busco",
         "{eval_known_ref}-{eval_gene_model}",

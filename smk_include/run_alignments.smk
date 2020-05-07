@@ -433,6 +433,10 @@ rule pbmm2_arrow_polish_alignment_pass1:
             ' {input.contigs} {input.reads} {output.bam} &> {log}'
 
 
+#################################################################################
+# BELOW: alignments for haploid contig to known reference / needed for SaaRclust
+#################################################################################
+
 rule minimap_contig_to_known_reference_alignment:
     input:
         contigs = 'output/{folder_path}/{file_name}.fasta',
@@ -491,3 +495,156 @@ rule dump_contig_to_reference_alignment_to_bed:
         mem_per_cpu_mb = 2048
     shell:
         'bedtools bamtobed -i {input} > {output} 2> {log}'
+
+
+#############################################################
+# BELOW: alignments for haploid read sets to known reference
+#############################################################
+
+rule minimap_hapreads_to_known_reference_alignment:
+    input:
+        reads = os.path.join('output', 'diploid_assembly', 'strandseq_joint',
+                             '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                             'draft', 'haploid_fastq', '{hap_reads}.{hap}.fastq.gz'),
+        preset = os.path.join('output', 'diploid_assembly', 'strandseq_joint',
+                              '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                              'draft', 'haploid_fastq', '{hap_reads}.{hap}.preset.minimap'),
+        reference = 'references/assemblies/{aln_ref}.fasta'
+    output:
+        bam = os.path.join('output', 'alignments', 'hap_reads_to_reference',
+                           '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                           '{hap_reads}_map-to_{aln_ref}.{hap}.psort.sam.bam')
+    log:
+       minimap = os.path.join('log', 'output', 'alignments', 'hap_reads_to_reference',
+                              '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                              '{hap_reads}_map-to_{aln_ref}.{hap}.minimap.log'),
+       st_sort = os.path.join('log', 'output', 'alignments', 'hap_reads_to_reference',
+                              '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                              '{hap_reads}_map-to_{aln_ref}.{hap}.st-sort.log'),
+       st_view = os.path.join('log', 'output', 'alignments','hap_reads_to_reference',
+                              '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                              '{hap_reads}_map-to_{aln_ref}.{hap}.st-view.log'),
+    benchmark:
+        os.path.join('run', 'output', 'alignments', 'hap_reads_to_reference',
+                     '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                     '{hap_reads}_map-to_{aln_ref}.{hap}' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    conda:
+         '../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        hap_reads = CONSTRAINT_NANOPORE_SAMPLES
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((55296 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 55296 * attempt,
+        runtime_hrs = 71,
+        mem_sort_mb = 8192
+    params:
+        individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
+        preset = load_preset_file,
+        discard_flag = config['minimap_readref_aln_discard'],
+        tempdir = lambda wildcards: os.path.join(
+          'temp', 'minimap', 'hap_reads_to_reference',
+            wildcards.callset, wildcards.clust_assm, wildcards.vc_reads,
+            wildcards.sseq_reads, wildcards.hap_reads, wildcards.aln_ref,
+            wildcards.hap)
+    shell:
+         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
+         'minimap2 -t {threads} {params.preset} -a '
+         '-R "@RG\\tID:1\\tSM:{params.individual}" '
+         '{input.reference} {input.reads} 2> {log.minimap} | '
+         'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
+         'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
+
+
+rule pbmm2_hapreads_to_known_reference_alignment_pacbio_native:
+    input:
+        reads = os.path.join('output', 'diploid_assembly', 'strandseq_joint',
+                             '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                             'draft', 'haploid_bam', '{hap_reads}.{hap}.pbn.bam'),
+        preset = os.path.join('output', 'diploid_assembly', 'strandseq_joint',
+                              '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                              'draft', 'haploid_bam', '{hap_reads}.{hap}.preset.pbmm2'),
+        reference = 'references/assemblies/{aln_ref}.fasta'
+    output:
+        bam = os.path.join('output', 'alignments', 'hap_reads_to_reference',
+                           '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                           '{hap_reads}_map-to_{aln_ref}.{hap}.psort.pbn.bam')
+    log:
+        pbmm2 = os.path.join('log', 'output', 'alignments', 'hap_reads_to_reference',
+                             '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                             '{hap_reads}_map-to_{aln_ref}.{hap}.pbmm2-pbn.log'),
+    benchmark:
+        os.path.join('run', 'output', 'alignments', 'hap_reads_to_reference',
+                     '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                     '{hap_reads}_map-to_{aln_ref}.{hap}.pbn' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    conda:
+        '../environment/conda/conda_pbtools.yml'
+    threads: config['num_cpu_high']
+    resources:
+         mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
+         mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
+         runtime_hrs = 71
+    params:
+        align_threads = config['num_cpu_high'] - 2,
+        sort_threads = 2,
+        preset = load_preset_file,
+        individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
+        tempdir = lambda wildcards: os.path.join(
+          'temp', 'pbmm2', 'pbn', 'hap_reads_to_reference',
+          wildcards.callset, wildcards.clust_assm, wildcards.vc_reads,
+          wildcards.sseq_reads, wildcards.hap_reads, wildcards.aln_ref,
+          wildcards.hap)
+    shell:
+         'TMPDIR={params.tempdir} '
+         'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
+         ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
+         ' --preset {params.preset} --sample {params.individual} '
+         ' {input.reference} {input.reads} {output.bam} &> {log}'
+
+
+rule pbmm2_hapreads_to_known_reference_alignment_pacbio_fastq:
+    input:
+        reads = os.path.join('output', 'diploid_assembly', 'strandseq_joint',
+                             '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                             'draft', 'haploid_fastq', '{hap_reads}.{hap}.fastq.gz'),
+        preset = os.path.join('output', 'diploid_assembly', 'strandseq_joint',
+                              '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                              'draft', 'haploid_fastq', '{hap_reads}.{hap}.preset.pbmm2'),
+        reference = 'references/assemblies/{aln_ref}.fasta'
+    output:
+        bam = os.path.join('output', 'alignments', 'hap_reads_to_reference',
+                           '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                           '{hap_reads}_map-to_{aln_ref}.{hap}.psort.sam.bam')
+    log:
+        pbmm2 = os.path.join('log', 'output', 'alignments', 'hap_reads_to_reference',
+                             '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                             '{hap_reads}_map-to_{aln_ref}.{hap}.pbmm2-fq.log'),
+    benchmark:
+        os.path.join('run', 'output', 'alignments', 'hap_reads_to_reference',
+                     '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
+                     '{hap_reads}_map-to_{aln_ref}.{hap}.fq' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    wildcard_constraints:
+        hap_reads = CONSTRAINT_PACBIO_SAMPLES
+    conda:
+         '../environment/conda/conda_pbtools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
+        runtime_hrs = 71
+    params:
+        align_threads = config['num_cpu_high'] - 2,
+        sort_threads = 2,
+        preset = load_preset_file,
+        individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
+        tempdir = lambda wildcards: os.path.join(
+          'temp', 'pbmm2', 'fastq', 'hap_reads_to_reference',
+          wildcards.callset, wildcards.clust_assm, wildcards.vc_reads,
+          wildcards.sseq_reads, wildcards.hap_reads, wildcards.aln_ref,
+          wildcards.hap)
+    shell:
+         'TMPDIR={params.tempdir} '
+         'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
+         ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
+         ' --preset {params.preset} --rg "@RG\\tID:1\\tSM:{params.individual}" --sample {params.individual} '
+         ' {input.reference} {input.reads} {output.bam} &> {log}'
