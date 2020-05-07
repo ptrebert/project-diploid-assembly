@@ -58,7 +58,6 @@ def create_request_files_from_json(json_dumps, request_path, blacklist, logfile)
         _ = logfile.write('Processing file key {}\n'.format(key))
         file_prefix = os.path.split(key)[1]
         req_file_path = os.path.join(request_path, file_prefix + '.request')
-        _ = logfile.write('Creating request file at {}\n'.format(req_file_path))
         try:
             md5 = file_infos['md5']
         except KeyError:
@@ -78,6 +77,7 @@ def create_request_files_from_json(json_dumps, request_path, blacklist, logfile)
                     raise RuntimeError('Could not remove blacklisted data file {}: {}'.format(file_infos['local_path'], str(err)))
             continue
 
+        _ = logfile.write('Creating request file at {}\n'.format(req_file_path))
         with open(req_file_path, 'w') as req_file:
             _ = req_file.write(file_infos['remote_path'] + '\n')
             _ = req_file.write(file_infos['local_path'] + '\n')
