@@ -8,6 +8,7 @@ bed.file = args[1]
 ref.genome = args[2]
 output.folder = args[3]
 contig.ordering = args[4]
+plot.title = args[5]
 
 if (is.na(contig.ordering)) {
     contig.ordering = FALSE
@@ -22,7 +23,8 @@ plot.clustering <- plotClusteredContigs(
     bedfile = bed.file,
     min.mapq = 10,
     bsgenome = BSgenome.Hsapiens.UCSC.hg38,
-    report = 'clustering'
+    report = 'clustering',
+    title = paste('Clustering', plot.title, sep=': ')
 )
 
 if (as.logical(contig.ordering)) {
@@ -31,16 +33,20 @@ if (as.logical(contig.ordering)) {
         bedfile = bed.file,
         min.mapq = 10,
         bsgenome = BSgenome.Hsapiens.UCSC.hg38,
-        report = 'ordering'
+        report = 'ordering',
+        info.delim = '_',
+        info.fields = c('assm', 'ctg', 'order', 'ID'),
+        title = paste('Ordering', plot.title, sep=': ')
+
     )
 }
-
 
 plot.orienting <- plotClusteredContigs(
     bedfile = bed.file,
     min.mapq = 10,
     bsgenome = BSgenome.Hsapiens.UCSC.hg38,
-    report = 'orienting'
+    report = 'orienting',
+    title = paste('Orientation', plot.title, sep=': ')
 )
 
 ggsave(filename = paste(output.folder, 'clustering.pdf', sep='.'), plot = plot.clustering, width = 16, height = 8)
