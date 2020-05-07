@@ -91,7 +91,9 @@ rule workaround_saarclust_hap_diagnostic_plot:
                     raise ValueError('Invalid contig name after replacing "_": '
                                      '{} / {} / {}'.format(ctg, line.strip(), input[0]))
 
-                out_buffer.append('\t'.join([assembly, ctg, order_num, record_id]))
+                changed_name = '_'.join([assembly, ctg, order_num, record_id])
+                new_line = '\t'.join([chrom, start, end, changed_name, mapq, strand])
+                out_buffer.append(new_line)
 
         with open(output[0], 'w') as dump:
             _ = dump.write('\n'.join(out_buffer))
