@@ -119,6 +119,7 @@ rule dump_shasta_fasta:
         'log/input/fastq/{file_name}.fa-dump.log'
     benchmark:
         'run/input/fastq/{file_name}.fa-dump.rsrc'
+    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     resources:
         runtime_hrs = lambda wildcards, attempt: 8 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 + 4096 * attempt,
@@ -148,6 +149,7 @@ rule dump_shasta_haploid_fasta:
         'log/{file_path}/haploid_fastq/{file_name}.fa-dump.log'
     benchmark:
         'run/{file_path}/haploid_fastq/{file_name}.fa-dump.rsrc'
+    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     resources:
         runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 2 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
