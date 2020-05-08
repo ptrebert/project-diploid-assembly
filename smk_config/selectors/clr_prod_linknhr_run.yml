@@ -1,10 +1,11 @@
 
 select_targets:
   nhr_assembler:
-    - uw27r
-    - mpi27r
-    - jax27r
+    - uw27
+    - mpi27
+    - jax27
     - hhu26
+    - hhu27
   var_caller:
     - longshot
 

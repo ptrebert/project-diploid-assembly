@@ -40,3 +40,17 @@ sample_targets_HG02011:
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: longshot
+  - defaults:
+      hap_reads: *clr_hgsvc
+      vc_reads: *clr_hgsvc
+      sseq_reads: *sseq_reads
+      pol_reads: *clr_hgsvc
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hhu26
+      hap_assembler: flye
+      var_caller: longshot

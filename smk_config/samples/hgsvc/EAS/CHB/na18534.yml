@@ -52,7 +52,7 @@ sample_targets_NA18534:
         - h1-un
         - h2-un
   - target:
-      nhr_assembler: jax27r
+      nhr_assembler: jax27
       hap_assembler: flye
       var_caller: longshot
 

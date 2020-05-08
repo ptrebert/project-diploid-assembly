@@ -52,6 +52,6 @@ sample_targets_NA19650:
         - h1-un
         - h2-un
   - target:
-      nhr_assembler: uw27r
+      nhr_assembler: uw27
       hap_assembler: flye
       var_caller: longshot

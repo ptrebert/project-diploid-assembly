@@ -100,11 +100,8 @@ sample_targets_HG00733:
       var_caller: longshot
   - target:
       nhr_assembler:
-        - uw27r
-        - mpi27r
-        - jax27b
-        - uw27b
-        - redbean
+        - uw27
+        - mpi27
       hap_assembler: flye
       var_caller: longshot
   - defaults:
