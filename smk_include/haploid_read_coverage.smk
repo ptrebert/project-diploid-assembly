@@ -16,7 +16,7 @@ rule dump_haploid_read_coverage:
         mem_total_mb = 2048,
         mem_per_cpu_mb = 2048
     shell:
-        'bedtools genomecov -ibam {input} > {output} 2> {log}'
+        'bedtools genomecov -bg -ibam {input} > {output} 2> {log}'
 
 
 rule convert_hap_read_coverage:
