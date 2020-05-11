@@ -126,10 +126,12 @@ rule concat_haploid_fastq:
         fofn = os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_fastq/{hap_reads}.{hap}.fofn')
     output:
         os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_fastq/{hap_reads}.{hap}.fastq.gz')
+    benchmark:
+        os.path.join('run', 'output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_fastq/{hap_reads}.{hap}.fq-concat.rsrc')
     conda:
          '../environment/conda/conda_shelltools.yml'
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     params:
         splits = lambda wildcards, input: load_fofn_file(input)
     shell:
@@ -137,15 +139,20 @@ rule concat_haploid_fastq:
 
 
 rule concat_haploid_pbn_bam:
+    """
+    for consistency, switch to pbmerge
+    """
     input:
         fofn = os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_bam/{hap_reads}.{hap}.fofn')
     output:
         os.path.join('output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_bam/{hap_reads}.{hap}.pbn.bam')
+    log:
+        os.path.join('log', 'output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_bam/{hap_reads}.{hap}.pbn.mrg.log')
+    benchmark:
+        os.path.join('run', 'output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_bam/{hap_reads}.{hap}.pbn-concat.rsrc')
     conda:
-         '../environment/conda/conda_shelltools.yml'
+         '../environment/conda/conda_pbtools.yml'
     resources:
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt
-    params:
-        bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     shell:
-        'bamtools merge {params.bam_parts} -out {output}'
+        'pbmerge {input.fofn} > {output} 2> {log}'

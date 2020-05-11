@@ -20,6 +20,7 @@ rule gunzip_fastq_copy:
         '{filepath}.fastq'
     conda:
          '../environment/conda/conda_shelltools.yml'
+    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     resources:
         runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 12 * attempt
     shell:
@@ -27,19 +28,22 @@ rule gunzip_fastq_copy:
 
 
 rule samtools_index_bam_alignment:
+    """
+    - multi-threaded index generation seems to swallow error (e.g., bad blocks / error 33)
+    - WH claimed that, by experience, single-threaded is often faster
+    """
     input:
         bam = '{filepath}.bam'
     output:
         bai = '{filepath}.bam.bai'
     benchmark:
-        'run/{{filepath}}.idx-bai.t{}.rsrc'.format(config['num_cpu_low'])
-    threads: config['num_cpu_low']
+        'run/{filepath}.idx-bai.t1.rsrc'
     resources:
         runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 16 * attempt
     conda:
          '../environment/conda/conda_biotools.yml'
     shell:
-        "samtools index -@ {threads} {input.bam}"
+        "samtools index {input.bam}"
 
 
 rule pb_bamtools_index_bam_alignment:

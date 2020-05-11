@@ -145,6 +145,11 @@ rule write_bam_input_parts_fofn:
 
 
 rule merge_pacbio_native_bams:
+    """
+    switch to pbmerge ; bamtools merge
+    seems to create corrupt data blocks
+    every now and then
+    """
     input:
         fofn = 'input/bam/{mrg_sample}_1000.pbn.fofn'
     output:
@@ -156,13 +161,11 @@ rule merge_pacbio_native_bams:
     wildcard_constraints:
         mrg_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     conda:
-         '../environment/conda/conda_biotools.yml'
+         '../environment/conda/conda_pbtools.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 if (attempt <= 1 and '-ccs' in wildcards.mrg_sample) else 24 * attempt
-    params:
-        bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
     shell:
-        'bamtools merge {params.bam_parts} -out {output}'
+        'pbmerge {input.fofn} > {output} 2> {log}'
 
 
 rule chs_child_filter_to_100x:

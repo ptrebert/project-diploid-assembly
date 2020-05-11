@@ -192,7 +192,7 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.rsrc'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_pbtools.yml'
     wildcard_constraints:
         haplotype = '(1|2)',
         pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
@@ -201,7 +201,7 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
         mem_per_cpu_mb = lambda wildcards, attempt: 512 + 512 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt
     shell:
-        'bamtools merge -in {input.hap} -in {input.un} -out {output} &> {log}'
+        'pbmerge {input.hap} {input.un} > {output} 2> {log}'
 
 
 # The following merge step is primarily for convenience, i.e. for pushing
