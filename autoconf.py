@@ -33,6 +33,7 @@ option_defaults = col.OrderedDict([
     ('ss_seq_platform', 'ilany'),
     ('ss_read_type', 'npe'),
     ('ss_library_fractions', None),
+    ('param_ver', 12),
     ('max_cpu', None),
     ('high_cpu', None),
     ('medium_cpu', None),
@@ -104,6 +105,8 @@ option_help = col.OrderedDict([
                      '{} (length N paired-end)]'.format(option_defaults['ss_read_type'])),
     ('ss_library_fractions', 'Specify number of different Strand-seq library fractions: '
                              '{}'.format(option_constraints['ss_library_fractions']['check'])),
+    ('param_ver', 'Specify the pipeline parameter version (number) to be used in the analysis. '
+                  '[Default: {}]'.format(option_defaults['param_ver'])),
     ('max_cpu', 'Number of CPU cores to use for tasks such as whole-genome assembly (should be max. available).'),
     ('high_cpu', 'Number of CPU cores to use for tasks such as whole-genome alignment of long reads.'),
     ('medium_cpu', 'Number of CPU cores to use for tasks such as chromosome-scale alignment of long reads.'),
@@ -125,7 +128,7 @@ assert all(k in option_defaults.keys() for k in option_help.keys()), 'Key missin
 
 load_configs = {
     'reference_sources': 'smk_config/ref_data/reference_data_sources.yml',
-    'params': 'smk_config/params/smk_cfg_params_RV9.yml'
+    'params': 'smk_config/params/smk_cfg_params_RV{param_version}.yml'
 }
 
 sample_targets_template = """
@@ -308,6 +311,16 @@ def parse_command_line():
         choices=option_constraints['ss_library_fractions']['check'],
         dest='ss_library_fractions',
         help=option_help['ss_library_fractions']
+    )
+
+    param_group = parser.add_argument_group('Parameter configuration')
+    param_group.add_argument(
+        '--parameter-version',
+        '-pv',
+        default=option_defaults['param_ver'],
+        type=int,
+        dest='param_ver',
+        help=option_help['param_ver']
     )
 
     runenv_group = parser.add_argument_group('Run environment configuration')
