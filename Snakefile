@@ -77,17 +77,19 @@ def collect_all_configured_samples(wildcards):
 
 rule master:
     input:
-        collect_all_configured_samples
+        collect_all_configured_samples,
+        'config.dump'
     message: 'Default run: processing only samples in loaded configuration'
 
 
 rule master_hgsvc:
     input:
-         rules.run_afr_trios.input,
-         rules.run_amr_trios.input,
-         rules.run_eur_trios.input,
-         rules.run_eas_trios.input,
-         rules.run_sas_trios.input
+        rules.run_afr_trios.input,
+        rules.run_amr_trios.input,
+        rules.run_eur_trios.input,
+        rules.run_eas_trios.input,
+        rules.run_sas_trios.input,
+        'config.dump'
     message: 'HGSVC run: processing all HGSVC samples'
 
 
@@ -108,6 +110,39 @@ rule setup_env:
         rules.install_rlib_strandphaser.output
     message: 'Performing environment setup...'
 
+
+rule dump_config:
+    output:
+        'config.dump'
+    run:
+        import json
+        import time
+
+        timestamp = time.strftime('%Y%m%d-%H%M%S')
+
+        configured_samples = []
+        for key in config.keys():
+            if not key.startswith('sample_description'):
+                continue
+            sample = key.split('_', 2)[-1]
+            configured_samples.append(sample)
+
+        if configured_samples:
+            second_dump = 'config_{}_{}.json'.format(timestamp, '_'.join(sorted(configured_samples)))
+        else:
+            second_dump = 'config_{}.json'.format(timestamp)
+
+        with open(output[0], 'w') as fake:
+            _ = fake.write(second_dump + '\n(Full configuration dump)')
+
+        with open(second_dump, 'w') as dump:
+            json.dump(
+                config,
+                dump,
+                ensure_ascii=True,
+                indent=2,
+                sort_keys=True,
+            )
 
 
 def make_log_useful(log_path, status):
