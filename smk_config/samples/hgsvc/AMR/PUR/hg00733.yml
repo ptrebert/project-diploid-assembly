@@ -99,9 +99,7 @@ sample_targets_HG00733:
       hap_assembler: flye
       var_caller: longshot
   - target:
-      nhr_assembler:
-        - uw27
-        - mpi27
+      nhr_assembler: uw27
       hap_assembler: flye
       var_caller: longshot
   - defaults:
