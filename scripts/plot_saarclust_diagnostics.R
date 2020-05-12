@@ -2,18 +2,18 @@
 
 suppressMessages(library(SaaRclust))
 
-args = commandArgs(trailingOnly=TRUE)
+args <- commandArgs(trailingOnly=TRUE)
 
-bed.file = args[1]
-ref.genome = args[2]
-output.folder = args[3]
-plot.title = args[4]
-haploid.assembly = args[5]
+bed.file <- args[1]
+ref.genome <- args[2]
+output.folder <- args[3]
+plot.title <- args[4]
+haploid.assembly <- args[5]
 
 if (is.na(haploid.assembly)) {
-    haploid.assembly = FALSE
+    haploid.assembly <- FALSE
 } else {
-    haploid.assembly = as.logical(haploid.assembly)
+    haploid.assembly <- as.logical(haploid.assembly)
 }
 
 stopifnot(ref.genome == 'hg38')
