@@ -2,7 +2,6 @@
 select_targets:
   nhr_assembler:
     - uw27
-    - mpi27
     - jax27
     - hhu26
     - hhu27
