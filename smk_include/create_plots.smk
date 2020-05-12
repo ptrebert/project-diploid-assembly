@@ -52,7 +52,7 @@ rule plot_saarclust_nhr_assembly_diagnostic_output:
             'output', 'plotting', 'saarclust_diagnostics', 'reference_assembly', wildcards.folder_path,
             wildcards.reference + '_map-to_' + wildcards.aln_reference)
     shell:
-         '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} FALSE {wildcards.reference} &> {log}'
+         '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} {wildcards.reference} FALSE &> {log}'
 
 
 rule workaround_saarclust_hap_diagnostic_plot:
@@ -127,4 +127,4 @@ rule plot_saarclust_haploid_assembly_diagnostic_output:
             'output', 'plotting', 'saarclust_diagnostics', 'diploid_assembly', wildcards.folder_path,
             wildcards.file_name + '_map-to_' + wildcards.aln_reference)
     shell:
-         '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} TRUE {wildcards.file_name} &> {log}'
+         '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} {wildcards.file_name} FALSE &> {log}'
