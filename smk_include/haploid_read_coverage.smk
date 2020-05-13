@@ -20,9 +20,9 @@ rule dump_haploid_read_coverage:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * 4,
-        mem_total_mb = lambda wildcards, attempt: attempt * 49152,
-        mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 49152 / config['num_cpu_medium'])
+        runtime_hrs = lambda wildcards, attempt: attempt * 6,
+        mem_total_mb = lambda wildcards, attempt: attempt * 32768 + 32768,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((attempt * 32768 + 32768) / config['num_cpu_medium'])
     shell:
         'bedtools genomecov -bg -ibam {input} 2> {log.bedtools}'
         ' | '
@@ -43,8 +43,8 @@ rule convert_hap_read_coverage:
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt,
-        mem_total_mb = 2048,
-        mem_per_cpu_mb = 2048
+        runtime_hrs = lambda wildcards, attempt: attempt * 6,
+        mem_total_mb = lambda wildcards, attempt: attempt * 16384,
+        mem_per_cpu_mb = lambda wildcards, attempt: attempt * 16384
     shell:
          'bedGraphToBigWig {input.bg_track} {input.sizes} {output} 2> {log}'
