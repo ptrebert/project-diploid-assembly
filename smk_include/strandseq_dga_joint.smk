@@ -154,5 +154,7 @@ rule concat_haploid_pbn_bam:
          '../environment/conda/conda_pbtools.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: 12 * attempt
+    params:
+        bam_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'pbmerge {input.fofn} > {output} 2> {log}'
+        'pbmerge {params.bam_parts} > {output} 2> {log}'

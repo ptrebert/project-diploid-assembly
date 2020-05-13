@@ -164,8 +164,10 @@ rule merge_pacbio_native_bams:
          '../environment/conda/conda_pbtools.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 if (attempt <= 1 and '-ccs' in wildcards.mrg_sample) else 24 * attempt
+    params:
+        bam_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'pbmerge {input.fofn} > {output} 2> {log}'
+        'pbmerge {params.bam_parts} > {output} 2> {log}'
 
 
 rule chs_child_filter_to_100x:
