@@ -31,7 +31,8 @@ if (!haploid.assembly) {
         min.mapq = 10,
         bsgenome = BSgenome.Hsapiens.UCSC.hg38,
         report = 'clustering',
-        title = paste('Clustering', plot.title, sep=': ')
+        title = paste('Clustering', plot.title, sep=': '),
+        chromosomes = paste0('chr', c(1:22, 'X'))
     )
 
     plot.orienting <- plotClusteredContigs(
@@ -39,7 +40,8 @@ if (!haploid.assembly) {
         min.mapq = 10,
         bsgenome = BSgenome.Hsapiens.UCSC.hg38,
         report = 'orienting',
-        title = paste('Orientation', plot.title, sep=': ')
+        title = paste('Orientation', plot.title, sep=': '),
+        chromosomes = paste0('chr', c(1:22, 'X'))
     )
 } else {
 
@@ -51,7 +53,8 @@ if (!haploid.assembly) {
         info.delim = '_',
         info.fields = c('cluster.SRC', 'contig.ID', 'order', 'cluster.ID'),
         col.by = 'cluster.ID',
-        title = paste('Clustering', plot.title, sep=': ')
+        title = paste('Clustering', plot.title, sep=': '),
+        chromosomes = paste0('chr', c(1:22, 'X'))
     )
 
     plot.ordering <- plotClusteredContigs(
@@ -61,7 +64,8 @@ if (!haploid.assembly) {
         report = 'ordering',
         info.delim = '_',
         info.fields = c('cluster.SRC', 'contig.ID', 'order', 'cluster.ID'),
-        title = paste('Ordering', plot.title, sep=': ')
+        title = paste('Ordering', plot.title, sep=': '),
+        chromosomes = paste0('chr', c(1:22, 'X'))
     )
 
     plot.orienting <- plotClusteredContigs(
@@ -71,7 +75,8 @@ if (!haploid.assembly) {
         report = 'orienting',
         info.delim = '_',
         info.fields = c('cluster.SRC', 'contig.ID', 'order', 'cluster.ID'),
-        title = paste('Orientation', plot.title, sep=': ')
+        title = paste('Orientation', plot.title, sep=': '),
+        chromosomes = paste0('chr', c(1:22, 'X'))
     )
 }
 
