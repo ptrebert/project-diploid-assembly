@@ -51,6 +51,10 @@ sample_non_default_parameters:
     use_only_in:
       write_saarclust_config_file:
         desired_clusters: 23
+  NA20509:
+    use_only_in:
+      write_saarclust_config_file:
+        desired_clusters: 23
 
 # VARIANT CALLING
 # Postprocessing parameters
