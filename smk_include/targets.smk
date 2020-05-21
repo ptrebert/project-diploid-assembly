@@ -185,6 +185,49 @@ TARGET_PATHS = {
         "{hap_reads}.tags.{tag_source}.tsv"
     ),
 
+    # The following stat summary targets all fix the data format
+    # to FASTQ because no assembler works with pacbio-native BAM
+    # as input - will break if that changes
+    "STATS_READ_HAPLOID_SUMMARY_USERDEFINED": os.path.join(
+        "output", "statistics", "stat_dumps", "diploid_assembly", "strandseq_joint",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_fastq",
+        "{hap_reads}.{hap}.fastq.pck"
+    ),
+
+    "STATS_READ_HAPLOID_SUMMARY_HAP1": os.path.join(
+        "output", "statistics", "stat_dumps", "diploid_assembly", "strandseq_joint",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_fastq",
+        "{hap_reads}.h1.fastq.pck"
+    ),
+
+    "STATS_READ_HAPLOID_SUMMARY_HAP2": os.path.join(
+        "output", "statistics", "stat_dumps", "diploid_assembly", "strandseq_joint",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_fastq",
+        "{hap_reads}.h2.fastq.pck"
+    ),
+
+    "STATS_READ_HAPLOID_SUMMARY_UN": os.path.join(
+        "output", "statistics", "stat_dumps", "diploid_assembly", "strandseq_joint",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_fastq",
+        "{hap_reads}.un.fastq.pck"
+    ),
+
     "PLOT_INPUT_SAMPLE_STATS": os.path.join(
         "output", "plotting", "statistics", "input_reads",
         "{hap_reads}.{file_ext}.stats.pdf"
