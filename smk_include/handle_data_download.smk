@@ -140,6 +140,12 @@ def create_request_files_from_tsv(tsv_files, request_path, blacklist, logfile):
                     if tech_type == 'long':
                         local_name = label + '.part{}.fastq.gz'.format(long_read_parts)
                     else:
+                        # rarely, ENA metadata / file reports list three FASTQ files per library
+                        # for paired-end reads... example: PRJEB3381
+                        if not (filename.endswith('_1.fastq.gz') or filename.endswith('_2.fastq.gz')):
+                            _ = logfile.write('WARNING: expecting short, paired-end reads, skipping '
+                                              'over file with no mate pair indicator (_1 or _2): {}'.format(ftp_path))
+                            continue
                         local_name = label + '_' + filename
 
                     local_data_folder = os.path.split(request_path)[0]
@@ -374,6 +380,49 @@ rule handle_single_fastq_download_request:
          '--parallel-conn {params.parallel_conn} &> {log}'
 
 
+def select_short_read_request_file(wildcards):
+    import os
+    subfolder = 'fastq'
+    readset = wildcards.readset
+
+    assert wildcards.readset.startswith(wildcards.lib_prefix),\
+        'ERROR: sample/readset mismatch for short reads: {} / {}'.format(wildcards.readset, wildcards.lib_prefix)
+
+    requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder, readset=readset).output[0]
+
+    req_file_path = os.path.join(
+        requested_input,
+        '{}_{}_{}.request'.format(wildcards.lib_prefix, wildcards.lib_id, wildcards.mate))
+
+    return req_file_path
+
+
+rule handle_short_read_download_request:
+    input:
+        select_short_read_request_file
+    output:
+        'input/fastq/{readset}/{lib_prefix}_{lib_id}_{mate}.fastq.gz'
+    wildcard_constraints:
+        readset = CONSTRAINT_SHORT_READ_INPUT_SAMPLES
+    log:
+        'log/input/fastq/{readset}/{lib_prefix}_{lib_id}_{mate}.download.log'
+    benchmark:
+        'run/input/fastq/{readset}/{lib_prefix}_{lib_id}_{mate}.download.rsrc'
+    conda:
+        '../environment/conda/conda_shelltools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
+        parallel_conn = config['num_cpu_low'] - 1
+    shell:
+        '{params.script_exec} --debug {params.force_copy} '
+        '--request-file {input} --output {output} '
+        '--parallel-conn {params.parallel_conn} &> {log}'
+
+
 def get_bioproject_sample_annotator(bioproject):
     known_projects = {
         'PRJEB12849': sample_annotator_prjeb12849,
@@ -454,3 +503,24 @@ def sample_annotator_prjna540705(sample_info, individual):
     else:
         sample_label = None
     return sample_label, 'long'
+
+
+def sample_annotator_prjeb9396(sample_info, individual):
+    """
+    :param sample_info:
+    :param individual:
+    :return:
+    """
+    project = '1kg'
+    vendor = 'il',
+    read_info = '125pe',
+    assert 'illumina' in sample_info['instrument_platform'].lower()
+    model = '25k',
+    assert 'hiseq 2500' in sample_info['instrument_model'].lower()
+    assert 'paired' in sample_info['library_layout'].lower()
+    if individual in sample_info['sample_alias']:
+        sample_label = '{}_{}_{}{}-{}'.format(individual, project, vendor, model, read_info)
+    else:
+        sample_label = None
+    return sample_label, 'short'
+

@@ -139,3 +139,22 @@ CONSTRAINT_STRANDSEQ_SAMPLES = build_input_data_wildcard_constraint(
     input_type='strandseq',
     readset_selectors={}
 )
+
+CONSTRAINT_SHORT_READ_INPUT_SAMPLES = build_input_data_wildcard_constraint(
+    input_type='short_reads',
+    readset_selectors={}
+)
+
+CONSTRAINT_COMPLETE_SHORT_READ_INPUT_SAMPLES = build_input_data_wildcard_constraint(
+    input_type='short_reads',
+    readset_selectors={
+        'load_type': ['complete']
+    }
+)
+
+CONSTRAINT_PARTS_SHORT_READ_INPUT_SAMPLES = build_input_data_wildcard_constraint(
+    input_type='short_reads',
+    readset_selectors={
+        'load_type': ['parts']
+    }
+)
