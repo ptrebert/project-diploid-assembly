@@ -19,6 +19,11 @@ sample_description_NA12878:
         source_type: ena
         bioproject: PRJEB14185
         library_fractions: one
+    - short_reads:
+        readset: NA12878_ptg_il2k-100pe_short
+        source_type: ena
+        bioproject: PRJEB3381
+        load_type: complete
 
 
 sample_targets_NA12878:
