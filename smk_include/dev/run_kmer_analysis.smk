@@ -44,7 +44,7 @@ rule install_source_bifrost:
     params:
         repo_folder = 'output/repositories'
     shell:
-         'rm -rf {params.repo_folder}/bifrost && '
+         '( rm -rf {params.repo_folder}/bifrost && '
          'mkdir -p {params.repo_folder} && '
          'cd {params.repo_folder} && '
          'git clone https://github.com/pmelsted/bifrost.git && '
@@ -52,7 +52,7 @@ rule install_source_bifrost:
          'git checkout f1e48443f3576429590b65d24b998c88a52fb6d4 && '
          'mkdir build && cd build && '
          'cmake -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX .. && '
-         'make && make install &> {log}'
+         'make && make install ; ) > {log} 2>&1'
 
 
 rule short_read_quality_trimming:
