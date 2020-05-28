@@ -297,6 +297,8 @@ rule write_short_read_input_fofn:
         short_reads = collect_short_read_input_parts
     output:
         'input/fastq/{readset}_{mate}.fofn'
+    wildcard_constraints:
+        readset = CONSTRAINT_SHORT_READ_INPUT_SAMPLES
     run:
         try:
             validate_checkpoint_output(input.short_reads)
