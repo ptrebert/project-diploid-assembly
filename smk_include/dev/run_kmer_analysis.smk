@@ -154,8 +154,8 @@ rule short_read_error_correction:
 
 rule write_bifrost_fofn:
     input:
-        mate1 = 'input/fastq/{readset}/corrected/{sample}_{readset}_1_val_1.cor.fq.gz',
-        mate2 = 'input/fastq/{readset}/corrected/{sample}_{readset}_2_val_2.cor.fq.gz',
+        mate1 = 'input/fastq/{sample}_{readset}/corrected/{sample}_{readset}_1_val_1.cor.fq.gz',
+        mate2 = 'input/fastq/{sample}_{readset}/corrected/{sample}_{readset}_2_val_2.cor.fq.gz',
         hap1 = 'output/evaluation/kmer_analysis/phased_assemblies/{sample}_{assembly}.h1-un.{polisher}.fasta',
         hap2 = 'output/evaluation/kmer_analysis/phased_assemblies/{sample}_{assembly}.h2-un.{polisher}.fasta',
         reference = 'references/assemblies/{known_ref}.no-mito.fasta',
