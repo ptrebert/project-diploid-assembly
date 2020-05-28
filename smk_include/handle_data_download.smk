@@ -513,10 +513,10 @@ def sample_annotator_prjeb9396(sample_info, individual):
     :return:
     """
     project = '1kg'
-    vendor = 'il',
-    read_info = '125pe',
+    vendor = 'il'
+    read_info = '125pe'
     assert 'illumina' in sample_info['instrument_platform'].lower()
-    model = '25k',
+    model = '25k'
     assert 'hiseq 2500' in sample_info['instrument_model'].lower()
     assert 'paired' in sample_info['library_layout'].lower()
     if individual in sample_info['sample_alias']:
