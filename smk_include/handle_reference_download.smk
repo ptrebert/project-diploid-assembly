@@ -11,7 +11,14 @@ rule create_reference_download_request:
         'references/{subfolder}/{reference}.request'
     run:
         import os
-        ref_sources_info = config['reference_data_sources']
+        import sys
+
+        try:
+            ref_sources_info = config['reference_data_sources']
+        except KeyError:
+            sys.stderr.write('\nERROR: no reference data sources specified.\n'
+                             'Did you load the reference data sources config file?\n')
+            raise
 
         file_info = ref_sources_info[wildcards.reference]
 
@@ -57,6 +64,25 @@ rule handle_gff_reference_download_request:
         'references/downloads/{reference}.request'
     output:
         'references/downloads/{reference}.gff3.gz'
+    log:
+        'log/references/downloads/{reference}.download.log'
+    conda:
+         '../environment/conda/conda_shelltools.yml'
+    threads: 2
+    params:
+        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else ''
+    shell:
+         '{params.script_exec} --debug {params.force_copy} '
+         '--request-file {input} --output {output} '
+         '--parallel-conn 1 &> {log}'
+
+
+rule handle_bed_reference_download_request:
+    input:
+        'references/downloads/{reference}.request'
+    output:
+        'references/downloads/{reference}.bed'
     log:
         'log/references/downloads/{reference}.download.log'
     conda:
