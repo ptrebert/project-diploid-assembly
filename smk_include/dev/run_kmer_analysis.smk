@@ -78,7 +78,7 @@ rule short_read_quality_trimming:
     threads: 16
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * 12,
-        mem_per_cpu_mb = lambda wildcards, attempt: 12288 * attempt / 16,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(12288 * attempt / 16),
         mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
     params:
         quality_trim = 20,
@@ -139,7 +139,7 @@ rule short_read_error_correction:
     threads: config['num_cpu_high']
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * 12,
-        mem_per_cpu_mb = lambda wildcards, attempt: 24576 * attempt / config['num_cpu_high'],
+        mem_per_cpu_mb = lambda wildcards, attempt: (24576 * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 24676 * attempt
     params:
         kmer_size = 31,
@@ -190,7 +190,7 @@ rule build_bifrost_cdbg:
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 24768 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: (24768 * attempt) / config['num_cpu_high'],
+        mem_per_cpu_mb = lambda wildcards, attempt: int(24768 * attempt / config['num_cpu_high']),
         runtime_hrs = lambda wildcards, attempt: 6 * attempt
     params:
         kmer_size = 31,
