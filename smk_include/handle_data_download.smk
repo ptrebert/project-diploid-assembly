@@ -428,6 +428,7 @@ def get_bioproject_sample_annotator(bioproject):
         'PRJEB12849': sample_annotator_prjeb12849,
         'PRJEB14185': sample_annotator_prjeb14185,
         'PRJNA540705': sample_annotator_prjna540705,
+        'PRJEB9396': sample_annotator_prjeb9396
     }
     return known_projects[bioproject]
 
