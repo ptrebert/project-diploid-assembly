@@ -38,3 +38,6 @@ reference_data_sources:
   HG001_hg38_giab_highconf:
     local_path: references/downloads/HG001_hg38_giab_highconf.bed
     remote_path: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh38/HG001_GRCh38_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel_noCENorHET7.bed
+  GRCh38_ENSEMBLv98_RegBuild:
+    local_path: references/downloads/GRCh38_ENSEMBLv98_RegBuild.gff3.gz
+    remote_path: ftp://ftp.ensembl.org/pub/release-98/regulation/homo_sapiens/homo_sapiens.GRCh38.Regulatory_Build.regulatory_features.20190329.gff.gz
