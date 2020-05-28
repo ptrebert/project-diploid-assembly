@@ -176,6 +176,7 @@ rule write_bifrost_fofn:
 
 rule build_bifrost_cdbg:
     input:
+        setup_ok = 'output/check_files/src_build/install_bifrost.ok',
         read_fofn = 'output/evaluation/kmer_analysis/{known_ref}/{sample}/{readset}.{assembly}.{polisher}.reads.fofn',
         assm_fofn = 'output/evaluation/kmer_analysis/{known_ref}/{sample}/{readset}.{assembly}.{polisher}.assm.fofn',
     output:
