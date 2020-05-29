@@ -54,7 +54,7 @@ rule intersect_highconf_files:
         hg002 = 'references/downloads/HG002_hg38_giab_highconf.bed',
         hg005 = 'references/downloads/HG005_hg38_giab_highconf.bed',
     output:
-        'references/hg38_giab_highconf.bed'
+        'references/annotation/hg38_giab_highconf.bed'
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:

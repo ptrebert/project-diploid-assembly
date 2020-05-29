@@ -174,7 +174,7 @@ rule write_bifrost_fofn:
             _ = dump.write(os.path.abspath(input.reference))
 
 
-rule build_bifrost_cdbg:
+rule build_bifrost_colored_dbg:
     input:
         setup_ok = 'output/check_files/src_build/install_bifrost.ok',
         read_fofn = 'output/evaluation/kmer_analysis/{known_ref}/{sample}/{readset}.{assembly}.{polisher}.reads.txt',
@@ -185,14 +185,14 @@ rule build_bifrost_cdbg:
     log:
        'log/output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.build.log',
     benchmark:
-        os.path.join('log/output/evaluation/kmer_analysis/{known_ref}',
+        os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
                      '{sample}.{readset}.{assembly}.{polisher}.build' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda: '../../environment/conda/conda_compile.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 24768 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: int(24768 * attempt / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 32768 * attempt) / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt
     params:
         kmer_size = 31,
         out_prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0]
@@ -201,3 +201,31 @@ rule build_bifrost_cdbg:
         '--output-file {params.out_prefix} --threads {threads} --colors --kmer-length {params.kmer_size} '
         '--verbose &> {log}'
 
+
+rule query_bifrost_colored_dbg:
+    input:
+        setup_ok = 'output/check_files/src_build/install_bifrost.ok',
+        graph = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.gfa',
+        colors = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.bfg_colors',
+        queries = 'references/annotation/{known_ref}-{annotation}.fasta'
+    output:
+        'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.tsv',
+    log:
+        'log/output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.query.log',
+    benchmark:
+        os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
+                     '{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.query' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    conda: '../../environment/conda/conda_compile.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 32768 * attempt) / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+    params:
+        out_prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0],
+        kmer_ratio = lambda wildcards: round(float(wildcards.ratio) / 100, 2)
+    shell:
+         'Bifrost query --input-graph-file {input.graph} --input-color-file {input.colors} '
+         '--input-query-file {input.queries} --output-file {params.out_prefix} '
+         '--threads {threads} --inexact --ratio-kmers {params.kmer_ratio}'
+         '--verbose &> {log}'
