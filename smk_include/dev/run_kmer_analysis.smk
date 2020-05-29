@@ -38,7 +38,7 @@ rule install_source_bifrost:
     output:
         touch('output/check_files/src_build/install_bifrost.ok')
     log:
-       'output/check_files/src_build/install_bifrost.ok'
+       'log/output/check_files/src_build/install_bifrost.log'
     conda:
         '../../environment/conda/conda_compile.yml'
     params:

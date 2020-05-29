@@ -198,7 +198,8 @@ rule gff_to_bed_match_chromosome_names:
 rule add_sequences_to_bed:
     input:
         bed = 'references/annotation/{known_ref}-{annotation}.bed',
-        fasta = 'references/assemblies/{known_ref}.no-mito.fasta'
+        fasta = 'references/assemblies/{known_ref}.no-mito.fasta',
+        fai = 'references/assemblies/{known_ref}.no-mito.fasta.fai'
     output:
         'references/annotation/{known_ref}-{annotation}.fasta'
     benchmark:
