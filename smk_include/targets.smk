@@ -158,6 +158,14 @@ TARGET_PATHS = {
         "{vc_reads}.snv.QUAL{filter_vcf_qual}.GQ{filter_vcf_gq}.vcf.stats"
     ),
 
+    "STATS_VARIANT_CALLING_CLUSTER": os.path.join(
+        "output", "statistics", "variant_calls",
+        "{var_caller}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{sseq_reads}",
+        "{vc_reads}.snv.QUAL{filter_vcf_qual}.GQ{filter_vcf_gq}.vcf.cluster.stats"
+    ),
+
     "STATS_STRANDPHASER": os.path.join(
         "output", "statistics", "phasing",
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",

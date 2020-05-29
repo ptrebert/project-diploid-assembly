@@ -197,6 +197,58 @@ rule compute_statistics_complete_input_bam:
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
+rule collect_snv_stats_per_cluster:
+    input:
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf',
+        fai = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai'
+    output:
+        'output/statistics/variant_calls/{var_caller}/{reference}/{sseq_reads}/{vc_reads}.snv.QUAL{qual}.GQ{gq}.vcf.cluster.stats'
+    priority: 200
+    run:
+        import statistics as stats
+        import collections as col
+
+        with open(input.fai, 'r') as index:
+            cluster_sizes = dict((l.split()[0], int(l.split()[1])) for l in index.readlines())
+
+        snv_per_chrom = col.Counter()
+        qual_per_snv = col.defaultdict(list)
+        depth_per_snv = col.defaultdict(list)
+        genoqual_per_snv = col.defaultdict(list)
+        with open(input.vcf, 'r') as vcf:
+            for line in vcf:
+                if line.startswith('#'):
+                    continue
+                chrom, _, _, _, _, qual, _, info, attributes, sample = line.strip().split()
+                snv_per_chrom[chrom] += 1
+                qual_per_snv[chrom].append(float(qual))
+                assert info.startswith('DP='), 'Unexpected INFO field (DP): {}'.format(line.strip())
+                depth_per_snv[chrom].append(int(info.split(';')[0].replace('DP=', '')))
+                assert attributes.split(':')[1] == 'GQ', 'Unexpected FORMAT field (GQ): {}'.format(line.strip())
+                genoqual_per_snv[chrom].append(int(sample.split(':')[1]))
+
+        fun_labels = ['mean', 'stddev']
+        stats_funs = [stats.mean, stats.stdev]
+
+        stats_labels = ['QUAL', 'DEPTH', 'GTQUAL']
+        stats_collect = [qual_per_snv, depth_per_snv, genoqual_per_snv]
+
+        with open('/home/peter/vcf.stats', 'w') as stat_dump:
+            for seq in sorted(cluster_sizes.keys()):
+                _ = stat_dump.write('{}_size_bp\t{}\n'.format(seq, cluster_sizes[seq]))
+                _ = stat_dump.write('{}_HET-SNV_num\t{}\n'.format(seq, snv_per_chrom[seq]))
+                kbp_factor = cluster_sizes[seq] / 1000
+                snv_per_kbp = round(snv_per_chrom[seq] / kbp_factor, 3)
+                _ = stat_dump.write('{}_HET-SNV_per_kbp\t{}\n'.format(seq, snv_per_kbp))
+                for sl, sc in zip(stats_labels, stats_collect):
+                    for fl, fun in zip(fun_labels, stats_funs):
+                        result = round(fun(sc[seq]), 3)
+                        _ = stat_dump.write('{}_HET-SNV_{}_{}\t{}\n'.format(seq, sl, fl, result))
+
+
+
+
+
 def collect_tag_lists(wildcards, glob_collect=False):
     """
     :param wildcards:
