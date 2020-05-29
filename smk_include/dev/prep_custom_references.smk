@@ -152,6 +152,8 @@ rule gff_to_bed_match_chromosome_names:
                     row['chrom'] = matched_ref
                 kept_entries[regtype] += 1
                 kept_bp[regtype] += e - s
+                kept_entries['TOTAL'] += 1
+                kept_bp['TOTAL'] += e - s
                 kept_entries[row['chrom']] += 1
                 kept_bp[row['chrom']] += e - s
 
