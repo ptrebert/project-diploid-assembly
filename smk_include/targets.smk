@@ -236,6 +236,48 @@ TARGET_PATHS = {
         "{hap_reads}.un.fastq.pck"
     ),
 
+    "STATS_CONTIG_REF_ALN_CLUSTERED_ASSEMBLY_MQ00": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "reference_assembly", "clustered",
+        "{sseq_reads}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq00.stats"
+    ),
+
+    "STATS_CONTIG_REF_ALN_CLUSTERED_ASSEMBLY_MQ30": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "reference_assembly", "clustered",
+        "{sseq_reads}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq30.stats"
+    ),
+
+    "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ00": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "polishing",
+        "{pol_reads}",
+        "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}_map-to_{eval_align_ref}.mapq00.stats"
+    ),
+
+    "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ30": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "polishing",
+        "{pol_reads}",
+        "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}_map-to_{eval_align_ref}.mapq30.stats"
+    ),
+
     "PLOT_INPUT_SAMPLE_STATS": os.path.join(
         "output", "plotting", "statistics", "input_reads",
         "{hap_reads}.{file_ext}.stats.pdf"

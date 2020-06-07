@@ -246,7 +246,23 @@ rule collect_snv_stats_per_cluster:
                         _ = stat_dump.write('{}_HET-SNV_{}_{}\t{}\n'.format(seq, sl, fl, result))
 
 
-
+rule collect_contig_to_ref_aln_statistics:
+    input:
+        ctg_ref_aln = 'output/alignments/contigs_to_reference/{folder_path}/{assembly}_map-to_{aln_reference}.bed',
+        ref_chroms = 'references/assemblies/{aln_reference}.fasta.fai',
+        assm_chroms = 'output/{folder_path}/{assembly}.fasta.fai'
+    output:
+        'output/statistics/contigs_to_ref_aln/{folder_path}/{assembly}_map-to_{aln_reference}.mapq{mapq}.stats'
+    priority: 200
+    conda:
+        '../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('collect_contig_aln_stats.py'),
+        mapq = lambda wildcards: int(wildcards.mapq)
+    shell:
+        '{params.script_exec} --contig-alignments {input.ctg_ref_aln} '
+        '--reference-chromosomes {input.ref_chroms} --contig-names {input.assm_chroms} '
+        '--min-mapq {params.mapq} --contig-groups --group-id-position 0 --output {output}'
 
 
 def collect_tag_lists(wildcards, glob_collect=False):
