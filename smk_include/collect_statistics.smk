@@ -233,7 +233,7 @@ rule collect_snv_stats_per_cluster:
         stats_labels = ['QUAL', 'DEPTH', 'GTQUAL']
         stats_collect = [qual_per_snv, depth_per_snv, genoqual_per_snv]
 
-        with open('/home/peter/vcf.stats', 'w') as stat_dump:
+        with open(output[0], 'w') as stat_dump:
             for seq in sorted(cluster_sizes.keys()):
                 _ = stat_dump.write('{}_size_bp\t{}\n'.format(seq, cluster_sizes[seq]))
                 _ = stat_dump.write('{}_HET-SNV_num\t{}\n'.format(seq, snv_per_chrom[seq]))
