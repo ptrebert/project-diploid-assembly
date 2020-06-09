@@ -26,6 +26,7 @@ link_data_input:
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/NA20847/clr_flye_2.6_hhu_1/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/HG00512/clr_flye_2.6_hhu_1/assembly.fasta
   - /gpfs/project/ebertp/data/globus/assemblies/squashed/HG00513/clr_flye_2.6_hhu_1/assembly.fasta
+  - /gpfs/project/ebertp/data/globus/assemblies/squashed/HG00731/clr_flye_2.6_hhu_1/assembly.fasta
 
 
 
@@ -56,4 +57,5 @@ link_data_output:
   - output/reference_assembly/non-hap-res/NA20847_hgsvc_pbsq2-clr_1000_nhr-hhu26.fasta
   - output/reference_assembly/non-hap-res/HG00512_hgsvc_pbsq2-clr_1000_nhr-hhu26.fasta
   - output/reference_assembly/non-hap-res/HG00513_hgsvc_pbsq2-clr_1000_nhr-hhu26.fasta
+  - output/reference_assembly/non-hap-res/HG00731_hgsvc_pbsq2-clr_1000_nhr-hhu26.fasta
 
