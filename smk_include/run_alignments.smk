@@ -311,10 +311,9 @@ rule bwa_strandseq_to_haploid_assembly_alignment:
 
 rule minimap_racon_polish_alignment_pass1:
     """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
-    sseq_reads = FASTQ file used for strand-seq phasing
-    pol_reads = FASTQ file used for Racon contig polishing
+    From module "strandseq_dga_split.smk"
+    PATH_STRANDSEQ_DGA_SPLIT
+    >>> diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}
     """
     input:
         reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.fastq.gz',
@@ -341,7 +340,7 @@ rule minimap_racon_polish_alignment_pass1:
         discard_flag = config['minimap_racon_aln_discard'],
         min_qual = config['minimap_racon_aln_min_qual'],
         tempdir = lambda wildcards: os.path.join(
-                                      'temp', 'minimap', PATH_STRANDSEQ_DGA_SPLIT,
+                                      'temp', 'minimap', PATH_STRANDSEQ_DGA_SPLIT.format(**dict(wildcards)),
                                       wildcards.pol_reads, wildcards.hap_reads,
                                       wildcards.assembler, wildcards.hap, wildcards.sequence, 'pass1')
     shell:
@@ -354,10 +353,9 @@ rule minimap_racon_polish_alignment_pass1:
 
 rule minimap_racon_polish_alignment_pass2:
     """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    hap_reads = FASTQ file to be used for haplotype reconstruction
-    sseq_reads = FASTQ file used for strand-seq phasing
-    pol_reads = FASTQ file used for Racon contig polishing
+    From module "strandseq_dga_split.smk"
+    PATH_STRANDSEQ_DGA_SPLIT
+    >>> diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}
     """
     input:
         reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.fastq.gz',
@@ -387,7 +385,7 @@ rule minimap_racon_polish_alignment_pass2:
         discard_flag = config['minimap_racon_aln_discard'],
         min_qual = config['minimap_racon_aln_min_qual'],
         tempdir = lambda wildcards: os.path.join(
-                                      'temp', 'minimap', PATH_STRANDSEQ_DGA_SPLIT,
+                                      'temp', 'minimap', PATH_STRANDSEQ_DGA_SPLIT.format(**dict(wildcards)),
                                       wildcards.pol_reads, wildcards.hap_reads,
                                       wildcards.assembler, wildcards.hap, wildcards.sequence, 'pass2')
     shell:
@@ -399,6 +397,11 @@ rule minimap_racon_polish_alignment_pass2:
 
 
 rule pbmm2_arrow_polish_alignment_pass1:
+    """
+    From module "strandseq_dga_split.smk"
+    PATH_STRANDSEQ_DGA_SPLIT
+    >>> diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}
+    """
     input:
         reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pol_reads}.{hap}.{sequence}.pbn.bam',
         preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pol_reads}.{hap}.{sequence}.preset.pbmm2',
@@ -422,7 +425,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
         tempdir = lambda wildcards: os.path.join(
-                                        'temp', 'pbmm2', PATH_STRANDSEQ_DGA_SPLIT,
+                                        'temp', 'pbmm2', PATH_STRANDSEQ_DGA_SPLIT.format(**dict(wildcards)),
                                         wildcards.pol_reads, wildcards.hap_reads,
                                         wildcards.assembler, wildcards.hap, wildcards.sequence)
     shell:
