@@ -21,8 +21,8 @@ rule dump_haploid_read_coverage:
     threads: config['num_cpu_medium']
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * 6,
-        mem_total_mb = lambda wildcards, attempt: attempt * 32768 + 32768,
-        mem_per_cpu_mb = lambda wildcards, attempt: int((attempt * 32768 + 32768) / config['num_cpu_medium'])
+        mem_total_mb = lambda wildcards, attempt: attempt * 24576 + 49152,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((attempt * 24576 + 49152) / config['num_cpu_medium'])
     shell:
         'bedtools genomecov -bg -ibam {input} 2> {log.bedtools}'
         ' | '
