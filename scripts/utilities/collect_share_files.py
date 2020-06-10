@@ -4,6 +4,8 @@ import os
 import sys
 import argparse
 import glob
+import shutil
+import errno
 
 
 COLLECT_PATHS = {
@@ -124,7 +126,7 @@ COLLECT_PATHS = {
             'statistics/contig_alignments'
         ],
         'HAP_CONTIG_REF_STATS': [
-            'output/statistics/contigs_to_ref_aln/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/haploid_assembly',
+            'output/statistics/contigs_to_ref_aln/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/haploid_assembly/*.stats',
             True,
             'statistics/contig_alignments'
         ],
@@ -208,6 +210,14 @@ def parse_command_line():
         help='Dry run, print info but do not do anything'
     )
     parser.add_argument(
+        '--ignore-existing-dest',
+        '-igex',
+        action='store_true',
+        default=False,
+        dest='ignore_existing',
+        help='Ignore files already existing in "dest-folder"'
+    )
+    parser.add_argument(
         '--dest-folder',
         '-d',
         type=str,
@@ -233,7 +243,7 @@ def adapt_quast_report_name(file_path, output_path):
     :param output_path:
     :return:
     """
-    _, last_subdir = os.path.split(os.path.basename(file_path))
+    _, last_subdir = os.path.split(os.path.dirname(file_path))
     out_name = last_subdir + '.quast-' + os.path.basename(file_path)
     return os.path.join(output_path, out_name)
 
@@ -269,26 +279,52 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
             continue
         print('{}: {} matches'.format(pattern_name, len(all_files)))
         for src_file in all_files:
+            src_name = None
             if os.path.islink(src_file):
+                src_name = os.path.basename(src_file)
                 src_file = os.readlink(src_file)
             if 'QUAST' in pattern_name:
                 dest_file = adapt_quast_report_name(src_file, out_folder)
             else:
-                src_name = os.path.basename(src_file)
+                if src_name is None:
+                    src_name = os.path.basename(src_file)
                 if out_folder.endswith('do_not_use'):
-                    src_name = 'DEV-ONLY_'
+                    src_name = 'DEV-ONLY_' + src_name
                 dest_file = os.path.join(out_folder, src_name)
+            assert os.path.isfile(src_file), 'Not a valid file path: {}'.format(src_file)
             file_pairs.append((pattern_name, src_file, dest_file))
     print('Processing {} file pairs'.format(len(file_pairs)))
     return sorted(file_pairs)
 
 
-def link_or_copy(file_pairs):
+def link_or_copy(file_pairs, dry_run, force_copy, ignore_existing):
     """
     :param file_pairs:
+    :param dry_run:
+    :param force_copy:
+    :param ignore_existing:
     :return:
     """
-    for _
+    for num, (_, src, dest) in enumerate(file_pairs, start=1):
+        if dry_run:
+            print('{}. - - - - - - - -'.format(num))
+            print('SRC: {}'.format(src))
+            print('DEST: {}'.format(dest))
+            print('- - - - - - - - - -')
+            continue
+        try:
+            if force_copy:
+                shutil.copy(src, dest)
+            else:
+                os.symlink(src, dest)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                if ignore_existing:
+                    print('WARN - destination exists: {}'.format(dest))
+                    pass
+                else:
+                    raise e
+    return
 
 
 def main():
@@ -307,8 +343,19 @@ def main():
         args.dest_folder,
         args.dry_run
     )
+    link_or_copy(file_pairs, args.dry_run, args.force_copy, args.ignore_existing)
+
+    if not args.dry_run:
+        file_report = args.file_report.format(**{'SAMPLE': args.sample})
+        file_report = os.path.abspath(file_report)
+        os.makedirs(os.path.dirname(file_report), exist_ok=True)
+
+        with open(file_report, 'w') as dump:
+            _ = dump.write('#RESULT_TYPE\tSRC_FILE\tDEST_FILE\n')
+            _ = dump.write('\n'.join(['\t'.join(record) for record in file_pairs]))
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())
