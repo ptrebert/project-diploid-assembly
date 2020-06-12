@@ -362,7 +362,7 @@ rule compute_peregrine_nonhapres_assembly:
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.copy}'
 
 
 rule compute_shasta_nonhapres_assembly:
@@ -692,7 +692,7 @@ rule compute_peregrine_haploid_split_assembly:
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.copy}'
 
 
 rule compute_shasta_haploid_split_assembly:
