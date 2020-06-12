@@ -26,47 +26,47 @@ COLLECT_PATHS = {
             'contig_coverage'
         ],
         'HAP_CONTIG_REF_BED': [
-            'output/alignments/contigs_to_reference/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/haploid_assembly/*.bed',
+            'output/alignments/contigs_to_reference/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/haploid_assembly/*.bed',
             True,
             'contig_coverage'
         ],
         'HAP_CLUST_CONTIG_REF_BED': [
-            'output/alignments/contigs_to_reference/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/clustering/*.fixed.bed',
+            'output/alignments/contigs_to_reference/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/clustering/*.fixed.bed',
             True,
             'contig_coverage/do_not_use'
         ],
         'COV_TRACKS': [
-            'output/cov_tracks/hap_reads/longshot_QUAL10_GQ100/*/*/*/*.bigWig',
+            'output/cov_tracks/hap_reads/*/*/*/*/*.bigWig',
             True,
             'hap_read_coverage'
         ],
         'HAP_READS': [
-            'output/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/draft/haploid_fastq/*h?-un*.fastq.gz',
+            'output/diploid_assembly/strandseq_split/*/*/*/*/draft/haploid_fastq/*h?-un*.fastq.gz',
             True,
             'haploid_reads'
         ],
         'HAP_READS_STATS_SUMMARY': [
-            'output/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/draft/haploid_fastq/*h?-un*.stats',
+            'output/diploid_assembly/strandseq_split/*/*/*/*/draft/haploid_fastq/*h?-un*.stats',
             True,
             'statistics/haploid_reads/cluster'
         ],
         'HAP_READS_STATS_JOINT_SUMMARY': [
-            'output/diploid_assembly/strandseq_joint/longshot_QUAL10_GQ100/*/*/*/draft/haploid_fastq/*.stats',
+            'output/diploid_assembly/strandseq_joint/*/*/*/*/draft/haploid_fastq/*.stats',
             True,
             'statistics/haploid_reads'
         ],
         'HAPLOTAGS': [
-            'output/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/draft/haplotags/*.tsv',
+            'output/diploid_assembly/strandseq_split/*/*/*/*/draft/haplotags/*.tsv',
             True,
             'haplotags'
         ],
         'HAPLOID_ASSEMBLIES': [
-            'output/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/haploid_assembly/*h?-un.arrow-p1.fasta*',
+            'output/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/haploid_assembly/*h?-un.arrow-p1.fasta*',
             True,
             'assemblies/phased'
         ],
         'HAPLOID_CLUSTERED_ASSEMBLIES': [
-            'output/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/clustering/*.fasta',
+            'output/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/clustering/*.fasta',
             True,
             'assemblies/do_not_use'
         ],
@@ -81,17 +81,17 @@ COLLECT_PATHS = {
             'reports/quast'
         ],
         'QUAST_REPORT_CLUST_ASSEMBLY_TXT': [
-            'output/evaluation/quastlg_busco/GRCh38_GCA_p13-GRCh38_GENCODEv31_basic/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/haploid_assembly/*/report.txt',
+            'output/evaluation/quastlg_busco/GRCh38_GCA_p13-GRCh38_GENCODEv31_basic/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/haploid_assembly/*/report.txt',
             True,
             'reports/quast'
         ],
         'QUAST_REPORT_CLUST_ASSEMBLY_PDF': [
-            'output/evaluation/quastlg_busco/GRCh38_GCA_p13-GRCh38_GENCODEv31_basic/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/haploid_assembly/*/report.pdf',
+            'output/evaluation/quastlg_busco/GRCh38_GCA_p13-GRCh38_GENCODEv31_basic/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/haploid_assembly/*/report.pdf',
             True,
             'reports/quast'
         ],
         'VARIANT_CALLS': [
-            'output/integrative_phasing/longshot_QUAL10_GQ100/*/*/*/*.vcf.bgz*',
+            'output/integrative_phasing/*/*/*/*/*.vcf.bgz*',
             True,
             'variant_calls'
         ],
@@ -106,7 +106,7 @@ COLLECT_PATHS = {
             'plots/saarclust_diagnostics'
         ],
         'PLOT_SAARCLUST_DIAG_HAP_CLUST': [
-            'output/plotting/saarclust_diagnostics/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/clustering/*.pdf',
+            'output/plotting/saarclust_diagnostics/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/clustering/*.pdf',
             True,
             'plots/saarclust_diagnostics/do_not_use'
         ],
@@ -126,12 +126,12 @@ COLLECT_PATHS = {
             'statistics/contig_alignments'
         ],
         'HAP_CONTIG_REF_STATS': [
-            'output/statistics/contigs_to_ref_aln/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/polishing/*/haploid_assembly/*.stats',
+            'output/statistics/contigs_to_ref_aln/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/haploid_assembly/*.stats',
             True,
             'statistics/contig_alignments'
         ],
         'PHASING_STATS': [
-            'output/statistics/phasing/longshot_QUAL10_GQ100/NA20847_hgsvc_pbsq2-clr_1000_scV12-hhu26/NA20847_hgsvc_pbsq2-clr_1000/NA20847_hgsvc_ilnxs-80pe_sseq/*wh-phased*',
+            'output/statistics/phasing/*/*/*/*/*wh-phased*',
             True,
             'statistics/phasing'
         ],
@@ -141,22 +141,22 @@ COLLECT_PATHS = {
             'statistics/input_reads/dumps'
         ],
         'HAP_READS_STATS_DUMPS': [
-            'output/statistics/stat_dumps/diploid_assembly/strandseq_split/longshot_QUAL10_GQ100/*/*/*/draft/haploid_fastq/*.pck',
+            'output/statistics/stat_dumps/diploid_assembly/strandseq_split/*/*/*/*/draft/haploid_fastq/*.pck',
             True,
             'statistics/haploid_reads/cluster/dumps'
         ],
         'HAP_READS_STATS_JOINT_DUMPS': [
-            'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/longshot_QUAL10_GQ100/*/*/*/draft/haploid_fastq/*.pck',
+            'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/*/*/*/*/draft/haploid_fastq/*.pck',
             True,
             'statistics/haploid_reads/dumps'
         ],
         'HAPLOTAGGING_STATS': [
-            'output/statistics/tag_split/longshot_QUAL10_GQ100/*/*/*/*.tsv',
+            'output/statistics/tag_split/*/*/*/*/*.tsv',
             True,
             'statistics/haplotagging'
         ],
         'VARIANT_CALL_STATS': [
-            'output/statistics/variant_calls/longshot/NA20847_hgsvc_pbsq2-clr_1000_scV12-hhu26/NA20847_hgsvc_ilnxs-80pe_sseq/*QUAL10.GQ100*.stats',
+            'output/statistics/variant_calls/longshot/*/*/*QUAL10.GQ100*.stats',
             True,
             'statistics/variant_calls'
         ]
