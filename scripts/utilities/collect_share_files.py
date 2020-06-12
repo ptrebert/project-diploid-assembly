@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -6,6 +6,7 @@ import argparse
 import glob
 import shutil
 import errno
+import collections
 
 
 COLLECT_PATHS = {
@@ -218,6 +219,22 @@ def parse_command_line():
         help='Ignore files already existing in "dest-folder"'
     )
     parser.add_argument(
+        '--ignore-missing-files',
+        '-igms',
+        action='store_true',
+        default=False,
+        dest='ignore_missing',
+        help='Ignore missing result files.'
+    )
+    parser.add_argument(
+        '--show-glob-patterns',
+        '-globs',
+        action='store_true',
+        default=False,
+        dest='show_globs',
+        help='Just print glob patterns and exist'
+    )
+    parser.add_argument(
         '--dest-folder',
         '-d',
         type=str,
@@ -258,6 +275,7 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
     :param dry_run::
     :return:
     """
+    count_matches = dict()
     file_pairs = []
     for pattern_name, pattern_info in file_patterns.items():
         sub_pattern, check_version, out_folder = pattern_info
@@ -267,7 +285,7 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
         pattern = os.path.join(top_source_path, sub_pattern)
         all_files = glob.glob(pattern)
         if not all_files:
-            print('{}: 0 matches'.format(pattern_name))
+            count_matches[(pattern_name, sub_pattern)] = 0
             continue
         # sample ID must be somewhere
         all_files = [f for f in all_files if sample in f]
@@ -275,9 +293,9 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
             # version info must be somewhere
             all_files = [f for f in all_files if version in f]
         if not all_files:
-            print('{}: 0 matches'.format(pattern_name))
+            count_matches[(pattern_name, sub_pattern)] = 0
             continue
-        print('{}: {} matches'.format(pattern_name, len(all_files)))
+        count_matches[(pattern_name, sub_pattern)] = len(all_files)
         for src_file in all_files:
             src_name = None
             if os.path.islink(src_file):
@@ -293,8 +311,8 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
                 dest_file = os.path.join(out_folder, src_name)
             assert os.path.isfile(src_file), 'Not a valid file path: {}'.format(src_file)
             file_pairs.append((pattern_name, src_file, dest_file))
-    print('Processing {} file pairs'.format(len(file_pairs)))
-    return sorted(file_pairs)
+    print('Processing {} files'.format(len(file_pairs)))
+    return sorted(file_pairs), count_matches
 
 
 def link_or_copy(file_pairs, dry_run, force_copy, ignore_existing):
@@ -334,8 +352,15 @@ def main():
     glob_patterns = COLLECT_PATHS[args.param_version]
     print('Sample: {}'.format(args.sample))
     print('Pipeline parameter version: {} / {}'.format(args.param_version, version_string))
+
+    if args.show_globs:
+        print('Pipeline_folder\tDestination_folder\n')
+        for n, _, p in sorted(glob_patterns.values()):
+            print('{}\t{}'.format(n, p))
+        return 0
+
     pipeline_wd = os.path.abspath(args.work_dir)
-    file_pairs = collect_result_files(
+    file_pairs, count_matches = collect_result_files(
         pipeline_wd,
         args.sample,
         version_string,
@@ -343,6 +368,12 @@ def main():
         args.dest_folder,
         args.dry_run
     )
+    if not args.ignore_missing:
+        missing_results = [k for k, v in count_matches.items() if v > 0]
+        if missing_results:
+            raise ValueError('Missing results:\n{}'.format('\n'.join(['{}\t{}'.format(n, g) for n, g in missing_results])))
+
+
     link_or_copy(file_pairs, args.dry_run, args.force_copy, args.ignore_existing)
 
     if not args.dry_run:
