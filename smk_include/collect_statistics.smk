@@ -222,8 +222,14 @@ rule collect_snv_stats_per_cluster:
                 chrom, _, _, _, _, qual, _, info, attributes, sample = line.strip().split()
                 snv_per_chrom[chrom] += 1
                 qual_per_snv[chrom].append(float(qual))
-                assert info.startswith('DP='), 'Unexpected INFO field (DP): {}'.format(line.strip())
-                depth_per_snv[chrom].append(int(info.split(';')[0].replace('DP=', '')))
+                if wildcards.var_caller == 'longshot':
+                    assert info.startswith('DP='), 'Unexpected Longshot/INFO field (DP): {}'.format(line.strip())
+                    depth_per_snv[chrom].append(int(info.split(';')[0].replace('DP=', '')))
+                elif wildcards.var_caller == 'deepvar' or wildcards.var_caller == 'freebayes':
+                    assert attributes.split(':')[2] == 'DP', 'Unexpected DeepVariant/FORMAT field (DP): {}'.format(line.strip())
+                    depth_per_snv[chrom].append(int(sample.split(':')[2]))
+                else:
+                    raise RuntimeError('Unsupported variant caller for cluster stats rule: {}'.format(wildcards.var_caller))
                 assert attributes.split(':')[1] == 'GQ', 'Unexpected FORMAT field (GQ): {}'.format(line.strip())
                 genoqual_per_snv[chrom].append(int(sample.split(':')[1]))
 
