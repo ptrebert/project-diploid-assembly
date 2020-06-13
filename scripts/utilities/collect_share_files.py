@@ -369,7 +369,7 @@ def main():
         args.dry_run
     )
     if not args.ignore_missing:
-        missing_results = [k for k, v in count_matches.items() if v > 0]
+        missing_results = [k for k, v in count_matches.items() if v == 0]
         if missing_results:
             raise ValueError('Missing results:\n{}'.format('\n'.join(['{}\t{}'.format(n, g) for n, g in missing_results])))
 
