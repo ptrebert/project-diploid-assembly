@@ -251,8 +251,8 @@ rule bwa_strandseq_to_reference_alignment:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
-        mem_total_mb = 8192
+        mem_per_cpu_mb = lambda wildcards, attempt: int(12288 * attempt / config['num_cpu_low']),
+        mem_total_mb = lambda wildcards, attempt: 12288 * attempt
     params:
         idx_prefix = lambda wildcards, input: input.ref_index.rsplit('.', 1)[0],
         discard_flag = config['bwa_strandseq_aln_discard']
@@ -297,8 +297,8 @@ rule bwa_strandseq_to_haploid_assembly_alignment:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = int(8192 / config['num_cpu_low']),
-        mem_total_mb = 8192
+        mem_per_cpu_mb = lambda wildcards, attempt: int(12288 * attempt / config['num_cpu_low']),
+        mem_total_mb = lambda wildcards, attempt: 12288 * attempt
     params:
         idx_prefix = lambda wildcards, input: input.ref_index.rsplit('.', 1)[0],
         discard_flag = config['bwa_strandseq_aln_discard']
