@@ -254,7 +254,7 @@ def parse_command_line():
     return args
 
 
-def adapt_quast_report_name(file_path, output_path):
+def adapt_quast_report_name(file_path, output_path, version_prefix):
     """
     :param file_path:
     :param output_path:
@@ -262,7 +262,7 @@ def adapt_quast_report_name(file_path, output_path):
     """
     _, last_subdir = os.path.split(os.path.dirname(file_path))
     out_name = last_subdir + '.quast-' + os.path.basename(file_path)
-    return os.path.join(output_path, out_name)
+    return os.path.join(output_path, version_prefix + out_name)
 
 
 def collect_result_files(top_source_path, sample, version, file_patterns, top_dest_path, dry_run):
@@ -275,6 +275,8 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
     :param dry_run::
     :return:
     """
+    version_prefix = 'v{}_'.format(version)
+    version_string = 'scV{}'.format(version)
     count_matches = dict()
     file_pairs = []
     for pattern_name, pattern_info in file_patterns.items():
@@ -291,7 +293,7 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
         all_files = [f for f in all_files if sample in f]
         if check_version:
             # version info must be somewhere
-            all_files = [f for f in all_files if version in f]
+            all_files = [f for f in all_files if version_string in f]
         if not all_files:
             count_matches[(pattern_name, sub_pattern)] = 0
             continue
@@ -302,13 +304,13 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
                 src_name = os.path.basename(src_file)
                 src_file = os.readlink(src_file)
             if 'QUAST' in pattern_name:
-                dest_file = adapt_quast_report_name(src_file, out_folder)
+                dest_file = adapt_quast_report_name(src_file, out_folder, version_prefix)
             else:
                 if src_name is None:
                     src_name = os.path.basename(src_file)
                 if out_folder.endswith('do_not_use'):
-                    src_name = 'DEV-ONLY_' + src_name
-                dest_file = os.path.join(out_folder, src_name)
+                    src_name = '{}_DEV-ONLY_'.format(version_prefix) + src_name
+                dest_file = os.path.join(out_folder, version_prefix + src_name)
             assert os.path.isfile(src_file), 'Not a valid file path: {}'.format(src_file)
             file_pairs.append((pattern_name, src_file, dest_file))
     print('Processing {} files'.format(len(file_pairs)))
@@ -348,10 +350,9 @@ def link_or_copy(file_pairs, dry_run, force_copy, ignore_existing):
 def main():
 
     args = parse_command_line()
-    version_string = 'scV{}'.format(args.param_version)
     glob_patterns = COLLECT_PATHS[args.param_version]
     print('Sample: {}'.format(args.sample))
-    print('Pipeline parameter version: {} / {}'.format(args.param_version, version_string))
+    print('Pipeline parameter version: {}'.format(args.param_version))
 
     if args.show_globs:
         print('Pipeline_folder\tDestination_folder\n')
@@ -363,7 +364,7 @@ def main():
     file_pairs, count_matches = collect_result_files(
         pipeline_wd,
         args.sample,
-        version_string,
+        args.param_version,
         glob_patterns,
         args.dest_folder,
         args.dry_run
