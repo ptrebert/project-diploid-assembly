@@ -75,8 +75,6 @@ sample_targets_HG00733:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: pereg
       hap_assembler: pereg
@@ -113,8 +111,6 @@ sample_targets_HG00733:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       name: pacbio_test
       nhr_assembler: flye
@@ -160,8 +156,6 @@ sample_targets_HG00733:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       name: hifi_subsampling
       nhr_assembler: pereg

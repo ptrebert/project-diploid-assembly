@@ -42,8 +42,6 @@ sample_targets_HG00732:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: pereg
       hap_assembler: pereg
@@ -62,8 +60,6 @@ sample_targets_HG00732:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
       hap_assembler: flye
