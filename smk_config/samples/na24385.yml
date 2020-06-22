@@ -2,9 +2,9 @@
 sample_description_NA24385:
   individual: NA24385
   sex: male
-  super_population: UNK
-  population: AJ
-  family: UNK
+  super_population: EUR
+  population: AKJ
+  family: 3140
   member: child
   data_sources:
     - long_reads:
