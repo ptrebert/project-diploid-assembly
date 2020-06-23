@@ -10,13 +10,14 @@ wildcard_constraints:
     known_ref = 'GRCh3[78]_[A-Za-z0-9]+_[A-Za-z0-9]+',
 
 
-rule remove_mitochondrial_sequence:
+rule separate_mitochondrial_sequence:
     input:
         ref_assm = 'references/assemblies/{known_ref}.fasta',
         ref_sizes = 'references/assemblies/{known_ref}.sizes',
     output:
         ref_assm = 'references/assemblies/{known_ref}.no-mito.fasta',
         ref_sizes = 'references/assemblies/{known_ref}.no-mito.sizes',
+        seq_mito = 'references/assemblies/{known_ref}.chrM.fasta',
     resources:
         mem_total_mb = lambda wildcards, attempt: 6144 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 6144 * attempt
@@ -24,18 +25,25 @@ rule remove_mitochondrial_sequence:
         import io
 
         buffer = io.StringIO()
+        mito_buffer = io.StringIO()
         with open(input.ref_assm, 'r') as fasta:
             for line in fasta:
                 if line.startswith('>chrM'):
+                    mito_buffer.write('>chrM\n')
                     skip = True
+                    continue
                 elif line.startswith('>'):
                     skip = False
                 if skip:
+                    mito_buffer.write(line)
                     continue
                 buffer.write(line)
 
         with open(output.ref_assm, 'w') as dump:
             _ = dump.write(buffer.getvalue())
+        
+        with open(output.seq_mito, 'w') as dump:
+            _ = dump.write(mito_buffer.getvalue())
 
         buffer = io.StringIO()
         with open(input.ref_sizes, 'r') as sizes:

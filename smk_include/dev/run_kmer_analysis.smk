@@ -49,10 +49,33 @@ rule install_source_bifrost:
          'cd {params.repo_folder} && '
          'git clone https://github.com/pmelsted/bifrost.git && '
          'cd bifrost && '
-         'git checkout f1e48443f3576429590b65d24b998c88a52fb6d4 && '
+         'git checkout ab43065337a4f7c8ff9af9f77e6b3f2fe282b09f && '
          'mkdir build && cd build && '
          'cmake -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX .. && '
          'make && make install ; ) > {log} 2>&1'
+
+
+rule install_source_venn_diagram:
+    input:
+        'output/check_files/src_build/install_bifrost.ok'
+    output:
+        touch('output/check_files/src_build/install_vennd.ok')
+    log:
+       'log/output/check_files/src_build/install_vennd.log'
+    conda:
+        '../../environment/conda/conda_compile.yml'
+    params:
+        repo_folder = 'output/repositories'
+    shell:
+         '( rm -rf {params.repo_folder}/theupsetkmer && '
+         'mkdir -p {params.repo_folder} && '
+         'cd {params.repo_folder} && '
+         'git clone https://github.com/tobiasmarschall/theupsetkmer.git && '
+         'cd theupsetkmer && '
+         'git checkout 58308d195f335ce2bc84747a5fd44bf37cd68656 && '
+         'chmod u+x compile.sh && '
+         './compile.sh && '
+         'cp venn_diagram $CONDA_PREFIX/bin ; ) > {log} 2>&1'
 
 
 rule short_read_quality_trimming:
@@ -143,8 +166,8 @@ rule short_read_error_correction:
         mem_total_mb = lambda wildcards, attempt: 24676 * attempt
     params:
         kmer_size = 31,
-        alpha = lambda wildcards, input: compute_lighter_alpha(input.report1, input.report2, 3272100381),
-        genomesize = 3272100381,
+        alpha = lambda wildcards, input: compute_lighter_alpha(input.report1, input.report2, 3100000000),
+        genomesize = 3100000000,
         outdir = lambda wildcards, output: os.path.dirname(output.mate1)
     shell:
         'lighter -r {input.mate1} -r {input.mate2} '
@@ -159,6 +182,7 @@ rule write_bifrost_fofn:
         hap1 = 'output/evaluation/kmer_analysis/phased_assemblies/{sample}_{assembly}.h1-un.{polisher}.fasta',
         hap2 = 'output/evaluation/kmer_analysis/phased_assemblies/{sample}_{assembly}.h2-un.{polisher}.fasta',
         reference = 'references/assemblies/{known_ref}.no-mito.fasta',
+        seq_mito = 'references/assemblies/{known_ref}.chrM.fasta'
     output:
         read_fofn = 'output/evaluation/kmer_analysis/{known_ref}/{sample}/{readset}.{assembly}.{polisher}.reads.txt',
         assm_fofn = 'output/evaluation/kmer_analysis/{known_ref}/{sample}/{readset}.{assembly}.{polisher}.assm.txt',
@@ -171,7 +195,8 @@ rule write_bifrost_fofn:
         with open(output.assm_fofn, 'w') as dump:
             _ = dump.write(os.path.abspath(input.hap1) + '\n')
             _ = dump.write(os.path.abspath(input.hap2) + '\n')
-            _ = dump.write(os.path.abspath(input.reference))
+            _ = dump.write(os.path.abspath(input.reference) + '\n')
+            _ = dump.write(os.path.abspath(input.seq_mito))
 
 
 rule build_bifrost_colored_dbg:
@@ -200,6 +225,32 @@ rule build_bifrost_colored_dbg:
         'Bifrost build --input-seq-file {input.read_fofn} --input-ref-file {input.assm_fofn} '
         '--output-file {params.out_prefix} --threads {threads} --colors --kmer-length {params.kmer_size} '
         '--verbose &> {log}'
+
+
+rule count_kmers_per_color:
+    """
+    Usage: ./venn_diagram <graph_file.gfa> <color_file.bfg_colors> <k> <threads> <output_file.txt>
+    """
+    input:
+        graph = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.gfa',
+        colors = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.bfg_colors'
+    output:
+        'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.kmer-counts.tsv',
+    log:
+       'log/output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.vd-count.log',
+    benchmark:
+        os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
+                     '{sample}.{readset}.{assembly}.{polisher}.vd-count' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    conda: '../../environment/conda/conda_compile.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 32768 * attempt) / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt
+    params:
+        kmer_size = 31
+    shell:
+        'venn_diagram {input.graph} {input.colors} {params.kmer_size} {threads} {output} &> {log}'
 
 
 rule query_bifrost_colored_dbg:
