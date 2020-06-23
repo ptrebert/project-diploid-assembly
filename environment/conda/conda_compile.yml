@@ -9,33 +9,33 @@ dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=1_llvm
   - binutils-meta=1.0.4=0
-  - binutils_impl_linux-64=2.34=h53a641e_2
-  - binutils_linux-64=2.34=hc952b39_20
-  - c-compiler=1.0.4=h516909a_0
-  - cmake=3.17.0=h28c56e5_0
+  - binutils_impl_linux-64=2.34
+  - binutils_linux-64=2.34
+  - c-compiler=1.0.4
+  - cmake=3.17.0
   - compilers=1.0.4=0
-  - cxx-compiler=1.0.4=hc9558a2_0
-  - fortran-compiler=1.0.4=he991be0_0
-  - gcc_impl_linux-64=7.5.0=hd420e75_6
-  - gcc_linux-64=7.5.0=h09487f9_20
-  - gfortran_impl_linux-64=7.5.0=hdf63c60_6
-  - gfortran_linux-64=7.5.0=h09487f9_20
+  - cxx-compiler=1.0.4
+  - fortran-compiler=1.0.4
+  - gcc_impl_linux-64=7.5.0
+  - gcc_linux-64=7.5.0
+  - gfortran_impl_linux-64=7.5.0
+  - gfortran_linux-64=7.5.0
   - glib=2.64.3=h6f030ca_0
-  - gxx_impl_linux-64=7.5.0=hdf63c60_6
-  - gxx_linux-64=7.5.0=h09487f9_20
-  - ld_impl_linux-64=2.34=h53a641e_2
+  - gxx_impl_linux-64=7.5.0
+  - gxx_linux-64=7.5.0
+  - ld_impl_linux-64=2.34
   - libblas=3.8.0=16_openblas
   - libcblas=3.8.0=16_openblas
   - libclang=9.0.1=default_hde54327_0
-  - libcurl=7.69.1=hf7181ac_0
-  - libgcc-ng=9.2.0=h24d8f2e_2
-  - libgfortran-ng=7.5.0=hdf63c60_6
+  - libcurl=7.69.1
+  - libgcc-ng=9.2.0
+  - libgfortran-ng=7.5.0
   - liblapack=3.8.0=16_openblas
-  - libllvm9=9.0.1=he513fc3_1
-  - libopenblas=0.3.9=h5ec1e0e_0
-  - libstdcxx-ng=9.2.0=hdf63c60_2
-  - llvm-openmp=10.0.0=hc9558a2_0
-  - pkg-config=0.29.2=h516909a_1006
-  - pthread-stubs=0.4=h14c3975_1001
-  - xz=5.2.5=h516909a_0
-  - zlib=1.2.11=h516909a_1006
+  - libllvm9=9.0.1
+  - libopenblas=0.3.9
+  - libstdcxx-ng=9.2.0
+  - llvm-openmp=10.0.0
+  - pkg-config=0.29.2
+  - pthread-stubs=0.4
+  - xz=5.2.5
+  - zlib=1.2.11
