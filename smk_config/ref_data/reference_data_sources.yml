@@ -41,3 +41,6 @@ reference_data_sources:
   GRCh38_ENSEMBLv98_RegBuild:
     local_path: references/downloads/GRCh38_ENSEMBLv98_RegBuild.gff3.gz
     remote_path: ftp://ftp.ensembl.org/pub/release-98/regulation/homo_sapiens/homo_sapiens.GRCh38.Regulatory_Build.regulatory_features.20190329.gff.gz
+  GRCh38_HGSVC2_noalt:
+    local_path: references/downloads/GRCh38_HGSVC2_noalt.fa.gz
+    remote_path: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/HGSVC2/technical/reference/20200513_hg38_NoALT/hg38.no_alt.fa.gz
