@@ -1,6 +1,5 @@
 # Default runtime profile for HHU HILBERT infrastructure / PBS Professional
 
-#directory: /gpfs/project/ebertp/projects/rfdga
 cluster: >-
   qsub
   -A {cluster.account} -l walltime={cluster.run_hrs}:{cluster.run_min}:00
@@ -11,7 +10,7 @@ local-cores: 1
 jobs: 50
 latency-wait: 300
 keep-going: True
-keep-incomplete: True
+keep-incomplete: False
 rerun-incomplete: True
 restart-times: 1
 max-status-checks-per-second: 0.001
