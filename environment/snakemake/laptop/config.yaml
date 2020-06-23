@@ -9,7 +9,7 @@ use-conda: True
 use-envmodules: False
 nolock: False
 resources:
-  mem_total_mb=4096
+  mem_total_mb=14336
 default-resources:
   - mem_per_cpu_mb=1024
   - mem_total_mb=1024
