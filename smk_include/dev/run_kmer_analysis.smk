@@ -28,7 +28,7 @@ def find_sample_short_reads(sample):
     return short_reads
 
 
-def determine_possible_computations():
+def determine_possible_computations(wildcards):
     """
     NA19239_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta
     """
