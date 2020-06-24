@@ -49,7 +49,7 @@ def determine_possible_computations(wildcards):
     for ps_assm in os.listdir(search_path):
         if not ps_assm.endswith('.fasta'):
             continue
-        assm_base, hap, polisher, ext = assm.split('.')
+        assm_base, hap, polisher, ext = ps_assm.split('.')
         sample, assm_reads = assm_base.split('.', 1)
         tmp = dict(fix_wildcards)
         tmp['sample'] = sample
