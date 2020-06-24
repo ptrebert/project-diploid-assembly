@@ -327,7 +327,7 @@ rule minimap_racon_polish_alignment_pass1:
     benchmark:
         os.path.join(
             'run/output', PATH_STRANDSEQ_DGA_SPLIT,
-            'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1' + '.t{}.rsrc'.format(config['num_cpu_high']
+            'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1' + '.t{}.rsrc'.format(config['num_cpu_high'])
         )
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -416,7 +416,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
     benchmark:
         os.path.join(
             'run/output', PATH_STRANDSEQ_DGA_SPLIT,
-            'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort' + '.t{}.rsrc'.format(config['num_cpu_high']
+            'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort' + '.t{}.rsrc'.format(config['num_cpu_high'])
         )
     conda:
         '../environment/conda/conda_pbtools.yml'
