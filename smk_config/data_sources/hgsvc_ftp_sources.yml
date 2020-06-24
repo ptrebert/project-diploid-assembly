@@ -1,20 +1,4 @@
 
-data_source_HG00514_pacbio:
-  comment: "HGSVC FTP source for Sequel2 HG00514 CCS/HiFi and CLR data"
-  output: 'hgsvc_HG00514_pacbio.json'
-  server: 'ftp.1000genomes.ebi.ac.uk'
-  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20190508_HG00514_PacBioSequel2'
-  collect_files:
-    - 'bam'
-    - 'fastq.gz'
-  sort_into:
-    - 'bam'
-    - 'fastq'
-  file_infix: 'hgsvc_pbsq2-'
-  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
-  assume_pacbio_native: True
-  assume_clr_subreads: True
-
 
 data_source_HG00512_pacbio:
   comment: "HGSVC FTP source for Sequel2 HG00512 CCS/HiFi data"

@@ -1,16 +1,14 @@
 
 data_source_pacbio_hhu_local:
-  comment: "HGSVC local HHU-HILBERT source for Sequel2 PacBio CLR data"
-  output: 'hgsvc_local_hhu_pacbio.json'
+  comment: "HGSVC local HHU-HILBERT source for Sequel2 PacBio CCS data"
+  output: 'hgsvc_local_hhu_hg00732_hifi.json'
   server: 'localhost'
-  data_source: '/gpfs/project/ebertp/data/local_source/pacbio_clr'
+  data_source: '/gpfs/project/ebertp/data/globus/sequence_data/2020-06_HG00732_reseq'
   collect_files:
-    - 'bam'
+    - 'fastq.gz'
   sort_into:
-    - 'bam'
+    - 'fastq'
   file_infix: 'hgsvc_pbsq2-'
-  assume_pacbio_native: True
-  assume_clr_subreads: True
   local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}'
 
 
