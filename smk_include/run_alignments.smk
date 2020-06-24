@@ -325,15 +325,18 @@ rule minimap_racon_polish_alignment_pass1:
         minimap = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.minimap.log',
         st_sort = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.st-sort.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/polishing/alignments/{{pol_reads}}_map-to_{{hap_reads}}-{{assembler}}.{{hap}}.{{sequence}}.racon-p1.t{}.rsrc'.format(config['num_cpu_high'])
+        os.path.join(
+            'run/output', PATH_STRANDSEQ_DGA_SPLIT,
+            'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1' + '.t{}.rsrc'.format(config['num_cpu_high']
+        )
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 16384 / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: attempt * 16384,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + (attempt - 1) * 16384) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 12288 + (attempt - 1) * 16384,
         mem_sort_mb = 4096,
-        runtime_hrs = 3
+        runtime_hrs = lambda wildcards, attempt: 0 if attempt < 2 else attempt * 3
     params:
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
         preset = load_preset_file,
@@ -375,10 +378,10 @@ rule minimap_racon_polish_alignment_pass2:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 16384 / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: attempt * 16384,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + (attempt - 1) * 16384) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 12288 + (attempt - 1) * 16384,
         mem_sort_mb = 4096,
-        runtime_hrs = 3
+        runtime_hrs = lambda wildcards, attempt: 0 if attempt < 2 else attempt * 3
     params:
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
         preset = load_preset_file,
@@ -411,14 +414,17 @@ rule pbmm2_arrow_polish_alignment_pass1:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/polishing/alignments/{{pol_reads}}_map-to_{{hap_reads}}-{{assembler}}.{{hap}}.{{sequence}}.arrow-p1.psort.t{}.rsrc'.format(config['num_cpu_high'])
+        os.path.join(
+            'run/output', PATH_STRANDSEQ_DGA_SPLIT,
+            'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort' + '.t{}.rsrc'.format(config['num_cpu_high']
+        )
     conda:
         '../environment/conda/conda_pbtools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(attempt * 16384 / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: attempt * 16384,
-        runtime_hrs = 4
+        runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1)
     params:
         align_threads = config['num_cpu_high'] - 2,
         sort_threads = 2,
