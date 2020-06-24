@@ -3,13 +3,76 @@ include: '../constraints.smk'
 include: '../aux_utilities.smk'
 include: 'prep_custom_references.smk'
 
+KMER_CONFIG = {
+    'kmer_size': 31,  # increasing that requires changing the Bifrost build command!
+    'trim_min_qual': 20,
+    'trim_min_length': 51,
+    'genome_size': int(3.1e9),  # this is roughly the sequence length of the HGSVC2 reference
+    'ref_assembly': 'GRCh38_HGSVC2_noalt',
+    'ref_annotation': 'GRCh38_ENSEMBLv98_RegBuild',
+    'kmer_ratio': 99  # values below ~95 lower chances of detecting hap-specific sequence
+}
+
+
+def find_sample_short_reads(sample):
+
+    data_sources = config['sample_description_' + sample]['data_sources']
+    short_reads = []
+    for readset_record in data_sources:
+        for readset_type, readset_desc in readset_record.items():
+            if readset_type != 'short_reads':
+                continue
+            readset_sample, readset_name = readset_desc['readset'].split('_', 1)
+            assert readset_sample == sample, 'Sample mismatch: {} / {}'.format(sample, readset_desc)
+            short_reads.append(readset_name)
+    return short_reads
+
+
+def determine_possible_computations():
+    """
+    NA19239_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta
+    """
+    module_outputs = {
+        'annotation_table': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.tsv',
+        'kmer_counts': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.kmer-counts.tsv',
+    }
+
+    fix_wildcards = {
+        'ratio': KMER_CONFIG['kmer_ratio'],
+        'annotation': KMER_CONFIG['ref_annotation'],
+        'known_ref': KMER_CONFIG['ref_assembly']
+    }
+
+    compute_results = set()
+
+    search_path = os.path.join(os.getcwd(), 'output/evaluation/kmer_analysis/phased_assemblies')
+    for ps_assm in os.listdir(search_path):
+        if not ps_assm.endswith('.fasta'):
+            continue
+        assm_base, hap, polisher, ext = assm.split('.')
+        sample, assm_reads = assm_base.split('.', 1)
+        tmp = dict(fix_wildcards)
+        tmp['sample'] = sample
+        tmp['polisher'] = polisher
+        tmp['assembly'] = assm_reads
+        short_reads = find_sample_short_reads(sample)
+        for sr in short_reads:
+            tmp['readset'] = sr
+            for target in module_outputs.values():
+                fmt_target = target.format(**tmp)
+                compute_results.add(fmt_target)
+    
+    return sorted(compute_results)
+
+
 localrules: master_kmer_analysis,
             write_bifrost_fofn
 
 
 rule master_kmer_analysis:
     input:
-        []
+        determine_possible_computations
+
 
 rule create_conda_environment_compile:
     output:
@@ -104,8 +167,8 @@ rule short_read_quality_trimming:
         mem_per_cpu_mb = lambda wildcards, attempt: int(12288 * attempt / 16),
         mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
     params:
-        quality_trim = 20,
-        min_read_length = 51,
+        quality_trim = KMER_CONFIG['trim_min_qual'],
+        min_read_length = KMER_CONFIG['trim_min_length'],
         outdir = lambda wildcards, input: os.path.join('input', 'fastq', wildcards.readset, 'trimmed')
     shell:
         'trim_galore --quality {params.quality_trim} --length {params.min_read_length} '
@@ -165,9 +228,9 @@ rule short_read_error_correction:
         mem_per_cpu_mb = lambda wildcards, attempt: int(24576 * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 24676 * attempt
     params:
-        kmer_size = 31,
-        alpha = lambda wildcards, input: compute_lighter_alpha(input.report1, input.report2, 3100000000),
-        genomesize = 3100000000,
+        kmer_size = KMER_CONFIG['kmer_size'],
+        alpha = lambda wildcards, input: compute_lighter_alpha(input.report1, input.report2, KMER_CONFIG['genome_size']),
+        genomesize = KMER_CONFIG['genome_size'],
         outdir = lambda wildcards, output: os.path.dirname(output.mate1)
     shell:
         'lighter -r {input.mate1} -r {input.mate2} '
@@ -219,7 +282,7 @@ rule build_bifrost_colored_dbg:
         mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 32768 * attempt) / config['num_cpu_high']),
         runtime_hrs = lambda wildcards, attempt: 16 * attempt
     params:
-        kmer_size = 31,
+        kmer_size = KMER_CONFIG['kmer_size'],
         out_prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0]
     shell:
         'Bifrost build --input-seq-file {input.read_fofn} --input-ref-file {input.assm_fofn} '
@@ -248,7 +311,7 @@ rule count_kmers_per_color:
         mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 32768 * attempt) / config['num_cpu_high']),
         runtime_hrs = lambda wildcards, attempt: 16 * attempt
     params:
-        kmer_size = 31
+        kmer_size = KMER_CONFIG['kmer_size']
     shell:
         'venn_diagram {input.graph} {input.colors} {params.kmer_size} {threads} {output} &> {log}'
 
