@@ -257,6 +257,10 @@ checkpoint create_input_data_download_requests:
                 msg = '\nWARNING: request path {} was active for both a JSON dump and a TSV metadata file\n'.format(output[0])
                 sys.stderr.write(msg)
                 _ = logfile.write(msg)
+            if not (json_triggered and tsv_triggered):
+                msg = 'Error: no matching data source for input data request: {}\n'.format(output[0])
+                msg += 'Did you forget to load the data source configuration file(s)?\n'
+                raise ValueError(msg)
 
 
 rule handle_strandseq_download_requests:
