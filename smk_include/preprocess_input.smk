@@ -348,4 +348,4 @@ rule relink_complete_short_read_input_samples:
     params:
         fastq_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'ln -s {params.fastq_parts} {output}'
+        'ln --symbolic --relative {params.fastq_parts} {output}'
