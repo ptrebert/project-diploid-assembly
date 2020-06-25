@@ -152,8 +152,8 @@ rule hac_merge_mono_dinucleotide_fraction:
 
 rule hac_link_strandseq_monofraction_samples:
     """
-    Linking fails on HHU cluster - unclear if file system related or not
-    Do a full copy for now, just a few GB...
+    Note to self:
+    For Snakemake to recognize the symlinks, do not forget to link "--relative"
     """
     input:
         os.path.join(
@@ -170,9 +170,9 @@ rule hac_link_strandseq_monofraction_samples:
     wildcard_constraints:
         sseq_reads = CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES
     params:
-        shell_cmd = lambda wildcards: 'cp' if bool(config.get('force_local_copy', False)) else 'ln -s'
+        shell_cmd = lambda wildcards: 'cp' if bool(config.get('force_local_copy', False)) else 'ln --symbolic --relative'
     shell:
-        'cp {input} {output}'
+        '{params.shell_cmd} {input} {output}'
 
 
 rule hac_samtools_position_sort_strandseq_reads:
