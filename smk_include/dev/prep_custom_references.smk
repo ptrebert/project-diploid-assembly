@@ -1,10 +1,7 @@
 
 import functools
 
-include: '../constraints.smk'
-include: '../aux_utilities.smk'
-include: '../handle_reference_download.smk'
-include: '../preprocess_references.smk'
+include: '../module_includes.smk'
 
 wildcard_constraints:
     known_ref = 'GRCh3[78]_[A-Za-z0-9]+_[A-Za-z0-9]+',

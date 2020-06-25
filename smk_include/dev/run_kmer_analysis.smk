@@ -1,8 +1,4 @@
 
-include: '../constraints.smk'
-include: '../aux_utilities.smk'
-include: '../handle_data_download.smk'
-include: '../preprocess_input.smk'
 include: 'prep_custom_references.smk'
 
 KMER_CONFIG = {
