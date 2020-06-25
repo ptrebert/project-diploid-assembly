@@ -1,6 +1,8 @@
 
 include: '../constraints.smk'
 include: '../aux_utilities.smk'
+include: '../handle_data_download.smk'
+include: '../preprocess_input.smk'
 include: 'prep_custom_references.smk'
 
 KMER_CONFIG = {
@@ -9,7 +11,7 @@ KMER_CONFIG = {
     'trim_min_length': 51,
     'genome_size': int(3.1e9),  # this is roughly the sequence length of the HGSVC2 reference
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
-    'ref_annotation': 'GRCh38_ENSEMBLv98_RegBuild',
+    'ref_annotation': 'ENSEMBLv98_RegBuild',
     'kmer_ratio': 99  # values below ~95 lower chances of detecting hap-specific sequence
 }
 
@@ -25,6 +27,8 @@ def find_sample_short_reads(sample):
             readset_sample, readset_name = readset_desc['readset'].split('_', 1)
             assert readset_sample == sample, 'Sample mismatch: {} / {}'.format(sample, readset_desc)
             short_reads.append(readset_name)
+    if not short_reads:
+        raise ValueError('No short read data available for sample {}'.format(sample))
     return short_reads
 
 
@@ -50,7 +54,7 @@ def determine_possible_computations(wildcards):
         if not ps_assm.endswith('.fasta'):
             continue
         assm_base, hap, polisher, ext = ps_assm.split('.')
-        sample, assm_reads = assm_base.split('.', 1)
+        sample, assm_reads = assm_base.split('_', 1)
         tmp = dict(fix_wildcards)
         tmp['sample'] = sample
         tmp['polisher'] = polisher
@@ -186,6 +190,9 @@ def compute_lighter_alpha(trim_report1, trim_report2, genomesize):
     """
     num_bp1 = 0
     num_bp2 = 0
+    if not all([os.path.isfile(x) for x in [trim_report1, trim_report2]]):
+        # could be dry run
+        return -1
     with open(trim_report1, 'r') as report:
         for line in report:
             if not line.startswith('Total written'):
