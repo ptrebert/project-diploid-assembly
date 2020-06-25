@@ -18,8 +18,10 @@ sample_description_HG00096:
         source_type: ftp
         library_fractions: one
     - short_reads:
-        readset: &short_reads HG00096_hgsvc_ilnvs-150pe_short
-        source_type: ftp
+        readset: &short_reads HG00096_1kg2504_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB31736
+        load_type: complete
 
 
 sample_targets_HG00096:

@@ -18,7 +18,7 @@ sample_description_HG02018:
         library_fractions: one
     - short_reads:
         readset: &short_reads HG02018_hgsvc_ilnvs-150pe_short
-        source_type: ftp
+        load_type: complete
 
 
 sample_targets_HG02018:
