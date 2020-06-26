@@ -378,7 +378,7 @@ rule minimap_racon_polish_alignment_pass2:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + (attempt - 1) * 16384) / config['num_cpu_high']),
+        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 if attempt < 2 else attempt * 24768) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 12288 if attempt < 2 else attempt * 24768
         mem_sort_mb = 4096,
         runtime_hrs = lambda wildcards, attempt: 0 if attempt < 2 else attempt * 16
