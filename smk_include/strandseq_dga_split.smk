@@ -281,8 +281,8 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
     resources:
-        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     run:
         import sys
         import io
@@ -412,8 +412,8 @@ rule merge_polished_contigs:
     params:
         polished_fastas = lambda wildcards, input: load_fofn_file(input)
     resources:
-        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     run:
         import sys
         import io
