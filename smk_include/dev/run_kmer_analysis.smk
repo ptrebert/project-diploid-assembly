@@ -298,6 +298,7 @@ rule count_kmers_per_color:
     Usage: ./venn_diagram <graph_file.gfa> <color_file.bfg_colors> <k> <threads> <output_file.txt>
     """
     input:
+        setup_ok = 'output/check_files/src_build/install_vennd.ok',
         graph = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.gfa',
         colors = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.bfg_colors'
     output:
