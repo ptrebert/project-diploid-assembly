@@ -45,7 +45,7 @@ def determine_possible_computations(wildcards):
 
     compute_results = set()
 
-    search_path = os.path.join(os.getcwd(), 'output/evaluation/kmer_analysis/phased_assemblies')
+    search_path = os.path.join(os.getcwd(), 'output/evaluation/phased_assemblies')
     for ps_assm in os.listdir(search_path):
         if not ps_assm.endswith('.fasta'):
             continue
@@ -245,8 +245,8 @@ rule write_bifrost_fofn:
     input:
         mate1 = 'input/fastq/{sample}_{readset}/corrected/{sample}_{readset}_1_val_1.cor.fq.gz',
         mate2 = 'input/fastq/{sample}_{readset}/corrected/{sample}_{readset}_2_val_2.cor.fq.gz',
-        hap1 = 'output/evaluation/kmer_analysis/phased_assemblies/{sample}_{assembly}.h1-un.{polisher}.fasta',
-        hap2 = 'output/evaluation/kmer_analysis/phased_assemblies/{sample}_{assembly}.h2-un.{polisher}.fasta',
+        hap1 = 'output/evaluation/phased_assemblies/{sample}_{assembly}.h1-un.{polisher}.fasta',
+        hap2 = 'output/evaluation/phased_assemblies/{sample}_{assembly}.h2-un.{polisher}.fasta',
         reference = 'references/assemblies/{known_ref}.no-mito.fasta',
         seq_mito = 'references/assemblies/{known_ref}.chrM.fasta'
     output:
