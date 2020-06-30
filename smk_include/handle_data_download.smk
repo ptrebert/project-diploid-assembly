@@ -529,5 +529,7 @@ def sample_annotator_prjeb9396(sample_info, individual):
         sample_label = '{}_{}_{}{}-{}'.format(individual, project, vendor, model, read_info)
     else:
         sample_label = None
+    if 'NoIndex' not in sample_info['submitted_ftp']:
+        sample_label = None
     return sample_label, 'short'
 
