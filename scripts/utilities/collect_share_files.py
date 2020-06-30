@@ -62,7 +62,10 @@ COLLECT_PATHS = {
             'haplotags'
         ],
         'HAPLOID_ASSEMBLIES': [
-            'output/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/haploid_assembly/*h?-un.arrow-p1.fasta*',
+            [
+                'output/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/haploid_assembly/*h?-un.arrow-p1.fasta*',
+                'output/diploid_assembly/strandseq_split/*/*/*/*/polishing/*/haploid_assembly/*h?-un.racon-p2.fasta*'
+            ],
             True,
             'assemblies/phased'
         ],
@@ -157,7 +160,7 @@ COLLECT_PATHS = {
             'statistics/haplotagging'
         ],
         'VARIANT_CALL_STATS': [
-            'output/statistics/variant_calls/longshot/*/*/*QUAL10.GQ100*.stats',
+            'output/statistics/variant_calls/*/*/*/*QUAL10.GQ100*.stats',
             True,
             'statistics/variant_calls'
         ]
@@ -280,39 +283,42 @@ def collect_result_files(top_source_path, sample, version, file_patterns, top_de
     count_matches = dict()
     file_pairs = []
     for pattern_name, pattern_info in file_patterns.items():
-        sub_pattern, check_version, out_folder = pattern_info
+        sub_patterns, check_version, out_folder = pattern_info
         out_folder = os.path.join(top_dest_path, out_folder)
         if not dry_run:
             os.makedirs(out_folder, exist_ok=True)
-        pattern = os.path.join(top_source_path, sub_pattern)
-        all_files = glob.glob(pattern)
-        if not all_files:
-            count_matches[(pattern_name, sub_pattern)] = 0
-            continue
-        # sample ID must be somewhere
-        all_files = [f for f in all_files if sample in f]
-        if check_version:
-            # version info must be somewhere
-            all_files = [f for f in all_files if version_string in f]
-        if not all_files:
-            count_matches[(pattern_name, sub_pattern)] = 0
-            continue
-        count_matches[(pattern_name, sub_pattern)] = len(all_files)
-        for src_file in all_files:
-            src_name = None
-            if os.path.islink(src_file):
-                src_name = os.path.basename(src_file)
-                src_file = os.readlink(src_file)
-            if 'QUAST' in pattern_name:
-                dest_file = adapt_quast_report_name(src_file, out_folder, version_prefix)
-            else:
-                if src_name is None:
+        if isinstance(sub_patterns, str):
+            sub_patterns = [sub_patterns]
+        file_pattern_count = 0
+        for sub_pattern in sub_patterns:
+            pattern = os.path.join(top_source_path, sub_pattern)
+            all_files = glob.glob(pattern)
+            if not all_files:
+                continue
+            # sample ID must be somewhere
+            all_files = [f for f in all_files if sample in f]
+            if check_version:
+                # version info must be somewhere
+                all_files = [f for f in all_files if version_string in f]
+            if not all_files:
+                continue
+            file_pattern_count += len(all_files)
+            for src_file in all_files:
+                src_name = None
+                if os.path.islink(src_file):
                     src_name = os.path.basename(src_file)
-                if out_folder.endswith('do_not_use'):
-                    src_name = '{}_DEV-ONLY_'.format(version_prefix) + src_name
-                dest_file = os.path.join(out_folder, version_prefix + src_name)
-            assert os.path.isfile(src_file), 'Not a valid file path: {}'.format(src_file)
-            file_pairs.append((pattern_name, src_file, dest_file))
+                    src_file = os.readlink(src_file)
+                if 'QUAST' in pattern_name:
+                    dest_file = adapt_quast_report_name(src_file, out_folder, version_prefix)
+                else:
+                    if src_name is None:
+                        src_name = os.path.basename(src_file)
+                    if out_folder.endswith('do_not_use'):
+                        src_name = 'DEV-ONLY_'.format(version_prefix) + src_name
+                    dest_file = os.path.join(out_folder, version_prefix + src_name)
+                assert os.path.isfile(src_file), 'Not a valid file path: {}'.format(src_file)
+                file_pairs.append((pattern_name, src_file, dest_file))
+        count_matches[(pattern_name, ' // '.join(sub_patterns))] = file_pattern_count
     print('Processing {} files'.format(len(file_pairs)))
     return sorted(file_pairs), count_matches
 
