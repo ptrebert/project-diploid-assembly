@@ -17,10 +17,11 @@ sample_description_HG02818:
         source_type: local
         library_fractions: one
     - short_reads:
-        readset: &short_reads HG02818_1kg698_ilnvs-150pe_short
+        readset: &short_reads HG02818_1kg_ilnvs-150pe_short
         source_type: ena
         bioproject: PRJEB36890
         load_type: complete
+        comment: "698 cohort"
 
 
 sample_targets_HG02818:

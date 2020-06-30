@@ -27,6 +27,7 @@ sample_description_HG00514:
         readset: &short_reads HG00514_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
+        load_type: parts
 
 
 sample_targets_HG00514:

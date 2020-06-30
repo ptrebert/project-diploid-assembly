@@ -12,13 +12,17 @@ sample_description_HG02018:
         technology: pacbio
         data_type: pacbio_native
         load_type: parts
+        comment: "no phased assembly possible"
     - strandseq:
         readset: &sseq_reads HG02018_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
         library_fractions: one
     - short_reads:
-        readset: &short_reads HG02018_hgsvc_ilnvs-150pe_short
+        readset: &short_reads HG02018_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
         load_type: complete
+        comment: "698 cohort"
 
 
 sample_targets_HG02018:
@@ -34,9 +38,11 @@ sample_targets_HG02018:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
+  - target:
+      nhr_assembler: jax27
       hap_assembler: flye
       var_caller: longshot

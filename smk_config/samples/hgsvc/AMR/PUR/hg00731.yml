@@ -26,6 +26,7 @@ sample_description_HG00731:
         readset: &short_reads HG00731_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
+        load_type: parts
 
 
 sample_targets_HG00731:

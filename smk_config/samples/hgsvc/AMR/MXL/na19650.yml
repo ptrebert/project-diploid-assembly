@@ -35,8 +35,6 @@ sample_targets_NA19650:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
       hap_assembler: flye

@@ -12,6 +12,11 @@ sample_description_NA19240:
         technology: pacbio
         data_type: fastq
         load_type: parts
+    - long_reads:
+        readset: NA19240_hgsvc_pbsq2-clr
+        technology: pacbio
+        data_type: pacbio_native
+        load_type: parts
     - strandseq:
         readset: &sseq_reads NA19240_1kg_il25k-npe_sseq
         source_type: ena
@@ -21,11 +26,13 @@ sample_description_NA19240:
         readset: &short_reads NA19240_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
+        load_type: parts
 
 
 sample_targets_NA19240:
   - aliases:
       1: &ccs_reads NA19240_hgsvc_pbsq2-ccs_1000
+      2: &clr_reads NA19240_hgsvc_pbsq2-clr_1000
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
@@ -40,7 +47,17 @@ sample_targets_NA19240:
       nhr_assembler: pereg
       hap_assembler: pereg
       var_caller: deepvar
+  - defaults:
+      hap_reads: *clr_reads
+      vc_reads: *clr_reads
+      sseq_reads: *sseq_reads
+      pol_reads: *clr_reads
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
   - target:
-      nhr_assembler: flye
+      nhr_assembler: uw27
       hap_assembler: flye
-      var_caller: freebayes
+      var_caller: longshot

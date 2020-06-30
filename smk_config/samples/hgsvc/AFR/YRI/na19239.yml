@@ -26,6 +26,7 @@ sample_description_NA19239:
         readset: &short_reads NA19239_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
+        load_type: parts
 
 
 sample_targets_NA19239:

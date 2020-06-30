@@ -26,6 +26,7 @@ sample_description_NA19238:
         readset: &short_reads NA19238_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
+        load_type: parts
 
 
 sample_targets_NA19238:
@@ -61,6 +62,6 @@ sample_targets_NA19238:
         - h1-un
         - h2-un
   - target:
-      nhr_assembler: flye
+      nhr_assembler: jax27
       hap_assembler: flye
       var_caller: longshot

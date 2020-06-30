@@ -17,8 +17,11 @@ sample_description_HG02011:
         source_type: ftp
         library_fractions: one
     - short_reads:
-        readset: &short_reads HG02011_hgsvc_ilnvs-150pe_short
-        source_type: ftp
+        readset: &short_reads HG02011_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
 
 
 sample_targets_HG02011:
@@ -34,8 +37,6 @@ sample_targets_HG02011:
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
       hap_assembler: flye

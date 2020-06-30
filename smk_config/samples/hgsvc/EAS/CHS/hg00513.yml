@@ -27,6 +27,7 @@ sample_description_HG00513:
         readset: &short_reads HG00513_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
+        load_type: parts
 
 
 sample_targets_HG00513:
@@ -65,16 +66,6 @@ sample_targets_HG00513:
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: longshot
-  - defaults:
-      hap_reads: *clr_reads
-      vc_reads: *clr_reads
-      sseq_reads: *sseq_reads
-      pol_reads: *clr_reads
-      pol_pass: arrow-p1
-      hap_assm_mode: split
-      hap:
-        - h1-un
-        - h2-un
   - target:
       nhr_assembler: hhu26
       hap_assembler: flye

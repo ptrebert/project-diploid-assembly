@@ -79,10 +79,6 @@ sample_targets_HG00733:
       nhr_assembler: pereg
       hap_assembler: pereg
       var_caller: deepvar
-  - target:
-      nhr_assembler: flye
-      hap_assembler: flye
-      var_caller: freebayes
   - defaults:
       hap_reads: *clr_hgsvc
       vc_reads: *clr_hgsvc
