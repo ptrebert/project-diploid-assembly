@@ -28,7 +28,12 @@ sample_description_HG00512:
         source_type: ena
         bioproject: PRJEB9396
         load_type: parts
-
+    - short_reads:
+        readset: HG00512_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
 
 sample_targets_HG00512:
   - aliases:

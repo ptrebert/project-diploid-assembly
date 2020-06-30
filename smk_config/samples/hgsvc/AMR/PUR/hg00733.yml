@@ -53,10 +53,16 @@ sample_description_HG00733:
         library_fractions: two
         comment: "annotation/HG00733_sub20_libraries_sseq.txt"
     - short_reads:
-        readset: &short_reads HG00733_1kg_il25k-125pe_short
+        readset: HG00733_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
         load_type: parts
+    - short_reads:
+        readset: HG00733_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
 
 
 sample_targets_HG00733:

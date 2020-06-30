@@ -23,10 +23,16 @@ sample_description_NA19238:
         bioproject: PRJEB12849
         library_fractions: two
     - short_reads:
-        readset: &short_reads NA19238_1kg_il25k-125pe_short
+        readset: NA19238_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
         load_type: parts
+    - short_reads:
+        readset: NA19238_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB31736
+        load_type: complete
+        comment: "2504 cohort"
 
 
 sample_targets_NA19238:

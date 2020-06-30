@@ -27,6 +27,12 @@ sample_description_HG00732:
         source_type: ena
         bioproject: PRJEB9396
         load_type: parts
+    - short_reads:
+        readset: HG00732_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB31736
+        load_type: complete
+        comment: "2504 cohort"
 
 
 sample_targets_HG00732:

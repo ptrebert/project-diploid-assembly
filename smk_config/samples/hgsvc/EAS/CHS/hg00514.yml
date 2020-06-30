@@ -24,10 +24,16 @@ sample_description_HG00514:
         bioproject: PRJEB12849
         library_fractions: two
     - short_reads:
-        readset: &short_reads HG00514_1kg_il25k-125pe_short
+        readset: HG00514_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
         load_type: parts
+    - short_reads:
+        readset: HG00514_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
 
 
 sample_targets_HG00514:
