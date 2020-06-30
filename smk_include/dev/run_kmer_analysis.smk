@@ -227,7 +227,7 @@ rule short_read_error_correction:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * 12,
+        runtime_hrs = lambda wildcards, attempt: attempt * 23,
         mem_per_cpu_mb = lambda wildcards, attempt: int(24576 * attempt / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 24676 * attempt
     params:
@@ -256,13 +256,13 @@ rule write_bifrost_fofn:
         import os
         with open(output.read_fofn, 'w') as dump:
             _ = dump.write(os.path.abspath(input.mate1) + '\n')
-            _ = dump.write(os.path.abspath(input.mate2))
+            _ = dump.write(os.path.abspath(input.mate2) + '\n')
 
         with open(output.assm_fofn, 'w') as dump:
             _ = dump.write(os.path.abspath(input.hap1) + '\n')
             _ = dump.write(os.path.abspath(input.hap2) + '\n')
             _ = dump.write(os.path.abspath(input.reference) + '\n')
-            _ = dump.write(os.path.abspath(input.seq_mito))
+            _ = dump.write(os.path.abspath(input.seq_mito) + '\n')
 
 
 rule build_bifrost_colored_dbg:
@@ -307,13 +307,13 @@ rule count_kmers_per_color:
        'log/output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.vd-count.log',
     benchmark:
         os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
-                     '{sample}.{readset}.{assembly}.{polisher}.vd-count' + '.t{}.rsrc'.format(config['num_cpu_high']))
+                     '{sample}.{readset}.{assembly}.{polisher}.vd-count' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda: '../../environment/conda/conda_compile.yml'
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_low']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 32768 * attempt) / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: 16 * attempt
+        mem_total_mb = lambda wildcards, attempt: 16768 + 16768 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16768 + 16768 * attempt) / config['num_cpu_low']),
+        runtime_hrs = lambda wildcards, attempt: 2 * attempt
     params:
         kmer_size = KMER_CONFIG['kmer_size']
     shell:
@@ -338,7 +338,7 @@ rule query_bifrost_colored_dbg:
     resources:
         mem_total_mb = lambda wildcards, attempt: 16768 + 16768 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: int((16768 + 16768 * attempt) / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: 2 * attempt
     params:
         out_prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0],
         kmer_ratio = lambda wildcards: round(float(wildcards.ratio) / 100, 2)
