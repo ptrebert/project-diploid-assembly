@@ -104,6 +104,9 @@ def create_request_files_from_tsv(tsv_files, request_path, blacklist, logfile):
 
     long_read_parts = 0
 
+    mate1_indicators = [(1, x) for x in ['.R1.fastq.gz', '_R1.fastq.gz', '_1.fastq.gz']]
+    mate2_indicators = [(2, x) for x in ['.R2.fastq.gz', '_R2.fastq.gz', '_2.fastq.gz']]
+
     for tsv in tsv_files:
         assert tsv.endswith('.metadata.tsv'), 'Unexpected file name: {}'.format(tsv)
         filename = os.path.basename(tsv).split('.')[0]  # strip .metadata.tsv
@@ -112,7 +115,7 @@ def create_request_files_from_tsv(tsv_files, request_path, blacklist, logfile):
             continue
         individual = filename.split('_')[0]
         sample_annotator = None
-        with open(tsv, 'r') as table:
+        with open(tsv, 'r', newline='') as table:
             rows = csv.DictReader(table, delimiter='\t')
             for row in rows:
                 if individual not in row['sample_alias']:
@@ -142,11 +145,16 @@ def create_request_files_from_tsv(tsv_files, request_path, blacklist, logfile):
                     else:
                         # rarely, ENA metadata / file reports list three FASTQ files per library
                         # for paired-end reads... example: PRJEB3381
-                        if not (filename.endswith('_1.fastq.gz') or filename.endswith('_2.fastq.gz')):
+                        mate_num = 0
+                        for (mate, ext) in mate1_indicators + mate2_indicators:
+                            if filename.endswith(ext):
+                                mate_num = mate
+                                break
+                        if mate_num == 0:
                             _ = logfile.write('WARNING: expecting short, paired-end reads, skipping '
-                                              'over file with no mate pair indicator (_1 or _2): {}'.format(ftp_path))
+                                              'over file with no mate pair indicator (R1/_1 or R2/_2): {}'.format(ftp_path))
                             continue
-                        local_name = label + '_' + filename
+                        local_name = label + '_' + row['run_accession'] + '_{}'.format(mate_num) + '.fastq.gz'
 
                     local_data_folder = os.path.split(request_path)[0]
                     if not requests_created:
@@ -434,7 +442,9 @@ def get_bioproject_sample_annotator(bioproject):
         'PRJEB12849': sample_annotator_prjeb12849,
         'PRJEB14185': sample_annotator_prjeb14185,
         'PRJNA540705': sample_annotator_prjna540705,
-        'PRJEB9396': sample_annotator_prjeb9396
+        'PRJEB9396': sample_annotator_prjeb9396,
+        'PRJEB36890': sample_annotator_prjeb36890_prjeb31736,
+        'PRJEB31736': sample_annotator_prjeb36890_prjeb31736,
     }
     return known_projects[bioproject]
 
@@ -533,3 +543,24 @@ def sample_annotator_prjeb9396(sample_info, individual):
         sample_label = None
     return sample_label, 'short'
 
+
+def sample_annotator_prjeb36890_prjeb31736(sample_info, individual):
+    """
+    Annotator for NYGC Illumina short read data 698 and 2504 cohort
+
+    :param sample_info:
+    :param individual:
+    :return:
+    """
+    project = '1kg'
+    vendor = 'il'
+    read_info = '150pe'
+    model = 'nvs'
+    if individual in sample_info['sample_alias']:
+        sample_label = '{}_{}_{}{}-{}'.format(individual, project, vendor, model, read_info)
+    else:
+        sample_label = None
+    assert 'illumina' in sample_info['instrument_platform'].lower()
+    assert 'novaseq 6000' in sample_info['instrument_model'].lower()
+    assert 'paired' in sample_info['library_layout'].lower()
+    return sample_label, 'short'
