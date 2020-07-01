@@ -16,6 +16,7 @@ restart-times: 1
 max-status-checks-per-second: 0.001
 use-conda: True
 use-envmodules: True
+conda-prefix: /gpfs/project/ebertp/projects/conda_envs
 nolock: False
 default-resources:
   - mem_per_cpu_mb=1024
