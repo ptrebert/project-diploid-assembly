@@ -8,7 +8,8 @@ KMER_CONFIG = {
     'genome_size': int(3.1e9),  # this is roughly the sequence length of the HGSVC2 reference
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
     'ref_annotation': 'ENSEMBLv98_RegBuild',
-    'kmer_ratio': 99  # values below ~95 lower chances of detecting hap-specific sequence
+    'kmer_ratio': 99,  # values below ~95 lower chances of detecting hap-specific sequence
+    'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396']
 }
 
 
@@ -22,7 +23,17 @@ def find_sample_short_reads(sample):
                 continue
             readset_sample, readset_name = readset_desc['readset'].split('_', 1)
             assert readset_sample == sample, 'Sample mismatch: {} / {}'.format(sample, readset_desc)
+
+            bioproject = None
+            try:
+                bioproject = readset_desc['bioproject']
+            except KeyError:
+                pass
+            if bioproject in KMER_CONFIG['skip_short_read_sources']:
+                continue
+
             short_reads.append(readset_name)
+
     if not short_reads:
         raise ValueError('No short read data available for sample {}'.format(sample))
     return short_reads
