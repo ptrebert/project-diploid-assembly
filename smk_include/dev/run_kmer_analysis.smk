@@ -87,13 +87,13 @@ rule master_kmer_analysis:
 
 rule create_conda_environment_compile:
     output:
-        'output/check_files/environment/conda_compile.ok'
+        'output/check_files/environment/conda_bifrost.ok'
     log:
-        'log/output/check_files/environment/conda_compile.log'
+        'log/output/check_files/environment/conda_bifrost.log'
     params:
         script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
     conda:
-        '../../environment/conda/conda_compile.yml'
+        '../../environment/conda/conda_bifrost.yml'
     shell:
         '{params.script_exec} '
         '--export-conda-env --outfile {output} --logfile {log}'
@@ -108,13 +108,13 @@ rule install_source_bifrost:
     github.com/pmelsted/bifrost/issues/21
     """
     input:
-        'output/check_files/environment/conda_compile.ok'
+        'output/check_files/environment/conda_bifrost.ok'
     output:
         touch('output/check_files/src_build/install_bifrost.ok')
     log:
        'log/output/check_files/src_build/install_bifrost.log'
     conda:
-        '../../environment/conda/conda_compile.yml'
+        '../../environment/conda/conda_bifrost.yml'
     params:
         repo_folder = 'output/repositories'
     shell:
@@ -137,7 +137,7 @@ rule install_source_venn_diagram:
     log:
        'log/output/check_files/src_build/install_vennd.log'
     conda:
-        '../../environment/conda/conda_compile.yml'
+        '../../environment/conda/conda_bifrost.yml'
     params:
         repo_folder = 'output/repositories'
     shell:
@@ -289,7 +289,7 @@ rule build_bifrost_colored_dbg:
     benchmark:
         os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
                      '{sample}.{readset}.{assembly}.{polisher}.build' + '.t{}.rsrc'.format(config['num_cpu_high']))
-    conda: '../../environment/conda/conda_compile.yml'
+    conda: '../../environment/conda/conda_bifrost.yml'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
@@ -319,7 +319,7 @@ rule count_kmers_per_color:
     benchmark:
         os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
                      '{sample}.{readset}.{assembly}.{polisher}.vd-count' + '.t{}.rsrc'.format(config['num_cpu_low']))
-    conda: '../../environment/conda/conda_compile.yml'
+    conda: '../../environment/conda/conda_bifrost.yml'
     threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 16768 + 16768 * attempt,
@@ -344,7 +344,7 @@ rule query_bifrost_colored_dbg:
     benchmark:
         os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
                      '{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.query' + '.t{}.rsrc'.format(config['num_cpu_high']))
-    conda: '../../environment/conda/conda_compile.yml'
+    conda: '../../environment/conda/conda_bifrost.yml'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 16768 + 16768 * attempt,
