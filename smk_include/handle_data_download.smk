@@ -315,7 +315,7 @@ rule handle_partial_fastq_download_request:
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
-        parallel_conn = config['num_cpu_low'] - 1
+        parallel_conn = max(1, config['num_cpu_low'])
     shell:
          '{params.script_exec} --debug {params.force_copy}  '
          '--request-file {input} --output {output} '
@@ -341,7 +341,7 @@ rule handle_partial_pacbio_download_request:
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
-        parallel_conn = config['num_cpu_low'] - 1
+        parallel_conn = max(1, config['num_cpu_low'])
     shell:
          '{params.script_exec} --debug {params.force_copy}  '
          '--request-file {input} --output {output} '
@@ -387,7 +387,7 @@ rule handle_single_fastq_download_request:
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
-        parallel_conn = config['num_cpu_low'] - 1
+        parallel_conn = max(1, config['num_cpu_low'])
     shell:
          '{params.script_exec} --debug {params.force_copy} '
          '--request-file {input} --output {output} '
@@ -430,7 +430,7 @@ rule handle_short_read_download_request:
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
-        parallel_conn = config['num_cpu_low'] - 1
+        parallel_conn = max(1, config['num_cpu_low'])
     shell:
         '{params.script_exec} --debug {params.force_copy} '
         '--request-file {input} --output {output} '

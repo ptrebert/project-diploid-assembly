@@ -343,7 +343,7 @@ def main(logger, cargs):
         handle_request_file_download(
             cargs.request_file,
             cargs.output,
-            cargs.parallel_conn,
+            max(1, cargs.parallel_conn),
             cargs.force_local_copy,
             logger
         )
