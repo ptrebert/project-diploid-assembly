@@ -22,19 +22,3 @@ data_source_strandseq_hhu_local:
   sort_into:
     - 'fastq'
   assume_correct_filenames: True
-
-
-data_source_JAX_illumina:
-  comment: "HGSVC HHU local source for Illumina short read data (JAX)"
-  output: 'hgsvc_JAX_illumina.json'
-  server: 'localhost'
-  data_source: '/gpfs/project/ebertp/data/local_source/hgsvc_JAX_Illumina'
-  collect_files:
-    - 'fastq.gz'
-  sort_into:
-    - 'fastq'
-  file_infix: 'hgsvc_ilnvs-'
-  fix_tech: '150pe'
-  file_suffix: 'library_id'
-  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}_short'
-  assume_paired_reads: True
