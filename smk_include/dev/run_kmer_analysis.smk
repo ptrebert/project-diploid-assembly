@@ -43,6 +43,8 @@ def determine_possible_computations(wildcards):
     """
     NA19239_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta
     """
+    import sys
+
     module_outputs = {
         'annotation_table': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.tsv',
         'kmer_counts': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.kmer-counts.tsv',
@@ -57,6 +59,9 @@ def determine_possible_computations(wildcards):
     compute_results = set()
 
     search_path = os.path.join(os.getcwd(), 'output/evaluation/phased_assemblies')
+    if not os.path.isdir(search_path):
+        sys.stderr.write('\nNo phased assemblies at: {}\n'.format(search_path))
+        return []
     for ps_assm in os.listdir(search_path):
         if not ps_assm.endswith('.fasta'):
             continue
@@ -66,7 +71,11 @@ def determine_possible_computations(wildcards):
         tmp['sample'] = sample
         tmp['polisher'] = polisher
         tmp['assembly'] = assm_reads
-        short_reads = find_sample_short_reads(sample)
+        try:
+            short_reads = find_sample_short_reads(sample)
+        except KeyError:
+            sys.stderr.write('\nSample not configured: {}\n'.format(sample))
+            continue
         for sr in short_reads:
             tmp['readset'] = sr
             for target in module_outputs.values():
