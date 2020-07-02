@@ -20,7 +20,7 @@ sample_description_HG00864:
         readset: &short_reads HG00864_1kg_ilnvs-150pe_short
         source_type: ena
         bioproject: PRJEB31736
-        load_type: parts
+        load_type: complete
         comment: "2504 cohort"
 
 

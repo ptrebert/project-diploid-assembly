@@ -547,6 +547,9 @@ def sample_annotator_prjeb9396(sample_info, individual):
 def sample_annotator_prjeb36890_prjeb31736(sample_info, individual):
     """
     Annotator for NYGC Illumina short read data 698 and 2504 cohort
+    Note: the metadata downloaded from ENA contain several sets of FASTQs;
+    to be compatible with other approaches, select only those FASTQs dumped
+    from submitted CRAM files
 
     :param sample_info:
     :param individual:
@@ -559,6 +562,8 @@ def sample_annotator_prjeb36890_prjeb31736(sample_info, individual):
     if individual in sample_info['sample_alias']:
         sample_label = '{}_{}_{}{}-{}'.format(individual, project, vendor, model, read_info)
     else:
+        sample_label = None
+    if not sample_info['submitted_ftp'].lower().endswith('.cram'):
         sample_label = None
     assert 'illumina' in sample_info['instrument_platform'].lower()
     assert 'novaseq 6000' in sample_info['instrument_model'].lower()
