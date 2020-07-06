@@ -72,15 +72,15 @@ sample_data_sources_NA24385:
   input/fastq/NA24385_hpg_ontpm-ul/NA24385_hpg_ontpm-ul.part2:
     local_path: input/fastq/NA24385_hpg_ontpm-ul/NA24385_hpg_ontpm-ul.part2.fastq.gz
     remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/nanopore/downsampled/greater_than_100kb/HG002_ucsc_ONT_lt100kb.fastq.gz
-  input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_short_1:
-    local_path: input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_short_1.fastq.gz
+  input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_HPG57A8782_1:
+    local_path: input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_HPG57A8782_1.fastq.gz
     remote_path: /gpfs/project/ebertp/data/local_source/giab_hg002_illumina/HG002_HiSeq30x_subsampled_R1.fastq.gz
-  input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_short_2:
-    local_path: input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_short_2.fastq.gz
+  input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_HPG66E0A15_2:
+    local_path: input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_HPG66E0A15_2.fastq.gz
     remote_path: /gpfs/project/ebertp/data/local_source/giab_hg002_illumina/HG002_HiSeq30x_subsampled_R2.fastq.gz
-  # input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_short_1:
-  #   local_path: input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_short_1.fastq.gz
+  # input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_HPG57A8782_1:
+  #   local_path: input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_HPG57A8782_1.fastq.gz
   #   remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/ILMN/downsampled/HG002_HiSeq30x_subsampled_R1.fastq.gz
-  # input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_short_2:
-  #   local_path: input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_short_2.fastq.gz
+  # input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_HPG66E0A15_2:
+  #   local_path: input/fastq/NA24385_giab_il25k-150pe_short/NA24385_giab_il25k-150pe_HPG66E0A15_2.fastq.gz
   #   remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG002/hpp_HG002_NA24385_son_v1/ILMN/downsampled/HG002_HiSeq30x_subsampled_R2.fastq.gz
