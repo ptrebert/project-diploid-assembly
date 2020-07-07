@@ -236,7 +236,7 @@ rule call_variants_deepvariant:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + 16384 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 24576 + 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1)
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt < 2 else 12 * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sseq_reads, wildcards.vc_reads, wildcards.sequence),
