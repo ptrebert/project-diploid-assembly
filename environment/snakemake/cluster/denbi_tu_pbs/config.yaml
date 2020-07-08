@@ -1,13 +1,11 @@
 # Default runtime profile for deNBI Tuebingen infrastructure / PBS-TORQUE cluster
 
-directory: /beeond/projects/run_folder
 cluster: >-
   qsub
-  -d /beeond/projects/run_folder
+  -d ../run_folder
   -l walltime={cluster.run_hrs}:{cluster.run_min}:00,nodes=1:ppn={cluster.cores},mem={cluster.mem_mb}M
   -N {cluster.name} -o {cluster.output} -e {cluster.error}
 cluster-config: environment/snakemake/cluster/denbi_tu_pbs/denbi_cluster.json
-cluster-status: /beeond/projects/project-diploid-assembly/scripts/cluster_status/denbi_valet.py
 local-cores: 2
 jobs: 40
 latency-wait: 300
