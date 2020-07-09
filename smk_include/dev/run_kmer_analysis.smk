@@ -63,9 +63,15 @@ def determine_possible_computations(wildcards):
         sys.stderr.write('\nNo phased assemblies at: {}\n'.format(search_path))
         return []
     for ps_assm in os.listdir(search_path):
-        if not ps_assm.endswith('.fasta'):
+        if ps_assm.startswith('v1'):
+            version, new_name = ps_assm.split('_', 1)
+            os.rename(os.path.join(search_path, ps_assm), os.path.join(search_path, new_name))
+            assm_file = new_name
+        else:
+            assm_file = ps_assm
+        if not assm_file.endswith('.fasta'):
             continue
-        assm_base, hap, polisher, ext = ps_assm.split('.')
+        assm_base, hap, polisher, ext = assm_file.split('.')
         sample, assm_reads = assm_base.split('_', 1)
         tmp = dict(fix_wildcards)
         tmp['sample'] = sample
