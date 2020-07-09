@@ -46,7 +46,6 @@ def determine_possible_computations(wildcards):
     }
 
     fix_wildcards = {
-        'annotation': QVEST_CONFIG['ref_annotation'],
         'known_ref': QVEST_CONFIG['ref_assembly']
     }
 
