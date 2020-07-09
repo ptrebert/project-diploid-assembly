@@ -111,6 +111,8 @@ rule bwa_short_to_haploid_assembly_alignment:
             '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.filt.sort' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda:
         '../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        individual = '[A-Z0-9]+'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((24768 + 12288 * attempt) / config['num_cpu_high']),
