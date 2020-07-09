@@ -171,7 +171,7 @@ rule compute_alignments_stats:
         bam = os.path.join(
             'output/alignments/short_to_phased_assembly',
             '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.mdup.sam.bam'
-        )
+        ),
         bai = os.path.join(
             'output/alignments/short_to_phased_assembly',
             '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.mdup.sam.bam.bai'
