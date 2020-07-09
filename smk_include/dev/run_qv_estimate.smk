@@ -41,8 +41,8 @@ def determine_possible_computations(wildcards):
     NA19239_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta
     """
     module_outputs = {
-        'bam_stats': 'output/alignments/short_to_phased_assembly',
-                     '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats'
+        'bam_stats': os.path.join('output/alignments/short_to_phased_assembly',
+                     '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats')
     }
 
     fix_wildcards = {
