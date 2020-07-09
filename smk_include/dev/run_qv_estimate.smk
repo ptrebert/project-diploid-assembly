@@ -26,7 +26,7 @@ def find_sample_short_reads(sample):
                 bioproject = readset_desc['bioproject']
             except KeyError:
                 pass
-            if bioproject in KMER_CONFIG['skip_short_read_sources']:
+            if bioproject in QVEST_CONFIG['skip_short_read_sources']:
                 continue
 
             short_reads.append(readset_name)
