@@ -319,6 +319,7 @@ def compute_coverage_limit(cov_file):
         _, cov_stddev = cov_info.readline().split()
 
     cov_limit = eval(QVEST_CONFIG['cov_threshold'].format(**{'mean': cov_mean, 'stddev': cov_stddev}))
+    cov_limit = int(round(cov_limit, 0))
     cov_limit = max(min(cov_limit, HARD_LIMIT), 1)  # max 1: not sure if freebayes would handle 0 correctly
     return cov_limit
 
