@@ -5,6 +5,7 @@ QVEST_CONFIG = {
     'discard_flag': 2816,  # not primary OR qc fail OR supplementary
     'cov_threshold': '{mean} + 3 {stddev}',  # avoid that freebayes gets tangled in ultra high cov regions
     'genome_size': int(3.1e9),  # this is roughly the sequence length of the HGSVC2 reference
+    'freebayes_timeout_sec': 14400,
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
     'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396']
 }
@@ -42,7 +43,9 @@ def determine_possible_computations(wildcards):
     """
     module_outputs = {
         'bam_stats': os.path.join('output/alignments/short_to_phased_assembly',
-                     '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats')
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats'),
+        'raw_calls': os.path.join('output/evaluation/qv_estimation/variant_calls/00-raw',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.vcf.bgz')
     }
 
     fix_wildcards = {
@@ -78,7 +81,9 @@ def determine_possible_computations(wildcards):
     return sorted(compute_results)
 
 
-localrules: master_qv_estimate
+localrules: master_qv_estimate,
+            compute_coverage_statistics,
+            convert_faidx_to_regions
 
 
 rule master_qv_estimate:
@@ -207,3 +212,166 @@ rule compute_alignments_stats:
         runtime_hrs = lambda wildcards, attempt: 4 * attempt
     shell:
         'samtools stats --remove-dups --threads {threads} {input.bam} > {output} 2> {log}'
+
+
+def weighted_avg_and_std(values, weights):
+    """
+    https://stackoverflow.com/questions/2413522/weighted-standard-deviation-in-numpy
+    Return the weighted average and standard deviation.
+    values, weights -- Numpy ndarrays with the same shape.
+    """
+    import numpy as np
+    try:
+        average = np.average(values, weights=weights)
+    except ZeroDivisionError:
+        return 0, 0
+    variance = np.average((values-average)**2, weights=weights)
+    return average, np.sqrt(variance)
+
+
+rule compute_coverage_statistics:
+    input:
+        stats_file = os.path.join('output/alignments/short_to_phased_assembly',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.mdup.stats'),
+        faidx = os.path.join('output/evaluation/phased_assemblies',
+            '{individual}_{assembly}.{hap}.{polisher}.fasta.fai')
+    output:
+        os.path.join('output/alignments/short_to_phased_assembly',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.mdup.cov.tsv'),
+    wildcard_constraints:
+        individual = '[A-Z0-9]+'
+    run:
+        import numpy as np
+
+        with open(input.faidx, 'r') as faidx:
+            seqlen = sum([int(line.split()[1]) for line in faidx.readlines()])
+
+        # coverage range from [ 0 ... 1001 ]
+        coverages = np.zeros(1002, dtype=np.int32)
+
+        with open(input.stats_file, 'r') as stats:
+            for line in stats:
+                if not line.startswith('COV'):
+                    continue
+                _, cov_range, cov, count = line.strip().split()
+                if '<' in cov_range:
+                    cov = 1001
+                else:
+                    cov = int(cov)
+                coverages[cov] += int(count)
+        
+        # number of bases with zero coverage
+        coverages[0] = seqlen - coverages.sum()
+
+        # based on some initial tests, seems to be unlikely,
+        # but in principle many coverage values could be zero
+        observed_coverage_values = np.array(coverages > 0, dtype=np.bool)
+        cov_values = np.array(range(1002), dtype=np.int32)[observed_coverage_values]
+        cov_counts = coverages[observed_coverage_values]
+        avg, std = weighted_avg_and_std(cov_values, cov_counts)
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write('cov_mean\t{}\n'.format(round(avg, 2)))
+            _ = dump.write('cov_stddev\t{}\n'.format(round(std, 2)))
+            _ = dump.write('cov_bp_nonzero\t{}\n'.format(coverages[1:].sum()))
+            _ = dump.write('cov_bp_zero\t{}\n'.format(coverages[0]))
+            _ = dump.write('seq_length\t{}\n'.format(seqlen))
+
+
+rule convert_faidx_to_regions:
+    """
+    Regions file needed to run freebayes parallel script
+    """
+    input:
+        faidx = os.path.join('output/evaluation/phased_assemblies',
+            '{individual}_{assembly}.{hap}.{polisher}.fasta.fai')
+    output:
+        regions = os.path.join('output/evaluation/phased_assemblies',
+            '{individual}_{assembly}.{hap}.{polisher}.fasta.regions')
+    wildcard_constraints:
+        individual = '[A-Z0-9]+'
+    run:
+        regions = []
+        with open(input.faidx, 'r') as faidx:
+            for line in faidx:
+                parts = line.split()
+                seq_id, seq_size = parts[:2]
+                regions.append('{}:0-{}'.format(seq_id, seq_size))
+        
+        with open(output.regions, 'w') as dump:
+            _ = dump.write('\n'.join(regions) + '\n')
+
+
+def compute_coverage_limit(cov_file):
+
+    # coverages for Illumina data varies wildly, and freebayes' runtime
+    # seems to be very sensitive to coverage. Set some
+    # hard limit no matter what the observed coverage actually is
+
+    HARD_LIMIT = 500
+
+    if not os.path.isfile(cov_file):
+        # assume dry run
+        return HARD_LIMIT
+
+    with open(cov_file, 'r') as cov_info:
+        _, cov_mean = cov_info.readline().split()
+        _, cov_stddev = cov_info.readline().split()
+
+    cov_limit = eval(QVEST_CONFIG['cov_threshold'].format(**{'mean': cov_mean, 'stddev': cov_stddev}))
+    cov_limit = max(min(cov_limit, HARD_LIMIT), 1)  # max 1: not sure if freebayes would handle 0 correctly
+    return cov_limit
+
+
+rule qvest_freebayes_call_variants:
+    input:
+        bam = os.path.join(
+            'output/alignments/short_to_phased_assembly',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.mdup.sam.bam'),
+        bai = os.path.join(
+            'output/alignments/short_to_phased_assembly',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.mdup.sam.bam.bai'),
+        reference = os.path.join(
+            'output/evaluation/phased_assemblies',
+            '{individual}_{assembly}.{hap}.{polisher}.fasta'),
+        ref_idx = os.path.join(
+            'output/evaluation/phased_assemblies',
+            '{individual}_{assembly}.{hap}.{polisher}.fasta.fai'),
+        ref_regions = os.path.join(
+            'output/evaluation/phased_assemblies',
+            '{individual}_{assembly}.{hap}.{polisher}.fasta.regions'),
+        cov_file = os.path.join(
+            'output/alignments/short_to_phased_assembly',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.mdup.cov.tsv')
+    output:
+        os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/00-raw',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.vcf.bgz'
+            )
+    log:
+        os.path.join(
+            'log', 'output/evaluation/qv_estimation/variant_calls/00-raw',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.fb-call.log'
+            )
+    benchmark:
+        os.path.join(
+            'run', 'output/evaluation/qv_estimation/variant_calls/00-raw',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.fb-call' + '.t{}.rsrc'.format(config['num_cpu_high'])
+            )
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        individual = '[A-Z0-9]+'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((32768 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    params:
+        timeout = QVEST_CONFIG['freebayes_timeout_sec'],
+        script_exec = lambda wildcards: find_script_path('fb-parallel-timeout.sh'),
+        skip_cov = lambda wildcards, input: compute_coverage_limit(input.cov_file)
+    shell:
+        '{params.script_exec} {input.ref_regions} {threads} {params.timeout} {log}'
+            ' --use-best-n-alleles 4 --strict-vcf --fasta-reference {input.reference}'
+            ' --skip-coverage {params.skip_cov} {input.bam} | bgzip -c /dev/stdin > {output}'
