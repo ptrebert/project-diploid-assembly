@@ -308,7 +308,7 @@ def compute_coverage_limit(cov_file):
     # seems to be very sensitive to coverage. Set some
     # hard limit no matter what the observed coverage actually is
 
-    HARD_LIMIT = 500
+    HARD_LIMIT = 200
 
     if not os.path.isfile(cov_file):
         # assume dry run
