@@ -3,7 +3,7 @@ include: 'prep_custom_references.smk'
 
 QVEST_CONFIG = {
     'discard_flag': 2816,  # not primary OR qc fail OR supplementary
-    'cov_threshold': '{mean} + 3 {stddev}',  # avoid that freebayes gets tangled in ultra high cov regions
+    'cov_threshold': '{mean} + 3 * {stddev}',  # avoid that freebayes gets tangled in ultra high cov regions
     'genome_size': int(3.1e9),  # this is roughly the sequence length of the HGSVC2 reference
     'freebayes_timeout_sec': 14400,
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
