@@ -45,15 +45,15 @@ def determine_possible_computations(wildcards):
         'bam_stats': os.path.join('output/alignments/short_to_phased_assembly',
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats'),
         'raw_calls': os.path.join('output/evaluation/qv_estimation/variant_stats/00-raw',
-                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.stats'),
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.stats'),
         'hom_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.snps.hom.stats'),
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snps.hom.stats'),
         'hom_indels': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.indels.hom.stats'),
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.hom.stats'),
         'het_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.snps.het.stats'),
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snps.het.stats'),
         'het_indels': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.indels.het.stats'),
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.het.stats'),
     }
 
     fix_wildcards = {
