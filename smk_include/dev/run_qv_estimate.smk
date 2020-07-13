@@ -401,13 +401,13 @@ rule variant_calls_qfilter_biallelic:
             '{individual}_{assembly}.{hap}.{polisher}.fasta'),
     output:
         vcf = os.path.join(
-            'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
-            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.vcf.bgz'
+            'output/evaluation/qv_estimation/variant_calls/10-qfilter',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10.vcf.bgz'
             ),
-    output:
+    log:
         vcf = os.path.join(
-            'log', 'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
-            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.log'
+            'log', 'output/evaluation/qv_estimation/variant_calls/10-qfilter',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10.log'
             ),
     wildcard_constraints:
         individual = '[A-Z0-9]+'
@@ -415,7 +415,7 @@ rule variant_calls_qfilter_biallelic:
         '../../environment/conda/conda_biotools.yml'
     shell:
         'bcftools filter --output-type u --output /dev/stdout '
-        ' --include "QUAL>=10" --min-alleles 2 --max-alleles 2 {input.vcf} 2> {log} | '
+        ' --include "QUAL>=10" {input.vcf} 2> {log} | '
         ' bcftools norm --fasta-ref {input.ref} --output /dev/stdout --output-type v /dev/stdin | '
         ' bgzip -c /dev/stdin > {output}'
 
@@ -423,12 +423,12 @@ rule variant_calls_qfilter_biallelic:
 rule split_callset_by_variant_type:
     input:
         vcf = os.path.join(
-            'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
-            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.vcf.bgz'
+            'output/evaluation/qv_estimation/variant_calls/10-qfilter',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10.vcf.bgz'
             ),
         tbi = os.path.join(
-            'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
-            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.vcf.bgz.tbi'
+            'output/evaluation/qv_estimation/variant_calls/10-qfilter',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10.vcf.bgz.tbi'
             ),
     output:
         snps = os.path.join(
@@ -442,11 +442,11 @@ rule split_callset_by_variant_type:
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
-         'bcftools view --types snps '
+         'bcftools view --types snps --min-alleles 2 --max-alleles 2 '
          '--output-type v --output-file /dev/stdout {input.vcf} | '
          'bgzip -c /dev/stdin > {output.snps}'
          ' && '
-         'bcftools view --types indels '
+         'bcftools view --types indels --min-alleles 2 --max-alleles 2 '
          '--output-type v --output-file /dev/stdout {input.vcf} | '
          'bgzip -c /dev/stdin > {output.indels}'
 
