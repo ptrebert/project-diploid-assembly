@@ -44,8 +44,16 @@ def determine_possible_computations(wildcards):
     module_outputs = {
         'bam_stats': os.path.join('output/alignments/short_to_phased_assembly',
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats'),
-        'raw_calls': os.path.join('output/evaluation/qv_estimation/variant_calls/00-raw',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.vcf.bgz')
+        'raw_calls': os.path.join('output/evaluation/qv_estimation/variant_stats/00-raw',
+                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.stats'),
+        'hom_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.snps.hom.stats'),
+        'hom_indels': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.indels.hom.stats'),
+        'het_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.snps.het.stats'),
+        'het_indels': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+                        '{sample}_{readset}_short_map-to_{assembly}.{hap}.{polisher}.indels.het.stats'),
     }
 
     fix_wildcards = {
@@ -376,3 +384,106 @@ rule qvest_freebayes_call_variants:
         '{params.script_exec} {input.ref_regions} {threads} {params.timeout} {log}'
             ' --use-best-n-alleles 4 --strict-vcf --fasta-reference {input.reference}'
             ' --skip-coverage {params.skip_cov} {input.bam} | bgzip -c /dev/stdin > {output}'
+
+
+rule variant_calls_qfilter_biallelic:
+    input:
+        vcf = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/00-raw',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.vcf.bgz'
+            ),
+        tbi = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/00-raw',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.vcf.bgz.tbi'
+            ),
+        ref = os.path.join(
+            'output/evaluation/phased_assemblies',
+            '{individual}_{assembly}.{hap}.{polisher}.fasta'),
+    output:
+        vcf = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.vcf.bgz'
+            ),
+    wildcard_constraints:
+        individual = '[A-Z0-9]+'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bcftools filter --output-type u --include "QUAL>=10" | '
+        ' --min-alleles 2 --max-alleles 2 {input.vcf} | '
+        ' bcftools norm --fasta-ref {input.ref} --output /dev/stdout --output-type v | '
+        ' bgzip -c /dev/stdin > {output}'
+
+
+rule split_callset_by_variant_type:
+    input:
+        vcf = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.vcf.bgz'
+            ),
+        tbi = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.vcf.bgz.tbi'
+            ),
+    output:
+        snps = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/20-split-vtype',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.snps.vcf.bgz'
+            ),
+        indels = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/20-split-vtype',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.indels.vcf.bgz'
+            ),
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+         'bcftools view --types snps '
+         '--output-type v --output-file /dev/stdout {input.vcf} | '
+         'bgzip -c /dev/stdin > {output.snps}'
+         ' && '
+         'bcftools view --types indels '
+         '--output-type v --output-file /dev/stdout {input.vcf} | '
+         'bgzip -c /dev/stdin > {output.indels}'
+
+
+rule split_callset_by_genotype:
+    input:
+        vcf = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/20-split-vtype',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.vcf.bgz'
+            ),
+        tbi = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/20-split-vtype',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.vcf.bgz.tbi'
+            ),
+    output:
+        hom = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/30-split-gtype',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.hom.vcf.bgz'
+            ),
+        het = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/30-split-gtype',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.het.vcf.bgz'
+            ),
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    shell:
+         'bcftools view --genotype hom '
+         '--output-type v --output-file /dev/stdout {input.vcf} | '
+         'bgzip -c /dev/stdin > {output.hom}'
+         ' && '
+         'bcftools view --genotype het '
+         '--output-type v --output-file /dev/stdout {input.vcf} | '
+         'bgzip -c /dev/stdin > {output.het}'
+
+
+rule compute_vcf_stats:
+    input:
+        'output/evaluation/qv_estimation/variant_calls/{step}/{filename}.vcf.bgz',
+        'output/evaluation/qv_estimation/variant_calls/{step}/{filename}.vcf.bgz.tbi',
+    output:
+        'output/evaluation/qv_estimation/variant_stats/{step}/{filename}.stats'
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bcftools stats {input[0]} > {output}'
