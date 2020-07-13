@@ -404,14 +404,19 @@ rule variant_calls_qfilter_biallelic:
             'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
             '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.vcf.bgz'
             ),
+    output:
+        vcf = os.path.join(
+            'log', 'output/evaluation/qv_estimation/variant_calls/10-qfilter-biallelic',
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.q10-bia.log'
+            ),
     wildcard_constraints:
         individual = '[A-Z0-9]+'
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
-        'bcftools filter --output-type u --include "QUAL>=10" | '
-        ' --min-alleles 2 --max-alleles 2 {input.vcf} | '
-        ' bcftools norm --fasta-ref {input.ref} --output /dev/stdout --output-type v | '
+        'bcftools filter --output-type u --output /dev/stdout '
+        ' --include "QUAL>=10" --min-alleles 2 --max-alleles 2 {input.vcf} 2> {log} | '
+        ' bcftools norm --fasta-ref {input.ref} --output /dev/stdout --output-type v /dev/stdin | '
         ' bgzip -c /dev/stdin > {output}'
 
 
