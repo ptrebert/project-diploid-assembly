@@ -46,14 +46,18 @@ def determine_possible_computations(wildcards):
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats'),
         'raw_calls': os.path.join('output/evaluation/qv_estimation/variant_stats/00-raw',
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.stats'),
-        'hom_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snps.hom.stats'),
-        'hom_indels': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.hom.stats'),
-        'het_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snps.het.stats'),
-        'het_indels': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.het.stats'),
+        'hom_snps': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.hom.vcf.bed'),
+        'hom_ins': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.ins.hom.vcf.bed'),
+        'het_snps': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.het.vcf.bed'),
+        'het_ins': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.ins.het.vcf.bed'),
+        'hom_dels': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.dels.hom.vcf.bed'),
+        'het_dels': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.dels.het.vcf.bed'),
     }
 
     fix_wildcards = {
@@ -413,6 +417,10 @@ rule variant_calls_qfilter_biallelic:
         individual = '[A-Z0-9]+'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt
     shell:
         'bcftools filter --output-type u --output /dev/stdout '
         ' --include "QUAL>=10" {input.vcf} 2> {log} | '
@@ -433,7 +441,7 @@ rule split_callset_by_variant_type:
     output:
         snps = os.path.join(
             'output/evaluation/qv_estimation/variant_calls/20-split-vtype',
-            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.snps.vcf.bgz'
+            '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.snvs.vcf.bgz'
             ),
         indels = os.path.join(
             'output/evaluation/qv_estimation/variant_calls/20-split-vtype',
@@ -471,7 +479,7 @@ rule split_callset_by_genotype:
             '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.het.vcf.bgz'
             ),
     conda:
-         '../../environment/conda/conda_biotools.yml'
+        '../../environment/conda/conda_biotools.yml'
     shell:
          'bcftools view --genotype hom '
          '--output-type v --output-file /dev/stdout {input.vcf} | '
@@ -492,3 +500,111 @@ rule compute_vcf_stats:
          '../../environment/conda/conda_biotools.yml'
     shell:
         'bcftools stats {input[0]} > {output}'
+
+
+####################################################
+# Below this point: lift variants to hg38 for
+# evaluation restricted to high confidence regions
+####################################################
+
+
+rule build_contig_to_reference_paf_alignment:
+    """
+    Usage note: most paftools do not support input generated with
+    the "--eqx" option; the below call is thus different from the
+    pipeline version producing SAM/BAM output
+    """
+    input:
+        ref = 'references/assemblies/{known_ref}.fasta',
+        assm = os.path.join('output/evaluation/phased_assemblies',
+                '{individual}_{assembly}.{hap}.{polisher}.fasta')
+    output:
+        'output/alignments/contigs_to_reference/evaluation/{individual}_{assembly}.{hap}.{polisher}_map-to_{known_ref}.paf'
+    log:
+        'log/output/alignments/contigs_to_reference/evaluation/{individual}_{assembly}.{hap}.{polisher}_map-to_{known_ref}.minimap.log'
+    benchmark:
+        'run/output/alignments/contigs_to_reference/evaluation/{individual}_{assembly}.{hap}.{polisher}_map-to_{known_ref}.minimap' + '.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        individual = '[A-Z0-9]+'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt
+    shell:
+         'minimap2 -t {threads} -cx asm20 --cs '
+         '--secondary=no -Y -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
+         '{input.ref} {input.assm} > {output} 2> {log}'
+
+
+rule dump_vcf_snv_to_bed:
+    input:
+        snvs = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/30-split-gtype',
+            '{callset}.snvs.{genotype}.vcf.bgz'),
+    output:
+        'output/evaluation/qv_estimation/variant_calls/30-dump-bed/{callset}.snvs.{genotype}.vcf.bed'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bgzip -d -c < {input} | vcf2bed --do-not-split --snvs > {output}'
+
+
+rule dump_vcf_insertions_to_bed:
+    input:
+        indels = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/30-split-gtype',
+            '{callset}.indels.{genotype}.vcf.bgz'),
+    output:
+        'output/evaluation/qv_estimation/variant_calls/30-dump-bed/{callset}.ins.{genotype}.vcf.bed'
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    shell:
+         'bgzip -d -c < {input} | vcf2bed --do-not-split --insertions > {output}'
+
+
+rule dump_vcf_deletions_to_bed:
+    input:
+        indels = os.path.join(
+            'output/evaluation/qv_estimation/variant_calls/30-split-gtype',
+            '{callset}.indels.{genotype}.vcf.bgz'),
+    output:
+        'output/evaluation/qv_estimation/variant_calls/30-dump-bed/{callset}.dels.{genotype}.vcf.bed'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bgzip -d -c < {input} | vcf2bed --do-not-split --deletions > {output}'
+
+
+rule lift_call_sets_to_reference:
+    input:
+        bed = 'output/evaluation/qv_estimation/variant_calls/30-dump-bed/{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.vcf.bed',
+        paf = 'output/alignments/contigs_to_reference/evaluation/{individual}_{assembly}.{hap}.{polisher}_map-to_{known_ref}.paf'
+    output:
+        'output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}/{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.vcf.bed'
+    wildcard_constraints:
+        individual = '[A-Z0-9]+'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'paftools.js liftover -l 10000 {input.paf} {input.bed} > {output}'
+
+
+# rule restrict_calls_to_high_conf_regions:
+#     input:
+#         calls = 'output/variant_calls/40-lifted/{reads}_aln-to_{assembly}.{var_type}.hg38.vcf.bed',
+#         regions = 'references/annotation/hg38_giab_highconf.bed'
+#     output:
+#         'output/variant_calls/50-highconf/{reads}_aln-to_{assembly}.{var_type}.hg38.hc-in.bed',
+#         'output/variant_calls/50-highconf/{reads}_aln-to_{assembly}.{var_type}.hg38.hc-out.bed'
+#     conda:
+#          '../../environment/conda/conda_biotools.yml'
+#     shell:
+#         'bedtools intersect -u -a {input.calls} -b {input.regions} > {output[0]}'
+#         ' && '
+#         'bedtools intersect -v -a {input.calls} -b {input.regions} > {output[1]}'
+
+
+# {individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}
