@@ -54,7 +54,7 @@ def determine_possible_computations(wildcards):
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.het.stats'),
         'het_ins': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.het.stats'),
-        'summary': os.path.join('output/evaluation/qv_estimation/variant_calls/50-highconf-{known_ref}',
+        'summary': os.path.join('output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}',
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.summary.tsv')
     }
 
