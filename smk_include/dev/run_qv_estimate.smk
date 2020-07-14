@@ -622,4 +622,4 @@ rule summarize_variant_calls:
                             genotype=['hom', 'het'],
                             location=['in-hc', 'out-hc'])
     output:
-        touch('output/evaluation/qv_estimation/variant_calls/50-highconf-{known_ref}/{callset}.summary.tsv')
+        touch('output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.tsv')
