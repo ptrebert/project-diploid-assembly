@@ -46,18 +46,16 @@ def determine_possible_computations(wildcards):
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats'),
         'raw_calls': os.path.join('output/evaluation/qv_estimation/variant_stats/00-raw',
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.stats'),
-        'hom_snps': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.hom.vcf.bed'),
-        'hom_ins': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.ins.hom.vcf.bed'),
-        'het_snps': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.het.vcf.bed'),
-        'het_ins': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.ins.het.vcf.bed'),
-        'hom_dels': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.dels.hom.vcf.bed'),
-        'het_dels': os.path.join('output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.dels.het.vcf.bed'),
+        'hom_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.hom.stats'),
+        'hom_ins': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.hom.stats'),
+        'het_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.het.stats'),
+        'het_ins': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.het.stats'),
+        'summary': os.path.join('output/evaluation/qv_estimation/variant_calls/50-highconf-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.summary.tsv')
     }
 
     fix_wildcards = {
@@ -530,8 +528,8 @@ rule build_contig_to_reference_paf_alignment:
         individual = '[A-Z0-9]+'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 8192 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 32768 + 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt
     shell:
          'minimap2 -t {threads} -cx asm20 --cs '
@@ -545,7 +543,7 @@ rule dump_vcf_snv_to_bed:
             'output/evaluation/qv_estimation/variant_calls/30-split-gtype',
             '{callset}.snvs.{genotype}.vcf.bgz'),
     output:
-        'output/evaluation/qv_estimation/variant_calls/30-dump-bed/{callset}.snvs.{genotype}.vcf.bed'
+        'output/evaluation/qv_estimation/variant_calls/40-dump-bed/{callset}.snvs.{genotype}.vcf.bed'
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
@@ -558,7 +556,7 @@ rule dump_vcf_insertions_to_bed:
             'output/evaluation/qv_estimation/variant_calls/30-split-gtype',
             '{callset}.indels.{genotype}.vcf.bgz'),
     output:
-        'output/evaluation/qv_estimation/variant_calls/30-dump-bed/{callset}.ins.{genotype}.vcf.bed'
+        'output/evaluation/qv_estimation/variant_calls/40-dump-bed/{callset}.ins.{genotype}.vcf.bed'
     conda:
          '../../environment/conda/conda_biotools.yml'
     shell:
@@ -571,7 +569,7 @@ rule dump_vcf_deletions_to_bed:
             'output/evaluation/qv_estimation/variant_calls/30-split-gtype',
             '{callset}.indels.{genotype}.vcf.bgz'),
     output:
-        'output/evaluation/qv_estimation/variant_calls/30-dump-bed/{callset}.dels.{genotype}.vcf.bed'
+        'output/evaluation/qv_estimation/variant_calls/40-dump-bed/{callset}.dels.{genotype}.vcf.bed'
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
@@ -580,10 +578,10 @@ rule dump_vcf_deletions_to_bed:
 
 rule lift_call_sets_to_reference:
     input:
-        bed = 'output/evaluation/qv_estimation/variant_calls/30-dump-bed/{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.vcf.bed',
+        bed = 'output/evaluation/qv_estimation/variant_calls/40-dump-bed/{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.vcf.bed',
         paf = 'output/alignments/contigs_to_reference/evaluation/{individual}_{assembly}.{hap}.{polisher}_map-to_{known_ref}.paf'
     output:
-        'output/evaluation/qv_estimation/variant_calls/40-lifted-{known_ref}/{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.vcf.bed'
+        'output/evaluation/qv_estimation/variant_calls/50-lifted-{known_ref}/{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.vcf.bed'
     wildcard_constraints:
         individual = '[A-Z0-9]+'
     conda:
@@ -592,19 +590,36 @@ rule lift_call_sets_to_reference:
         'paftools.js liftover -l 10000 {input.paf} {input.bed} > {output}'
 
 
-# rule restrict_calls_to_high_conf_regions:
-#     input:
-#         calls = 'output/variant_calls/40-lifted/{reads}_aln-to_{assembly}.{var_type}.hg38.vcf.bed',
-#         regions = 'references/annotation/hg38_giab_highconf.bed'
-#     output:
-#         'output/variant_calls/50-highconf/{reads}_aln-to_{assembly}.{var_type}.hg38.hc-in.bed',
-#         'output/variant_calls/50-highconf/{reads}_aln-to_{assembly}.{var_type}.hg38.hc-out.bed'
-#     conda:
-#          '../../environment/conda/conda_biotools.yml'
-#     shell:
-#         'bedtools intersect -u -a {input.calls} -b {input.regions} > {output[0]}'
-#         ' && '
-#         'bedtools intersect -v -a {input.calls} -b {input.regions} > {output[1]}'
+rule restrict_calls_to_high_conf_regions:
+    input:
+        calls = os.path.join('output/evaluation/qv_estimation/variant_calls',
+                    '50-lifted-{known_ref}',
+                    '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.vcf.bed'),
+        regions = 'references/annotation/hg38_giab_highconf.bed'
+    output:
+        hc_in = os.path.join('output/evaluation/qv_estimation/variant_calls',
+                    '60-highconf-{known_ref}',
+                    '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.in-hc.bed'
+                ),
+        hc_out = os.path.join('output/evaluation/qv_estimation/variant_calls',
+                    '60-highconf-{known_ref}',
+                    '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.out-hc.bed')
+    conda:
+         '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bedtools intersect -u -a {input.calls} -b {input.regions} > {output.hc_in}'
+        ' && '
+        'bedtools intersect -v -a {input.calls} -b {input.regions} > {output.hc_out}'
 
 
-# {individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}
+rule summarize_variant_calls:
+    input:
+        hap_assm = expand('output/evaluation/qv_estimation/variant_calls/40-dump-bed/{{callset}}.{var_type}.{genotype}.vcf.bed',
+                            var_type=['snvs', 'ins', 'dels'],
+                            genotype=['hom', 'het']),
+        ref_assm = expand('output/evaluation/qv_estimation/variant_calls/60-highconf-{{known_ref}}/{{callset}}.{var_type}.{genotype}.{location}.bed',
+                            var_type=['snvs', 'ins', 'dels'],
+                            genotype=['hom', 'het'],
+                            location=['in-hc', 'out-hc'])
+    output:
+        touch('output/evaluation/qv_estimation/variant_calls/50-highconf-{known_ref}/{callset}.summary.tsv')
