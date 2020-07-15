@@ -1,0 +1,15 @@
+name: merqury
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - Python=3.6
+  - r-base=3.6.1
+  - samtools
+  - bedtools
+  - igvtools
+  - openjdk
+  - c-compiler
+  - cxx-compiler
+  - compilers
+  - make
