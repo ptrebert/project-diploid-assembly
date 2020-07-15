@@ -6,6 +6,7 @@ QVEST_CONFIG = {
     'cov_threshold': '{mean} + 3 * {stddev}',  # avoid that freebayes gets tangled in ultra high cov regions
     'genome_size': int(3.1e9),  # this is roughly the sequence length of the HGSVC2 reference
     'freebayes_timeout_sec': 14400,
+    'variant_min_depth': 3,
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
     'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396']
 }
@@ -42,20 +43,22 @@ def determine_possible_computations(wildcards):
     NA19239_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta
     """
     module_outputs = {
-        'bam_stats': os.path.join('output/alignments/short_to_phased_assembly',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats'),
-        'raw_calls': os.path.join('output/evaluation/qv_estimation/variant_stats/00-raw',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.stats'),
-        'hom_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.hom.stats'),
-        'hom_ins': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.hom.stats'),
-        'het_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.het.stats'),
-        'het_ins': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.het.stats'),
+        # 'bam_stats': os.path.join('output/alignments/short_to_phased_assembly',
+        #                 '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.mdup.stats'),
+        # 'raw_calls': os.path.join('output/evaluation/qv_estimation/variant_stats/00-raw',
+        #                 '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.stats'),
+        # 'hom_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+        #                 '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.hom.stats'),
+        # 'hom_ins': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+        #                 '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.hom.stats'),
+        # 'het_snps': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+        #                 '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.snvs.het.stats'),
+        # 'het_ins': os.path.join('output/evaluation/qv_estimation/variant_stats/30-split-gtype',
+        #                 '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.indels.het.stats'),
         'summary': os.path.join('output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.summary.tsv')
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.summary.tsv'),
+        'qv_est': os.path.join('output/evaluation/qv_estimation/illumina_calls_{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.qv.tsv')
     }
 
     fix_wildcards = {
@@ -85,6 +88,8 @@ def determine_possible_computations(wildcards):
         for sr in short_reads:
             tmp['readset'] = sr
             for target in module_outputs.values():
+                if target.endswith('stats'):
+                    continue
                 fmt_target = target.format(**tmp)
                 compute_results.add(fmt_target)
     
@@ -532,9 +537,9 @@ rule build_contig_to_reference_paf_alignment:
         mem_total_mb = lambda wildcards, attempt: 32768 + 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt
     shell:
-         'minimap2 -t {threads} -cx asm20 --cs '
-         '--secondary=no -Y -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
-         '{input.ref} {input.assm} > {output} 2> {log}'
+        'minimap2 -t {threads} -cx asm20 --cs '
+        '--secondary=no -Y -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
+        '{input.ref} {input.assm} > {output} 2> {log}'
 
 
 rule dump_vcf_snv_to_bed:
@@ -612,6 +617,107 @@ rule restrict_calls_to_high_conf_regions:
         'bedtools intersect -v -a {input.calls} -b {input.regions} > {output.hc_out}'
 
 
+def parse_full_vcf_bed_line(line):
+    import re
+    seq_id, start, end, _, quality, ref_allele, alt_allele, _, attributes, sample_format, sample_values = line.strip().split()
+    assert sample_format.split(':')[1] == 'DP', 'Malformed VCF line in BED: {}'.format(line.strip())
+    read_depth = int(sample_values.split(':')[1])
+    mobj = re.search('LEN=[0-9]+;', attributes)
+    if mobj is None:
+        raise ValueError('No variant length in variant attributes: {}'.format(line.strip()))
+    variant_length = mobj.group(0)
+    variant_length = int(variant_length.strip('LEN=;'))
+    return (seq_id, int(start), int(end)), (float(quality), read_depth, variant_length, ref_allele, alt_allele)
+
+
+def parse_lifted_vcf_bed_line(line):
+
+    ref_seq, ref_start, ref_end, source_location, _, _ = line.strip().split()
+    seq_id, start, end = source_location.rsplit('_', 2)
+    ref_start = int(ref_start)
+    ref_end = int(ref_end)
+    try:
+        start = int(start)
+        end = int(end)
+    except ValueError:
+        # sometimes weird suffix "_t5" or "_t3" at source location
+        source_location = source_location.rsplit('_', 1)[0]
+        seq_id, start, end = source_location.rsplit('_', 2)
+        start = int(start)
+        end = int(end)
+        #raise ValueError('Cannot process line:\n\n{}\n\n'.format(line.strip()))
+    return (seq_id, start, end), (ref_seq, ref_start, ref_end)
+
+
+def build_complete_variant_table(variant_bed_files):
+
+    import pandas as pd
+
+    final_concat = []
+
+    line_parser = parse_full_vcf_bed_line
+
+    for bedfile in variant_bed_files:
+        rows = []
+        index = []
+        fname = os.path.basename(bedfile)
+        idx_var, idx_gt = fname.split('.')[-4:-2]
+        if len(idx_var) > 3:
+            idx_var = idx_var.rstrip('s')
+        with open(bedfile, 'r') as bed:
+            for line in bed:
+                line_idx, line_values = line_parser(line)
+                rows.append(line_values)
+                index.append((idx_var, idx_gt, *line_idx))
+        bed_index = pd.MultiIndex.from_tuples(
+                        index,
+                        names=['variant', 'genotype', 'seq', 'start', 'end']
+                    )
+        bed_df = pd.DataFrame.from_records(
+                    rows,
+                    index=bed_index,
+                    columns=['quality', 'depth', 'variant_length', 'ref_allele', 'alt_allele']
+                )
+        final_concat.append(bed_df)
+    
+    return pd.concat(final_concat, axis=0)
+
+
+def build_lifted_variant_table(lifted_bed_files):
+
+    import pandas as pd
+
+    final_concat = []
+
+    line_parser = parse_lifted_vcf_bed_line
+
+    for bedfile in lifted_bed_files:
+        rows = []
+        index = []
+        fname = os.path.basename(bedfile)
+        idx_var, idx_gt = fname.split('.')[-4:-2]
+        if len(idx_var) > 3:
+            idx_var = idx_var.rstrip('s')
+        is_hc = 1 if fname.endswith('in-hc.bed') else 0
+        with open(bedfile, 'r') as bed:
+            for line in bed:
+                line_idx, line_values = line_parser(line)
+                rows.append((*line_values, 1, is_hc))
+                index.append((idx_var, idx_gt, *line_idx))
+        bed_index = pd.MultiIndex.from_tuples(
+                        index,
+                        names=['variant', 'genotype', 'seq', 'start', 'end']
+                    )
+        bed_df = pd.DataFrame.from_records(
+                    rows,
+                    index=bed_index,
+                    columns=['ref_seq', 'ref_start', 'ref_end', 'is_lifted', 'is_highconf']
+                )
+        final_concat.append(bed_df)
+    
+    return pd.concat(final_concat, axis=0)
+
+
 rule summarize_variant_calls:
     input:
         hap_assm = expand('output/evaluation/qv_estimation/variant_calls/40-dump-bed/{{callset}}.{var_type}.{genotype}.vcf.bed',
@@ -622,4 +728,159 @@ rule summarize_variant_calls:
                             genotype=['hom', 'het'],
                             location=['in-hc', 'out-hc'])
     output:
-        touch('output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.tsv')
+        'output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.tsv'
+    benchmark:
+        'run/output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.rsrc'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+    run:
+        import pandas as pd
+
+        full_set = build_complete_variant_table(input.hap_assm)
+
+        lift_set = build_lifted_variant_table(input.ref_assm)
+
+        full_set = full_set.join(lift_set, how='outer')
+
+        full_set.loc[full_set['ref_seq'].isna(), 'ref_seq'] = 'none'
+        full_set.loc[full_set['ref_start'].isna(), 'ref_start'] = 0
+        full_set.loc[full_set['ref_end'].isna(), 'ref_end'] = 0
+        full_set.loc[full_set['is_lifted'].isna(), 'is_lifted'] = 0
+        full_set.loc[full_set['is_highconf'].isna(), 'is_highconf'] = 0
+
+        full_set['ref_start'] = full_set['ref_start'].astype('int64')
+        full_set['ref_end'] = full_set['ref_end'].astype('int64')
+        full_set['is_lifted'] = full_set['is_lifted'].astype('bool')
+        full_set['is_highconf'] = full_set['is_highconf'].astype('bool')
+
+        full_set.to_csv(output[0], sep='\t', na_rep='n/a')
+    # END OF RUN BLOCK
+
+
+def comp_qv(num_error_bp, bp_ref=QVEST_CONFIG['genome_size']):
+    import math
+    p = (num_error_bp / (bp_ref * 2))
+    try:
+        q = -10 * math.log10(p)
+    except ValueError:
+        return 100
+    return int(round(q, 0))
+
+
+rule compute_illumina_qv_estimate:
+    input:
+        'output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.tsv'
+    output:
+        'output/evaluation/qv_estimation/illumina_calls_{known_ref}/{callset}.qv.tsv'
+    benchmark:
+        'run/output/evaluation/qv_estimation/illumina_calls_{known_ref}/{callset}.qv.rsrc'
+    run:
+        import pandas as pd
+        import collections as col
+
+        index_cols = ['variant', 'genotype', 'seq', 'start', 'end']
+
+        df = pd.read_csv(
+            input[0],
+            sep='\t',
+            index_col=False
+            )
+        
+        # why not setting index when reading table?
+        # avoid annoying FutureWarning
+        # stackoverflow.com/questions/40659212/futurewarning-elementwise-comparison-failed-returning-scalar-but-in-the-futur/46721064#46721064
+
+        df.set_index(index_cols, inplace=True)
+        
+        stats = col.OrderedDict()
+
+        stats['variants_total_count'] = df.shape[0]
+        stats['variants_total_length'] = int(df['variant_length'].sum())
+
+        df = df.loc[df['depth'] > (QVEST_CONFIG['variant_min_depth'] - 1), :].copy()
+
+        stats['variants_total_DPgeq{}_count'.format(QVEST_CONFIG['variant_min_depth'])] = df.shape[0]
+        stats['variants_total_DPgeq{}_length'.format(QVEST_CONFIG['variant_min_depth'])] = int(df['variant_length'].sum())
+
+        for variant in ['snv', 'ins', 'del']:
+            subset = df.xs(variant, level='variant')
+            stats['{}_total_count'.format(variant)] = subset.shape[0]
+            stats['{}_total_length'.format(variant)] = int(subset['variant_length'].sum())
+            
+            is_lifted = subset['is_lifted']
+            
+            stats['{}_lifted_count'.format(variant)] = subset.loc[is_lifted, :].shape[0]
+            stats['{}_lifted_length'.format(variant)] = int(subset.loc[is_lifted, 'variant_length'].sum())
+            
+            stats['{}_unlifted_count'.format(variant)] = subset.loc[~is_lifted, :].shape[0]
+            stats['{}_unlifted_length'.format(variant)] = int(subset.loc[~is_lifted, 'variant_length'].sum())
+            
+            pct = stats['{}_lifted_count'.format(variant)] / stats['{}_total_count'.format(variant)]
+            stats['{}_lifted_pct'.format(variant)] = round(pct * 100, 2)
+            
+            is_hc = subset['is_highconf']
+            
+            stats['{}_highconf_count'.format(variant)] = subset.loc[is_hc, :].shape[0]
+            stats['{}_highconf_length'.format(variant)] = int(subset.loc[is_hc, 'variant_length'].sum())
+            pct = stats['{}_highconf_count'.format(variant)] / stats['{}_lifted_count'.format(variant)]
+            stats['{}_highconf_pct'.format(variant)] = round(pct * 100, 2)
+                
+            for genotype in ['hom', 'het']:
+                subsubset = subset.xs(genotype, level='genotype')
+                stats['{}_{}_count'.format(variant, genotype)] = subsubset.shape[0]
+                stats['{}_{}_length'.format(variant, genotype)] = int(subsubset['variant_length'].sum())
+                
+                is_lifted = subsubset['is_lifted']
+            
+                stats['{}_{}_lifted_count'.format(variant, genotype)] = subsubset.loc[is_lifted, :].shape[0]
+                stats['{}_{}_lifted_length'.format(variant, genotype)] = int(subsubset.loc[is_lifted, 'variant_length'].sum())
+                
+                stats['{}_{}_unlifted_count'.format(variant, genotype)] = subsubset.loc[~is_lifted, :].shape[0]
+                stats['{}_{}_unlifted_length'.format(variant, genotype)] = int(subsubset.loc[~is_lifted, 'variant_length'].sum())
+                
+                pct = stats['{}_{}_lifted_count'.format(variant, genotype)] / stats['{}_{}_count'.format(variant, genotype)]
+                stats['{}_{}_lifted_pct'.format(variant, genotype)] = round(pct * 100, 2)
+
+                is_hc = subsubset['is_highconf']
+
+                stats['{}_{}_highconf_count'.format(variant, genotype)] = subsubset.loc[is_hc, :].shape[0]
+                stats['{}_{}_highconf_length'.format(variant, genotype)] = int(subsubset.loc[is_hc, 'variant_length'].sum())
+                pct = stats['{}_{}_highconf_count'.format(variant, genotype)] / stats['{}_{}_lifted_count'.format(variant, genotype)]
+                stats['{}_{}_highconf_pct'.format(variant, genotype)] = round(pct * 100, 2)
+                
+            
+        subset = df.xs('hom', level='genotype')
+        stats['hom_highconf_count'] = subset.loc[subset['is_highconf'], :].shape[0]
+        stats['hom_highconf_length'] = int(subset.loc[subset['is_highconf'], 'variant_length'].sum())
+
+        stats['hom_unlifted_count'] = subset.loc[~subset['is_lifted'], :].shape[0]
+        stats['hom_unlifted_length'] = int(subset.loc[~subset['is_lifted'], 'variant_length'].sum())
+
+        qv_labels = [
+            'QV_all_hom_highconf',
+            'QV_all_hom_highconf|unlifted',
+            'QV_snv_hom_highconf',
+            'QV_snv_hom_highconf|unlifted',
+            'QV_indels_hom_highconf',
+            'QV_indels_hom_highconf|unlifted'
+        ]
+
+        qv_stat_selectors = [
+            ('hom_highconf_length',),
+            ('hom_highconf_length', 'hom_unlifted_length'),
+            ('snv_hom_highconf_length',),
+            ('snv_hom_highconf_length', 'snv_hom_unlifted_length'),
+            ('ins_hom_highconf_length', 'del_hom_highconf_length'),
+            ('ins_hom_highconf_length', 'ins_hom_unlifted_length', 'del_hom_highconf_length', 'del_hom_unlifted_length')
+        ]
+
+        for label, stat_select in zip(qv_labels, qv_stat_selectors):
+            num_bp = sum(stats[s] for s in stat_select)
+            stats[label] = comp_qv(num_bp)
+            stats[label + '_bp'] = num_bp
+        
+        with open(output[0], 'w') as dump:
+            _ = dump.write('\n'.join(['{}\t{}'.format(k, v) for k, v in stats.items()]) + '\n')
+
+    # END OF RUN BLOCK
