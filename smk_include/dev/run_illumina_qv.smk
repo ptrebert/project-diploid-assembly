@@ -141,9 +141,9 @@ rule bwa_short_to_haploid_assembly_alignment:
         individual = '[A-Z0-9]+'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((24768 + 12288 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 24768 + 12288 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 32768 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
     params:
         idx_prefix = lambda wildcards, input: input.ref_index.rsplit('.', 1)[0],
         discard_flag = QVEST_CONFIG['discard_flag'],
