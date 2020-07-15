@@ -207,7 +207,8 @@ rule install_source_meryl:
 
 rule install_source_merqury:
     input:
-        'output/check_files/environment/conda_merqury.ok'
+        'output/check_files/environment/conda_merqury.ok',
+        'output/check_files/src_build/install_meryl.ok'
     output:
         'output/check_files/src_build/install_merqury.ok'
     log:
