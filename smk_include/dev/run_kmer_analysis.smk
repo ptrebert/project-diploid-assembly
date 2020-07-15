@@ -48,6 +48,7 @@ def determine_possible_computations(wildcards):
     module_outputs = {
         'annotation_table': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.tsv',
         'kmer_counts': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.kmer-counts.tsv',
+        'merqury_qv': 'output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}'
     }
 
     fix_wildcards = {
@@ -100,7 +101,7 @@ rule master_kmer_analysis:
         determine_possible_computations
 
 
-rule create_conda_environment_compile:
+rule create_conda_environment_bifrost:
     output:
         'output/check_files/environment/conda_bifrost.ok'
     log:
@@ -109,6 +110,20 @@ rule create_conda_environment_compile:
         script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
     conda:
         '../../environment/conda/conda_bifrost.yml'
+    shell:
+        '{params.script_exec} '
+        '--export-conda-env --outfile {output} --logfile {log}'
+
+
+rule create_conda_environment_merqury:
+    output:
+        'output/check_files/environment/conda_merqury.ok'
+    log:
+        'log/output/check_files/environment/conda_merqury.log'
+    params:
+        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
+    conda:
+        '../../environment/conda/conda_merqury.yml'
     shell:
         '{params.script_exec} '
         '--export-conda-env --outfile {output} --logfile {log}'
@@ -165,6 +180,58 @@ rule install_source_venn_diagram:
          'chmod u+x compile.sh && '
          './compile.sh && '
          'cp venn_diagram $CONDA_PREFIX/bin ; ) > {log} 2>&1'
+
+
+rule install_source_meryl:
+    input:
+        'output/check_files/environment/conda_merqury.ok'
+    output:
+        touch('output/check_files/src_build/install_meryl.ok')
+    log:
+       'log/output/check_files/src_build/install_meryl.log'
+    conda:
+        '../../environment/conda/conda_merqury.yml'
+    params:
+        repo_folder = 'output/repositories'
+    shell:
+        '( rm -rf {params.repo_folder}/meryl && '
+        'mkdir -p {params.repo_folder} && '
+        'cd {params.repo_folder} && '
+        'git clone https://github.com/marbl/meryl.git && '
+        'cd meryl && '
+        'git checkout f20919dcae306a6e02a9bd539d1d236f6f3f2a0e && '
+        'cd src && make -j 1 && cd ../ && echo $PWD && '
+        'cp Linux-amd64/bin/* $CONDA_PREFIX/bin/ ; ) '
+        ' > {log} 2>&1 '
+
+
+rule install_source_merqury:
+    input:
+        'output/check_files/environment/conda_merqury.ok'
+    output:
+        'output/check_files/src_build/install_merqury.ok'
+    log:
+       'log/output/check_files/src_build/install_merqury.log'
+    conda:
+        '../../environment/conda/conda_merqury.yml'
+    params:
+        repo_folder = 'output/repositories'
+    shell:
+        '( rm -rf {params.repo_folder}/merqury && '
+        'mkdir -p {params.repo_folder} && '
+        'cd {params.repo_folder} && '
+        'git clone https://github.com/marbl/merqury.git && '
+        'cd merqury && '
+        'git checkout a6f2347201db25904e470cf0d8f3fdc8fd1c6acf ; ) '
+        ' > {log} 2>&1 && echo $PWD/{params.repo_folder}/merqury > {output}'
+
+
+################################
+# BELOW
+# Short-read preprocessing:
+# Adapter and quality trimming
+# Error correction
+################################
 
 
 rule short_read_quality_trimming:
@@ -265,6 +332,12 @@ rule short_read_error_correction:
         'lighter -r {input.mate1} -r {input.mate2} '
         '-k {params.kmer_size} {params.genomesize} {params.alpha} '
         '-od {params.outdir} -t {threads} -zlib 6 &> {log}'
+
+
+################################
+# BELOW
+# Bifrost k-mer analysis
+################################
 
 
 rule write_bifrost_fofn:
@@ -373,3 +446,80 @@ rule query_bifrost_colored_dbg:
          '--input-query-file {input.queries} --output-file {params.out_prefix} '
          '--threads {threads} --inexact --ratio-kmers {params.kmer_ratio}'
          '--verbose &> {log}'
+
+
+################################
+# BELOW
+# Merqury k-mer QV estimation
+################################
+
+
+rule compute_meryl_kmer_db:
+    input:
+        reads = 'input/fastq/{sample}_{readset}/corrected/{sample}_{readset}_{mate}_val_{mate}.cor.fq.gz'
+    output:
+        db = 'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl'
+    log:
+        'log/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl.log'
+    benchmark:
+        'run/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl' + '.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../../environment/conda/conda_merqury.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 110592,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(110592 / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: attempt * 6,
+        mem_total_gb = lambda wildcards, attempt: int(110592 / 1024)
+    params:
+        meryl_kmer = 21  # as indicated in meryl github
+    shell:
+        'meryl k={params.meryl_kmer} memory={resources.mem_total_gb} threads={threads} '
+            ' count output {output.db} {input.reads} &> {log}'
+
+
+rule merge_meryl_kmer_dbs:
+    input:
+        mate1 = 'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_1.meryl',
+        mate2 = 'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_2.meryl'
+    output:
+        'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl'
+    log:
+        'log/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl.log'
+    benchmark:
+        'run/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl' + '.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../../environment/conda/conda_merqury.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 110592,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(110592 / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: attempt * 6,
+        mem_total_gb = lambda wildcards, attempt: int(110592 / 1024)
+    shell:
+        'meryl memory={resources.mem_total_gb} threads={threads} '
+            ' union-sum output {output} {input.mate1} {input.mate2} &> {log}'
+
+
+rule run_merqury_analysis:
+    input:
+        meryl_db = 'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl',
+        hap1_assm = 'output/evaluation/phased_assemblies/{sample}_{assembly}.h1-un.{polisher}.fasta',
+        hap2_assm = 'output/evaluation/phased_assemblies/{sample}_{assembly}.h2-un.{polisher}.fasta',
+        merqury_path = 'output/check_files/src_build/install_merqury.ok'
+    output:
+        directory('output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}')
+    log:
+        'log/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury.log'
+    benchmark:
+        'run/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury' + '.t{}.rsrc'.format(config['num_cpu_high'])
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 110592,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(110592 / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: attempt * 12,
+    params:
+        merqury_path = lambda wildcards, input: open(input.merqury_path).read().strip() if os.path.isfile(input.merqury_path) else 'DRY-RUN'
+    shell:
+        'export MERQURY={params.merqury_path} ; '
+        '{params.merqury_path}/merqury.sh {input.meryl_db} {input.hap1_assm} {input.hap2_assm} {output} &> {log}'
