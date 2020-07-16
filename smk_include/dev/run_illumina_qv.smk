@@ -184,7 +184,7 @@ rule mark_duplicate_reads:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(12288 * attempt / config['num_cpu_low']),
         mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
     shell:
         'sambamba markdup -t {threads} '
         '--sort-buffer-size=8092 '
