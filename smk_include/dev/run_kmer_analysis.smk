@@ -470,8 +470,8 @@ rule compute_meryl_kmer_db:
     resources:
         mem_total_mb = lambda wildcards, attempt: 110592,
         mem_per_cpu_mb = lambda wildcards, attempt: int(110592 / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: attempt * 6,
-        mem_total_gb = lambda wildcards, attempt: int(110592 / 1024)
+        runtime_hrs = lambda wildcards, attempt: attempt * 2,
+        mem_total_gb = lambda wildcards, attempt: int(110592 / 1024) - 10  # meryl takes mem limit as rough indication
     params:
         meryl_kmer = 21  # as indicated in meryl github
     shell:
@@ -495,14 +495,19 @@ rule merge_meryl_kmer_dbs:
     resources:
         mem_total_mb = lambda wildcards, attempt: 110592,
         mem_per_cpu_mb = lambda wildcards, attempt: int(110592 / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: attempt * 6,
-        mem_total_gb = lambda wildcards, attempt: int(110592 / 1024)
+        runtime_hrs = lambda wildcards, attempt: attempt,
+        mem_total_gb = lambda wildcards, attempt: int(110592 / 1024) - 10  # meryl takes mem limit as rough indication
     shell:
         'meryl memory={resources.mem_total_gb} threads={threads} '
             ' union-sum output {output} {input.mate1} {input.mate2} &> {log}'
 
 
 rule run_merqury_analysis:
+    """
+    Manually change into expected working directory, otherwise merqury fails at creating its own
+    log paths, and potentially for other stuff. Use full paths because merqury symlinks stuff into
+    its working directory.
+    """
     input:
         meryl_db = 'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl',
         hap1_assm = 'output/evaluation/phased_assemblies/{sample}_{assembly}.h1-un.{polisher}.fasta',
@@ -520,7 +525,12 @@ rule run_merqury_analysis:
         mem_per_cpu_mb = lambda wildcards, attempt: int(110592 / config['num_cpu_high']),
         runtime_hrs = lambda wildcards, attempt: attempt * 12,
     params:
-        merqury_path = lambda wildcards, input: open(input.merqury_path).read().strip() if os.path.isfile(input.merqury_path) else 'DRY-RUN'
+        merqury_path = lambda wildcards, input: open(input.merqury_path).read().strip() if os.path.isfile(input.merqury_path) else 'DRY-RUN',
+        fp_meryl = lambda wildcards, input: os.path.abspath(input.meryl_db) if os.path.isdir(input.meryl_db) else 'DRY-RUN',
+        fp_hap1 = lambda wildcards, input: os.path.abspath(input.hap1_assm) if os.path.isfile(input.hap1_assm) else 'DRY-RUN',
+        fp_hap2 = lambda wildcards, input: os.path.abspath(input.hap2_assm) if os.path.isfile(input.hap2_assm) else 'DRY-RUN',
+        dir_name = lambda wildcards, output: os.path.split(output[0])[1] if os.path.isdir(output[0]) else 'DRY-RUN',
     shell:
+        'cd {output[0]} ; '
         'export MERQURY={params.merqury_path} ; '
-        '{params.merqury_path}/merqury.sh {input.meryl_db} {input.hap1_assm} {input.hap2_assm} {output} &> {log}'
+        '{params.merqury_path}/merqury.sh {params.fp_meryl} {params.fp_hap1} {params.fp_hap2} {params.dir_name} &> {log}'
