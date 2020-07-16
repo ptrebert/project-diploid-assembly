@@ -518,13 +518,12 @@ rule run_merqury_analysis:
     log:
         'log/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury.log'
     benchmark:
-        'run/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury' + '.t{}.rsrc'.format(config['num_cpu_high'])
+        'run/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury.rsrc'
     conda:
         '../../environment/conda/conda_merqury.yml'
-    threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 110592,
-        mem_per_cpu_mb = lambda wildcards, attempt: int(110592 / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 16384 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * 12,
     params:
         merqury_path = lambda wildcards, input: open(input.merqury_path).read().strip() if os.path.isfile(input.merqury_path) else 'DRY-RUN',
