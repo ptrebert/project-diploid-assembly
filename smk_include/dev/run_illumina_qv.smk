@@ -452,6 +452,9 @@ rule split_callset_by_variant_type:
             ),
     conda:
         '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     shell:
          'bcftools view --types snps --min-alleles 2 --max-alleles 2 '
          '--output-type v --output-file /dev/stdout {input.vcf} | '
@@ -483,6 +486,9 @@ rule split_callset_by_genotype:
             ),
     conda:
         '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     shell:
          'bcftools view --genotype hom '
          '--output-type v --output-file /dev/stdout {input.vcf} | '
@@ -501,6 +507,9 @@ rule compute_vcf_stats:
         'output/evaluation/qv_estimation/variant_stats/{step}/{filename}.stats'
     conda:
          '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     shell:
         'bcftools stats {input[0]} > {output}'
 
@@ -551,6 +560,9 @@ rule dump_vcf_snv_to_bed:
         'output/evaluation/qv_estimation/variant_calls/40-dump-bed/{callset}.snvs.{genotype}.vcf.bed'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     shell:
         'bgzip -d -c < {input} | vcf2bed --do-not-split --snvs > {output}'
 
@@ -564,6 +576,9 @@ rule dump_vcf_insertions_to_bed:
         'output/evaluation/qv_estimation/variant_calls/40-dump-bed/{callset}.ins.{genotype}.vcf.bed'
     conda:
          '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     shell:
          'bgzip -d -c < {input} | vcf2bed --do-not-split --insertions > {output}'
 
@@ -577,6 +592,9 @@ rule dump_vcf_deletions_to_bed:
         'output/evaluation/qv_estimation/variant_calls/40-dump-bed/{callset}.dels.{genotype}.vcf.bed'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     shell:
         'bgzip -d -c < {input} | vcf2bed --do-not-split --deletions > {output}'
 
@@ -591,6 +609,9 @@ rule lift_call_sets_to_reference:
         individual = '[A-Z0-9]+'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     shell:
         'paftools.js liftover -l 10000 {input.paf} {input.bed} > {output}'
 
@@ -611,6 +632,9 @@ rule restrict_calls_to_high_conf_regions:
                     '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.out-hc.bed')
     conda:
          '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     shell:
         'bedtools intersect -u -a {input.calls} -b {input.regions} > {output.hc_in}'
         ' && '
@@ -775,6 +799,9 @@ rule compute_illumina_qv_estimate:
         'output/evaluation/qv_estimation/illumina_calls_{known_ref}/{callset}.qv.tsv'
     benchmark:
         'run/output/evaluation/qv_estimation/illumina_calls_{known_ref}/{callset}.qv.rsrc'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
     run:
         import pandas as pd
         import collections as col
