@@ -459,7 +459,7 @@ rule compute_meryl_kmer_db:
     input:
         reads = 'input/fastq/{sample}_{readset}/corrected/{sample}_{readset}_{mate}_val_{mate}.cor.fq.gz'
     output:
-        db = 'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl'
+        db = directory('input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl')
     log:
         'log/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl.log'
     benchmark:
@@ -484,7 +484,7 @@ rule merge_meryl_kmer_dbs:
         mate1 = 'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_1.meryl',
         mate2 = 'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_2.meryl'
     output:
-        'input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl'
+        directory('input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl')
     log:
         'log/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl.log'
     benchmark:
