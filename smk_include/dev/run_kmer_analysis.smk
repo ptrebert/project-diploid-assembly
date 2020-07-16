@@ -519,6 +519,8 @@ rule run_merqury_analysis:
         'log/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury.log'
     benchmark:
         'run/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury' + '.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../../environment/conda/conda_merqury.yml'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 110592,
@@ -529,8 +531,10 @@ rule run_merqury_analysis:
         fp_meryl = lambda wildcards, input: os.path.abspath(input.meryl_db) if os.path.isdir(input.meryl_db) else 'DRY-RUN',
         fp_hap1 = lambda wildcards, input: os.path.abspath(input.hap1_assm) if os.path.isfile(input.hap1_assm) else 'DRY-RUN',
         fp_hap2 = lambda wildcards, input: os.path.abspath(input.hap2_assm) if os.path.isfile(input.hap2_assm) else 'DRY-RUN',
-        dir_name = lambda wildcards, output: os.path.split(output[0])[1] if os.path.isdir(output[0]) else 'DRY-RUN',
+        dir_name = lambda wildcards, output: os.path.split(output[0])[1],
     shell:
+        '( rm -rfd {output[0]} ; '
+        'mkdir -p {output[0]} ; '
         'cd {output[0]} ; '
         'export MERQURY={params.merqury_path} ; '
-        '{params.merqury_path}/merqury.sh {params.fp_meryl} {params.fp_hap1} {params.fp_hap2} {params.dir_name} &> {log}'
+        '{params.merqury_path}/merqury.sh {params.fp_meryl} {params.fp_hap1} {params.fp_hap2} {params.dir_name} ) &> {log}'
