@@ -561,8 +561,8 @@ rule dump_vcf_snv_to_bed:
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
     shell:
         'bgzip -d -c < {input} | vcf2bed --do-not-split --snvs > {output}'
 
@@ -577,8 +577,8 @@ rule dump_vcf_insertions_to_bed:
     conda:
          '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
     shell:
          'bgzip -d -c < {input} | vcf2bed --do-not-split --insertions > {output}'
 
@@ -593,8 +593,8 @@ rule dump_vcf_deletions_to_bed:
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
     shell:
         'bgzip -d -c < {input} | vcf2bed --do-not-split --deletions > {output}'
 
@@ -756,8 +756,8 @@ rule summarize_variant_calls:
     benchmark:
         'run/output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.rsrc'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
     run:
         import pandas as pd
 
@@ -800,8 +800,8 @@ rule compute_illumina_qv_estimate:
     benchmark:
         'run/output/evaluation/qv_estimation/illumina_calls_{known_ref}/{callset}.qv.rsrc'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
     run:
         import pandas as pd
         import collections as col
