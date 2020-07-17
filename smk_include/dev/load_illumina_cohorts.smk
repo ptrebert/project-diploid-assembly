@@ -96,7 +96,7 @@ rule prepare_metadata:
         md['fastq1_name'] = md['sample_alias'] + '_' + md['fastq1_path'].map(os.path.basename)
         md['fastq2_name'] = md['sample_alias'] + '_' + md['fastq2_path'].map(os.path.basename)
 
-        with open(output.error, 'w') as dump:
+        with open(output.incomplete, 'w') as dump:
             drop_outs.to_csv(dump, sep='\t', header=True, index=False)
 
         with open(output.ready, 'w') as dump:
@@ -112,22 +112,26 @@ rule generate_download_request:
     run:
         import pandas as pd
 
-        table = pd.read_csv(input[0], sep='\t', header=True)
+        table = pd.read_csv(input[0], sep='\t')
 
         subset = table.loc[table['sample_alias'] == wildcards.sample, :]
         assert subset.shape[0] == 1, 'Too many read files for sample: {}'.format(wildcards.sample)
+        row_index = subset.index[0]
 
         ebi_ftp_host = 'ftp.sra.ebi.ac.uk'
 
         for idx in [1,2]:
             with open(output[idx-1], 'w') as request_file:
-                remote_path = subset['fastq{}_path'.format(idx)].value.replace(ebi_ftp_host, '')
-                assert remote_path.startswith('/'), 'FTP host replacement failed: {} / {}'.format(wildcards.sample, remote_path)
+                remote_path = subset.at[row_index, 'fastq{}_path'.format(idx)]
+                remote_path = remote_path.replace(ebi_ftp_host, '').strip()
+                assert remote_path.startswith('/'), \
+                    'FTP host replacement failed: {} / {}'.format(wildcards.sample, remote_path)
                 local_name = '{}_{}_{}.fastq.gz'.format(wildcards.sample, wildcards.accession, idx)
-                assert local_name == subset['fastq{}_name'.format(idx)], 'Name mismatch: {} / {}'.format(local_name, subset['fastq{}_name'.format(idx)])
+                assert local_name == subset.at[row_index, 'fastq{}_name'.format(idx)], \
+                    'Name mismatch: {} / {}'.format(local_name, subset.at[row_index, 'fastq{}_name'.format(idx)])
                 local_path = os.path.join('output', wildcards.cohort, local_name)
-                file_md5 = str(subset['fastq{}_md5'.format(idx)].value)
-                file_size = str(subset['fastq{}_bytes'.format(idx)].value)
+                file_md5 = subset.at[row_index, 'fastq{}_md5'.format(idx)]
+                file_size = str(subset.at[row_index, 'fastq{}_bytes'.format(idx)])
 
                 _ = request_file.write('\n'.join([
                     remote_path,
@@ -143,14 +147,14 @@ rule run_aspera_download:
     output:
         touch('output/{cohort}/{fastq}.done')
     log:
-        'log/output/{fastq}.ascp.log'
+        'log/output/{cohort}/{fastq}.ascp.log'
     benchmark:
-        'rsrc/output{fastq}.ascp.rsrc'
+        'rsrc/output/{cohort}/{fastq}.ascp.rsrc'
     params:
-        remote_path = lambda wildcards, input: open(input[0]).readlines()[0] if os.path.isfile(input[0]) else 'DRY-RUN',
-        local_path = lambda wildcards, input: open(input[0]).readlines()[1] if os.path.isfile(input[0]) else 'DRY-RUN',
+        remote_path = lambda wildcards, input: open(input[0]).readlines()[0].strip() if os.path.isfile(input[0]) else 'DRY-RUN',
+        local_path = lambda wildcards, input: open(input[0]).readlines()[1].strip() if os.path.isfile(input[0]) else 'DRY-RUN',
     shell:
         'ascp -i /home/ebertp/.aspera/connect/etc/asperaweb_id_dsa.openssh '
-            '-T -Q -l 200M -P33001 -L- -k2  '
-            'era-fasp@fasp.sra.ebi.ac.uk:{params.remote_path}
+            '-T -Q -l 200M -P33001 -L- -k2 '
+            'era-fasp@fasp.sra.ebi.ac.uk:{params.remote_path} '
             '{params.local_path} &> {log}'
