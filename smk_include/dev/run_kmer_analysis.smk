@@ -48,7 +48,7 @@ def determine_possible_computations(wildcards):
     module_outputs = {
         'annotation_table': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.tsv',
         'kmer_counts': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.kmer-counts.tsv',
-        'merqury_qv': 'output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}'
+        #'merqury_qv': 'output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}'
     }
 
     fix_wildcards = {
