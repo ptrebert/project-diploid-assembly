@@ -14,10 +14,10 @@ SAMPLE_TABLE_FILE = 'sample_table.tsv'
 
 POPULATION_SORT_PLOTTING = [
     'AFR',
-    'SAS',
-    'EAS',
+    'AMR',
     'EUR',
-    'AMR'
+    'SAS',
+    'EAS'
 ]
 
 PLOT_PROPERTIES = {
