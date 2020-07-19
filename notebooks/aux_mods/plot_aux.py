@@ -2,6 +2,8 @@
 import os
 import csv
 
+import pandas as pd
+
 SEQ_PLATFORMS = {
     'ccs': 'HiFi',
     'clr': 'CLR',
@@ -17,6 +19,12 @@ POPULATION_SORT_PLOTTING = [
     'EUR',
     'AMR'
 ]
+
+PLOT_PROPERTIES = {
+    'fontsize_axis_label': 16,
+    'fontsize_axis_ticks': 14,
+    'fontsize_legend': 14
+}
 
 
 def find_annotation_file(file_name, search_path=None):
@@ -59,12 +67,40 @@ def load_population_annotation(tsv_path=None, relative_rgb=True):
     return pop_to_hex, pop_to_rgb, pop_to_super
 
 
-def extract_sample_platform(filename):
+def load_plot_data_files(path, extension, pipeline_version):
     """
     """
-    parts = filename.split('_')
-    sample = parts[0]
-    platform = parts[2].split('-')[-1]
+    search_path = os.path.join(path, pipeline_version)
+    data_files = [f for f in os.listdir(search_path) if f.endswith(extension)]
+    if not data_files:
+        raise ValueError('No data files underneath path {} matching file extension {}'.format(search_path, extension))
+    use_files = []
+    for df in data_files:
+        full_path = os.path.join(search_path, df)
+        if df.startswith('v') and not df.startswith(pipeline_version):
+            raise ValueError('Wrong version for data file (must be {}): {} / {}'.format(pipeline_version, df, search_path))
+        elif df.startswith(pipeline_version):
+            new_name = df.split('_', 1)[1]
+            new_path = os.path.join(search_path, new_name)
+            os.rename(full_path, new_path)
+            use_files.append(new_path)
+        else:
+            use_files.append(full_path)
+    return sorted(use_files)
+
+
+def extract_sample_platform(filename, multi_readset=False, long_read_pos=1):
+    """
+    """
+    if multi_readset:
+        parts = filename.split('.')
+        sample = part[0]
+        lr_data = parts[long_read_pos].split('_')
+        platform = lr_data[1].split('-')[-1]
+    else:
+        parts = filename.split('_')
+        sample = parts[0]
+        platform = parts[2].split('-')[-1]
     return sample, SEQ_PLATFORMS[platform]
 
 
@@ -79,6 +115,35 @@ def load_sample_table(tsv_path=None):
         for record in reader:
             sample_lut[record['individual']] = record
     return sample_lut
+
+
+def load_sample_dataframe(tsv_path=None):
+    """
+    """
+    if tsv_path is None or not os.path.isfile(tsv_path):
+        tsv_path = find_annotation_file(SAMPLE_TABLE_FILE)
+    df = pd.read_csv(tsv_path, sep='\t')
+    return df
+
+
+def check_cache_consistency(plot_data):
+    """
+    """
+    samples =  load_sample_dataframe()
+    skip_samples = samples.loc[samples['2020_SKIP'] == 1, 'individual']
+    skip_samples = sorted([s for s in skip_samples if s in plot_data.index.get_level_values('sample')])
+
+    missing_samples = []
+    use_samples = samples['2020_SKIP'] == 0
+    for platform in SEQ_PLATFORMS.values():
+        plot_subset = plot_data.xs(platform, level='platform')
+        subset_samples = set(plot_subset.index.get_level_values('sample'))
+        
+        platform_samples = samples[platform] == 1
+        expected_samples = samples.loc[use_samples & platform_samples, 'individual']
+        [missing_samples.append((s, platform)) for s in expected_samples if s not in subset_samples]
+    
+    return skip_samples, missing_samples
 
 
 def get_grey_bg(hex=False):
@@ -97,3 +162,32 @@ def get_gray_bg(hex=False):
 
 def get_population_sorting():
     return POPULATION_SORT_PLOTTING
+
+
+def get_plot_property(key):
+    try:
+        prop = PLOT_PROPERTIES[key]
+    except KeyError:
+        known_keys = sorted(PLOT_PROPERTIES.keys())
+        raise KeyError('Unknown key: {} (known keys: {})'.format(key, known_keys))
+    return prop
+
+
+def add_incomplete_stamp(mpl_axis, xloc, yloc):
+    """
+    """
+    mpl_axis.text(
+            x=xloc,
+            y=yloc,
+            s='incomplete',
+            color='red',
+            rotation=-45,
+            alpha=0.5,
+            fontdict={
+                'weight': 'bold',
+                'size': 16
+            },
+            transform=mpl_axis.transAxes,
+            zorder=3
+        )
+    return mpl_axis
