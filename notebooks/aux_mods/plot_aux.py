@@ -23,7 +23,14 @@ POPULATION_SORT_PLOTTING = [
 PLOT_PROPERTIES = {
     'fontsize_axis_label': 16,
     'fontsize_axis_ticks': 14,
-    'fontsize_legend': 14
+    'fontsize_legend': 14,
+    'bar_width': 0.3,
+    'bar_intra_spacing': 0.35,
+    'bar_inter_spacing': 0.2,
+    'CLR_marker': 's',
+    'HiFi_marker': 'o',
+    'legend_marker_size': 10,
+    'plot_marker_size': 60,
 }
 
 
@@ -89,13 +96,24 @@ def load_plot_data_files(path, extension, pipeline_version):
     return sorted(use_files)
 
 
-def extract_sample_platform(filename, multi_readset=False, long_read_pos=1):
+def extract_sample_platform(filename, multi_readset=False, mapped_readset=False, long_read_pos=2):
     """
     """
     if multi_readset:
         parts = filename.split('.')
-        sample = part[0]
+        sample = parts[0]
         lr_data = parts[long_read_pos].split('_')
+        platform = lr_data[1].split('-')[-1]
+    elif mapped_readset:
+        parts = filename.split('_map-to_')
+        sample, readset1 = parts[0].split('_', 1)
+        readset2 = parts[-1].split('.')[0]
+        if long_read_pos == 1:
+            lr_data = readset1.split('_')
+        elif long_read_pos == 2:
+            lr_data = readset2.split('_')
+        else:
+            raise ValueError('For aligned readsets, postion of long read info has to be 1 or 2, but not {}'.format(long_read_pos))
         platform = lr_data[1].split('-')[-1]
     else:
         parts = filename.split('_')
@@ -171,6 +189,12 @@ def get_plot_property(key):
         known_keys = sorted(PLOT_PROPERTIES.keys())
         raise KeyError('Unknown key: {} (known keys: {})'.format(key, known_keys))
     return prop
+
+
+def get_sequencing_platforms():
+    """
+    """
+    return sorted(SEQ_PLATFORMS.values())
 
 
 def add_incomplete_stamp(mpl_axis, xloc, yloc):
