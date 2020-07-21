@@ -13,6 +13,13 @@ def tech_comparison_determine_targets(wildcards):
 
     compute_results = set()
 
+    # why?
+    # this will fail if haplotype is unrecognized
+    other_hap = {
+        'h1-un': 'h2-un',
+        'h2-un': 'h1-un'
+    }
+
     search_path = os.path.join(os.getcwd(), 'output/evaluation/phased_assemblies')
     if not os.path.isdir(search_path):
         sys.stderr.write('\nNo phased assemblies at: {}\n'.format(search_path))
@@ -35,16 +42,16 @@ def tech_comparison_determine_targets(wildcards):
         tmp = dict(fix_wildcards)
         tmp['sample'] = sample
         tmp['hap1'] = hap
-        if 'h1' in hap:
-            tmp['hap2'] = 'h2-un'
-        elif 'h2' in hap:
-            tmp['hap2'] = 'h1-un'
-        else:
-            raise ValueError('Unrecognized haplotype: {}'.format(assm_file))
-    
+        tmp['hap2'] = hap
         for target in module_outputs.values():
             fmt_target = target.format(**tmp)
             compute_results.add(fmt_target)
+
+        tmp['hap2'] = other_hap[hap]
+        for target in module_outputs.values():
+            fmt_target = target.format(**tmp)
+            compute_results.add(fmt_target)
+
     return sorted(compute_results)
 
 
@@ -90,9 +97,10 @@ rule run_delta_diff:
         'run/output/evaluation/{tech1}_vs_{tech2}/{sample}_{tech1}-{hap1}_vs_{tech2}-{hap2}.diff.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    priority: 1000
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 + 8192 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 + 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt
     params:
         out_dir = lambda wildcards, output: output[0].rsplit('.', 1)[0],
