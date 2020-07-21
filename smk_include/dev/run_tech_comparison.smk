@@ -98,7 +98,13 @@ rule run_delta_diff:
         out_dir = lambda wildcards, output: output[0].rsplit('.', 1)[0],
         out_prefix = lambda wildcards, output: os.path.join(
             output[0].rsplit('.', 1)[0],
-            '{wildcards.sample}_{wildcards.tech1}-{wildcards.hap1}_vs_{wildcards.tech2}-{wildcards.hap2}'
+            '{}_{}-{}_vs_{}-{}'.format(
+                wildcards.sample,
+                wildcards.tech1,
+                wildcards.hap1,
+                wildcards.tech2,
+                wildcards.hap2
+                )
             )
     shell:
         'mkdir -p {params.out_dir} && dnadiff -d {input} -p {params.out_prefix} &> {log}'
