@@ -29,7 +29,7 @@ study_accession,sample_accession,secondary_sample_accession
 ,library_name,library_layout,library_strategy,library_source
 ,library_selection,read_count,center_name,study_title,fastq_md5
 ,study_alias,experiment_alias,run_alias,fastq_bytes,fastq_ftp,
-submitted_ftp,sample_alias,sample_title
+read_count,base_count,submitted_ftp,sample_alias,sample_title
 &format=tsv&download=txt
 """
 
