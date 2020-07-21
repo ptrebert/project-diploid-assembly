@@ -39,14 +39,13 @@ def determine_possible_computations(wildcards):
         if 'h1' in hap:
             tmp['hap2'] = 'h2-un'
         elif 'h2' in hap:
-            tmp['hap1']
+            tmp['hap2'] = 'h1-un'
         else:
             raise ValueError('Unrecognized haplotype: {}'.format(assm_file))
     
         for target in module_outputs.values():
             fmt_target = target.format(**tmp)
             compute_results.add(fmt_target)
-    print(compute_results)
     return sorted(compute_results)
 
 
