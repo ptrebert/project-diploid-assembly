@@ -1,6 +1,4 @@
 
-include: 'prep_custom_references.smk'
-
 QVEST_CONFIG = {
     'discard_flag': 2816,  # not primary OR qc fail OR supplementary
     'cov_threshold': '{mean} + 3 * {stddev}',  # avoid that freebayes gets tangled in ultra high cov regions
@@ -38,7 +36,7 @@ def find_sample_short_reads(sample):
     return short_reads
 
 
-def determine_possible_computations(wildcards):
+def illumina_qv_determine_targets(wildcards):
     """
     NA19239_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta
     """
@@ -103,7 +101,7 @@ localrules: master_qv_estimate,
 
 rule master_qv_estimate:
     input:
-        determine_possible_computations
+        illumina_qv_determine_targets
 
 
 rule bwa_short_to_haploid_assembly_alignment:

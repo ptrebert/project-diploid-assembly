@@ -1,6 +1,4 @@
 
-include: 'prep_custom_references.smk'
-
 KMER_CONFIG = {
     'kmer_size': 31,  # increasing that requires changing the Bifrost build command!
     'trim_min_qual': 20,
@@ -39,7 +37,7 @@ def find_sample_short_reads(sample):
     return short_reads
 
 
-def determine_possible_computations(wildcards):
+def kmer_analysis_determine_targets(wildcards):
     """
     NA19239_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.fasta
     """
@@ -98,7 +96,7 @@ localrules: master_kmer_analysis,
 
 rule master_kmer_analysis:
     input:
-        determine_possible_computations
+        kmer_analysis_determine_targets
 
 
 rule create_conda_environment_bifrost:
