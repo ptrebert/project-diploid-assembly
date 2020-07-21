@@ -42,10 +42,33 @@ def determine_698_cohort_downloads(wildcards):
     return missing_fastqs
 
 
+def determine_2504_cohort_downloads(wildcards):
+
+    JANA_LOCATION = '/gpfs/project/ebler/hgsvc/data/high_cov_samples/fastq/unrelated'
+    METADATA = 'metadata/PRJEB31736.2504.ready.tsv'
+
+    if not os.path.isfile(METADATA):
+        # just trigger generation of clean metadata table
+        return []
+    
+    existing_samples = collect_existing_samples(JANA_LOCATION)
+
+    md = pd.read_csv(METADATA, sep='\t')
+
+    fastq1 = set(md['fastq1_name'].values) - existing_samples
+    fastq2 = set(md['fastq2_name'].values) - existing_samples
+    fastq_any = fastq1.union(fastq2)
+
+    missing_fastqs = sorted([os.path.join('output', 'PRJEB31736.2504', f.replace('.fastq.gz', '.done')) for f in fastq_any])
+    return missing_fastqs
+
+
 rule master:
     input:
         'metadata/PRJEB36890.698.ready.tsv',
-        determine_698_cohort_downloads
+        determine_698_cohort_downloads,
+        'metadata/PRJEB31736.2504.ready.tsv',
+        determine_2504_cohort_downloads
 
 
 rule prepare_metadata:
@@ -62,6 +85,8 @@ rule prepare_metadata:
             'sample_accession',
             'sample_alias',
             'run_accession',
+            'read_count',
+            'base_count',
             'fastq1_md5',
             'fastq2_md5',
             'fastq1_bytes',
