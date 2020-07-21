@@ -109,6 +109,11 @@ rule prepare_metadata:
         md = pd.concat([md, md5_sums, fastq_sizes, fastq_paths], axis=1)
 
         cram_based_fastq = md['submitted_ftp'].str.endswith('.cram')
+        # some error cases in 2504 metadata leading to n/a
+        cram_based_fastq[cram_based_fastq.isna()] = False
+        # this is important because n/a leads to object dtype
+        cram_based_fastq = cram_based_fastq.astype(bool)
+
         missing_values = md.isna().any(axis=1)
 
         drop_out_select = missing_values | ~cram_based_fastq
@@ -180,6 +185,6 @@ rule run_aspera_download:
         local_path = lambda wildcards, input: open(input[0]).readlines()[1].strip() if os.path.isfile(input[0]) else 'DRY-RUN',
     shell:
         'ascp -i /home/ebertp/.aspera/connect/etc/asperaweb_id_dsa.openssh '
-            '-T -Q -l 200M -P33001 -L- -k2 '
+            '-T -Q -l 300M -P33001 -L- -k2 '
             'era-fasp@fasp.sra.ebi.ac.uk:{params.remote_path} '
             '{params.local_path} &> {log}'
