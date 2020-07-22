@@ -44,8 +44,7 @@ def determine_conversion_targets(wildcards):
     for (cohort, sample_id), done_files in file_pairs.items():
         if len(done_files) != 2:
             continue
-        #conv_targets.add(os.path.join('output', 'reduced', cohort, sample_id + '.fastq.del'))
-        conv_targets.add(os.path.join('output', 'reduced', cohort, sample_id + '.fasta.count'))
+        conv_targets.add(os.path.join('output', 'reduced', cohort, sample_id + '.fastq.del'))
 
     return sorted(conv_targets)
 
