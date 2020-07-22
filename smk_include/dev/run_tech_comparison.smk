@@ -4,8 +4,12 @@ def tech_comparison_determine_targets(wildcards):
     import sys
 
     module_outputs = {
-        'assembly_delta': 'output/evaluation/HiFi_vs_CLR/{sample}_HiFi-{hap1}_vs_CLR-{hap2}.delta',
+        'assembly_delta': 'output/evaluation/HiFi_vs_CLR/{sample}_HiFi-{hap1}_vs_CLR-{hap2}.delta.gz',
         'assembly_diff': 'output/evaluation/HiFi_vs_CLR/{sample}_HiFi-{hap1}_vs_CLR-{hap2}.diff',
+        'trio_delta_clr': 'output/evaluation/Trio_vs_CLR/{sample}_Trio-{hap1}_vs_CLR-{hap2}.delta.gz',
+        'trio_delta_hifi': 'output/evaluation/Trio_vs_HiFi/{sample}_Trio-{hap1}_vs_HiFi-{hap2}.delta.gz',
+        'trio_diff_clr': 'output/evaluation/Trio_vs_CLR/{sample}_Trio-{hap1}_vs_CLR-{hap2}.diff',
+        'trio_diff_hifi': 'output/evaluation/Trio_vs_HiFi/{sample}_Trio-{hap1}_vs_HiFi-{hap2}.diff',
     }
 
     fix_wildcards = {
@@ -44,13 +48,31 @@ def tech_comparison_determine_targets(wildcards):
         tmp['hap1'] = hap
         tmp['hap2'] = hap
         for target in module_outputs.values():
-            fmt_target = target.format(**tmp)
-            compute_results.add(fmt_target)
+            if 'Trio' in target:
+                tmp['hap1'] = 'hapA'
+                fmt_target = target.format(**tmp)
+                compute_results.add(fmt_target)
+                tmp['hap1'] = 'hapB'
+                fmt_target = target.format(**tmp)
+                compute_results.add(fmt_target)
+                tmp['hap1'] = hap
+            else:
+                fmt_target = target.format(**tmp)
+                compute_results.add(fmt_target)
 
         tmp['hap2'] = other_hap[hap]
         for target in module_outputs.values():
-            fmt_target = target.format(**tmp)
-            compute_results.add(fmt_target)
+            if 'Trio' in target:
+                tmp['hap1'] = 'hapA'
+                fmt_target = target.format(**tmp)
+                compute_results.add(fmt_target)
+                tmp['hap1'] = 'hapB'
+                fmt_target = target.format(**tmp)
+                compute_results.add(fmt_target)
+                tmp['hap1'] = hap
+            else:
+                fmt_target = target.format(**tmp)
+                compute_results.add(fmt_target)
 
     return sorted(compute_results)
 
@@ -73,6 +95,52 @@ rule compute_assembly_delta:
         'log/output/evaluation/HiFi_vs_CLR/{sample}_HiFi-{hap1}_vs_CLR-{hap2}.log'
     benchmark:
         'run/output/evaluation/HiFi_vs_CLR/{sample}_HiFi-{hap1}_vs_CLR-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads:
+        config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 49152 + 24576 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((49152 + 24576 * attempt) / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: 3 * attempt
+    shell:
+        'nucmer --maxmatch -l 100 -c 500 --threads={threads} --delta={output} '
+            ' {input.assm_ref} {input.assm_query} &> {log}'
+
+
+rule compute_trio_assembly_delta_CLR:
+    input:
+        assm_ref = 'references/assemblies/{sample}_hgsvc_pbil-trio_{hap1}.fasta',
+        assm_query = 'output/evaluation/phased_assemblies/{sample}_hgsvc_pbsq2-clr_1000-flye.{hap2}.arrow-p1.fasta',
+    output:
+        'output/evaluation/Trio_vs_CLR/{sample}_Trio-{hap1}_vs_CLR-{hap2}.delta'
+    log:
+        'log/output/evaluation/Trio_vs_CLR/{sample}_Trio-{hap1}_vs_CLR-{hap2}.log'
+    benchmark:
+        'run/output/evaluation/Trio_vs_CLR/{sample}_Trio-{hap1}_vs_CLR-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads:
+        config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 49152 + 24576 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((49152 + 24576 * attempt) / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: 3 * attempt
+    shell:
+        'nucmer --maxmatch -l 100 -c 500 --threads={threads} --delta={output} '
+            ' {input.assm_ref} {input.assm_query} &> {log}'
+
+
+rule compute_trio_assembly_delta_HiFi:
+    input:
+        assm_ref = 'references/assemblies/{sample}_hgsvc_pbil-trio_{hap1}.fasta',
+        assm_query = 'output/evaluation/phased_assemblies/{sample}_hgsvc_pbsq2-ccs_1000-pereg.{hap2}.racon-p2.fasta',
+    output:
+        'output/evaluation/Trio_vs_HiFi/{sample}_Trio-{hap1}_vs_HiFi-{hap2}.delta'
+    log:
+        'log/output/evaluation/Trio_vs_HiFi/{sample}_Trio-{hap1}_vs_HiFi-{hap2}.log'
+    benchmark:
+        'run/output/evaluation/Trio_vs_HiFi/{sample}_Trio-{hap1}_vs_HiFi-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads:

@@ -218,3 +218,21 @@ rule add_sequences_to_bed:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt
     shell:
          'bedtools getfasta -fo {output} -name+ -fi {input.fasta} -bed {input.bed}'
+
+
+rule gzip_delta_file:
+    input:
+        'output/evaluation/{filepath}.delta'
+    output:
+        'output/evaluation/{filepath}.delta.gz'
+    shell:
+        'gzip -c {input} > {output}'
+
+
+rule gunzip_trio_assembly:
+    input:
+        'references/downloads/{assembly}.fa.gz'
+    output:
+        'references/assemblies/{assembly}.fasta'
+    shell:
+        'gzip -d -c {input} > {output}'
