@@ -27,7 +27,7 @@ PLOT_PROPERTIES = {
     'bar_width': 0.3,
     'bar_intra_spacing': 0.35,
     'bar_inter_spacing': 0.2,
-    'CLR_marker': 's',
+    'CLR_marker': 'D',
     'HiFi_marker': 'o',
     'legend_marker_size': 10,
     'plot_marker_size': 60,
