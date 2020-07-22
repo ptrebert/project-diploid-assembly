@@ -147,29 +147,47 @@ rule count_reads_in_fasta:
 
 rule delete_original_fastq:
     input:
+        metadata = 'metadata/PRJEB36890.698.ready.tsv',
         done1 = 'output/{cohort}/{sample}_{accession}_1.done',
         done2 = 'output/{cohort}/{sample}_{accession}_2.done',
         convert_ok = 'output/reduced/{cohort}/{sample}_{accession}.convert.ok',
+        read_count = 'output/reduced/{cohort}/{sample}_{accession}.fasta.count'
     output:
-        touch('output/reduced/{cohort}/{sample}_{accession}.fastq.del')
+        'output/reduced/{cohort}/{sample}_{accession}.fastq.del'
     run:
         import os
+        import sys
+        import pandas as pd
 
         fasta_path = input.convert_ok.replace('.convert.ok', '.fasta.gz')
         if not os.path.isfile(fasta_path):
             raise ValueError('FASTA conversion failed / no file at: {}'.format(fasta_path))
         
-        statinfo = os.stat(fasta_path)
-        size_on_fs = int(statinfo.st_size)
+        df = pd.read_csv(input.metadata, sep='\t')
+        expected_count = int(df.loc[df['run_accession'] == wildcards.accession, 'read_count'])
+        assert expected_count > 0, 'Expected read count is zero: {} / {}'.format(wildcards.sample, wildcards.accession)
 
-        if size_on_fs < (10 * 1024 ** 3):
-            # assume conversion failed if FASTA smaller than 10 GB
-            raise ValueError('FASTA conversion probably incomplete / size on fs: {} / {}'.format(fasta_path, size_on_fs))
+        with open(input.read_count, 'r') as dump:
+            observed_count = int(dump.read())
         
-        fastq1_path = input.done1.replace('.done', '.fastq.gz')
-        if os.path.isfile(fastq1_path):
-            os.remove(fastq1_path)
-        
-        fastq2_path = input.done2.replace('.done', '.fastq.gz')
-        if os.path.isfile(fastq2_path):
-            os.remove(fastq2_path)
+        if observed_count != expected_count:
+            error_msg = '\nRead count mismatch: {} / Obs. {} / Exp. {}\n'.format(
+                wildcards.sample, observed_count, expected_count
+                )
+            sys.stderr.write(error_msg)
+            raise RuntimeError(error_msg)
+
+        with open(output[0], 'w') as out:
+            fastq1_path = input.done1.replace('.done', '.fastq.gz')
+            if os.path.isfile(fastq1_path):
+                out.write('FASTQ will be deleted: {}\n'.format(fastq1_path))
+                os.remove(fastq1_path)
+            else:
+                out.write('FASTQ no longer exists: {}\n'.format(fastq1_path))
+            
+            fastq2_path = input.done2.replace('.done', '.fastq.gz')
+            if os.path.isfile(fastq2_path):
+                out.write('FASTQ will be deleted: {}\n'.format(fastq2_path))
+                os.remove(fastq2_path)
+            else:
+                out.write('FASTQ no longer exists: {}\n'.format(fastq2_path))
