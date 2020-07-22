@@ -44,7 +44,8 @@ def determine_conversion_targets(wildcards):
     for (cohort, sample_id), done_files in file_pairs.items():
         if len(done_files) != 2:
             continue
-        conv_targets.add(os.path.join('output', 'reduced', cohort, sample_id + '.fastq.del'))
+        #conv_targets.add(os.path.join('output', 'reduced', cohort, sample_id + '.fastq.del'))
+        conv_targets.add(os.path.join('output', 'reduced', cohort, sample_id + '.fasta.count'))
 
     return sorted(conv_targets)
 
@@ -129,6 +130,19 @@ rule convert_fastq_to_gzip_fasta:
         gzip_fasta = lambda wildcards, output: output.check.replace('.convert.ok', '.fasta.gz')
     shell:
         '( ( seqtk seq -A -C {params.fastq1} ; seqtk seq -A -C {params.fastq2} ; ) | gzip > {params.gzip_fasta} ; ) 2> {log}'
+
+
+rule count_reads_in_fasta:
+    input:
+        done1 = 'output/{cohort}/{sample}_{accession}_1.done',
+        done2 = 'output/{cohort}/{sample}_{accession}_2.done',
+        convert_ok = 'output/reduced/{cohort}/{sample}_{accession}.convert.ok',
+    output:
+        'output/reduced/{cohort}/{sample}_{accession}.fasta.count'
+    params:
+        gzip_fasta = lambda wildcards, input: input.convert_ok.replace('.convert.ok', '.fasta.gz')
+    shell:
+        'zgrep -E -c "^>" {params.gzip_fasta} > {output}'
 
 
 rule delete_original_fastq:
