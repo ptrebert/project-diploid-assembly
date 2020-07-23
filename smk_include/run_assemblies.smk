@@ -341,7 +341,7 @@ rule compute_peregrine_nonhapres_assembly:
         assm = 'output/reference_assembly/non-hap-res/{sample}_nhr-pereg.fasta'
     log:
         pereg = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.log',
-        copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
+        assm_copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
     benchmark:
         os.path.join('run/output/reference_assembly/non-hap-res',
                      '{sample}_nhr-pereg' + '.t{}.rsrc'.format(config['num_cpu_max']))
@@ -362,7 +362,7 @@ rule compute_peregrine_nonhapres_assembly:
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.assm_copy}'
 
 
 rule compute_shasta_nonhapres_assembly:
@@ -672,7 +672,7 @@ rule compute_peregrine_haploid_split_assembly:
         assm = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.fasta',
     log:
         pereg = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.log',
-        copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
+        assm_copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
     envmodules:
@@ -692,7 +692,7 @@ rule compute_peregrine_haploid_split_assembly:
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.assm_copy}'
 
 
 rule compute_shasta_haploid_split_assembly:
