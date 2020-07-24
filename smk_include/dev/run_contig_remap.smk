@@ -31,7 +31,7 @@ def contig_remap_determine_targets(wildcards):
         for assm in os.listdir(path):
             if assm.startswith('v1'):
                 version, new_name = assm.split('_', 1)
-                os.rename(os.path.join(search_path, assm), os.path.join(search_path, new_name))
+                os.rename(os.path.join(path, assm), os.path.join(path, new_name))
                 assm_file = new_name
             else:
                 assm_file = assm
