@@ -465,7 +465,7 @@ rule minimap_contig_to_known_reference_alignment:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
-        runtime_hrs = 71,
+        runtime_hrs = lambda wildcards, attempt: attempt ** attempt,
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.file_name.split('_')[0],
