@@ -28,7 +28,8 @@ def determine_conversion_targets(wildcards):
     import collections as col
 
     input_paths = [
-        '/gpfs/project/ebertp/data/share/jana/run_folder/output/PRJEB36890.698'
+        '/gpfs/project/ebertp/data/share/jana/run_folder/output/PRJEB36890.698',
+        '/gpfs/project/ebertp/data/share/jana/run_folder/output/PRJEB31736.2504'
     ]
 
     file_pairs = col.defaultdict(list)
