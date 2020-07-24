@@ -234,5 +234,7 @@ rule gunzip_trio_assembly:
         'references/downloads/{assembly}.fa.gz'
     output:
         'references/assemblies/{assembly}.fasta'
+    wildcard_constraints:
+        assembly = '[HGNA]{2}[0-9]{5}_hgsvc_pbil-trio_hap[AB]'
     shell:
         'gzip -d -c {input} > {output}'
