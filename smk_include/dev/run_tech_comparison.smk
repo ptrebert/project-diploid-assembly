@@ -167,9 +167,9 @@ rule run_delta_diff:
         '../../environment/conda/conda_biotools.yml'
     priority: 1000
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt
+        mem_total_mb = lambda wildcards, attempt: 12244 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 12244 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt if attempt < 2 else attempt * 4
     params:
         out_dir = lambda wildcards, output: output[0].rsplit('.', 1)[0],
         out_prefix = lambda wildcards, output: os.path.join(
