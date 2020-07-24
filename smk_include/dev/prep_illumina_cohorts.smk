@@ -112,8 +112,6 @@ rule convert_fastq_to_gzip_fasta:
         check_ok = 'output/{cohort}/{sample}_{accession}.check.ok'
     output:
         check = touch('output/reduced/{cohort}/{sample}_{accession}.convert.ok')
-    log:
-        'log/output/reduced/{cohort}/{sample}_{accession}.convert.log'
     benchmark:
         'rsrc/output/reduced/{cohort}/{sample}_{accession}.convert.rsrc'
     conda:
@@ -128,7 +126,7 @@ rule convert_fastq_to_gzip_fasta:
         fastq2 = lambda wildcards, input: input.done2.replace('.done', '.fastq.gz'),
         gzip_fasta = lambda wildcards, output: output.check.replace('.convert.ok', '.fasta.gz')
     shell:
-        '( ( seqtk seq -A -C {params.fastq1} ; seqtk seq -A -C {params.fastq2} ; ) | gzip > {params.gzip_fasta} ; ) 2> {log}'
+        'gzip -d -c {params.fastq1} {params.fastq2} | seqtk seq -A -C | gzip > {params.gzip_fasta}'
 
 
 rule count_reads_in_fasta:
