@@ -145,13 +145,14 @@ rule count_reads_in_fasta:
 
 rule delete_original_fastq:
     input:
-        metadata = 'metadata/PRJEB36890.698.ready.tsv',
+        metadata = 'metadata/{cohort}.ready.tsv',
         done1 = 'output/{cohort}/{sample}_{accession}_1.done',
         done2 = 'output/{cohort}/{sample}_{accession}_2.done',
         convert_ok = 'output/reduced/{cohort}/{sample}_{accession}.convert.ok',
         read_count = 'output/reduced/{cohort}/{sample}_{accession}.fasta.count'
     output:
         'output/reduced/{cohort}/{sample}_{accession}.fastq.del'
+    priority: 100
     run:
         import os
         import sys
