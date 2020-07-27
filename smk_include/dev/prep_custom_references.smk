@@ -220,6 +220,44 @@ rule add_sequences_to_bed:
          'bedtools getfasta -fo {output} -name+ -fi {input.fasta} -bed {input.bed}'
 
 
+rule convert_fasta_to_hdf:
+    input:
+        'references/annotation/{known_ref}-{annotation}.fasta'
+    output:
+        'references/annotation/{known_ref}-{annotation}.h5'
+    benchmark:
+        'run/references/annotation/{known_ref}-{annotation}.hdf.rsrc'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
+    run:
+        import pandas as pd
+
+        seq_df = []
+        with open(input[0], 'r') as fasta:
+            seq_buffer = ''
+            for line in fasta:
+                if line.startswith('>'):
+                    if seq_buffer:
+                        seq_df.append((regtype, regid, chrom, int(start), int(end), seq_buffer))
+                        seq_buffer = ''
+                    regtype, rest = line[1:].strip().split('_', 1)
+                    regid, _, chrom, coords = rest.split(':')
+                    start, end = coords.split('-')
+                else:
+                    seq_buffer += line.strip()
+            seq_df.append((regtype, regid, chrom, int(start), int(end), seq_buffer))
+
+        seq_df = pd.DataFrame.from_records(
+            seq_df,
+            columns=[
+                'region_type', 'region_id', 'chrom',
+                'start', 'end', 'hg38_seq'
+            ])
+        seq_df.to_hdf(output[0], 'sequences')
+    # end of run block
+
+
 rule gzip_delta_file:
     input:
         'output/evaluation/{filepath}.delta'

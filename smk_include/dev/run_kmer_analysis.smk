@@ -45,6 +45,7 @@ def kmer_analysis_determine_targets(wildcards):
 
     module_outputs = {
         'annotation_table': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.tsv',
+        'annotation_stats': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.stats.tsv',
         'kmer_counts': 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.kmer-counts.tsv',
         #'merqury_qv': 'output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}'
     }
@@ -447,9 +448,138 @@ rule query_bifrost_colored_dbg:
          '--verbose &> {log}'
 
 
+def get_split_region_regexp():
+
+    region_type = '(?P<region_type>[A-Z]+)'
+    region_id = '(?P<region_id>ENSR[0-9]+)'
+    chrom = '(?P<chrom>[A-Za-z0-9_]+)'
+    start = '(?P<start>[0-9]+)'
+    end = '(?P<end>[0-9]+)'
+
+    info_regexp = '{}_{}::{}:{}\-{}'.format(
+        region_type,
+        region_id,
+        chrom,
+        start,
+        end
+    )
+    return info_regexp
+
+
+def compute_region_statistics(data, label, base_lengths, base_counts):
+
+    group_lengths = data.groupby('region_type')['length'].sum()
+    subset_lengths = sorted([('{}_{}_bp'.format(k, label), v) for k, v in group_lengths.items()])
+    total_length = sum(t[1] for t in subset_lengths)
+    subset_lengths.append(('total_{}_bp'.format(label), total_length))
+
+    subset_lengths.extend(sorted([('{}_{}_bp_pct'.format(k, label), round(v / base_lengths[k] * 100, 2)) for k, v in group_lengths.items()]))
+    total_length_pct = round(total_length / base_lengths['total'] * 100, 2)
+    subset_lengths.append(('total_{}_bp_pct'.format(label), total_length_pct))
+
+    group_counts = data.groupby('region_type')['region_id'].count()
+    subset_counts = sorted([('{}_{}_count'.format(k, label), v) for k, v in group_counts.items()])
+    total_count = sum(t[1] for t in subset_counts)
+    subset_counts.append(('total_{}_count'.format(label), total_count))
+
+    subset_counts.extend(sorted([('{}_{}_count_pct'.format(k, label), round(v / base_counts[k] * 100, 2)) for k, v in group_counts.items()]))
+    total_count_pct = round(total_count / base_counts['total'] * 100, 2)
+    subset_counts.append(('total_{}_count_pct'.format(label), total_count_pct))
+
+    return subset_lengths, subset_counts
+
+
+rule postprocess_regbuild_graph_queries:
+    input:
+        table = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.tsv',
+        seqs = 'references/annotation/{known_ref}-{annotation}.h5'
+    output:
+        stats = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.stats.tsv',
+        ref_only = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.ref-only.bed',
+        non_illumina = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.non-illumina.bed',
+        hap1_only = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.hap1-only.bed',
+        hap2_only = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.hap2-only.bed',
+        hap_both = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.hap-both.bed',
+    benchmark:
+        os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
+            '{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.stats.rsrc')
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt
+    run:
+        import pandas as pd
+        stats_infos = []
+        columns = ['query', 'short_1', 'short_2', 'hap1', 'hap2', 'GRCh38', 'chrM']
+        data_types = dict((c, bool) for c in columns)
+        data_types['query'] = str
+        df = pd.read_csv(input.table, sep='\t', skiprows=1, names=columns, dtype=data_types)
+        split_location = df['query'].str.extract(get_split_region_regexp(), expand=True)
+        malformed_regions = split_location.isna().any(axis=1).sum()
+        assert malformed_regions == 0, 'Splitting location info failed: #{}'.format(malformed_regions)
+
+        df = pd.concat([df, split_location], axis=1)
+        stats_infos.append(('raw_regions_count', df.shape[0]))
+        select_chrM = df['chrM'] == 1
+        stats_infos.append(('drop_chrM_count', select_chrM.sum()))
+        select_ref = df['GRCh38'] == 1
+        stats_infos.append(('drop_ref_missing', (~select_ref).sum()))
+
+        df = df.loc[~select_chrM & select_ref, :].copy()
+        df['start'] = df['start'].astype('int64')
+        df['end'] = df['end'].astype('int64')
+        df['length'] = df['end'] - df['start']
+        df['name'] = df['region_type'] + '_' + df['region_id']
+
+        base_lengths = dict((rtype, rlen) for rtype, rlen in df.groupby('region_type')['length'].sum().items())
+        base_lengths['total'] = sum(base_lengths.values())
+
+        base_counts = dict((rtype, rcount) for rtype, rcount in df.groupby('region_type')['region_id'].count().items())
+        base_counts['total'] = sum(base_counts.values())
+
+        full_stats_lengths, full_stats_counts = compute_region_statistics(df, 'total', base_lengths, base_counts)
+        stats_infos.extend([t for t in full_stats_lengths if not t[0].endswith('_pct')])
+        stats_infos.extend([t for t in full_stats_counts if not t[0].endswith('_pct')])
+        
+        select_short = df['short_1'] | df['short_2']
+        select_hap1 = df['hap1']
+        select_hap2 = df['hap2']
+
+        selectors = [
+            select_ref & ~(select_short | select_hap1 | select_hap2),
+            ~select_short,
+            select_hap1 & ~select_hap2,
+            select_hap2 & ~select_hap1,
+            select_hap1 & select_hap2
+            ]
+        labels = ['RefOnly', 'NonIllumina', 'Hap1', 'Hap2', 'HapBoth']
+        outfiles = output[1:]
+
+        sequences = pd.read_hdf(input.seqs, 'sequences')
+
+        for s, l, o in zip(selectors, labels, outfiles):
+            subset = df.loc[s, ]
+            subset_stats_lengths, subset_stats_counts = compute_region_statistics(subset, l, base_lengths, base_counts)
+            stats_infos.extend(subset_stats_lengths)
+            stats_infos.extend(subset_stats_counts)
+
+            subset = subset.merge(sequences, how='left', on=['region_type', 'region_id', 'chrom', 'start', 'end'])
+            with open(o, 'w') as dump:
+                _ = dump.write('#')
+                subset.sort_values(['chrom', 'start', 'end'], inplace=True)
+                subset.to_csv(
+                    dump, sep='\t', index=False, header=True,
+                    columns=['chrom', 'start', 'end', 'name', 'hg38_seq']
+                )
+        
+        with open(output.stats, 'w') as dump:
+            for k, v in stats_infos:
+                _ = dump.write('{}\t{}\n'.format(k, v))
+
+
 ################################
 # BELOW
 # Merqury k-mer QV estimation
+# not part of eval routine
 ################################
 
 
