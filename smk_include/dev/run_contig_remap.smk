@@ -67,8 +67,8 @@ def contig_remap_determine_targets(wildcards):
             os.rename(os.path.join(cov_path, fname), os.path.join(cov_path, new_name))
             bigwig = new_name
         else:
-            bigWig = fname
-        mapping, hap, _ = bigWig.split('.')
+            bigwig = fname
+        mapping, hap, _ = bigwig.split('.')
         readset, know_ref = mapping.split('_map-to_')
         formatter = {
             'readset': readset,
@@ -111,7 +111,7 @@ rule haploid_read_coverage_annotation:
         'references/annotation/{annotation}.4c.bed',
         'output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.{hap}.bigWig'
     output:
-        'output/evaluation/completeness/hap_read_coverage/{annotation}_AVG_{readset}_map-to_hg38_GCA_p13.{hap}.tab
+        'output/evaluation/completeness/hap_read_coverage/{annotation}_AVG_{readset}_map-to_hg38_GCA_p13.{hap}.tab'
     conda:
         '../../environment/conda/conda_evaltools.yml'
     resources:
