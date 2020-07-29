@@ -1,4 +1,6 @@
 
+localrules: master_contig_remap
+
 REMAP_CONFIG = {
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
     'min_mapq': 60,
@@ -79,6 +81,6 @@ rule intersect_contig_alignments_annotation:
         'bedtools intersect -wao -a {input[0]} -b {input[1]} > {output}'
 
 
-rule master:
+rule master_contig_remap:
     input:
         contig_remap_determine_targets

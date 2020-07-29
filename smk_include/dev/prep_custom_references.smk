@@ -3,6 +3,8 @@ import functools
 
 include: '../module_includes.smk'
 
+localrules: reduce_to_4col_bed
+
 wildcard_constraints:
     known_ref = 'GRCh3[78]_[A-Za-z0-9]+_[A-Za-z0-9]+',
 
