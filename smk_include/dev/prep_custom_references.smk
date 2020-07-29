@@ -276,3 +276,19 @@ rule gunzip_trio_assembly:
         assembly = '[HGNA]{2}[0-9]{5}_hgsvc_pbil-trio_hap[AB]'
     shell:
         'gzip -d -c {input} > {output}'
+
+
+rule reduce_to_4col_bed:
+    """
+    bigWigAverageOverBed is somewhat picky and seems to check
+    if the last column (not the 6th...) is a valid strand
+    identifier ('+' or '-') in case there are more than 4
+    columns in the BED file
+    """
+    input:
+        '{filepath}/{filename}.bed'
+    output:
+        '{filepath}/{filename}.4c.bed'
+    shell:
+        'cut -f 1,2,3,4 {input} > {output}'
+    
