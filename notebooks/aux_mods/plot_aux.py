@@ -174,6 +174,16 @@ def get_grey_bg(hex=False):
     return grey_color
 
 
+def hex_to_rgb(hex_string, norm=True):
+
+    h = hex_string.strip('#')
+    if norm:
+        rgb = tuple(x/255 for x in [int(h[i:i+2], 16) for i in [0, 2, 4]])
+    else:
+        rgb = tuple(int(h[i:i+2], 16) for i in [0, 2, 4])
+    return rgb
+
+
 def get_gray_bg(hex=False):
     return get_grey_bg(hex)
 
