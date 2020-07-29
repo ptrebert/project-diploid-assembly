@@ -30,7 +30,7 @@ NA12329	female	EUR	CEU	1328	child	0	1	0
 NA12878	female	EUR	CEU	1463	child	1	0	0
 HG00171	female	EUR	FIN	HG00171	unrelated	0	1	0
 HG00096	male	EUR	GBR	HG00096	unrelated	0	1	0
-HG01505	male	EUR	IBS	child	IBS002	0	1	0
+HG01505	male	EUR	IBS	IBS002	child	0	1	0
 NA20509	male	EUR	TSI	NA20509	unrelated	0	1	0
 HG03009	male	SAS	BEB	HG03009	unrelated	0	1	0
 NA20847	female	SAS	GIH	NA20847	unrelated	0	1	0
