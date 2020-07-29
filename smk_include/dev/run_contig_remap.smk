@@ -115,8 +115,8 @@ rule haploid_read_coverage_annotation:
     conda:
         '../../environment/conda/conda_evaltools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 16384 * attempt
     shell:
         'bigWigAverageOverBed {input[1]} {input[0]} {output}'
 
