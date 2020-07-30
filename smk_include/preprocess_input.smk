@@ -185,6 +185,7 @@ rule chs_child_filter_to_100x:
         'log/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.log'
     benchmark:
         'run/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.rsrc'
+    message: 'DEPRECATED: downsampling for sample HG00514 was only done for early chemistry read data'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:

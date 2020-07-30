@@ -39,7 +39,7 @@ sample_description_HG00514:
 sample_targets_HG00514:
   - aliases:
       1: &ccs_reads HG00514_hgsvc_pbsq2-ccs_1000
-      3: &clr_hgsvc HG00514_hgsvc_pbsq2-clr_0526
+      3: &clr_hgsvc HG00514_hgsvc_pbsq2-clr_1000
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
