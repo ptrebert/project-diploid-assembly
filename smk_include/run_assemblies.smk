@@ -292,7 +292,7 @@ rule compute_flye_nonhapres_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
-        runtime_hrs = lambda wildcards, attempt: 47 if '-ccs' in wildcards.sample else 167
+        runtime_hrs = lambda wildcards, attempt: 47 if '-ccs' in wildcards.sample else 119
     params:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source),
@@ -497,7 +497,7 @@ rule compute_flye_haploid_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards: int((557056 if '-ccs' in wildcards.hap_reads else 1433600) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards: 557056 if '-ccs' in wildcards.hap_reads else 1433600,
-        runtime_hrs = lambda wildcards: 30 if '-ccs' in wildcards.hap_reads else 128
+        runtime_hrs = lambda wildcards: 30 if '-ccs' in wildcards.hap_reads else 119
     params:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
