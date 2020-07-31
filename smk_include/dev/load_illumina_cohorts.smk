@@ -76,7 +76,7 @@ rule prepare_metadata:
         'metadata/{cohort}.tsv'
     output:
         ready = 'metadata/{cohort}.ready.tsv',
-        incomplete = 'metadata/{cohort}.incomplete.tsv'
+        dropped = 'metadata/{cohort}.dropped.tsv'
     run:
         import pandas as pd
 
@@ -108,7 +108,7 @@ rule prepare_metadata:
 
         md = pd.concat([md, md5_sums, fastq_sizes, fastq_paths], axis=1)
 
-        cram_based_fastq = md['submitted_ftp'].str.endswith('.cram')
+        cram_based_fastq = md['submitted_ftp'].str.strip().str.endswith('.cram')
         # some error cases in 2504 metadata leading to n/a
         cram_based_fastq[cram_based_fastq.isna()] = False
         # this is important because n/a leads to object dtype
@@ -123,10 +123,12 @@ rule prepare_metadata:
         md = md.loc[~drop_out_select, keep_columns].copy()
 
         # add for simple cross checking with existing files
-        md['fastq1_name'] = md['sample_alias'] + '_' + md['fastq1_path'].map(os.path.basename)
-        md['fastq2_name'] = md['sample_alias'] + '_' + md['fastq2_path'].map(os.path.basename)
+        # str.strip added here because for two samples, sample alias
+        # contains additional TAB for unknown reasons
+        md['fastq1_name'] = md['sample_alias'].str.strip() + '_' + md['fastq1_path'].str.strip().map(os.path.basename)
+        md['fastq2_name'] = md['sample_alias'].str.strip() + '_' + md['fastq2_path'].str.strip().map(os.path.basename)
 
-        with open(output.incomplete, 'w') as dump:
+        with open(output.dropped, 'w') as dump:
             drop_outs.to_csv(dump, sep='\t', header=True, index=False)
 
         with open(output.ready, 'w') as dump:
