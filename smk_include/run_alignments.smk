@@ -119,7 +119,7 @@ rule minimap_reads_to_reference_alignment:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((55296 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 55296 * attempt,
-        runtime_hrs = 71,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt,
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.sample.split('_')[0],
@@ -154,7 +154,7 @@ rule pbmm2_reads_to_reference_alignment_pacbio_native:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
-        runtime_hrs = 71
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
     params:
         align_threads = config['num_cpu_high'] - 2,
         sort_threads = 2,
@@ -190,7 +190,7 @@ rule pbmm2_reads_to_reference_alignment_pacbio_fastq:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
-        runtime_hrs = 71
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
     params:
         align_threads = config['num_cpu_high'] - 2,
         sort_threads = 2,
@@ -545,7 +545,7 @@ rule minimap_hapreads_to_known_reference_alignment:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((55296 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 55296 * attempt,
-        runtime_hrs = 71,
+        runtime_hrs = lambda wildcards, attempt: 3 * attempt,
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
@@ -592,7 +592,7 @@ rule pbmm2_hapreads_to_known_reference_alignment_pacbio_native:
     resources:
          mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
          mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
-         runtime_hrs = 71
+         runtime_hrs = lambda wildcards, attempt: 3 * attempt
     params:
         align_threads = config['num_cpu_high'] - 2,
         sort_threads = 2,
@@ -640,7 +640,7 @@ rule pbmm2_hapreads_to_known_reference_alignment_pacbio_fastq:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
-        runtime_hrs = 71
+        runtime_hrs = lambda wildcards, attempt: 3 * attempt
     params:
         align_threads = config['num_cpu_high'] - 2,
         sort_threads = 2,
