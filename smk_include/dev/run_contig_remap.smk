@@ -72,13 +72,16 @@ def contig_remap_determine_targets(wildcards):
         readset, know_ref = mapping.split('_map-to_')
         formatter = {
             'readset': readset,
-            'hap': hap
         }
         for trg in cov_targets.values():
             for annotation in REMAP_CONFIG['annotations']:
-                formatter['annotation'] = annotation
-                fmt_target = trg.format(**formatter)
-                compute_results.add(fmt_target)
+                for h in [hap, hap + '-un']:
+                    tmp = dict(formatter)
+                    tmp['hap'] = h
+                    tmp['annotation'] = annotation
+
+                    fmt_target = trg.format(**tmp)
+                    compute_results.add(fmt_target)
 
     return sorted(compute_results)
 
@@ -119,6 +122,51 @@ rule haploid_read_coverage_annotation:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 32768 * attempt
     shell:
         'bigWigAverageOverBed {input[1]} {input[0]} {output}'
+
+
+rule merge_haploid_coverage_tracks:
+    input:
+        hap = 'output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.{hap}.bigWig',
+        un = 'output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.un.bigWig'
+    output:
+        temp('output/evaluation/hap_read_coverage/temp/{readset}_map-to_hg38_GCA_p13.{hap}-un.bedGraph')
+    benchmark:
+        'run/output/evaluation/hap_read_coverage/temp/{readset}_map-to_hg38_GCA_p13.{hap}-un.merge.t12.rsrc'
+    conda:
+        '../../environment/conda/conda_evaltools.yml'
+    threads: 12
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((49152 * attempt) / 12),
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    params:
+        sort_buffer = 32768,
+        sort_threads = 10
+    shell:
+        'bigWigMerge {input.hap} {input.un} /dev/stdout'
+        ' | '
+        'LC_COLLATE=C sort --buffer-size={params.sort_buffer}M --parallel={params.sort_threads} -k1,1 -k2,2n > {output}'
+
+
+rule convert_merged_coverage_track:
+    input:
+        bg = 'output/evaluation/hap_read_coverage/temp/{readset}_map-to_hg38_GCA_p13.{hap}-un.bedGraph',
+        sizes = 'references/assemblies/hg38_GCA_p13.sizes'
+    output:
+        'output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.{hap}-un.bigWig'
+    benchmark:
+        'run/output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.{hap}-un.convert.rsrc'
+    conda:
+        '../../environment/conda/conda_evaltools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 3 * attempt
+    params:
+        sort_buffer = 32768,
+        sort_threads = 10
+    shell:
+        'bedGraphToBigWig {input.bg} {input.sizes} {output}'
 
 
 rule master_contig_remap:
