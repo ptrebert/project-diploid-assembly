@@ -45,7 +45,7 @@ rule arrow_contig_polishing_pass1:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(4096 + attempt * 2048 / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 4096 + attempt * 2048,
-        runtime_hrs = lambda wildcards, attempt: 35 * attempt
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt
     shell:
          'gcpp --num-threads {threads} --algorithm=arrow  --log-level INFO --log-file {log} '
          '--reference {input.contigs} --output {output.fasta},{output.gff} {input.alignments}'
