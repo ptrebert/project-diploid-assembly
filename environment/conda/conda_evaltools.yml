@@ -49,4 +49,6 @@ dependencies:
   - ucsc-bedgraphtobigwig=377
   - ucsc-bigwigaverageoverbed=377
   - ucsc-bigwigcorrelate=377
+  - ucsc-bigwigmerge=377
+  - ucsc-bigwigcluster=377
   - pigz=2.4
