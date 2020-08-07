@@ -122,7 +122,7 @@ rule haploid_read_coverage_annotation:
     output:
         'output/evaluation/completeness/hap_read_coverage/{annotation}_AVG_{readset}_map-to_hg38_GCA_p13.{hap}.tab'
     conda:
-        '../../environment/conda/conda_evaltools.yml'
+        '../../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 32768 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 32768 * attempt
@@ -139,7 +139,7 @@ rule merge_haploid_coverage_tracks:
     benchmark:
         'run/output/evaluation/hap_read_coverage/temp/{readset}_map-to_hg38_GCA_p13.{hap}-un.merge.t12.rsrc'
     conda:
-        '../../environment/conda/conda_evaltools.yml'
+        '../../environment/conda/conda_biotools.yml'
     threads: 12
     resources:
         mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
@@ -163,7 +163,7 @@ rule convert_merged_coverage_track:
     benchmark:
         'run/output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.{hap}-un.convert.rsrc'
     conda:
-        '../../environment/conda/conda_evaltools.yml'
+        '../../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 16384 * attempt,

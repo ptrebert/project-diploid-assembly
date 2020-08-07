@@ -30,7 +30,7 @@ dependencies:
   - pysam=0.15.3
   - samtools=1.9
   - bamtools=2.5.1
-  - bedtools=2.29.0
+  - bedtools=2.29.2  # FIX https://github.com/arq5x/bedtools2/issues/779 - DO NOT DOWNGRADE
   - bedops=2.4.37
   - bcftools=1.9
   - fastqc=0.11.8
@@ -45,9 +45,10 @@ dependencies:
   - dnaio=0.4.2
   - cutadapt=2.10
   - trim-galore=0.6.5
-#  - bifrost=1.0.3
   - graphaligner=1.0.11
   - ucsc-bedgraphtobigwig=377
+  - ucsc-bigwigaverageoverbed=377
+  - ucsc-bigwigcorrelate=377
+  - ucsc-bigwigmerge=377
+  - ucsc-bigwigcluster=377
   - pigz=2.4
-  - pip:
-    - git+https://bitbucket.org/whatshap/whatshap@a3f8c91
