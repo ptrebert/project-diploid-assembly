@@ -68,7 +68,11 @@ def contig_remap_determine_targets(wildcards):
             bigwig = new_name
         else:
             bigwig = fname
+        if not fname.endswith('.bigWig'):
+            continue
         mapping, hap, _ = bigwig.split('.')
+        if hap.endswith('-un'):
+            continue
         readset, know_ref = mapping.split('_map-to_')
         formatter = {
             'readset': readset,
@@ -76,6 +80,8 @@ def contig_remap_determine_targets(wildcards):
         for trg in cov_targets.values():
             for annotation in REMAP_CONFIG['annotations']:
                 for h in [hap, hap + '-un']:
+                    if h == 'un-un':
+                        continue
                     tmp = dict(formatter)
                     tmp['hap'] = h
                     tmp['annotation'] = annotation
