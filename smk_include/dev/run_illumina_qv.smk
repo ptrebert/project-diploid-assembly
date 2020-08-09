@@ -6,7 +6,7 @@ QVEST_CONFIG = {
     'freebayes_timeout_sec': 14400,
     'variant_min_depth': 3,
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
-    'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396']
+    'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396', 'HPG', 'PTG']
 }
 
 
