@@ -39,6 +39,7 @@ dependencies:
   - wtdbg=2.5
   - flye=2.7
   - canu=2.0
+  - hifiasm=0.11
   - racon=1.4.10
   - lighter=1.1.2
   - bcalm=2.2.2
