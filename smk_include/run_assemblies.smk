@@ -365,6 +365,37 @@ rule compute_peregrine_nonhapres_assembly:
             ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.assm_copy}'
 
 
+rule compute_hifiasm_nonhapres_assembly:
+    input:
+        fastq = 'input/fastq/{sample}.fastq.gz',
+    output:
+        primary_unitigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_utg.gfa',
+        primary_contigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
+        discard = temp(
+            multiext(
+                'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}',
+                '.a_ctg.gfa', '.a_ctg.noseq.gfa',
+                '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
+                '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
+                '.r_utg.gfa', '.r_utg.noseq.gfa'
+            )
+        )
+    log:
+        hifiasm = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.log',
+    benchmark:
+        os.path.join('run/output/reference_assembly/non-hap-res',
+                     '{sample}_nhr-hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((188416 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 188416 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    params:
+        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0]
+    shell:
+        'hifiasm -o {params.prefix} -t {threads} {input.fastq} &> {log.hifiasm}'
+
+
 rule compute_shasta_nonhapres_assembly:
     """
     Non-haplotype resolved assembly = replaces known reference (such as hg38)
