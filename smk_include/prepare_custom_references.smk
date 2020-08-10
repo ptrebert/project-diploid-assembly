@@ -109,7 +109,7 @@ rule merge_mono_dinucleotide_fraction:
     log:
         'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.log'
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.rsrc'
+        'run/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.rsrc'
     wildcard_constraints:
         sseq_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES
     conda:
