@@ -7,7 +7,8 @@ REMAP_CONFIG = {
     'annotations': [
         '20200723_GRCh38_p13_regions',
         '20200723_GRCh38_p13_unresolved-issues',
-        'GRCh38_cytobands'
+        'GRCh38_cytobands',
+        'PAV_sv-insdel-dropped_v3',
     ]
 }
 
@@ -34,6 +35,8 @@ def contig_remap_determine_targets(wildcards):
 
     # limit to phased assemblies for now
     for path, trg_type in search_paths:
+        if not os.path.isdir(path):
+            continue
         remap_trg = contig_remap_targets[trg_type]
         assembly_type = os.path.split(path)[-1]
         tmp = dict(fix_wildcards)
@@ -60,8 +63,12 @@ def contig_remap_determine_targets(wildcards):
     }
 
     cov_path = 'output/evaluation/hap_read_coverage'
+    try:
+        bigwig_files = os.listdir(cov_path)
+    except FileNotFoundError:
+        bigwig_files = []
 
-    for fname in os.listdir(cov_path):
+    for fname in bigwig_files:
         if fname.startswith('v1'):
             version, new_name = fname.split('_', 1)
             os.rename(os.path.join(cov_path, fname), os.path.join(cov_path, new_name))

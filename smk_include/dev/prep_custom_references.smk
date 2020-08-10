@@ -294,3 +294,37 @@ rule reduce_to_4col_bed:
     shell:
         'cut -f 1,2,3,4 {input} > {output}'
     
+
+rule prep_pav_calls:
+    input:
+        good = 'references/downloads/variants_freeze{version}_sv_insdel.tsv.gz',
+        bad = 'references/downloads/variants-dropped_freeze{version}_sv_insdel.tsv.gz'
+    output:
+        bad = 'references/annotation/PAV_sv-insdel-dropped_v{version}.bed',
+        both = 'references/annotation/PAV_sv-insdel_v{version}.h5'
+    benchmark:
+        'run/references/annotation/PAV_sv-insdel_v{version}.hdf.rsrc'
+    run:
+        import pandas as pd
+
+        lowq = pd.read_csv(input.bad, sep='\t', index_col=False, encoding='ascii', dtype=str)
+        lowq['quality'] = '0'
+
+        hiq = pd.read_csv(input.good, sep='\t', index_col=False, encoding='ascii', dtype=str)
+        hiq['quality'] = '1'
+
+        singletons = lowq.loc[lowq['DISC_CLASS'] == 'SINGLE', ['#CHROM', 'POS', 'END', 'ID']].copy()
+        singletons['POS'] = singletons['POS'].astype('int64')
+        singletons['END'] = singletons['END'].astype('int64')
+        singletons.sort_values(['#CHROM', 'POS'], inplace=True)
+        singletons.to_csv(output.bad, sep='\t', index=False, header=False)
+
+        both = pd.concat([hiq, lowq], axis=0)
+        both['POS'] = both['POS'].astype('int64')
+        both['END'] = both['END'].astype('int64')
+        both.sort_values(['#CHROM', 'POS', 'END'], inplace=True)
+        both['POS'] = both['POS'].astype(str)
+        both['END'] = both['END'].astype(str)
+        both.reset_index(drop=True, inplace=True)
+
+        both.to_hdf(output.both, key='PAV_v{}'.format(wildcards.version), mode='w', format='fixed')
