@@ -40,7 +40,7 @@ def tech_comparison_determine_targets(wildcards):
         assm_base, hap, polisher, ext = assm_file.split('.')
         sample, assm_reads = assm_base.split('_', 1)
 
-        if sample not in ['HG00733', 'NA19240']:
+        if sample not in ['HG00733', 'NA19240', 'HG00514']:
             continue
 
         tmp = dict(fix_wildcards)
@@ -123,9 +123,9 @@ rule compute_trio_assembly_delta_CLR:
     threads:
         config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 49152 + 24576 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: int((49152 + 24576 * attempt) / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: 3 * attempt
+        mem_total_mb = lambda wildcards, attempt: 188416,
+        mem_per_cpu_mb = lambda wildcards, attempt: int(188416 / config['num_cpu_high']),
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} --delta={output} '
             ' {input.assm_ref} {input.assm_query} &> {log}'
