@@ -148,7 +148,7 @@ rule compute_trio_assembly_delta_HiFi:
     resources:
         mem_total_mb = lambda wildcards, attempt: 49152 + 24576 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: int((49152 + 24576 * attempt) / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: 3 * attempt
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} --delta={output} '
             ' {input.assm_ref} {input.assm_query} &> {log}'
@@ -169,7 +169,7 @@ rule run_delta_diff:
     resources:
         mem_total_mb = lambda wildcards, attempt: 12244 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 12244 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt if attempt < 2 else attempt * 4
+        runtime_hrs = lambda wildcards, attempt: attempt if attempt < 2 else attempt * 12
     params:
         out_dir = lambda wildcards, output: output[0].rsplit('.', 1)[0],
         out_prefix = lambda wildcards, output: os.path.join(

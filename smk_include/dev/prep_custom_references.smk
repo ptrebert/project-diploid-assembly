@@ -313,11 +313,11 @@ rule prep_pav_calls:
         hiq = pd.read_csv(input.good, sep='\t', index_col=False, encoding='ascii', dtype=str)
         hiq['quality'] = '1'
 
-        singletons = lowq.loc[lowq['DISC_CLASS'] == 'SINGLE', ['#CHROM', 'POS', 'END', 'ID']].copy()
-        singletons['POS'] = singletons['POS'].astype('int64')
-        singletons['END'] = singletons['END'].astype('int64')
-        singletons.sort_values(['#CHROM', 'POS'], inplace=True)
-        singletons.to_csv(output.bad, sep='\t', index=False, header=False)
+        bed_out = lowq.loc[:, ['#CHROM', 'POS', 'END', 'ID']].copy()
+        bed_out['POS'] = bed_out['POS'].astype('int64')
+        bed_out['END'] = bed_out['END'].astype('int64')
+        bed_out.sort_values(['#CHROM', 'POS'], inplace=True)
+        bed_out.to_csv(output.bad, sep='\t', index=False, header=False)
 
         both = pd.concat([hiq, lowq], axis=0)
         both['POS'] = both['POS'].astype('int64')
