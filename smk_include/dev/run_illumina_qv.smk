@@ -107,6 +107,9 @@ def illumina_qv_determine_targets(wildcards):
                     fmt_target = target.format(**tmp)
                     compute_results.add(fmt_target)
     
+    compute_results.add('output/evaluation/qv_estimation/variant_calls/25-collect-variants/freebayes_indels.h5')
+    compute_results.add('output/evaluation/qv_estimation/variant_calls/25-collect-variants/freebayes_snvs.h5')
+
     return sorted(compute_results)
 
 
@@ -477,6 +480,54 @@ rule split_callset_by_variant_type:
          'bcftools view --types indels --min-alleles 2 --max-alleles 2 '
          '--output-type v --output-file /dev/stdout {input.vcf} | '
          'bgzip -c /dev/stdin > {output.indels}'
+
+
+def collect_vcf_files(wildcards):
+    import os
+    import sys
+    path = 'output/evaluation/qv_estimation/variant_calls/20-split-vtype/'
+    if not os.path.isdir(path):
+        return []
+    try:
+        vcf_files = os.listdir(os.path.join(path, '*{}.vcf.bgz'.format(wildcards.var_type)))
+    except FileNotFoundError:
+        sys.stderr.write('\nWarning, no VCF files found for variant type {}\n'.format(wildcards.var_type))
+        return []
+    vcf_files = [os.path.join(path, vcf) for vcf in vcf_files]
+    return sorted(vcf_files)
+
+
+def collect_index_files(wildcards):
+    import os
+    import sys
+    path = 'output/evaluation/qv_estimation/variant_calls/20-split-vtype/'
+    if not os.path.isdir(path):
+        return []
+    try:
+        tbi_files = os.listdir(os.path.join(path, '*{}.vcf.bgz.tbi'.format(wildcards.var_type)))
+    except FileNotFoundError:
+        sys.stderr.write('\nWarning, no VCF/TBI files found for variant type {}\n'.format(wildcards.var_type))
+        return []
+    tbi_files = [os.path.join(path, vcf) for vcf in tbi_files]
+    return sorted(tbi_files)
+
+
+rule collect_sample_variants:
+    input:
+        vcf = collect_vcf_files,
+        tbi = collect_index_files
+    output:
+        'output/evaluation/qv_estimation/variant_calls/25-collect-variants/freebayes_{var_type}.h5'
+    conda:
+        '../../environment/conda/conda_evaltools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        exec = lambda wildcards: find_script_path('summarize_vcf.py')
+    shell:
+        '{params.exec} --input {input.vcf} --output {output}'
 
 
 rule split_callset_by_genotype:
