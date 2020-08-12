@@ -52,3 +52,6 @@ dependencies:
   - ucsc-bigwigmerge=377
   - ucsc-bigwigcluster=377
   - pigz=2.4
+  - pandas=1.0.5
+  - pytables=3.6.1
+  - intervaltree=3.0.2
