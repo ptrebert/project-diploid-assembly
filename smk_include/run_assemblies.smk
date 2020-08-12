@@ -385,6 +385,8 @@ rule compute_hifiasm_nonhapres_assembly:
     benchmark:
         os.path.join('run/output/reference_assembly/non-hap-res',
                      '{sample}_nhr-hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((188416 * attempt) / config['num_cpu_high']),
@@ -400,9 +402,9 @@ rule convert_nonhapres_gfa_to_fasta:
     input:
         'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
     output:
-        fasta = 'output/reference_assembly/non-hap-res/{sample}/{sample}_nhr-hifiasm.fasta',
-        rc_map = 'output/reference_assembly/non-hap-res/{sample}/{sample}_nhr-hifiasm.read-contig.map',
-        stats = 'output/reference_assembly/non-hap-res/{sample}/{sample}_nhr-hifiasm.contig.stats',
+        fasta = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.fasta',
+        rc_map = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.read-contig.map',
+        stats = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.contig.stats',
     log:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert.log'
     benchmark:

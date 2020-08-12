@@ -31,7 +31,7 @@ wildcard_constraints:
     var_caller = '(freebayes|longshot|deepvar)',
     # allowed assembly tools
     # regexp [a-z0-9]+ to link pre-computed collapsed assemblies
-    assembler = '(wtdbg|canu|flye|pereg|shasta|[a-z0-9]+)',
+    assembler = '(wtdbg|canu|flye|pereg|shasta|hifiasm|[a-z0-9]+)',
     # polisher
     polisher = '(arrow|racon)',
     pol_pass ='(arrow|racon)\-p[12]',
