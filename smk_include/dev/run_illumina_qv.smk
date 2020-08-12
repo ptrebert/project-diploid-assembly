@@ -483,32 +483,30 @@ rule split_callset_by_variant_type:
 
 
 def collect_vcf_files(wildcards):
-    import os
+    import glob
     import sys
     path = 'output/evaluation/qv_estimation/variant_calls/20-split-vtype/'
     if not os.path.isdir(path):
         return []
     try:
-        vcf_files = os.listdir(os.path.join(path, '*{}.vcf.bgz'.format(wildcards.var_type)))
+        vcf_files = glob.glob(os.path.join(path, '*{}.vcf.bgz'.format(wildcards.var_type)))
     except FileNotFoundError:
         sys.stderr.write('\nWarning, no VCF files found for variant type {}\n'.format(wildcards.var_type))
         return []
-    vcf_files = [os.path.join(path, vcf) for vcf in vcf_files]
     return sorted(vcf_files)
 
 
 def collect_index_files(wildcards):
-    import os
+    import glob
     import sys
     path = 'output/evaluation/qv_estimation/variant_calls/20-split-vtype/'
     if not os.path.isdir(path):
         return []
     try:
-        tbi_files = os.listdir(os.path.join(path, '*{}.vcf.bgz.tbi'.format(wildcards.var_type)))
+        tbi_files = glob.glob(os.path.join(path, '*{}.vcf.bgz.tbi'.format(wildcards.var_type)))
     except FileNotFoundError:
         sys.stderr.write('\nWarning, no VCF/TBI files found for variant type {}\n'.format(wildcards.var_type))
         return []
-    tbi_files = [os.path.join(path, vcf) for vcf in tbi_files]
     return sorted(tbi_files)
 
 
