@@ -169,7 +169,7 @@ rule run_delta_diff:
     resources:
         mem_total_mb = lambda wildcards, attempt: 12244 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 12244 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt if attempt < 2 else attempt * 12
+        runtime_hrs = lambda wildcards, attempt: attempt if attempt < 2 else attempt * 24
     params:
         out_dir = lambda wildcards, output: output[0].rsplit('.', 1)[0],
         out_prefix = lambda wildcards, output: os.path.join(
