@@ -396,6 +396,45 @@ rule compute_hifiasm_nonhapres_assembly:
         'hifiasm -o {params.prefix} -t {threads} {input.fastq} &> {log.hifiasm}'
 
 
+rule convert_nonhapres_gfa_to_fasta:
+    input:
+        'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
+    output:
+        fasta = 'output/reference_assembly/non-hap-res/{sample}/{sample}_nhr-hifiasm.fasta',
+        rc_map = 'output/reference_assembly/non-hap-res/{sample}/{sample}_nhr-hifiasm.read-contig.map',
+        stats = 'output/reference_assembly/non-hap-res/{sample}/{sample}_nhr-hifiasm.contig.stats',
+    log:
+        'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert.log'
+    benchmark:
+        'run/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import pandas as pd
+
+        fasta_buffer, reads_to_contigs, contig_stats = convert_gfa_to_fasta(input[0], threads)
+
+        with open(output.fasta, 'w') as dump:
+            _ = dump.write(fasta_buffer.getvalue())
+        
+        df_map = pd.DataFrame.from_records(
+            reads_to_contigs,
+            columns=['contig', 'start', 'end', 'read', 'orientation'])
+        df_map.sort_values(['contig', 'start'], inplace=True)
+        df_map.to_csv(output.rc_map, sep='\t', header=True, index=False)
+
+        df_stats = pd.DataFrame.from_records(
+            contig_stats,
+            columns=['ID', 'LEN', 'A', 'C', 'G', 'T']
+        )
+        df_stats.sort_values(['LEN', 'ID'], inplace=True)
+        df_stats.to_csv(output.stats, sep='\t', header=True, index=False)
+    # END OF RUN BLOCK
+
+
 rule compute_shasta_nonhapres_assembly:
     """
     Non-haplotype resolved assembly = replaces known reference (such as hg38)
