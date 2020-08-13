@@ -523,7 +523,7 @@ rule collect_sample_variants:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        exec = lambda wildcards: find_script_path('summarize_vcf.py')
+        exec = lambda wildcards: find_script_path('summarize_vcf.py', 'utilities')
     shell:
         '{params.exec} --input {input.vcf} --output {output}'
 
