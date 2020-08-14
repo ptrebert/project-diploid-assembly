@@ -125,7 +125,7 @@ rule compute_trio_assembly_delta_CLR:
     resources:
         mem_total_mb = lambda wildcards, attempt: 188416,
         mem_per_cpu_mb = lambda wildcards, attempt: int(188416 / config['num_cpu_high']),
-        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt
     shell:
         'nucmer --maxmatch -l 100 -c 500 --threads={threads} --delta={output} '
             ' {input.assm_ref} {input.assm_query} &> {log}'
