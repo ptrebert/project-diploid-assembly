@@ -413,6 +413,8 @@ rule convert_nonhapres_gfa_to_fasta:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert.log'
     benchmark:
         'run/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+    conda:
+        '../environment/conda/conda_pyscript.yml'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
