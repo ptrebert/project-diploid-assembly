@@ -56,6 +56,7 @@ sample_targets_NA24385:
       nhr_assembler:
         - pereg
         - hifiasm
+      hap_assembler: hifiasm
       var_caller: deepvar
 
 
