@@ -2,6 +2,7 @@
 
 import os
 import io
+import collections as col
 import argparse as argp
 import multiprocessing as mp
 
@@ -71,7 +72,7 @@ def parse_gfa_segment(line):
         buffered = buffer.write(seq[i*120:i*120+120] + '\n')
         bases_buffered += (buffered - 1)
     assert bases_buffered == seqlen, 'Dropped bases for {}: {} / {}'.format(contig, seqlen, bases_buffered)
-    return buffer, stats_counter
+    return buffer, stats
 
 
 def parse_gfa_assembly(line):
@@ -89,6 +90,8 @@ def parse_gfa_line(line):
         return parse_gfa_segment(line)
     elif line.startswith('A'):
         return parse_gfa_assembly(line)
+    elif line.startswith('L'):
+        return None
     else:
         raise ValueError('Unexpected GFA line: {} .....'.format(line.strip()[:50]))
 
@@ -108,7 +111,9 @@ def convert_gfa_to_fasta(gfa_file, threads):
 
             res_iter = pool.imap_unordered(parse_gfa_line, gfa)
             for res in res_iter:
-                if isinstance(res, tuple) and len(res) == 5:
+                if res is None:
+                    continue
+                elif isinstance(res, tuple) and len(res) == 5:
                     read_to_contigs.append(res)
                 elif isinstance(res, tuple) and len(res) == 2:
                     fasta_buffer.write(res[0].getvalue())
@@ -122,7 +127,7 @@ def convert_gfa_to_fasta(gfa_file, threads):
 def main():
     args = parse_command_line()
 
-    fasta_buffer, rc_map, stats = convert_gfa_to_fasta(args.gfa, args.ncpus)
+    fasta_buffer, rc_map, stats = convert_gfa_to_fasta(args.gfa, args.n_cpus)
 
     with open(args.out_fasta, 'w') as dump:
         _ = dump.write(fasta_buffer.getvalue())
@@ -137,7 +142,7 @@ def main():
         stats,
         columns=['ID', 'LEN', 'A', 'C', 'G', 'T']
     )
-    df_stats.sort_values(['LEN', 'ID'], inplace=True)
+    df_stats.sort_values(['LEN', 'ID'], inplace=True, ascending=False)
     df_stats.to_csv(args.out_stats, sep='\t', header=True, index=False)
 
     return 0
