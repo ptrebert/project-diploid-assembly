@@ -26,3 +26,6 @@ dependencies:
   - pysam=0.15.3
   - dnaio=0.4.1
   - biopython=1.76
+  - pandas=1.0.5
+  - pytables=3.6.1
+  - intervaltree=3.0.2

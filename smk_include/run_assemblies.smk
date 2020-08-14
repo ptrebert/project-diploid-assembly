@@ -366,6 +366,10 @@ rule compute_peregrine_nonhapres_assembly:
 
 
 rule compute_hifiasm_nonhapres_assembly:
+    """
+    Runtime for slow I/O systems
+    Memory consumption is fairly low and stable
+    """
     input:
         fastq = 'input/fastq/{sample}.fastq.gz',
     output:
@@ -391,7 +395,7 @@ rule compute_hifiasm_nonhapres_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((188416 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 188416 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt
     params:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0]
     shell:
@@ -414,27 +418,11 @@ rule convert_nonhapres_gfa_to_fasta:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
-    run:
-        import pandas as pd
-
-        fasta_buffer, reads_to_contigs, contig_stats = convert_gfa_to_fasta(input[0], threads)
-
-        with open(output.fasta, 'w') as dump:
-            _ = dump.write(fasta_buffer.getvalue())
-        
-        df_map = pd.DataFrame.from_records(
-            reads_to_contigs,
-            columns=['contig', 'start', 'end', 'read', 'orientation'])
-        df_map.sort_values(['contig', 'start'], inplace=True)
-        df_map.to_csv(output.rc_map, sep='\t', header=True, index=False)
-
-        df_stats = pd.DataFrame.from_records(
-            contig_stats,
-            columns=['ID', 'LEN', 'A', 'C', 'G', 'T']
-        )
-        df_stats.sort_values(['LEN', 'ID'], inplace=True)
-        df_stats.to_csv(output.stats, sep='\t', header=True, index=False)
-    # END OF RUN BLOCK
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
+    shell:
+        '{params.script_exec} --gfa {input[0]} --n-cpus {threads} '
+        '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
 
 
 rule compute_shasta_nonhapres_assembly:
