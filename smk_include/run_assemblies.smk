@@ -877,7 +877,7 @@ rule compute_hifiasm_haploid_split_assembly:
         hap2_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap2.p_ctg.gfa',
         discard = temp(
             multiext(
-                'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}',
+                'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}',
                 '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
                 '.r_utg.gfa', '.r_utg.noseq.gfa'
             )
