@@ -893,7 +893,7 @@ rule compute_hifiasm_haploid_split_assembly:
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + 12288 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 12288 + 12288 * attempt
+        mem_total_mb = lambda wildcards, attempt: 12288 + 12288 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         prefix = lambda wildcards, output: output.hap1_contigs.rsplit('.', 3)[0]
