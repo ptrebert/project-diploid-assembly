@@ -878,7 +878,9 @@ rule compute_hifiasm_haploid_split_assembly:
         discard = temp(
             multiext(
                 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}',
-                '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin'
+                '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
+                '.hap1.p_ctg.noseq.gfa', '.hap2.p_ctg.noseq.gfa',
+                '.dip.r_utg.gfa', '.dip.r_utg.noseq.gfa'
             )
         )
     log:
@@ -890,9 +892,9 @@ rule compute_hifiasm_haploid_split_assembly:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt < 2 else 188416) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 110592 if attempt < 2 else 188416,
-        runtime_hrs = lambda wildcards, attempt: 24 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + 12288 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 12288 + 12288 * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         prefix = lambda wildcards, output: output.hap1_contigs.rsplit('.', 3)[0]
     shell:
