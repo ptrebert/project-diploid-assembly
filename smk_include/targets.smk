@@ -247,7 +247,7 @@ TARGET_PATHS = {
         "output", "statistics", "contigs_to_ref_aln",
         "reference_assembly", "clustered",
         "{sseq_reads}",
-        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq30.stats"
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq60.stats"
     ),
 
     "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ00": os.path.join(
