@@ -375,13 +375,14 @@ rule compute_hifiasm_nonhapres_assembly:
     output:
         primary_unitigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_utg.gfa',
         primary_contigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
+        raw_unitigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.r_utg.gfa',
         discard = temp(
             multiext(
                 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}',
                 '.a_ctg.gfa', '.a_ctg.noseq.gfa',
                 '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
                 '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
-                '.r_utg.gfa', '.r_utg.noseq.gfa'
+                '.r_utg.noseq.gfa'
             )
         )
     log:
@@ -875,12 +876,13 @@ rule compute_hifiasm_haploid_split_assembly:
     output:
         hap1_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap1.p_ctg.gfa',
         hap2_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap2.p_ctg.gfa',
+        raw_unitigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.r_utg.gfa',
         discard = temp(
             multiext(
                 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}',
                 '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
                 '.hap1.p_ctg.noseq.gfa', '.hap2.p_ctg.noseq.gfa',
-                '.dip.r_utg.gfa', '.dip.r_utg.noseq.gfa'
+                '.dip.r_utg.noseq.gfa'
             )
         )
     log:
