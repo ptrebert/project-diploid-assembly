@@ -8,6 +8,7 @@ REMAP_CONFIG = {
         '20200723_GRCh38_p13_regions',
         '20200723_GRCh38_p13_unresolved-issues',
         'GRCh38_cytobands',
+        'GRCh38_segdups',
         'PAV_sv-insdel-dropped_v3',
     ]
 }
