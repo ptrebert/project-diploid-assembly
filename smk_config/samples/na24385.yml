@@ -26,6 +26,11 @@ sample_description_NA24385:
         source_type: local
         library_fractions: one
         comment: "github.com/human-pangenomics/HG002_Data_Freeze_v1.0#strand-seq"
+    - strandseq:
+        readset: &sseq_bccrc NA24385_bccrc_ilany-75pe_sseq
+        source_type: local
+        library_fractions: one
+        comment: "Lansdorp collaboration data"
     - short_reads:
         readset: NA24385_giab_il25k-150pe_short
         source_type: amazon
@@ -53,6 +58,21 @@ sample_targets_NA24385:
         - h1-un
         - h2-un
   - target:
+      nhr_assembler: pereg
+      hap_assembler: pereg
+      var_caller: deepvar
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sseq_reads: *sseq_bccrc
+      pol_reads: *ccs_reads
+      pol_pass: racon-p2
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      name: Lansdorp
       nhr_assembler: pereg
       hap_assembler: pereg
       var_caller: deepvar
