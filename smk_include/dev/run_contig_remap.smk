@@ -97,6 +97,17 @@ def contig_remap_determine_targets(wildcards):
                     fmt_target = trg.format(**tmp)
                     compute_results.add(fmt_target)
 
+    # add some nuc profiling results
+    # 'references/annotation/{known_ref}_{annotation}.nuc.stats'
+    for ann_file in REMAP_CONFIG['annotations']:
+        if 'PAV' in ann_file:
+            continue
+        out_path = 'references/annotation/{known_ref}_{annotation}.nuc.stats'.format(
+            REMAP_CONFIG['ref_assembly'],
+            ann_file
+        )
+        compute_results.add(out_path)
+
     return sorted(compute_results)
 
 

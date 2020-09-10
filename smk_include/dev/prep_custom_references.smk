@@ -222,6 +222,24 @@ rule add_sequences_to_bed:
          'bedtools getfasta -fo {output} -name+ -fi {input.fasta} -bed {input.bed}'
 
 
+rule profile_sequences_in_bed:
+    input:
+        bed = 'references/annotation/{annotation}.bed',
+        fasta = 'references/assemblies/{known_ref}.fasta',
+        fai = 'references/assemblies/{known_ref}.fasta.fai'
+    output:
+        'references/annotation/{known_ref}_{annotation}.nuc.stats'
+    log:
+        'log/references/annotation/{known_ref}_{annotation}.nuc.stats.log'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
+    shell:
+         'bedtools nuc -fi {input.fasta} -bed {input.bed} > {output} 2> {log}'
+
+
 rule convert_fasta_to_hdf:
     input:
         'references/annotation/{known_ref}-{annotation}.fasta'
