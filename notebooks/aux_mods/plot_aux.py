@@ -9,6 +9,13 @@ SEQ_PLATFORMS = {
     'clr': 'CLR',
 }
 
+SEQ_PLATFORMS_COLORS = {
+    'CLR': '#000000',
+    'clr': '#000000',
+    'HiFi': '#B22222',
+    'ccs': '#B22222'
+}
+
 POPULATION_ANNOTATION_FILE = '1kg_hgsvc_colors.csv'
 SAMPLE_TABLE_FILE = 'sample_table.tsv'
 
@@ -186,6 +193,14 @@ def hex_to_rgb(hex_string, norm=True):
 
 def get_gray_bg(hex=False):
     return get_grey_bg(hex)
+
+
+def get_platform_color(platform, hex=False):
+    assert platform in SEQ_PLATFORMS or platform in SEQ_PLATFORMS.values(), 'Unknown platform: {}'.format(platform)
+    if hex:
+        return SEQ_PLATFORMS_COLORS[platform]
+    else:
+        return hex_to_rgb(SEQ_PLATFORMS_COLORS[platform])
 
 
 def get_population_sorting():
