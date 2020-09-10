@@ -223,8 +223,12 @@ rule add_sequences_to_bed:
 
 
 rule profile_sequences_in_bed:
+    """
+    Limit BED input, some characters in the input
+    may crash bedtools nuc / core dump or exception
+    """
     input:
-        bed = 'references/annotation/{annotation}.bed',
+        bed = 'references/annotation/{annotation}.4c.bed',
         fasta = 'references/assemblies/{known_ref}.fasta',
         fai = 'references/assemblies/{known_ref}.fasta.fai'
     output:
