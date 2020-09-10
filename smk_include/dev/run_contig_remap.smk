@@ -102,7 +102,7 @@ def contig_remap_determine_targets(wildcards):
     for ann_file in REMAP_CONFIG['annotations']:
         if 'PAV' in ann_file:
             continue
-        out_path = 'references/annotation/{known_ref}_{annotation}.nuc.stats'.format(
+        out_path = 'references/annotation/{}_{}.nuc.stats'.format(
             REMAP_CONFIG['ref_assembly'],
             ann_file
         )
