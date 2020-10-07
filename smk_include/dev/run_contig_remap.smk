@@ -119,7 +119,7 @@ rule filter_merge_contig_alignments:
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
-        'egrep "\s60\s" {input} | bedtools merge -i - > {output}'
+        'egrep "\s60\s" {input} | bedtools merge -delim "@" -c 4 -o distinct -i - > {output}'
 
 
 rule intersect_contig_alignments_annotation:
