@@ -394,6 +394,8 @@ def alignments_per_scaffold(contig_to_scaffold, aln_view, contig_view):
         for (chrom, mapq), length in alignments.items():
             if chrom == 'chrUn':
                 continue
+            if mapq == 0:
+                continue
             elif chrom in ['chrX', 'chrY']:
                 count_align['chrXY'] += length * mapq
             else:
@@ -445,15 +447,26 @@ def classify_contig_breaks(contig_view, contig_to_scaffold, scaffold_to_chrom):
 
         if len(set(scaffolds)) > 1:
             try:
-                scaffold_chroms = set([scaffold_to_chrom[s] for s in scaffolds])
+                scaffold_chroms = [(s, scaffold_to_chrom[s]) for s in scaffolds]
             except KeyError:
                 print(row)
                 print(scaffolds)
                 raise
-            if len(scaffold_chroms) == 1:
-                contig_view.loc[idx, 'global_breaks'] += 1
-            else:
-                contig_view.loc[idx, 'chimeric_breaks'] += 1
+            global_breaks = 0
+            chimeric_breaks = 0
+            ref_scf, ref_chr = scaffold_chroms[0]
+            for (cmp_scf, cmp_chr) in scaffold_chroms[1:]:
+                if ref_scf == cmp_scf:
+                    # local breaks covered above
+                    continue
+                
+                if ref_chr == cmp_chr:
+                    global_breaks += 1
+                else:
+                    chimeric_breaks += 1
+
+            contig_view.loc[idx, 'global_breaks'] += global_breaks
+            contig_view.loc[idx, 'chimeric_breaks'] += chimeric_breaks
 
     # check that all breaks are accounted for
     break_counts = contig_view[
@@ -554,6 +567,11 @@ def extract_compatible_agp_order(fasta_subset, agp_subset):
 
 
 def extract_incompatible_agp_order(fasta_subset, agp_subset):
+    """
+    This function exists for the Flye assemblies, which may contain
+    stretches of N sequence introduced by Flye, and not by Bionano
+    https://github.com/fenderglass/Flye/issues/81
+    """
 
     fasta_rows = []
     names = []
