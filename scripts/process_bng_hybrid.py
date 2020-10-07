@@ -4,6 +4,7 @@ import os
 import io
 import re
 import argparse
+import itertools
 import collections as col
 import operator as op
 import pickle as pck
@@ -376,7 +377,8 @@ def alignments_per_scaffold(contig_to_scaffold, aln_view, contig_view):
     for contig, scaffolds in contig_to_scaffold.items():
         for s in scaffolds:
             contig_align = aln_view.loc[aln_view['contig'] == contig, :].groupby(['chrom', 'mapq'])['length'].sum()
-
+            if contig_align.empty:
+                alignments_per_scaffold[s][('unaln', 0)] = 0
             for idx, sum_len in contig_align.iteritems():
                 alignments_per_scaffold[s][idx] += sum_len
 
@@ -454,16 +456,34 @@ def classify_contig_breaks(contig_view, contig_to_scaffold, scaffold_to_chrom):
                 raise
             global_breaks = 0
             chimeric_breaks = 0
-            ref_scf, ref_chr = scaffold_chroms[0]
-            for (cmp_scf, cmp_chr) in scaffold_chroms[1:]:
-                if ref_scf == cmp_scf:
+            local_breaks = contig_view.loc[idx, 'local_breaks']
+            remaining_breaks = row['contig_breaks'] - row['support_breaks'] - local_breaks
+            scored = set()
+            for a, b in itertools.combinations(scaffold_chroms, 2):
+                if remaining_breaks == 0:
+                    # this condition is needed for cases where a single
+                    # contig is scattered across several chromosomes,
+                    # and we only want to count this as one chimeric break
+                    break
+                if (a, b) in scored or (b, a) in scored:
+                    continue
+                (a_scf, a_chr), (b_scf, b_chr) = a, b
+                if a_scf == b_scf:
+                    scored.add((a, b))
+                    scored.add((b, a))
                     # local breaks covered above
                     continue
                 
-                if ref_chr == cmp_chr:
+                if a_chr == b_chr:
+                    scored.add((a, b))
+                    scored.add((b, a))
                     global_breaks += 1
+                    remaining_breaks -= 1
                 else:
+                    scored.add((a, b))
+                    scored.add((b, a))
                     chimeric_breaks += 1
+                    remaining_breaks -= 1
 
             contig_view.loc[idx, 'global_breaks'] += global_breaks
             contig_view.loc[idx, 'chimeric_breaks'] += chimeric_breaks
