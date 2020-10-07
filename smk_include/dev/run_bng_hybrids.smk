@@ -56,7 +56,7 @@ rule summarize_hybrid_statistics:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
     params:
         exec = lambda wildcards: find_script_path('process_bng_hybrid.py'),
-        out_prefix = lambda wildcards, output: output.contig_stats.rsplit('.', 3)[0] 
+        out_prefix = lambda wildcards, output: output.contig_stats.rsplit('.', 3)[0] + '.hybrid'
     shell:
         '{params.exec} --agp-file {input.agp} --fasta-file {input.fasta} '
             '--bed-file {input.ctg_ref_aln} --output {params.out_prefix} &> {log}'
