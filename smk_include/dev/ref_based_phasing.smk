@@ -124,7 +124,7 @@ rule master_reference_phasing:
 rule generate_references_and_input:
     output:
         protected('references/{reference}.fasta'.format(**REF_CONFIG)),
-        protected('references/{variant_calls}.vcf'.format(**REF_CONFIG)),
+        protected('references/{variant_calls}.vcf.gz'.format(**REF_CONFIG)),
         protected('input/{hifi_reads}/{hifi_reads}.fastq.gz'.format(**REF_CONFIG)),
         protected(
             expand(
@@ -438,6 +438,27 @@ rule run_breakpointr:
         '{params.script_exec} {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'
 
 
+rule unphase_reference_vcf:
+    input:
+        vcf = ancient('references/{variant_calls}.vcf.gz'),
+    output:
+        vcf = 'references/{variant_calls}.unphased.vcf'
+    log:
+        'log/references/{variant_calls}.unphased.log'
+    benchmark:
+        'run/references/{variant_calls}.unphased.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        variant_calls = REF_CONFIG['variant_calls']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        'whatshap --debug unphase {input.vcf} > {output.vcf} 2> {log}'
+
+
 rule write_strandphaser_config_file:
     """
     As long as aggregate-style input functions downstream of
@@ -493,7 +514,7 @@ rule run_strandphaser:
         cfg = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/strandphaser.config',
         fofn = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/strandphaser.input',
         wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/{reference}.WCregions.txt',
-        variant_calls = ancient('references/{variant_calls}.vcf')
+        variant_calls = 'references/{variant_calls}.unphased.vcf'
     output:
         browser = directory('output/integrative_phasing/processing/strandphaser/' + PATH_REFERENCE_PHASING + '/{variant_calls}/browserFiles'),
         data = directory('output/integrative_phasing/processing/strandphaser/' + PATH_REFERENCE_PHASING + '/{variant_calls}/data'),
@@ -584,8 +605,8 @@ rule run_integrative_phasing:
     as the producer for the individual VCF splits. So, merge, and split again...
     """
     input:
-        vcf = ancient('references/{variant_calls}.vcf.bgz'),
-        tbi = ancient('references/{variant_calls}.vcf.bgz.tbi'),
+        vcf = 'references/{variant_calls}.unphased.vcf.bgz',
+        tbi = 'references/{variant_calls}.unphased.vcf.bgz.tbi',
         bam = 'output/alignments/reads_to_reference/{hifi_reads}_map-to_{reference}.psort.sam.bam',
         bai = 'output/alignments/reads_to_reference/{hifi_reads}_map-to_{reference}.psort.sam.bam.bai',
         fasta = ancient('references/{reference}.fasta'),
@@ -608,8 +629,8 @@ rule run_integrative_phasing:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
-        'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} '
-            ' {input.vcf} {input.bam} {input.spr_phased} 2> {log} '
+        'whatshap --debug phase --chromosome {wildcards.sequence} --ignore-read-groups '
+            '--reference {input.fasta} {input.vcf} {input.bam} {input.spr_phased} 2> {log} '
             ' | egrep "^(#|{wildcards.sequence}\s)" > {output}'
 
 
