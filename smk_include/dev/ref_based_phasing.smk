@@ -589,6 +589,7 @@ rule run_integrative_phasing:
         bam = 'output/alignments/reads_to_reference/{hifi_reads}_map-to_{reference}.psort.sam.bam',
         bai = 'output/alignments/reads_to_reference/{hifi_reads}_map-to_{reference}.psort.sam.bam.bai',
         fasta = ancient('references/{reference}.fasta'),
+        fai = 'references/{reference}.fasta.fai',
         spr_phased = 'output/integrative_phasing/' + PATH_REFERENCE_PHASING + '/{variant_calls}.spr-phased.vcf'
     output:
         vcf = 'output/integrative_phasing/processing/whatshap/' + PATH_REFERENCE_PHASING + '/{variant_calls}.{sequence}.phased.vcf'
