@@ -825,6 +825,18 @@ def dump_fasta_sequences(fasta_layout, fasta_seqs, fasta_out):
                     header = '@'.join([scaffold, c, str(row['order']), orient, contig_name, coord])
                     contig_seq = scaffold_seq[row['start']:row['end']]
                     write_fasta(header, contig_seq, dump)
+    
+    # this is just to comply with Snakemake's requirement;
+    # ensure that all possible output files do exist
+    possible_outputs = ['chr' + str(i) for i in range(1, 23)] + ['chrXY', 'chrUn']
+    for c in possible_outputs:
+        chrom_contig_out = fasta_out + '.contigs.{}.fasta'.format(c)
+        if not os.path.isfile(chrom_contig_out):
+            with open(chrom_contig_out, 'w') as dump:
+                header = 'empty'
+                sequence = 'ACGT' * 120
+                write_fasta(header, sequence, dump)
+
     return
 
 
