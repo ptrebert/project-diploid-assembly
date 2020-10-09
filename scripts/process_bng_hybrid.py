@@ -821,7 +821,8 @@ def dump_fasta_sequences(fasta_layout, fasta_seqs, fasta_out):
                 for idx, row in fasta_layout.loc[contig_seqs & scaffold_contigs, :].iterrows():
                     coord = 'ctg:{}-{}'.format(row['ctg_seq_start'], row['ctg_seq_end'])
                     orient = 'frw' if int(row['orientation']) == 1 else 'rev'
-                    header = '@'.join([scaffold, c, str(row['order']), orient, coord])
+                    contig_name = row['name']
+                    header = '@'.join([scaffold, c, str(row['order']), orient, contig_name, coord])
                     contig_seq = scaffold_seq[row['start']:row['end']]
                     write_fasta(header, contig_seq, dump)
     return
