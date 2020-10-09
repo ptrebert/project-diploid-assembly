@@ -102,8 +102,8 @@ rule summarize_hybrid_statistics:
     conda:
         '../../environment/conda/conda_evaltools.yml'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 12288 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
     params:
         exec = lambda wildcards: find_script_path('process_bng_hybrid.py'),
         out_prefix = lambda wildcards, output: output.contig_stats.rsplit('.', 3)[0] + '.hybrid'
@@ -153,7 +153,6 @@ rule split_reference_assembly:
         female = ['chrX']
         male = ['chrY']
         primary_chroms = autosomes + female + male
-        print(primary_chroms)
 
         current_chrom = ''
         current_seq = ''
@@ -181,8 +180,6 @@ rule split_reference_assembly:
         
         if buffer:
             seq_buffer[current_chrom] = current_chrom
-
-        print(sorted(seq_buffer.keys()))
 
         for c in autosomes + female:
             outfile = input[0].replace('.fasta', '.{}.fasta')
