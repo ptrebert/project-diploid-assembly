@@ -629,7 +629,7 @@ rule run_integrative_phasing:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
-        'whatshap --debug phase --chromosome {wildcards.sequence} --ignore-read-groups '
+        'whatshap --debug phase --chromosome {wildcards.sequence} --ignore-read-groups --indels '
             '--reference {input.fasta} {input.vcf} {input.bam} {input.spr_phased} 2> {log} '
             ' | egrep "^(#|{wildcards.sequence}\s)" > {output}'
 
