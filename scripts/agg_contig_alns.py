@@ -149,7 +149,7 @@ def select_matching_keys(aln_store, select_pop, select_tech, include_samples, ex
 
     # limit select_samples to those that match also
     # the other criteria (tech, pop)
-    aln_samples = set([ak.strip('/').split('/')[1] for ak in aln_keys])
+    aln_samples = set([k.strip('/').split('/')[1] for k in keys])
     select_samples = select_samples.intersection(aln_samples)
     assert len(select_samples) > 0, 'Intersecting samples from aln. store keys with user selection failed'
 
