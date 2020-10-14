@@ -88,7 +88,8 @@ rule summarize_hybrid_statistics:
         agp = 'output/evaluation/scaffolded_assemblies/{assembly}.bng-hybrid.agp',
         fasta = 'output/evaluation/scaffolded_assemblies/{assembly}.bng-scaffolds.fasta',
         discard = 'output/evaluation/scaffolded_assemblies/{assembly}.bng-unsupported.fasta',
-        ctg_ref_aln = 'output/alignments/contigs_to_reference/evaluation/phased_assemblies/{assembly}_map-to_GRCh38_HGSVC2_noalt.bed'
+        ctg_ref_aln = 'output/alignments/contigs_to_reference/evaluation/phased_assemblies/{assembly}_map-to_GRCh38_HGSVC2_noalt.bed',
+        dummy_fasta = 'references/assemblies/GRCh38_HGSVC2_noalt.dummy.fasta',
     output:
         contig_stats = 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid.contig-stats.tsv',
         layout = 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid.scaffold-layout.tsv',
@@ -108,7 +109,7 @@ rule summarize_hybrid_statistics:
         exec = lambda wildcards: find_script_path('process_bng_hybrid.py'),
         out_prefix = lambda wildcards, output: output.contig_stats.rsplit('.', 3)[0] + '.hybrid'
     shell:
-        '{params.exec} --agp-file {input.agp} --fasta-file {input.fasta} '
+        '{params.exec} --agp-file {input.agp} --fasta-file {input.fasta} --dummy-fasta {input.dummy_fasta} '
             '--bed-file {input.ctg_ref_aln} --output {params.out_prefix} &> {log}'
 
 
@@ -143,7 +144,8 @@ rule split_reference_assembly:
         expand(
             'references/assemblies/{{reference}}.{seq_parts}.fasta',
             seq_parts=['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrXY', 'wg-male', 'wg-female']
-        )
+        ),
+        'references/assemblies/{reference}.dummy.fasta',
 
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 12288 * attempt,
@@ -201,6 +203,12 @@ rule split_reference_assembly:
         with open(female_genome, 'w') as dump:
             for c in autosomes + female:
                 write_fasta(c, seq_buffer[c], dump)
+        
+        # create one file containing a dummy sequence that will
+        # be used to ensure non-empty outputs to make Snakemake happy
+        dummy = input[0].replace('.fasta', '.dummy.fasta')
+        with open(dummy, 'w') as dump:
+            write_fasta('dummy', seq_buffer['chr1'][1000000:1500000], dump)
     ### END OF RUN BLOCK
 
 
