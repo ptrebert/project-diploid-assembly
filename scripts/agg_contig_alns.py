@@ -147,6 +147,12 @@ def select_matching_keys(aln_store, select_pop, select_tech, include_samples, ex
     keep_key = fnt.partial(keep_alignments, *(select_pop, select_tech, select_samples))
     keys = [k for k in aln_keys if keep_key(k)]
 
+    # limit select_samples to those that match also
+    # the other criteria (tech, pop)
+    aln_samples = set([ak.strip('/').split('/')[1] for ak in aln_keys])
+    select_samples = select_samples.intersect(aln_samples)
+    assert len(select_samples) > 0, 'Intersecting samples from aln. store keys with user selection failed'
+
     return tuple(sorted(keys)), select_samples
 
 
