@@ -5,6 +5,7 @@ import argparse
 import functools as fnt
 import multiprocessing as mp
 import random as rand
+import math
 
 import numpy as np
 import pandas as pd
@@ -12,7 +13,9 @@ import numpy.ma as ma
 
 
 def parse_command_line():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter
+    )
     parser.add_argument(
         '--alignments',
         '-a',
@@ -21,27 +24,44 @@ def parse_command_line():
     )
     parser.add_argument(
         '--high-mapq',
-        '-hm',
+        '-hmq',
         type=int,
         default=61,
         dest='mapq_high',
-        help='Alignment selection is " less / < " than high MAPQ. Default: 61'
+        help='Alignment selection is [less / <] than high MAPQ. Default: 61'
     )
     parser.add_argument(
         '--low-mapq',
-        '-lm',
+        '-lmq',
         type=int,
         default=0,
         dest='mapq_low',
-        help='Alignment selection is " greater or equal / >= " than low MAPQ. Default: 0'
+        help='Alignment selection is [greater or equal / >=] than low MAPQ. Default: 0'
     )
     parser.add_argument(
         '--quantifier',
         '-q',
-        choices=['all', 'any'],
+        choices=['all', 'any', 'lt', 'geq'],
         required=True,
         type=str,
-        dest='quantifier'
+        dest='quantifier',
+        help='Possible selection strategies for alignments between "--low-mapq" and "--high-mapq":\n'
+            '*all*: only mark regions where all selected assemblies have alignments.\n'
+            '*any*: only mark regions where any of the selected assemblies has an alignment.\n'
+            '*lt*: only mark regions where [less / <] than "--assembly-fraction" percent\n'
+            'of the selected assemblies have alignments.\n'
+            '*geq*: only mark regions where [greater or equal / >=] than "--assembly-fraction" percent\n'
+            'of the selected assemblies have alignments.'
+    )
+    parser.add_argument(
+        '--assembly-fraction',
+        '-af',
+        type=float,
+        default=1.0,
+        dest='assembly_fraction',
+        help='Specify percentage (0 ... 1) of assemblies to threshold for "--quantifier":\n'
+            '*lt*: select region if 0 < num_alignments < ceiling(assembly-fraction * num_assemblies)\n'
+            '*geq*: select region if num_alignments >= floor(assembly-fraction * num_assemblies)'
     )
     parser.add_argument(
         '--dump',
@@ -219,39 +239,85 @@ def build_boolean_mask(chrom, chrom_size, mapq_low, mapq_high, quantifier, aln_s
     return mask
 
 
+def build_quantitative_mask(chrom, chrom_size, mapq_low, mapq_high, quantifier, assembly_threshold, aln_store, aln_keys):
+
+    quant_mask = np.zeros(chrom_size, dtype=np.int8)
+    mask = np.zeros(chrom_size, dtype=np.bool)
+    
+    with pd.HDFStore(aln_store, 'r') as hdf:
+        for key in aln_keys:
+            mask &= False
+            alignments = hdf[key]
+            select_mapq_high = alignments['mapq'] < mapq_high
+            select_mapq_low = alignments['mapq'] >= mapq_low
+            select_chrom = alignments['chrom'] == chrom
+            alignments = alignments.loc[(select_chrom & select_mapq_low & select_mapq_high), :]
+            if alignments.empty:
+                continue
+
+            for idx, region in alignments.iterrows():
+                mask[region['start']:region['end']] = True
+            
+            quant_mask[mask] += 1
+    
+    mask &= False
+    if quantifier == 'lt':
+        mask = np.array(0 < quant_mask < assembly_threshold, dtype=np.bool)
+    elif quantifier == 'geq':
+        mask = np.array(quant_mask >= assembly_threshold, dtype=np.bool)
+    else:
+        raise ValueError('Unexpected quantifier: {}'.format(quantifier))
+    return mask
+
+
 def process_alignments(parameter_set):
 
-    chrom, chrom_size, mapq_low, mapq_high, quantifier, dump_type, aln_store, aln_keys = parameter_set
+    chrom, chrom_size, mapq_low, mapq_high, quantifier, assembly_threshold, dump_type, aln_store, aln_keys = parameter_set
 
-    bool_mask = build_boolean_mask(
-        chrom,
-        chrom_size,
-        mapq_low,
-        mapq_high,
-        quantifier,
-        aln_store,
-        aln_keys
-    )
-
-    if dump_type == 'alignments':
-        # the mask is build by iterating over / masking
-        # alignment regions, so need to _invert_
-        # the mask to mask out all unaligned
-        # (unselected) regions
-        genomic_coordinates = ma.masked_array(range(chrom_size), mask=~bool_mask)
-    elif dump_type == 'inverse':
-        # mask can be used as-is, all unaligned
-        # (unselected) regions will be dumped
-        genomic_coordinates = ma.masked_array(range(chrom_size), mask=bool_mask)
+    if quantifier in ['all', 'any']:
+        bool_mask = build_boolean_mask(
+            chrom,
+            chrom_size,
+            mapq_low,
+            mapq_high,
+            quantifier,
+            aln_store,
+            aln_keys
+        )
+        if dump_type == 'alignments':
+            # the mask is build by iterating over / masking
+            # alignment regions, so need to _invert_
+            # the mask to mask out all unaligned
+            # (unselected) regions
+            genomic_coordinates = ma.masked_array(range(chrom_size), mask=~bool_mask)
+        elif dump_type == 'inverse':
+            # mask can be used as-is, all unaligned
+            # (unselected) regions will be dumped
+            genomic_coordinates = ma.masked_array(range(chrom_size), mask=bool_mask)
+        else:
+            raise ValueError('Unexpected value for "dump_type": {}'.format(dump_type))
+    elif quantifier in ['lt', 'geq']:
+        quant_mask = build_quantitative_mask(
+            chrom,
+            chrom_size,
+            mapq_low,
+            mapq_high,
+            quantifier,
+            assembly_threshold,
+            aln_store,
+            aln_keys
+        )
+        # negating mask: see reason above
+        genomic_coordinates = ma.masked_array(range(chrom_size), mask=~quant_mask)
     else:
-        raise ValueError('Unexpected value for "dump_type": {}'.format(dump_type))
+        raise ValueError('Unsupported quantifier: {}'.format(quantifier))
 
     regions = [(s.start, s.stop) for s in  ma.clump_unmasked(genomic_coordinates)]
 
     return chrom, regions
 
 
-def build_generic_output_name(dump_regions, mapq_low, mapq_high, quantifier, select_pop, select_tech, select_samples):
+def build_generic_output_name(dump_regions, mapq_low, mapq_high, quantifier, select_pop, select_tech, select_samples, assembly_threshold):
 
     if dump_regions == 'alignments':
         mask = 'MSK:INV'
@@ -262,6 +328,9 @@ def build_generic_output_name(dump_regions, mapq_low, mapq_high, quantifier, sel
 
     mapq = 'LOQ:{}|HIQ:{}'.format(mapq_low, mapq_high)
     quant = 'QNT:{}'.format(quantifier.upper())
+
+    if quantifier in ['lt', 'geq']:
+        quant += ':{}'.format(assembly_threshold)
 
     samples = 'SMP:{}'.format(len(select_samples))
 
@@ -287,6 +356,15 @@ def main():
         args.select_chroms
     )
 
+    if args.quantifier in ['lt', 'geq']:
+        if args.quantifier == 'lt':
+            assembly_threshold = math.ceil(len(alignments_to_process) * args.assembly_fraction)
+        else:
+            assembly_threshold = math.floor(len(alignments_to_process) * args.assembly_fraction)
+        assert assembly_threshold < 255, 'Too many assemblies for thresholding'
+    else:
+        assembly_threshold = len(alignments_to_process)
+
     process_params = []
     for idx, row in chroms_to_process.iterrows():
         param_set = (
@@ -295,6 +373,7 @@ def main():
             args.mapq_low,
             args.mapq_high,
             args.quantifier,
+            assembly_threshold,
             args.dump,
             args.alignments,
             alignments_to_process
@@ -313,7 +392,8 @@ def main():
         args.quantifier,
         args.select_pop,
         args.select_tech,
-        select_samples
+        select_samples,
+        assembly_threshold
     )
     done = 0
     with mp.Pool(min(args.jobs, len(process_params))) as pool:
