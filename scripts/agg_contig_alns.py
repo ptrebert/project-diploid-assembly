@@ -262,9 +262,9 @@ def build_quantitative_mask(chrom, chrom_size, mapq_low, mapq_high, quantifier, 
     
     mask &= False
     if quantifier == 'lt':
-        mask = np.array(0 < quant_mask < assembly_threshold, dtype=np.bool)
+        mask[(0 < quant_mask < assembly_threshold)] = True
     elif quantifier == 'geq':
-        mask = np.array(quant_mask >= assembly_threshold, dtype=np.bool)
+        mask[(quant_mask >= assembly_threshold)] = True
     else:
         raise ValueError('Unexpected quantifier: {}'.format(quantifier))
     return mask
