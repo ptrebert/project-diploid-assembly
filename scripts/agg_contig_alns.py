@@ -262,7 +262,7 @@ def build_quantitative_mask(chrom, chrom_size, mapq_low, mapq_high, quantifier, 
     
     mask &= False
     if quantifier == 'lt':
-        mask[(0 < quant_mask < assembly_threshold)] = True
+        mask[np.logical_and(0 < quant_mask, quant_mask < assembly_threshold)] = True
     elif quantifier == 'geq':
         mask[(quant_mask >= assembly_threshold)] = True
     else:
