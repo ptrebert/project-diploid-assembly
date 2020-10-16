@@ -38,7 +38,7 @@ def check_exclude_phased_assembly(agp_file):
     excludes = excludes.strip('"').split()
     excludes = [e.strip().replace('.hybrid.stats.log', '') for e in excludes]
 
-    return any([e in agp_file for e in excludes])
+    return False  #any([e in agp_file for e in excludes])
 
 
 def bng_hybrids_determine_targets(wildcards):
