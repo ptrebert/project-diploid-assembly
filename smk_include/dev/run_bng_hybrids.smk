@@ -111,7 +111,7 @@ rule summarize_hybrid_statistics:
         out_prefix = lambda wildcards, output: output.contig_stats.rsplit('.', 3)[0] + '.hybrid'
     shell:
         '{params.exec} --agp-file {input.agp} --fasta-file {input.fasta} --dummy-fasta {input.dummy_fasta} '
-            '--bed-file {input.ctg_ref_aln} --output {params.out_prefix} &> {log}'
+            '--bed-file {input.ctg_ref_aln} --assembly-index {input.assm_index} --output {params.out_prefix} &> {log}'
 
 
 def write_fasta(entry, sequence, output_file):
