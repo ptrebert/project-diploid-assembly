@@ -44,6 +44,13 @@ def parse_args():
         help='Contig-to-reference alignments (unfiltered) of original contigs used as input to hybrid scaffolding.'
     )
     parser.add_argument(
+        '--assembly-index',
+        '-fai',
+        type=str,
+        dest='index',
+        help='FASTA index file of original assembly, used to verify scaffolded contig length.'
+    )
+    parser.add_argument(
         '--output',
         '-o',
         type=str,
@@ -210,6 +217,21 @@ def load_cached_fasta_data(scaffolds, sequences):
         seq_store = pck.load(dump)
 
     return df, seq_store
+
+
+def load_assembly_contig_sizes(file_path):
+
+    columns = ['contig_name', 'contig_size']
+
+    df = pd.read_csv(
+        file_path,
+        sep='\t',
+        header=None,
+        names=columns,
+        usecols=columns,
+        index_col=None
+    )
+    return df
 
 
 def load_fasta_scaffolds(fasta_path, output_prefix, no_caching):
@@ -895,6 +917,24 @@ def dump_statistics(fasta_layout, contig_view, output):
     return
 
 
+def check_contig_sizes(contig_view, index_view):
+
+    if contig_view.shape[0] != index_view.shape[0]:
+        # cannot be compatible
+        index_contigs = set(index_view['contig_name'].values)
+        scaffold_contigs = set(contig_view['contig_name'].values)
+        problem_contigs = index_contigs.symmetric_difference(scaffold_contigs)
+        raise ValueError('Unshared contigs: {}'.format(sorted(problem_contigs)))
+
+    tmp = contig_view.merge(index_view, on='contig_name')
+    tmp['diff'] = tmp['contig_size'] - tmp['BNG_unsupported'] - tmp['BNG_supported']
+
+    tmp = tmp.loc[tmp['diff'] != 0, :].copy()
+    if not tmp.empty:
+        raise ValueError('Contig sizes between scaffolds and original assembly differ:\n{}'.format(tmp))
+    return
+
+
 def main():
     args = parse_args()
 
@@ -909,6 +949,12 @@ def main():
 
     # compute BNG support and number of breaks (uncategorized) per contig
     contig_view, contig_to_scaffold, scaffold_to_contig = compute_bng_contig_support(agp_layout)
+
+    # load contig sizes of original assembly for sanity checking
+    # prevent sequence mix-ups
+    fasta_idx = load_assembly_contig_sizes(args.index)
+
+    _ = check_contig_sizes(contig_view, fasta_idx)
 
     scaffold_to_chrom = alignments_per_scaffold(
         contig_to_scaffold,

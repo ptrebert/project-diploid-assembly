@@ -90,6 +90,7 @@ rule summarize_hybrid_statistics:
         discard = 'output/evaluation/scaffolded_assemblies/{assembly}.bng-unsupported.fasta',
         ctg_ref_aln = 'output/alignments/contigs_to_reference/evaluation/phased_assemblies/{assembly}_map-to_GRCh38_HGSVC2_noalt.bed',
         dummy_fasta = 'references/assemblies/GRCh38_HGSVC2_noalt.dummy.fasta',
+        assm_index = 'output/evaluation/phased_assemblies/{assembly}.fasta.fai'
     output:
         contig_stats = 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid.contig-stats.tsv',
         layout = 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid.scaffold-layout.tsv',
@@ -99,7 +100,7 @@ rule summarize_hybrid_statistics:
             chrom=HYBRID_CONFIG['chroms']
         )
     log:
-        'log/output/evaluation/bng_hybrids/{assembly}.hybrid.stats.log',
+        'log/output/evaluation/bng_hybrids/summarize/{assembly}.hybrid.stats.log',
     conda:
         '../../environment/conda/conda_evaltools.yml'
     resources:
