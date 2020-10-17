@@ -37,8 +37,8 @@ sample_targets_NA24143:
         - h2-un
   - target:
       name: Lansdorp
-      nhr_assembler: pereg
-      hap_assembler: pereg
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
       var_caller: deepvar
 
 
