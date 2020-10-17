@@ -1,7 +1,9 @@
 
 select_targets:
   nhr_assembler:
-    - pereg
+    - hifiasm
+  hap_assembler:
+    - hifiasm
   var_caller:
     - deepvar
   name:
