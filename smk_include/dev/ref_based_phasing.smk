@@ -614,7 +614,8 @@ rule run_integrative_phasing:
         fai = 'references/{reference}.fasta.fai',
         spr_phased = 'output/integrative_phasing/' + PATH_REFERENCE_PHASING + '/{variant_calls}.spr-phased.vcf'
     output:
-        vcf = 'output/integrative_phasing/processing/whatshap/' + PATH_REFERENCE_PHASING + '/{variant_calls}.{sequence}.phased.vcf'
+        vcf = 'output/integrative_phasing/processing/whatshap/' + PATH_REFERENCE_PHASING + '/{variant_calls}.{sequence}.phased.vcf',
+        reads = 'output/integrative_phasing/processing/whatshap/' + PATH_REFERENCE_PHASING + '/{variant_calls}.{sequence}.reads.txt'
     log:
         'log/output/integrative_phasing/processing/whatshap/' + PATH_REFERENCE_PHASING + '/{variant_calls}.{sequence}.phased.log'
     benchmark:
@@ -630,9 +631,10 @@ rule run_integrative_phasing:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
-        'whatshap --debug phase --chromosome {wildcards.sequence} --ignore-read-groups --indels '
+        'whatshap --debug phase --chromosome {wildcards.sequence} --ignore-read-groups '
+            '--indels --output-read-list {output.reads} '
             '--reference {input.fasta} {input.vcf} {input.bam} {input.spr_phased} 2> {log} '
-            ' | egrep "^(#|{wildcards.sequence}\s)" > {output}'
+            ' | egrep "^(#|{wildcards.sequence}\s)" > {output.vcf}'
 
 
 rule write_phased_vcf_splits_fofn:
