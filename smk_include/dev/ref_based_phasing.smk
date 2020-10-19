@@ -118,7 +118,8 @@ rule master_reference_phasing:
     input:
         'output/integrative_phasing/{reference}/{sseq_reads}/{hifi_reads}/{variant_calls}.wh-phased.vcf.bgz'.format(**REF_CONFIG),
         'output/integrative_phasing/{reference}/{sseq_reads}/{hifi_reads}/{variant_calls}.wh-phased.vcf.bgz.tbi'.format(**REF_CONFIG),
-        'output/statistics/phasing/{reference}/{sseq_reads}/{hifi_reads}/{variant_calls}.wh-phased.vcf.stats'.format(**REF_CONFIG)
+        'output/statistics/phasing/{reference}/{sseq_reads}/{hifi_reads}/{variant_calls}.wh-phased.vcf.stats'.format(**REF_CONFIG),
+        'output/statistics/phasing/{reference}/{sseq_reads}/{hifi_reads}/{variant_calls}.spr-phased.vcf.stats'.format(**REF_CONFIG)
 
 
 rule generate_references_and_input:
@@ -668,6 +669,28 @@ rule strandseq_dga_merge_sequence_phased_vcf_files:
              mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     shell:
         'bcftools concat -f {input.fofn} --output {output} --output-type v &> {log}'
+
+
+rule compute_strandphaser_phased_vcf_stats:
+    input:
+        vcf = 'output/integrative_phasing/' + PATH_REFERENCE_PHASING + '/{variant_calls}.spr-phased.vcf.bgz',
+        idx = 'output/integrative_phasing/' + PATH_REFERENCE_PHASING + '/{variant_calls}.spr-phased.vcf.bgz.tbi'
+    output:
+        bcf_stats = 'output/statistics/phasing/' + PATH_REFERENCE_PHASING + '/{variant_calls}.spr-phased.vcf.stats',
+        wh_stats_tsv = 'output/statistics/phasing/' + PATH_REFERENCE_PHASING + '/{variant_calls}.spr-phased.stats.tsv',
+        wh_stats_txt = 'output/statistics/phasing/' + PATH_REFERENCE_PHASING + '/{variant_calls}.spr-phased.stats.txt'
+    log:
+        'log/output/statistics/phasing/' + PATH_REFERENCE_PHASING + '/{variant_calls}.spr-phased.stats.log'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    priority: 200
+    resources:
+             mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+             mem_total_mb = lambda wildcards, attempt: 4096 * attempt
+    shell:
+        'bcftools stats {input.vcf} > {output.bcf_stats} 2> {log}'
+            ' && '
+            'whatshap stats --tsv {output.wh_stats_tsv} {input.vcf} > {output.wh_stats_txt} 2>> {log}'
 
 
 rule compute_whatshap_phased_vcf_stats:
