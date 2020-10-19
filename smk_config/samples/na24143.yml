@@ -1,0 +1,64 @@
+
+sample_description_NA24143:
+  individual: NA24143
+  sex: female
+  super_population: EUR
+  population: AKJ
+  family: 3140
+  member: parent
+  comment: "Sample alias: HG004"
+  data_sources:
+    - long_reads:
+        readset: NA24143_hpg_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        source_type: amazon
+        comment: "https://github.com/human-pangenomics/HG002_Data_Freeze_v1.0#motherhg004na24143"
+    - strandseq:
+        readset: &sseq_reads NA24143_bccrc_ilany-75pe_sseq
+        source_type: local
+        library_fractions: one
+        comment: "Lansdorp collaboration data"
+
+
+sample_targets_NA24143:
+  - aliases:
+      1: &ccs_reads NA24143_hpg_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sseq_reads: *sseq_reads
+      pol_reads: *ccs_reads
+      pol_pass: racon-p2
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      name: Lansdorp
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
+      var_caller: deepvar
+
+
+sample_data_sources_NA24143:
+  input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part1:
+    local_path: input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part1.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG004/PacBio_HiFi/HudsonAlpha_15kb/PBmixSequel733_2_B01_PBSU_30hours_15kbV2PD_70pM_HumanHG004_CCS/m64017_191124_055423.fastq.gz
+  input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part2:
+    local_path: input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part2.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG004/PacBio_HiFi/HudsonAlpha_15kb/PBmixSequel735_1_A01_PBSU_30hours_15kbV2PD_70pM_HumanHG004_CCS/m64017_191126_155613.fastq.gz
+  input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part3:
+    local_path: input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part3.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG004/PacBio_HiFi/HudsonAlpha_15kb/PBmixSequel735_2_B01_PBSU_30hours_15kbV2PD_70pM_HumanHG004_CCS/m64017_191127_220906.fastq.gz
+  input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part4:
+    local_path: input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part4.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG004/PacBio_HiFi/HudsonAlpha_15kb/PBmixSequel735_3_C01_PBSU_30hours_15kbV2PD_70pM_HumanHG004_CCS/m64017_191129_043425.fastq.gz
+  input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part5:
+    local_path: input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part5.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG004/PacBio_HiFi/HudsonAlpha_21kb/PBmixSequel724_1_A01_PBTA_30hours_21kbV2PD_70pM_HumanHG004_CCS/m64017_191115_211223.fastq.gz
+  input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part6:
+    local_path: input/fastq/NA24143_hpg_pbsq2-ccs/NA24143_hpg_pbsq2-ccs.part6.fastq.gz
+    remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/HG004/PacBio_HiFi/HudsonAlpha_21kb/PBmixSequel725_1_A01_PBTA_30hours_21kbV2PD_70pM_HumanHG004_CCS/m64017_191118_150849.fastq.gz
+
