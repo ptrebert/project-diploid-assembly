@@ -439,9 +439,25 @@ rule run_breakpointr:
         '{params.script_exec} {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'
 
 
+rule reheader_benchmark_vcf:
+    input:
+        vcf = ancient('references/{variant_calls}.vcf.gz')
+    output:
+        rename = 'references/{variant_calls}.sample-name',
+        vcf = 'references/{variant_calls}.rhd.vcf.gz'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    params:
+        individual = lambda wildcards: wildcards.variant_calls.split('_')[1]
+    shell:
+        'echo "INTEGRATION {params.individual}" > {output.rename} && echo "" >> {output.rename} '
+        ' && '
+        'bcftools reheader --samples {output.rename} {input.vcf} > {output.vcf}'
+
+
 rule unphase_reference_vcf:
     input:
-        vcf = ancient('references/{variant_calls}.vcf.gz'),
+        vcf = 'references/{variant_calls}.rhd.vcf.gz'
     output:
         vcf = 'references/{variant_calls}.unphased.vcf'
     log:
@@ -631,7 +647,7 @@ rule run_integrative_phasing:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
-        'whatshap --debug phase --chromosome {wildcards.sequence} --ignore-read-groups '
+        'whatshap --debug phase --chromosome {wildcards.sequence} '
             '--indels --output-read-list {output.reads} '
             '--reference {input.fasta} {input.vcf} {input.bam} {input.spr_phased} 2> {log} '
             ' | egrep "^(#|{wildcards.sequence}\s)" > {output.vcf}'
