@@ -36,7 +36,7 @@ def bng_hybrids_determine_targets(wildcards):
                 continue
             tmp = dict(fixed_wildcards)
             if trg_type == 'unsupport_align':
-                sample = hybrid_trg.split('_')[0]
+                sample = hybrid_file.split('_')[0]
                 # determine sample sex
                 sample_cfg = config['sample_description_{}'.format(sample)]
                 sample_sex = sample_cfg['sex']
