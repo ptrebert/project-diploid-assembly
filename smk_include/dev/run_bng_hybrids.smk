@@ -30,8 +30,6 @@ def bng_hybrids_determine_targets(wildcards):
     compute_results = set()
 
     for path, trg_type in search_paths:
-        if trg_type == 'unsupport_align':
-            continue
         if not os.path.isdir(path):
             continue
         hybrid_trg = hybrid_targets[trg_type]
