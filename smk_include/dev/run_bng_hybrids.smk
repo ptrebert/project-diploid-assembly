@@ -322,6 +322,7 @@ rule split_unsupported_contigs:
                             buffer = split_contig_to_reads(current_ctg, current_seq, buffer)
                     current_ctg = ctg_name
                     current_seq = ''
+                    continue
                 current_seq += line.strip()
         if not len(current_seq) < 500:
             buffer = split_contig_to_reads(current_ctg, current_seq, buffer)
