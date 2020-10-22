@@ -348,8 +348,8 @@ rule minimap_unscaffolded_to_reference_alignment:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((8192 + 8192 * attempt) / config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 8192 + 8192 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + 12288 * attempt) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 12288 + 12288 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt,
         mem_sort_mb = 4096
     params:
