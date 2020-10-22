@@ -12,7 +12,7 @@ def bng_hybrids_determine_targets(wildcards):
     hybrid_targets = {
         'contig_stats': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid.contig-stats.tsv',
         'scaffold_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.bed',
-        'unsupport_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.{genome}.bed'
+        'unsupport_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.bed'
     }
 
     search_paths = {
@@ -36,13 +36,7 @@ def bng_hybrids_determine_targets(wildcards):
                 continue
             tmp = dict(fixed_wildcards)
             if trg_type == 'unsupport_align':
-                sample = hybrid_file.split('_')[0]
-                # determine sample sex
-                sample_cfg = config['sample_description_{}'.format(sample)]
-                sample_sex = sample_cfg['sex']
                 tmp['assembly'] = hybrid_file.rsplit('.', 2)[0]
-                genome = 'wg-male' if sample_sex == 'male' else 'wg-female'
-                tmp['genome'] = genome
                 fmt_target = hybrid_trg.format(**tmp)
                 compute_results.add(fmt_target)
             else:
@@ -322,9 +316,9 @@ rule dump_unsupported_to_reference_alignment_to_bed:
     input:
         'output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.psort.sam.bam'
     output:
-        'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.{chrom}.bed'
+        'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.bed'
     log:
-        'log/output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.{chrom}.dump-bed.log'
+        'log/output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.dump-bed.log'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
