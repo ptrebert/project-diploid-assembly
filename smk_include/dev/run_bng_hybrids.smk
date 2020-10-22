@@ -281,7 +281,7 @@ rule dump_scaffold_to_reference_alignment_to_bed:
 
 def split_contig_to_reads(ctg_name, ctg_seq, buffer):
 
-    if len(current_seq) < 1001:
+    if len(ctg_seq) < 1001:
         # in case there are a lot of short contigs,
         # avoid creating too many (overly) short reads
         midpoint = len(ctg_seq) // 2
