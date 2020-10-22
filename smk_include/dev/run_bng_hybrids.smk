@@ -7,50 +7,18 @@ HYBRID_CONFIG = {
 }
 
 
-def check_exclude_phased_assembly(agp_file):
-    """
-    temp function: open issues with some hybrids,
-    exclude problematic samples for now
-    """
-    excludes = """
-        HG00096_hgsvc_pbsq2-clr_1000-flye.h1-un.arrow-p1.hybrid.stats.log
-        HG00171_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.hybrid.stats.log
-        HG00171_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.hybrid.stats.log
-        HG00514_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.hybrid.stats.log
-        HG00731_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.hybrid.stats.log
-        HG00731_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.hybrid.stats.log
-        HG00731_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.hybrid.stats.log
-        HG00731_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.hybrid.stats.log
-        HG02587_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.hybrid.stats.log
-        HG03732_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.hybrid.stats.log
-        NA12878_giab_pbsq2-ccs_1000-pereg.h1-un.racon-p2.hybrid.stats.log
-        NA12878_giab_pbsq2-ccs_1000-pereg.h2-un.racon-p2.hybrid.stats.log
-        NA18534_hgsvc_pbsq2-clr_1000-flye.h1-un.arrow-p1.hybrid.stats.log
-        NA18939_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.hybrid.stats.log
-        NA19238_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.hybrid.stats.log
-        NA19239_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.hybrid.stats.log
-        NA19240_hgsvc_pbsq2-ccs_1000-pereg.h1-un.racon-p2.hybrid.stats.log
-        NA19240_hgsvc_pbsq2-clr_1000-flye.h1-un.arrow-p1.hybrid.stats.log
-        NA19650_hgsvc_pbsq2-clr_1000-flye.h1-un.arrow-p1.hybrid.stats.log
-        NA20509_hgsvc_pbsq2-clr_1000-flye.h2-un.arrow-p1.hybrid.stats.log
-        NA20847_hgsvc_pbsq2-clr_1000-flye.h1-un.arrow-p1.hybrid.stats.log
-    """
-    excludes = excludes.strip('"').split()
-    excludes = [e.strip().replace('.hybrid.stats.log', '') for e in excludes]
-
-    return False  #any([e in agp_file for e in excludes])
-
-
 def bng_hybrids_determine_targets(wildcards):
 
     hybrid_targets = {
         'contig_stats': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid.contig-stats.tsv',
-        'scaffold_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.bed'
+        'scaffold_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.bed',
+        'unsupport_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.{genome}.bed'
     }
 
     search_paths = {
         (os.path.join(os.getcwd(), 'output/evaluation/scaffolded_assemblies'), 'contig_stats'),
         (os.path.join(os.getcwd(), 'output/evaluation/scaffolded_assemblies'), 'scaffold_align'),
+        (os.path.join(os.getcwd(), 'output/evaluation/scaffolded_assemblies'), 'unsupport_align')
     }
 
     fixed_wildcards = {
@@ -66,14 +34,23 @@ def bng_hybrids_determine_targets(wildcards):
         for hybrid_file in os.listdir(path):
             if not hybrid_file.endswith('.bng-hybrid.agp'):
                 continue
-            if check_exclude_phased_assembly(hybrid_file):
-                continue
             tmp = dict(fixed_wildcards)
-            for c in HYBRID_CONFIG['chroms']:
+            if trg_type == 'unsupport_align':
+                sample = hybrid_trg.split('_')[0]
+                # determine sample sex
+                sample_cfg = config['sample_description_{}'.format(sample)]
+                sample_sex = sample_cfg['sex']
                 tmp['assembly'] = hybrid_file.rsplit('.', 2)[0]
-                tmp['chrom'] = c
+                genome = 'wg-male' if sample_sex == 'male' else 'wg-female'
+                tmp['genome'] = genome
                 fmt_target = hybrid_trg.format(**tmp)
                 compute_results.add(fmt_target)
+            else:
+                for c in HYBRID_CONFIG['chroms']:
+                    tmp['assembly'] = hybrid_file.rsplit('.', 2)[0]
+                    tmp['chrom'] = c
+                    fmt_target = hybrid_trg.format(**tmp)
+                    compute_results.add(fmt_target)
 
     return sorted(compute_results)
 
@@ -217,11 +194,13 @@ def select_human_reference(wildcards):
 
     ref_genome = ''
     use_chrom = None
-    if wildcards.chrom.lower() in ['chrun', 'chrxy']:
-        # determine sample sex
-        sample = wildcards.assembly.split('_')[0]
-        sample_cfg = config['sample_description_{}'.format(sample)]
-        sample_sex = sample_cfg['sex']
+
+    # determine sample sex
+    sample = wildcards.assembly.split('_')[0]
+    sample_cfg = config['sample_description_{}'.format(sample)]
+    sample_sex = sample_cfg['sex']
+
+    if hasattr(wildcards, 'chrom') and wildcards.chrom.lower() in ['chrun', 'chrxy']:
         if sample_sex == 'male':
             if wildcards.chrom.lower() == 'chrxy':
                 use_chrom = 'chrXY'
@@ -232,6 +211,13 @@ def select_human_reference(wildcards):
                 use_chrom = 'chrX'
             else:
                 use_chrom = 'wg-female'
+        else:
+            raise ValueError('Unrecognized sex: {} / {}'.format(sample_sex, sample))
+    elif not hasattr(wildcards, 'chrom'):
+        if sample_sex == 'male':
+            use_chrom = 'wg-male'
+        elif sample_sex == 'female':
+            use_chrom = 'wg-female'
         else:
             raise ValueError('Unrecognized sex: {} / {}'.format(sample_sex, sample))
     else:
@@ -279,15 +265,66 @@ rule minimap_scaffold_to_reference_alignment:
 
 
 rule dump_scaffold_to_reference_alignment_to_bed:
-    """
-    Needed to create SaaRclust diagnostic plots - see create_plots module
-    """
     input:
         'output/alignments/scaffolds_to_reference/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.psort.sam.bam'
     output:
         'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.bed'
     log:
         'log/output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.dump-bed.log'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt,
+        mem_total_mb = 2048,
+        mem_per_cpu_mb = 2048
+    shell:
+        'bedtools bamtobed -i {input} > {output} 2> {log}'
+
+
+rule minimap_unscaffolded_to_reference_alignment:
+    input:
+        contigs = 'output/evaluation/scaffolded_assemblies/{assembly}.bng-unsupported.fasta',
+        reference = select_human_reference
+    output:
+        'output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.psort.sam.bam'
+    log:
+        minimap = 'log/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.minimap.log',
+        st_sort = 'log/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.st-sort.log',
+        st_view = 'log/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.st-view.log',
+    benchmark:
+        '.'.join(['run/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((8192 + 8192 * attempt) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 8192 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt,
+        mem_sort_mb = 4096
+    params:
+        individual = lambda wildcards: wildcards.assembly.split('_')[0],
+        readgroup_id = lambda wildcards: wildcards.assembly.replace('.', '_'),
+        discard_flag = config['minimap_contigref_aln_discard'],
+        tempdir = lambda wildcards: os.path.join(
+                                        'temp', 'minimap', wildcards.reference,
+                                        wildcards.assembly)
+    shell:
+        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
+        'minimap2 -t {threads} '
+            '--secondary=no --eqx -Y -ax asm20 -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
+            '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
+            '{input.reference} {input.contigs} 2> {log.minimap} | '
+            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
+            'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
+
+
+rule dump_unsupported_to_reference_alignment_to_bed:
+    input:
+        'output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.psort.sam.bam'
+    output:
+        'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.{chrom}.bed'
+    log:
+        'log/output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.{chrom}.dump-bed.log'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
