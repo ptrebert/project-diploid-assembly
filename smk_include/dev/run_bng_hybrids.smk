@@ -12,7 +12,7 @@ def bng_hybrids_determine_targets(wildcards):
     hybrid_targets = {
         'contig_stats': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid.contig-stats.tsv',
         'scaffold_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.bed',
-        'unsupport_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.bed',
+        'unsupport_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.win500k.tsv',
         'merged_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.merged.bed'
     }
 
@@ -394,3 +394,15 @@ rule merge_scaffold_alignments:
         'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.merged.bed'
     shell:
         'cat {input} > {output}'
+
+
+rule bin_unsupported_alignments:
+    input:
+        aln = 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.bed',
+        windows = 'references/assemblies/GRCh38_HGSVC2_noalt.wg-male.win500k.bed'
+    output:
+        'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.win500k.tsv',
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bedtools coverage -a {input.windows} -b {input.aln} > {output}'
