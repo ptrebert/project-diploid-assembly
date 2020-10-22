@@ -281,9 +281,61 @@ rule dump_scaffold_to_reference_alignment_to_bed:
         'bedtools bamtobed -i {input} > {output} 2> {log}'
 
 
+def split_contig_to_reads(ctg_name, ctg_seq, buffer):
+
+    if len(current_seq) < 1001:
+        # in case there are a lot of short contigs,
+        # avoid creating too many (overly) short reads
+        midpoint = len(ctg_seq) // 2
+        seq_a, seq_b = ctg_seq[:midpoint], ctg_seq[midpoint:]
+        buffer.write('>{}_read0\n'.format(ctg_name))
+        buffer.write('{}\n\n'.format(seq_a))
+        buffer.write('>{}_read1\n'.format(ctg_name))
+        buffer.write('{}\n\n'.format(seq_b))
+    else:
+        for i in range(len(ctg_seq) // 500):
+            buffer.write('>{}_read{}\n'.format(ctg_name, i))
+            buffer.write('{}\n\n'.format(ctg_seq[i*500:i*500+500]))
+    return buffer
+
+
+rule split_unsupported_contigs:
+    input:
+        'output/evaluation/scaffolded_assemblies/{assembly}.bng-unsupported.fasta',
+    output:
+        'output/evaluation/scaffolded_assemblies/ctg_reads/{assembly}.unscf-reads.fasta',
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt,
+        mem_total_mb = 2048,
+        mem_per_cpu_mb = 2048
+    run:
+        import io
+
+        buffer = io.StringIO()
+
+        current_ctg = None
+        current_seq = ''
+        with open(input[0], 'r') as fasta:
+            for line in fasta:
+                if line.startswith('>'):
+                    ctg_name = line.strip().strip('>')
+                    if current_ctg is not None:
+                        if not len(current_seq) < 500:
+                            buffer = split_contig_to_reads(current_ctg, current_seq, buffer)
+                    current_ctg = ctg_name
+                    current_seq = ''
+                current_seq += line.strip()
+        if not len(current_seq) < 500:
+            buffer = split_contig_to_reads(current_ctg, current_seq, buffer)
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write(buffer.getvalue())
+    ### END OF run block
+
+
 rule minimap_unscaffolded_to_reference_alignment:
     input:
-        contigs = 'output/evaluation/scaffolded_assemblies/{assembly}.bng-unsupported.fasta',
+        contigs = 'output/evaluation/scaffolded_assemblies/ctg_reads/{assembly}.unscf-reads.fasta',
         reference = select_human_reference
     output:
         'output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.psort.sam.bam'
@@ -311,7 +363,7 @@ rule minimap_unscaffolded_to_reference_alignment:
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
         'minimap2 -t {threads} '
-            '--secondary=no --eqx -Y -ax asm20 -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
+            '--secondary=no --eqx -Y -a -x sr '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
             '{input.reference} {input.contigs} 2> {log.minimap} | '
             'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
