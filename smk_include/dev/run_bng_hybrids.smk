@@ -12,13 +12,15 @@ def bng_hybrids_determine_targets(wildcards):
     hybrid_targets = {
         'contig_stats': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid.contig-stats.tsv',
         'scaffold_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.bed',
-        'unsupport_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.bed'
+        'unsupport_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.bed',
+        'merged_align': 'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.merged.bed'
     }
 
     search_paths = {
         (os.path.join(os.getcwd(), 'output/evaluation/scaffolded_assemblies'), 'contig_stats'),
         (os.path.join(os.getcwd(), 'output/evaluation/scaffolded_assemblies'), 'scaffold_align'),
-        (os.path.join(os.getcwd(), 'output/evaluation/scaffolded_assemblies'), 'unsupport_align')
+        (os.path.join(os.getcwd(), 'output/evaluation/scaffolded_assemblies'), 'unsupport_align'),
+        (os.path.join(os.getcwd(), 'output/evaluation/scaffolded_assemblies'), 'merged_align')
     }
 
     fixed_wildcards = {
@@ -28,6 +30,8 @@ def bng_hybrids_determine_targets(wildcards):
     compute_results = set()
 
     for path, trg_type in search_paths:
+        if trg_type == 'unsupport_align':
+            continue
         if not os.path.isdir(path):
             continue
         hybrid_trg = hybrid_targets[trg_type]
@@ -35,7 +39,7 @@ def bng_hybrids_determine_targets(wildcards):
             if not hybrid_file.endswith('.bng-hybrid.agp'):
                 continue
             tmp = dict(fixed_wildcards)
-            if trg_type == 'unsupport_align':
+            if trg_type in ['unsupport_align', 'merged_align']:
                 tmp['assembly'] = hybrid_file.rsplit('.', 2)[0]
                 fmt_target = hybrid_trg.format(**tmp)
                 compute_results.add(fmt_target)
@@ -267,6 +271,8 @@ rule dump_scaffold_to_reference_alignment_to_bed:
         'log/output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.dump-bed.log'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        chrom = '(' + '|'.join(HYBRID_CONFIG['chroms']) + ')'
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt,
         mem_total_mb = 2048,
@@ -327,3 +333,13 @@ rule dump_unsupported_to_reference_alignment_to_bed:
         mem_per_cpu_mb = 2048
     shell:
         'bedtools bamtobed -i {input} > {output} 2> {log}'
+
+
+rule merge_scaffold_alignments:
+    input:
+        expand('output/evaluation/bng_hybrids/{{assembly}}/{{assembly}}.hybrid_map-to_{{reference}}.{chrom}.bed',
+                chrom=[c for c in HYBRID_CONFIG['chroms'] if c != 'chrUn'])  # keep chrUn separate to avoid mix-ups
+    output:
+        'output/evaluation/bng_hybrids/{assembly}/{assembly}.hybrid_map-to_{reference}.merged.bed'
+    shell:
+        'cat {input} > {output}'
