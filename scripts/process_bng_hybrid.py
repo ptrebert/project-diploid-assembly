@@ -115,6 +115,10 @@ def match_agp_to_fasta(agp_row, sequence_part):
             start = 0
             end = len(sequence_part)
         orientation = orient_map[agp_row['comp_orient_OR_linkage_evidence']]
+        # BUG / FIXME
+        # this should check if the contig is scaffolded start to end;
+        # it is trivially always the same length as the respective sequence
+        # part, so the below condition will always be 1
         complete = 1 if (end - start) == len(sequence_part) else 0
 
         comp_length = agp_row['object_end'] - (agp_row['object_start'] - 1)
