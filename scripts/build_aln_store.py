@@ -108,8 +108,12 @@ def load_contig_alignments(bed_folder, sample_table):
             sample, technology, haplotype = extract_sample_info(f)
             super_pop = sample_table.loc[sample_table[sample_column] == sample, 'super_population']
             assert len(super_pop) == 1, 'Multi super pop: {}'.format(super_pop)
+            sex = sample_table.loc[sample_table[sample_column] == sample, 'sex']
+            assert len(sex) == 1, 'Multi sample sex: {}'.format(sex)
+            sex = sex.values[0]
+            assert sex in ['male', 'female'], 'Unexpected sample sex: {}'.format(sex)
             super_pop = super_pop.values[0]
-            store_key = os.path.join(super_pop, sample, technology, haplotype)
+            store_key = os.path.join(super_pop, sample, sex, technology, haplotype)
 
             aln = load_tabular_data(
                 os.path.join(root, f),
@@ -120,7 +124,7 @@ def load_contig_alignments(bed_folder, sample_table):
             aln['orientation'] = aln['orientation'].astype('int8')
             aln['start'] = aln['start'].astype('int32')
             aln['end'] = aln['end'].astype('int32')
-            aln['mapq'] = aln['mapq'].astype('int8')
+            aln['mapq'] = aln['mapq'].astype('int16')
             store_values.append((store_key, aln))
 
     return store_values
