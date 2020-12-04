@@ -13,6 +13,12 @@ REMAP_CONFIG = {
     ]
 }
 
+REMAP_CONFIG = {
+    'ref_assembly': 'T2Tv1_38p13Y_chm13',
+    'min_mapq': 60,
+    'annotations': []
+}
+
 
 def contig_remap_determine_targets(wildcards):
 

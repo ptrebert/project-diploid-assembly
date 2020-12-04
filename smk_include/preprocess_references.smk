@@ -153,3 +153,61 @@ rule reduce_reference_to_main_chromosomes:
                 _ = dump.write('{}\t{}\n'.format(chrom, size))
     # end of rule
 
+
+rule build_male_t2t_assembly:
+    input:
+        t2t = 'references/downloads/T2Tv1_T2TC_chm13.fa.gz',
+        hg38 = 'references/assemblies/hg38_GCA_p13.fasta',
+    output:
+        'references/assemblies/T2Tv1_38p13Y_chm13.fasta'
+    resources:
+        mem_total_mb = 8192,
+        mem_per_cpu_mb = 8192
+    run:
+        import io
+        import gzip
+
+        chrY_buffer = ''
+        t2t_buffer = io.StringIO()
+        t2t_line_length = 0
+
+        buffer = False
+        with open(input.hg38, 'r') as fasta:
+            for line in fasta:
+                if line.startswith('>'):
+                    if line.strip() == '>chrY':
+                        buffer = True
+                        continue
+                    elif buffer:
+                        # chrY sequence already recorded
+                        break
+                    else:
+                        buffer = False
+                        continue
+                if buffer:
+                    chrY_buffer += line.strip()
+        
+        chars_written = 0
+        with gzip.open(input.t2t, 'rt') as fasta:
+            for line in fasta:
+                if line.startswith('>chrM'):
+                    assert t2t_line_length > 0, 'No T2T line length recorded'
+                    t2t_buffer.write('>chrY\n')
+                    for i in range(len(chrY_buffer) // t2t_line_length + 1):
+                        start = i * t2t_line_length
+                        end = start + t2t_line_length
+                        chars_written += t2t_buffer.write(chrY_buffer[start:end])
+                        _ = t2t_buffer.write('\n')
+                    if not chars_written == len(chrY_buffer):
+                        raise ValueError('chrY sequence lost: {} vs {}'.format(chars_written, len(chrY_buffer)))
+                    t2t_buffer.write(line)
+                    continue
+                t2t_buffer.write(line)
+                if t2t_line_length == 0:
+                    if line.strip() and not line.startswith('>'):
+                        t2t_line_length = len(line.strip())
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write(t2t_buffer.getvalue())
+    # end of rule
+                    
