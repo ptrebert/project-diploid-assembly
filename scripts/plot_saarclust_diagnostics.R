@@ -81,15 +81,15 @@ if (!haploid.assembly) {
 }
 
 if (!is.null(plot.clustering)) {
-    ggsave(filename = paste(output.folder, 'clustering.pdf', sep='.'), plot = plot.clustering, width = 16, height = 8)
+    ggsave(filename = paste(output.folder, 'clustering.pdf', sep='.'), plot = plot.clustering$plot, width = 16, height = 8)
 }
 
 if (!is.null(plot.ordering)) {
-    ggsave(filename = paste(output.folder, 'ordering.pdf', sep='.'), plot = plot.ordering, width = 16, height = 8)
+    ggsave(filename = paste(output.folder, 'ordering.pdf', sep='.'), plot = plot.ordering$plot, width = 16, height = 8)
 }
 
 if (!is.null(plot.orienting)) {
-    ggsave(filename = paste(output.folder, 'orienting.pdf', sep='.'), plot = plot.orienting, width = 16, height = 8)
+    ggsave(filename = paste(output.folder, 'orienting.pdf', sep='.'), plot = plot.orienting$plot, width = 16, height = 8)
 }
 
 warnings()
