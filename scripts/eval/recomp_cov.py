@@ -143,50 +143,63 @@ def execute_system_calls(calls):
 #     #out = subprocess.check_output(gnuplot_call, shell=True)
 #     exec_commands.append((mum_call, plot_call, gnuplot_call))
 
-# with mp.Pool(4) as pool:
-#     resit = pool.imap_unordered(execute_system_calls, exec_commands)
-#     print('processing')
-#     for res in resit:
-#         print('done')
-
-
 # ###
 # # Below: align Bionano segments against phased assembly contigs to confirm placement
 # ###
 
 
-path = '/home/local/work/data/hgsvc/roi/dotplots_chr3/chr3_ctg_fasta'
-ref_fasta_path = '/home/local/work/data/hgsvc/roi/dotplots_chr3/chr3_segments'
-out_path = '/home/local/work/data/hgsvc/roi/dotplots_chr3/chr3_alignments/contigs'
-#ref_fastas = sorted([os.path.join(ref_fasta_path, f) for f in os.listdir(ref_fasta_path)])
-ref_fasta = os.path.join(ref_fasta_path, 'hg38_chr3q29_all_segments.fasta')
+# path = '/home/local/work/data/hgsvc/roi/dotplots_chr3/chr3_ctg_fasta'
+# ref_fasta_path = '/home/local/work/data/hgsvc/roi/dotplots_chr3/chr3_segments'
+# out_path = '/home/local/work/data/hgsvc/roi/dotplots_chr3/chr3_alignments/contigs'
+# #ref_fastas = sorted([os.path.join(ref_fasta_path, f) for f in os.listdir(ref_fasta_path)])
+# ref_fasta = os.path.join(ref_fasta_path, 'hg38_chr3q29_all_segments.fasta')
 
-contigs = [f for f in os.listdir(path) if 'GRCh38' not in f and f.endswith('ctg3q29.fasta')]
+# contigs = [f for f in os.listdir(path) if 'GRCh38' not in f and f.endswith('ctg3q29.fasta')]
 
-minimap_call = 'minimap2 -t 1 --secondary=yes --eqx -Y -ax asm20 -R "{readgroup}" {reference} {query} | samtools sort | samtools view -b -F 260 /dev/stdin > {output}'
-bedtools_call = 'bedtools bamtobed -i {input} > {output}'
+# minimap_call = 'minimap2 -t 1 --secondary=yes --eqx -Y -ax asm20 -R "{readgroup}" {reference} {query} | samtools sort | samtools view -b -F 260 /dev/stdin > {output}'
+# bedtools_call = 'bedtools bamtobed -i {input} > {output}'
+
+# exec_commands = []
+
+# for ctg in contigs:
+#     sample, _, platform, _ = ctg.split('_', 3)
+#     tech = platform.split('-')[1].upper()
+#     if 'h1-un' in ctg:
+#         hap = 'H1'
+#     else:
+#         hap = 'H2'
+
+#     contig_fasta = os.path.join(path, ctg)
+#     out_bam = os.path.join(out_path, '{}_{}_{}.all-blocks.bam'.format(sample, hap, tech))
+#     out_bed = os.path.join(out_path, '{}_{}_{}.all-blocks.bed'.format(sample, hap, tech))
+#     run_minimap = None
+#     run_bedtools = None
+#     if not os.path.isfile(out_bam):
+#         readgroup = '@RG\\tID:{}\\tSM:{}'.format('_'.join([sample, hap, tech]), sample)
+#         run_minimap = minimap_call.format(**{'readgroup': readgroup, 'reference': contig_fasta, 'query': ref_fasta, 'output': out_bam})
+#     if not os.path.isfile(out_bed):
+#         run_bedtools = bedtools_call.format(**{'input': out_bam, 'output': out_bed})
+#     exec_commands.append((run_minimap, run_bedtools))
+
+paths = [
+    '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/grt00',
+    '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/grt20'
+]
+paths = [
+    '/home/local/work/data/hgsvc/contig_aln_bed_t2t/grt00',
+    '/home/local/work/data/hgsvc/contig_aln_bed_t2t/grt20'
+]
+genome_file = '/home/local/work/data/hgsvc/noalt_ref/hg38.no_alt.fa.gz.fai'
+genome_file = '/home/local/work/data/hgsvc/t2tv1/T2Tv1_38p13Y_chm13.fasta.fai'
 
 exec_commands = []
 
-for ctg in contigs:
-    sample, _, platform, _ = ctg.split('_', 3)
-    tech = platform.split('-')[1].upper()
-    if 'h1-un' in ctg:
-        hap = 'H1'
-    else:
-        hap = 'H2'
-
-    contig_fasta = os.path.join(path, ctg)
-    out_bam = os.path.join(out_path, '{}_{}_{}.all-blocks.bam'.format(sample, hap, tech))
-    out_bed = os.path.join(out_path, '{}_{}_{}.all-blocks.bed'.format(sample, hap, tech))
-    run_minimap = None
-    run_bedtools = None
-    if not os.path.isfile(out_bam):
-        readgroup = '@RG\\tID:{}\\tSM:{}'.format('_'.join([sample, hap, tech]), sample)
-        run_minimap = minimap_call.format(**{'readgroup': readgroup, 'reference': contig_fasta, 'query': ref_fasta, 'output': out_bam})
-    if not os.path.isfile(out_bed):
-        run_bedtools = bedtools_call.format(**{'input': out_bam, 'output': out_bed})
-    exec_commands.append((run_minimap, run_bedtools))
+for p in paths:
+    bed_files = [os.path.join(p, b) for b in os.listdir(p) if b.endswith('.bed') and 'complement' not in b]
+    out_files = [b.replace('.bed', '.complement.bed') for b in bed_files]
+    for b, o in zip(bed_files, out_files):
+        syscall = 'bedtools complement -L -i {} -g {} > {}'.format(b, genome_file, o)
+        exec_commands.append((syscall, ))
 
 
 with mp.Pool(4) as pool:
