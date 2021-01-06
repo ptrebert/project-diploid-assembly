@@ -55,6 +55,57 @@ rule separate_mitochondrial_sequence:
             dump.write(buffer.getvalue())
 
 
+rule retain_alt_seq_in_reference:
+    input:
+        hgsvc_chroms = 'references/assemblies/GRCh38_HGSVC2_noalt.sizes',
+        full_ref = 'references/assemblies/GRCh38_GCA_p13.fasta'
+    output:
+        ref_with_alt = 'references/assemblies/GRCh38_HGSVC2_incalt.fasta',
+        ref_with_alt_sizes = 'references/assemblies/GRCh38_HGSVC2_incalt.sizes'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 6144 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 6144 * attempt
+    run:
+        import io
+        import collections
+
+        hgsvc_chroms = set()
+        with open(input.hgsvc_chroms, 'r') as table:
+            for line in table:
+                hgsvc_chroms.add(line.split()[0])
+
+        chrom_sizes = collections.Counter()
+
+        out_buffer = io.StringIO()
+        keep_chrom = None
+        with open(input.full_ref, 'r') as fasta:
+            for line in fasta:
+                if line.startswith('>'):
+                    chrom_name = line.strip('>').strip()
+                    if chrom_name.endswith('_alt'):
+                        keep_chrom = chrom_name
+                    elif chrom_name.endswith('_random'):
+                        keep_chrom = chrom_name
+                    elif chrom_name.startswith('chrUn'):
+                        keep_chrom = chrom_name
+                    else:
+                        keep_chrom = chrom_name if chrom_name in hgsvc_chroms else None
+                    if keep_chrom is not None:
+                        out_buffer.write(line)
+                    continue
+                if keep_chrom is not None:
+                    chrom_sizes[chrom_name] += len(line.strip())
+                    out_buffer.write(line)
+        
+        with open(output.ref_with_alt, 'w') as dump:
+            _ = dump.write(out_buffer.getvalue())
+
+        with open(output.ref_with_alt_sizes, 'w') as dump:
+            for name, length in chrom_sizes.most_common():
+                _ = dump.write('{}\t{}\n'.format(name, length))
+    # END OF RUN BLOCK
+
+
 rule intersect_highconf_files:
     input:
         hg001 = 'references/downloads/HG001_hg38_giab_highconf.bed',
