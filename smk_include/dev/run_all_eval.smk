@@ -52,6 +52,11 @@ def quast_busco_determine_targets(wildcards):
     return compute_targets
 
 
+rule master_quast_busco:
+    input:
+        quast_busco_determine_targets
+
+
 rule master_eval:
     input:
         tech_comparison_determine_targets,
