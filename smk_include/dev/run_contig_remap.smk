@@ -19,6 +19,11 @@ REMAP_CONFIG = {
     'annotations': []
 }
 
+REMAP_CONFIG = {
+    'ref_assembly': 'GRCh38_HGSVC2_incalt',
+    'min_mapq': 60,
+    'annotations': []
+}
 
 def contig_remap_determine_targets(wildcards):
 
