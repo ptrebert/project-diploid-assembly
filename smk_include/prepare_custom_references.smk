@@ -241,9 +241,10 @@ checkpoint run_saarclust_assembly_clustering:
     params:
         script_exec = lambda wildcards: find_script_path('run_saarclust.R'),
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
-        in_folder = lambda wildcards, input: load_fofn_file(input)
+        in_folder = lambda wildcards, input: load_fofn_file(input),
+        version = config['git_commit_saarclust']
     shell:
-        '{params.script_exec} {input.cfg} {params.in_folder} {params.out_folder} &> {log} '
+        '{params.script_exec} {input.cfg} {params.in_folder} {params.out_folder} {params.version} &> {log} '
 
 
 def collect_clustered_fasta_sequences(wildcards, glob_collect=False):
