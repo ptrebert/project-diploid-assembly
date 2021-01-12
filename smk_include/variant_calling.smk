@@ -213,6 +213,11 @@ rule call_variants_deepvariant:
     Suggested workaround:
     --intermediate_results_dir="/tmp/deepvariant_tmp_output/chr1"
     So, keep this as part of the call to schedule more DeepVariant jobs in parallel
+
+    For DeepVariant >= 1.0:
+    use of phase information for variant calling requires the HP tag to be set in the
+    BAM file. This is generally not the case for the assembly pipeline (= phasing happens
+    after variant calling).
     """
     input:
         container = 'output/container/docker/google/deepvariant_{}.sif'.format(config['deepvariant_version']),
@@ -240,13 +245,15 @@ rule call_variants_deepvariant:
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sseq_reads, wildcards.vc_reads, wildcards.sequence),
+        use_hap_info = '--nouse_hp_information' if config['git_commit_version'] > 12 else '',
         singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
         '{params.singularity}'
         'singularity run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant '
             ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} '
             ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} '
-            ' --novcf_stats_report --intermediate_results_dir="{params.temp_dir}" --num_shards={threads} &> {log} ; '
+            ' {params.use_hap_info} --novcf_stats_report '
+            ' --intermediate_results_dir="{params.temp_dir}" --num_shards={threads} &> {log} ; '
         'rm -rfd {params.temp_dir} ; '
 
 

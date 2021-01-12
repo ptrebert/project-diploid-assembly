@@ -2,7 +2,7 @@
 # === Software setup settings ===
 # Specify git commits for SaaRclust
 # and StrandPhaseR setup
-git_commit_saarclust: 70cd18b
+git_commit_saarclust: 6cb8c96
 git_commit_strandphaser: e608407
 git_commit_breakpointr: 268d99d
 # arbitrarily tying a version number
@@ -12,7 +12,7 @@ git_commit_breakpointr: 268d99d
 git_commit_version: 13
 
 peregrine_version: 0.1.6.1
-deepvariant_version: 0.10.0
+deepvariant_version: 1.1.0
 shasta_version: 0.5.0
 
 # Assembler settings
