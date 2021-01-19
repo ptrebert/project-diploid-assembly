@@ -867,6 +867,9 @@ rule merge_break_coverage_annotation:
     output:
         tsv = 'output/evaluation/break_analysis/tables/{known_ref}.H64breaks.tsv',
         hdf = 'output/evaluation/break_analysis/tables/{known_ref}.H64breaks.h5',
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     run:
         import pandas as pd
 
@@ -1092,6 +1095,9 @@ rule merge_bng_cluster_coverage_annotation:
     output:
         tsv = 'output/evaluation/break_analysis/tables/{{known_ref}}.BNGuniq{{svtype}}-ro{}.tsv'.format(BREAK_CONFIG['bng_ro_overlap']),
         hdf = 'output/evaluation/break_analysis/tables/{{known_ref}}.BNGuniq{{svtype}}-ro{}.h5'.format(BREAK_CONFIG['bng_ro_overlap']),
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     run:
         import pandas as pd
 
