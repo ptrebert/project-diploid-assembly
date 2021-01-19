@@ -193,6 +193,10 @@ def hex_to_rgb(hex_string, norm=True):
     return rgb
 
 
+def relative_rgb(rgb):
+    return tuple(round(x/255, 2) for x in rgb)
+
+
 def get_gray_bg(hex=False):
     return get_grey_bg(hex)
 
