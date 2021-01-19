@@ -888,8 +888,6 @@ rule merge_break_coverage_annotation:
                 read_cov_file,
                 breaks
             )
-            print(df.head())
-            raise
             annotations.append(df)
             
  
