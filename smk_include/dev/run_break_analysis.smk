@@ -53,6 +53,9 @@ rule split_repeatmasker_annotation:
         expand('references/annotation/{{known_ref}}.rmsk_{repclass}.bed',
                 repclass=REPEAT_CLASSES),
         'references/annotation/{known_ref}.rmsk_all.bed'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 if attempt < 2 else 3072 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 if attempt < 2 else 3072 * attempt
     run:
         import os
         import pandas as pd
