@@ -671,6 +671,9 @@ rule intersect_region_set_annotations:
         'output/evaluation/break_analysis/break_coverages/annotation/{known_ref}_cov_{annotation}.{region_set}.tsv'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     wildcard_constraints:
         known_ref = BREAK_CONFIG['reference'],
         annotation = '[a-z0-9A-Z\_]+',
