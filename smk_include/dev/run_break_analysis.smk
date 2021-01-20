@@ -244,35 +244,77 @@ rule process_segdup_annotation:
     # END OF RUN BLOCK
 
 
-rule extend_pav_dropped_insertions:
+rule extract_pav_no_bng_support:
+    """
+    Download source is the Zenodo upload (aka: submitted status)
+    MD5: fe229fc1d66283211032019bd2cdff9b
+    DOI: https://doi.org/10.5281/zenodo.4268827
+    https://zenodo.org/record/4268828/files/variants_freeze3_sv_insdel.tsv.gz
+    """
     input:
-        'references/annotation/PAV_sv-insdel-dropped_v3.bed'
+        'references/downloads/variants_freeze3_sv_insdel.tsv.gz'
     output:
-        'references/annotation/GRCh38_HGSVC2_noalt.SVdropV3.bed',
-        'references/annotation/GRCh38_HGSVC2_noalt.DELdropV3.bed',
-        'references/annotation/GRCh38_HGSVC2_noalt.INSdropV3.bed'
+        'references/annotation/GRCh38_HGSVC2_noalt.SVnobngV3.bed',
+        'references/annotation/GRCh38_HGSVC2_noalt.DELnobngV3.bed',
+        'references/annotation/GRCh38_HGSVC2_noalt.INSnobngV3.bed'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     run:
-        import io
-        out_buffer = io.StringIO()
-        del_buffer = io.StringIO()
-        ins_buffer = io.StringIO()
+        import pandas as pd
+    
+        use_columns = [
+            'ID',
+            '#CHROM',
+            'POS',
+            'END',
+            'SVTYPE',
+            'SVLEN',
+            'DISC_CLASS',
+            'BIONANO'
+        ]
 
-        with open(input[0], 'r') as table:
-            for line in table:
-                if 'DEL' in line:
-                    _ = out_buffer.write(line)
-                    _ = del_buffer.write(line)
-                else:
-                    chrom, start, end, sv_id = line.strip().split()
-                    sv_length = int(sv_id.split('-')[-1])
-                    end = str(int(start) + sv_length)
-                    new_line = '\t'.join([chrom, start, end, sv_id]) + '\n'
-                    _ = out_buffer.write(new_line)
-                    _ = ins_buffer.write(new_line)
-        
-        for out_file, sv_buffer in zip(output, [out_buffer, del_buffer, ins_buffer]):
-            with open(out_file, 'w') as dump:
-                _ = dump.write(sv_buffer.getvalue())
+        df = pd.read_csv(
+            input[0],
+            sep='\t',
+            header=0,
+            usecols=use_columns,
+            encoding='ascii'
+        )
+
+        # select all variants with no BIONANO support
+        df = df.loc[df['BIONANO'].isna(), :].copy()
+
+        df['#chrom'] = df['#CHROM']
+        df['start'] = df['POS'].astype('int64')
+        df['end'] = df['start'] + df['SVLEN'].astype('int64')  # this affects INS
+        df['name'] = df['ID']
+        df['svtype'] = df['SVTYPE']
+        df['svclass'] = df['DISC_CLASS']
+
+        df.drop(use_columns, axis=1, inplace=True)
+
+        df.sort_values(['#chrom', 'start', 'end'], ascending=True, inplace=True)
+
+        dump_columns = [
+            '#chrom',
+            'start',
+            'end',
+            'name',
+            'svtype',
+            'svclass'
+        ]
+
+        selectors = [['DEL', 'INS'], ['DEL'], ['INS']]
+
+        for selector, outfile in zip(selectors, output):
+            sub = df.loc[df['svtype'].isin(selector), dump_columns]
+            sub.to_csv(
+                outfile,
+                sep='\t',
+                header=True,
+                index=False
+            )
     # END OF RUN BLOCK
 
 
@@ -1083,7 +1125,7 @@ def load_bng_read_coverage(read_cov_file, bng_regions):
 rule merge_bng_cluster_coverage_annotation:
     input:
         annot_cov = expand('output/evaluation/break_analysis/break_coverages/annotation/{{known_ref}}_cov_{annotation}.BNGuniq{{svtype}}-ro{ro}.tsv',
-                            annotation=['rmsk_' + x for x in REPEAT_CLASSES] + ['smprep_' + i for i in SIMPLE_REPEAT_CLASSES] + ['segdups', 'H64breaks', '{svtype}dropV3', 'INVv3', 'issues'],
+                            annotation=['rmsk_' + x for x in REPEAT_CLASSES] + ['smprep_' + i for i in SIMPLE_REPEAT_CLASSES] + ['segdups', 'H64breaks', '{svtype}nobngV3', 'INVv3', 'issues'],
                             ro=BREAK_CONFIG['bng_ro_overlap']
                     ),
         score_cov = ['output/evaluation/break_analysis/break_coverages/annotation/{{known_ref}}_score_segdups.BNGuniq{{svtype}}-ro{}.tsv'.format(BREAK_CONFIG['bng_ro_overlap'])],
