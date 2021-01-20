@@ -369,8 +369,15 @@ rule reduce_to_4col_bed:
     
 
 rule prep_pav_calls:
+    """
+    PAV call set here is not the published one (i.e. Zenodo)
+    variant IDs may no longer match with published version,
+    in particular relevant for the list of dropped variants
+    used here
+    MD5: 36c95ab5684535033bcea988ceb8c3e3
+    """
     input:
-        good = 'references/downloads/variants_freeze{version}_sv_insdel.tsv.gz',
+        good = 'references/downloads/variants_freeze{version}_sv_insdel.prepublish.tsv.gz',
         bad = 'references/downloads/variants-dropped_freeze{version}_sv_insdel.tsv.gz'
     output:
         bad = 'references/annotation/PAV_sv-insdel-dropped_v{version}.bed',
