@@ -397,6 +397,10 @@ rule merge_scaffold_alignments:
 
 
 rule bin_unsupported_alignments:
+    """
+    Note: aggregating per-assembly coverage data is done in Jupyter notebook
+    notebooks/2020_project/processing/summarize_unscf_maploc.ipynb
+    """
     input:
         aln = 'output/evaluation/bng_hybrids/{assembly}/{assembly}.unsupported_map-to_{reference}.bed',
         windows = 'references/assemblies/GRCh38_HGSVC2_noalt.wg-male.win500k.bed'

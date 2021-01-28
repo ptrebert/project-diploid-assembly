@@ -39,7 +39,8 @@ PLOT_PROPERTIES = {
     'legend_marker_size': 10,
     'plot_marker_size': 60,
     'dpi_low_res': 150,
-    'dpi_high_res': 1200
+    'dpi_norm_res': 300,
+    'dpi_high_res': 600
 }
 
 
