@@ -68,16 +68,18 @@ import multiprocessing as mp
 # individual contigs
 ###
 
-# input_bed = '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/*.bed'
+input_bed = '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/*.bed'
 
-# input_regions = '/home/local/work/data/hgsvc/roi/roi_HLA_3q29.bed'
+#input_regions = '/home/local/work/data/hgsvc/roi/roi_HLA_3q29.bed'
+input_regions = '/home/local/work/data/hgsvc/roi/roi_HLA_3q29_HLAn.bed'
 
-# output = '/home/local/work/data/hgsvc/roi/MAPQ-ALL_roi_assm_overlaps.tsv'
+#output = '/home/local/work/data/hgsvc/roi/MAPQ-ALL_roi_assm_overlaps.tsv'
+output = '/home/local/work/data/hgsvc/roi/MAPQ-ALL_roi_HLAn_assm_overlaps.tsv'
 
-# shell_cmd = 'bedtools intersect -filenames -wao -a {} -b {} > {}'.format(input_regions, input_bed, output)
+shell_cmd = 'bedtools intersect -filenames -wao -a {} -b {} > {}'.format(input_regions, input_bed, output)
 
-# out = subprocess.check_output(shell_cmd, shell=True)
-# print('Done ', output)
+out = subprocess.check_output(shell_cmd, shell=True)
+print('Done ', output)
 
 
 def execute_system_calls(calls):
@@ -181,29 +183,29 @@ def execute_system_calls(calls):
 #         run_bedtools = bedtools_call.format(**{'input': out_bam, 'output': out_bed})
 #     exec_commands.append((run_minimap, run_bedtools))
 
-paths = [
-    '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/grt00',
-    '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/grt20'
-]
-paths = [
-    '/home/local/work/data/hgsvc/contig_aln_bed_t2t/grt00',
-    '/home/local/work/data/hgsvc/contig_aln_bed_t2t/grt20'
-]
-genome_file = '/home/local/work/data/hgsvc/noalt_ref/hg38.no_alt.fa.gz.fai'
-genome_file = '/home/local/work/data/hgsvc/t2tv1/T2Tv1_38p13Y_chm13.fasta.fai'
+# paths = [
+#     '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/grt00',
+#     '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/grt20'
+# ]
+# paths = [
+#     '/home/local/work/data/hgsvc/contig_aln_bed_t2t/grt00',
+#     '/home/local/work/data/hgsvc/contig_aln_bed_t2t/grt20'
+# ]
+# genome_file = '/home/local/work/data/hgsvc/noalt_ref/hg38.no_alt.fa.gz.fai'
+# genome_file = '/home/local/work/data/hgsvc/t2tv1/T2Tv1_38p13Y_chm13.fasta.fai'
 
-exec_commands = []
+# exec_commands = []
 
-for p in paths:
-    bed_files = [os.path.join(p, b) for b in os.listdir(p) if b.endswith('.bed') and 'complement' not in b]
-    out_files = [b.replace('.bed', '.complement.bed') for b in bed_files]
-    for b, o in zip(bed_files, out_files):
-        syscall = 'bedtools complement -L -i {} -g {} > {}'.format(b, genome_file, o)
-        exec_commands.append((syscall, ))
+# for p in paths:
+#     bed_files = [os.path.join(p, b) for b in os.listdir(p) if b.endswith('.bed') and 'complement' not in b]
+#     out_files = [b.replace('.bed', '.complement.bed') for b in bed_files]
+#     for b, o in zip(bed_files, out_files):
+#         syscall = 'bedtools complement -L -i {} -g {} > {}'.format(b, genome_file, o)
+#         exec_commands.append((syscall, ))
 
 
-with mp.Pool(4) as pool:
-    resit = pool.imap_unordered(execute_system_calls, exec_commands)
-    print('processing')
-    for res in resit:
-        print('done')
+# with mp.Pool(4) as pool:
+#     resit = pool.imap_unordered(execute_system_calls, exec_commands)
+#     print('processing')
+#     for res in resit:
+#         print('done')
