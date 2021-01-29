@@ -1123,15 +1123,22 @@ def load_bng_read_coverage(read_cov_file, bng_regions):
 
 
 rule merge_bng_cluster_coverage_annotation:
+    """
+    Adapt overlap operation for reduced upset plot.
+    Change from:
+    ['segdups', 'H64breaks', '{svtype}nobngV3', 'INVv3', 'issues']
+    to
+    ['segdups', 'issues']
+    """
     input:
         annot_cov = expand('output/evaluation/break_analysis/break_coverages/annotation/{{known_ref}}_cov_{annotation}.BNGuniq{{svtype}}-ro{ro}.tsv',
-                            annotation=['rmsk_' + x for x in REPEAT_CLASSES] + ['smprep_' + i for i in SIMPLE_REPEAT_CLASSES] + ['segdups', 'H64breaks', '{svtype}nobngV3', 'INVv3', 'issues'],
+                            annotation=['rmsk_' + x for x in REPEAT_CLASSES] + ['smprep_' + i for i in SIMPLE_REPEAT_CLASSES] + ['segdups', 'issues'],
                             ro=BREAK_CONFIG['bng_ro_overlap']
                     ),
         score_cov = ['output/evaluation/break_analysis/break_coverages/annotation/{{known_ref}}_score_segdups.BNGuniq{{svtype}}-ro{}.tsv'.format(BREAK_CONFIG['bng_ro_overlap'])],
         nuc_prof = 'references/annotation/{{known_ref}}.BNGuniq{{svtype}}-ro{}.nucprof.tsv'.format(BREAK_CONFIG['bng_ro_overlap']),
         bng_annotation = 'references/annotation/GRCh38_HGSVC2_noalt.BNGuniq{{svtype}}-ro{}.tsv'.format(BREAK_CONFIG['bng_ro_overlap']),
-        read_cov = read_cov_regions_bng
+        read_cov = []  #read_cov_regions_bng
     output:
         tsv = 'output/evaluation/break_analysis/tables/{{known_ref}}.BNGuniq{{svtype}}-ro{}.tsv'.format(BREAK_CONFIG['bng_ro_overlap']),
         hdf = 'output/evaluation/break_analysis/tables/{{known_ref}}.BNGuniq{{svtype}}-ro{}.h5'.format(BREAK_CONFIG['bng_ro_overlap']),
