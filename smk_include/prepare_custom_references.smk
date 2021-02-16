@@ -304,9 +304,38 @@ rule write_reference_fasta_clusters_fofn:
                 _ = dump.write(file_path + '\n')
 
 
+rule check_max_cluster_size:
+    """
+    This is a sanity check to avoid that downstream contig alignment tasks fail
+    due to squashed assembly clusters being too large to be processed (restriction of SAM/BAM)
+    see:
+    https://github.com/lh3/minimap2/issues/440#issuecomment-508052956
+    """
+    input:
+        'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
+    output:
+        'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.size.ok'
+    run:
+        max_seq_len = 268435456
+        with open(input[0], 'r') as fasta_list:
+            for fasta_file in fasta_list:
+                seq_len = 0
+                with open(fasta_file, 'r') as fasta:
+                    for line in fasta:
+                        if line.startswith('>'):
+                            continue
+                        seq_len += len(line.strip())
+                if seq_len > max_seq_len:
+                    raise ValueError('Squashed assembly cluster too large ({} / max {}): {}'.format(seq_len, max_seq_len, fasta_file))
+
+        with open(output[0], 'w') as check_ok:
+            pass
+
+
 rule merge_reference_fasta_clusters:
     input:
-        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{hap_reads}_nhr-{assembler}.clusters.fofn'
+        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{hap_reads}_nhr-{assembler}.clusters.fofn',
+        size_ok = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.size.ok'
     output:
         expand('output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta',
                 version=config['git_commit_version'])
