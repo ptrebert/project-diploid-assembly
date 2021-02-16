@@ -88,7 +88,7 @@ rule select_clean_hifi_reads:
     conda:
         '../environment/conda/conda_biotools.yml'
     shell:
-        'seqtk seq -C {input.fastq_part} | paste - - - - | grep -F -f {input.blocklist} | tr "\t" "\n" | gzip > {output}'
+        'seqtk seq -C {input.fastq_part} | paste - - - - | grep -v -F -f {input.blocklist} | tr "\t" "\n" | gzip > {output}'
 
 
 def collect_fastq_input_parts(wildcards, glob_collect=False):
