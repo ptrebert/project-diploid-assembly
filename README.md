@@ -1,10 +1,23 @@
-# Project repository: reference-free diploid assembly of a human genome
+# Project repository: Phased Genome Assembly using Strand-seq (PGAS)
 
 ## Citation
 
-DOI of preprint: [10.1101/855049](https://doi.org/10.1101/855049)
+If you use this pipeline or extract and reuse original code/rules from this repository,
+please cite the following two papers:
 
-Porubsky and Ebert et al.: "A fully phased accurate assembly of an individual human genome" (*in revision*)
+> Porubsky and Ebert et al.  
+> "Fully Phased Human Genome Assembly without Parental Data Using Single-Cell Strand Sequencing and Long Reads."  
+> Nature Biotechnology, December 2020  
+> [DOI:10.1038/s41587-020-0719-5](https://doi.org/10.1038/s41587-020-0719-5)
+
+> Ebert, Audano, Zhu and Rodriguez-Martin et al.  
+> "De novo assembly of 64 haplotype-resolved human genomes of diverse ancestry and integrated analysis of structural variation"  
+> bioRxiv preprint (*article in press*)  
+> [DOI:10.1101/2020.12.16.423102](https://doi.org/10.1101/2020.12.16.423102)
+
+#### Deprecated citation
+
+Please do not reference the preprint ([10.1101/855049](https://doi.org/10.1101/855049)) of the *Nature Biotechnology* paper anymore.
 
 ## Scope of this repository
 
@@ -13,7 +26,7 @@ input data to polished haploid assemblies. Any self-contained, general purpose s
 the pipeline is either available via conda/bioconda, or via github. In any case, the pipeline
 implementation covers the entire software setup required for a complete pipeline run. 
 
-In particular, the code for the `SaaRclust` R package is
+In particular, the code for the `SaaRclust`, `StrandPhaseR` and `breakpointR` R packages is
 available in [David Porubsky's github](https://github.com/daewoooo/SaaRclust).
 
 ## Documentation
