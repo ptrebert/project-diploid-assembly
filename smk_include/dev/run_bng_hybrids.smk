@@ -75,7 +75,7 @@ rule summarize_hybrid_statistics:
     log:
         'log/output/evaluation/bng_hybrids/summarize/{assembly}.hybrid.stats.log',
     conda:
-        '../../environment/conda/conda_evaltools.yml'
+        '../../environment/conda/conda_pyscript.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 12288 * attempt,
         mem_total_mb = lambda wildcards, attempt: 12288 * attempt,

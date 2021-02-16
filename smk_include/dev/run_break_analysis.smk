@@ -730,7 +730,7 @@ rule haploid_read_coverage_in_regions:
     output:
         'output/evaluation/break_analysis/hap_read_coverage/{region_set}_AVG_{readset}_map-to_hg38_GCA_p13.{hap}.tab'
     conda:
-        '../../environment/conda/conda_evaltools.yml'
+        '../../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 49152 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 49152 * attempt

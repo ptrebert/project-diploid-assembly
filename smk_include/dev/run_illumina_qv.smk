@@ -517,7 +517,7 @@ rule collect_sample_variants:
     output:
         'output/evaluation/qv_estimation/variant_calls/25-collect-variants/freebayes_{var_type}.h5'
     conda:
-        '../../environment/conda/conda_evaltools.yml'
+        '../../environment/conda/conda_pyscript.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
