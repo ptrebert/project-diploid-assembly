@@ -96,9 +96,10 @@ rule run_breakpointr:
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.rdme),
         input_dir = lambda wildcards, input: load_fofn_file(input),
+        version = config['git_commit_breakpointr'],
         script_exec = lambda wildcards: find_script_path('run_breakpointr.R')
     shell:
-        '{params.script_exec} {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} &> {log}'
+        '{params.script_exec} {params.input_dir} {input.cfg} {params.output_dir} {threads} {output.wc_reg} {params.version} &> {log}'
 
 
 rule write_strandphaser_config_file:
@@ -183,11 +184,12 @@ rule run_strandphaser:
         input_dir = lambda wildcards, input: load_fofn_file(input),
         output_dir = lambda wildcards, output: os.path.dirname(output.cfg),
         individual = lambda wildcards: wildcards.sseq_reads.split('_')[0],
+        version = config['git_commit_strandphaser'],
         script_exec = lambda wildcards: find_script_path('run_strandphaser.R')
     shell:
         '{params.script_exec} {params.input_dir} {input.cfg} '
             ' {input.variant_calls} {input.wc_regions} '
-            ' {params.output_dir} {params.individual} &> {log.stp}'
+            ' {params.output_dir} {params.individual} {params.version} &> {log.stp}'
 
 
 rule write_strandphaser_split_vcf_fofn:
@@ -259,7 +261,7 @@ rule run_integrative_phasing:
     benchmark:
         'run/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.rsrc'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_whatshap.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -361,7 +363,7 @@ rule compute_strandphaser_phased_vcf_stats:
     log:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.log'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_whatshap.yml'
     priority: 200
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -383,7 +385,7 @@ rule compute_whatshap_phased_vcf_stats:
     log:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.log'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_whatshap.yml'
     priority: 200
     resources:
              mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,

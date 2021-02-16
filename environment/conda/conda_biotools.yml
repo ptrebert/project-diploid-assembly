@@ -20,6 +20,8 @@ dependencies:
   - lp_solve=5.5.2.5
   - openblas=0.3.6
   - make=4.2.1
+  - seqtk=1.3
+  - blast=2.5.0
   - bwa=0.7.17
   - minimap2=2.17
   - mummer4
@@ -30,24 +32,31 @@ dependencies:
   - pysam=0.15.3
   - samtools=1.9
   - bamtools=2.5.1
-  - bedtools=2.29.0
+  - bedtools=2.29.2  # FIX https://github.com/arq5x/bedtools2/issues/779 - DO NOT DOWNGRADE
   - bedops=2.4.37
   - bcftools=1.9
   - fastqc=0.11.8
   - freebayes=1.3.1
-  - longshot=0.4.0
+  - longshot=0.4.1
   - wtdbg=2.5
-  - flye=2.7
+  - flye=2.8.3
   - canu=2.0
+  - hifiasm=0.13
   - racon=1.4.10
   - lighter=1.1.2
   - bcalm=2.2.2
   - dnaio=0.4.2
   - cutadapt=2.10
   - trim-galore=0.6.5
-#  - bifrost=1.0.3
-  - graphaligner=1.0.11
+  - fastp=0.20.1
+  - graphaligner=1.0.12
   - ucsc-bedgraphtobigwig=377
+  - ucsc-bigwigaverageoverbed=377
+  - ucsc-bigwigcorrelate=377
+  - ucsc-bigwigmerge=377
+  - ucsc-bigwigcluster=377
   - pigz=2.4
-  - pip:
-    - git+https://bitbucket.org/whatshap/whatshap@a3f8c91
+  - xopen=1.1.0
+  - biopython=1.78
+  - pyfaidx=0.5.9.2
+  - whatshap=1.0

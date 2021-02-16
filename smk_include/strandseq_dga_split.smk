@@ -38,7 +38,7 @@ rule strandseq_dga_split_haplo_tagging:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.fq.tag.rsrc'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_whatshap.yml'
     wildcard_constraints:
         fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+',
     resources:
@@ -72,7 +72,7 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.pbn.tag.rsrc'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_whatshap.yml'
     wildcard_constraints:
         pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
     resources:
@@ -104,7 +104,7 @@ rule strandseq_dga_split_haplo_splitting:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.{sequence}.fq.split.rsrc',
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_whatshap.yml'
     wildcard_constraints:
         fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+',
     resources:
@@ -137,7 +137,7 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.{sequence}.pbn.split.rsrc',
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_whatshap.yml'
     wildcard_constraints:
         pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
     resources:

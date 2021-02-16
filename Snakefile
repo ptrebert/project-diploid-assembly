@@ -31,7 +31,7 @@ wildcard_constraints:
     var_caller = '(freebayes|longshot|deepvar)',
     # allowed assembly tools
     # regexp [a-z0-9]+ to link pre-computed collapsed assemblies
-    assembler = '(wtdbg|canu|flye|pereg|shasta|[a-z0-9]+)',
+    assembler = '(wtdbg|canu|flye|pereg|shasta|hifiasm|[a-z0-9]+)',
     # polisher
     polisher = '(arrow|racon)',
     pol_pass ='(arrow|racon)\-p[12]',
@@ -101,6 +101,7 @@ rule setup_env:
         rules.create_conda_environment_r_tools.output,
         rules.create_conda_environment_r_script.output,
         rules.create_conda_environment_bio_tools.output,
+        rules.create_conda_environment_whatshap.output,
         rules.create_conda_environment_pyscript.output,
         rules.download_shasta_executable.output,
         rules.download_quast_busco_databases.output,

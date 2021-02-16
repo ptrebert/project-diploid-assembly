@@ -198,13 +198,7 @@ rule write_saarclust_config_file:
         cfg = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sseq_reads}/saarclust.config',
         input_dir = 'output/reference_assembly/clustered/temp/saarclust/config/{reference}/{sseq_reads}/saarclust.input'
     params:
-        min_contig_size = config['min_contig_size'],
-        bin_size = config['bin_size'],
-        step_size = config['step_size'],
-        prob_threshold = config['prob_threshold'],
-        init_clusters = config['init_clusters'],
-        desired_clusters = config.get('desired_clusters', 0),
-        min_mapq = config.get('min_mapq', 0)
+        saarclust = lambda wildcards, input: load_saarclust_params(wildcards, input, 'squashed')
     run:
         import os
 
@@ -218,65 +212,8 @@ rule write_saarclust_config_file:
 
         outfolder = os.path.dirname(bam_files[0])
 
-        # Note to self: duplicated code somewhat needed atm
-        # if non-default parameters are set for a sample.
-        # Current upside: Snakemake can detect missing config values
-        # in a dry run if accessed in "params" section, but not if
-        # accessed in a "run" block -> fails early
-        # Get rid of this via...
-        # TODO: implement a (config) parameter load function to hide this
-        min_contig_size = str(params.min_contig_size)
-        bin_size = str(params.bin_size)
-        step_size = str(params.step_size)
-        prob_threshold = str(params.prob_threshold)
-        init_clusters = str(params.init_clusters)
-        desired_clusters = str(params.desired_clusters)
-        min_mapq = str(params.min_mapq)
-
-        individual = wildcards.sseq_reads.split('_')[0]
-        non_default_params = config.get('sample_non_default_parameters', dict())
-        if individual in non_default_params:
-            sample_non_defaults = non_default_params[individual]
-            use_non_defaults = True
-            if 'use_only_in' in sample_non_defaults:
-                try:
-                    sample_non_defaults = sample_non_defaults['use_only_in']['write_saarclust_config_file']
-                except KeyError:
-                    use_non_defaults = False
-            if use_non_defaults:
-                min_contig_size = str(sample_non_defaults.get('min_contig_size', min_contig_size))
-                bin_size = str(sample_non_defaults.get('bin_size', bin_size))
-                step_size = str(sample_non_defaults.get('step_size', step_size))
-                prob_threshold = str(sample_non_defaults.get('prob_threshold', prob_threshold))
-                init_clusters = str(sample_non_defaults.get('init_clusters', init_clusters))
-                desired_clusters = str(sample_non_defaults.get('desired_clusters', desired_clusters))
-                min_mapq = str(sample_non_defaults.get('min_mapq', min_mapq))
-
-        config_rows = [
-            '[SaaRclust]',
-            'min.contig.size = ' + min_contig_size,
-            'bin.size = ' + bin_size,
-            'step.size = ' + step_size,
-            'prob.th = ' + prob_threshold,
-            'pairedReads = TRUE',
-            'store.data.obj = TRUE',
-            'reuse.data.obj = TRUE',
-            'num.clusters = ' + init_clusters,
-            'bin.method = "dynamic"',
-            'assembly.fasta = "' + input.reference + '"',
-            'concat.fasta = TRUE',
-            'remove.always.WC = TRUE',
-            'mask.regions = FALSE'
-        ]
-
-        if int(config['git_commit_version']) > 7:
-            config_rows.append('desired.num.clusters = ' + desired_clusters)
-
-        if int(config['git_commit_version']) > 8:
-            config_rows.append('min.mapq = ' + min_mapq)
-
         with open(output.cfg, 'w') as dump:
-            _ = dump.write('\n'.join(config_rows) + '\n')
+            _ = dump.write(params.saarclust)
 
         with open(output.input_dir, 'w') as dump:
             _ = dump.write(outfolder + '\n')
@@ -304,9 +241,10 @@ checkpoint run_saarclust_assembly_clustering:
     params:
         script_exec = lambda wildcards: find_script_path('run_saarclust.R'),
         out_folder = lambda wildcards, output: os.path.dirname(output.cfg),
-        in_folder = lambda wildcards, input: load_fofn_file(input)
+        in_folder = lambda wildcards, input: load_fofn_file(input),
+        version = config['git_commit_saarclust']
     shell:
-        '{params.script_exec} {input.cfg} {params.in_folder} {params.out_folder} &> {log} '
+        '{params.script_exec} {input.cfg} {params.in_folder} {params.out_folder} {params.version} &> {log} '
 
 
 def collect_clustered_fasta_sequences(wildcards, glob_collect=False):

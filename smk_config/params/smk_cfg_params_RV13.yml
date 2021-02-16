@@ -1,0 +1,87 @@
+
+# === Software setup settings ===
+# Specify git commits for SaaRclust
+# and StrandPhaseR setup
+git_commit_saarclust: 6cb8c96
+git_commit_strandphaser: e608407
+git_commit_breakpointr: 268d99d
+# arbitrarily tying a version number
+# to the git commits to avoid additional
+# wildcards - increment this number when
+# git commits are changed!
+git_commit_version: 13
+
+peregrine_version: 0.1.6.1
+deepvariant_version: 1.1.0
+shasta_version: 0.5.0
+
+# Assembler settings
+shasta_target_coverage: 60  # tech-independent recommendation: cov between 40x and 80x
+flye_target_coverage: 50  # dev recommendation: ~30x, but we have enough RAM to go a bit higher
+
+# SaaRclust parameter sets
+# goal is to obtain approx.
+# 24 clusters (for human)
+min_contig_size: 100000
+min_region_to_order: 500000
+bin_size: 200000
+step_size: 200000
+prob_threshold: 0.25
+init_clusters: 100
+desired_clusters_male: 25
+desired_clusters_female: 24
+min_mapq: 10
+
+# VARIANT CALLING
+# Postprocessing parameters
+filter_vcf_qual: 10
+filter_vcf_gq: 100
+
+freebayes_timeout_sec: 3600
+
+# not primary alignment || supplementary alignment
+bwa_strandseq_aln_discard: 2304
+
+# read unmapped || not primary alignment || failed QC || PCR dup
+minimap_readref_aln_discard: 1796
+
+# read unmapped || not primary alignment
+minimap_contigref_aln_discard: 260
+
+# read unmapped || not primary alignment || failed QC || PCR dup
+minimap_racon_aln_discard: 1796  # same as 0x704
+minimap_racon_aln_min_qual: 10
+
+# main chromosomes to be used
+# for known references for main
+# pipeline steps (i.e., everything
+# before evaluation)
+eval_known_ref: GRCh38_HGSVC2_noalt
+eval_align_ref: hg38_HGSVC2_noalt
+eval_gene_model: GRCh38_GENCODEv31_basic
+use_genome_size: hg38_HGSVC2_noalt
+main_chromosomes:
+  - chr1
+  - chr2
+  - chr3
+  - chr4
+  - chr5
+  - chr6
+  - chr7
+  - chr8
+  - chr9
+  - chr10
+  - chr11
+  - chr12
+  - chr13
+  - chr14
+  - chr15
+  - chr16
+  - chr17
+  - chr18
+  - chr19
+  - chr20
+  - chr21
+  - chr22
+  - chrX
+  - chrY

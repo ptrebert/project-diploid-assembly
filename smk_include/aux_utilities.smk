@@ -316,6 +316,114 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
     return sorted(bam_files)
 
 
+def get_sample_sex(sample):
+
+    try:
+        sample_desc = config['sample_description_{}'.format(sample)]
+    except KeyError:
+        raise ValueError('No sample description for {} in config - did you load the sample config YAML?'.format(sample))
+    try:
+        sample_sex = sample_desc['sex']
+    except KeyError:
+        sample_sex = 'unknown'
+    return sample_sex
+
+
+def load_saarclust_params_haploid(wildcards, input):
+    return load_saarclust_params(wildcards, input, 'haploid')
+
+
+def load_saarclust_params_squashed(wildcards, input):
+    return load_saarclust_params(wildcards, input, 'squashed')
+
+
+def load_saarclust_params(wildcards, input, use_case):
+
+    key_map = dict((k, k.replace('_', '.')) for k in [
+        'min_contig_size',
+        'min_region_size',
+        'bin_size',
+        'step_size',
+        'min_mapq'
+    ])
+    key_map['init_clusters'] = 'num.clusters'
+    key_map['prob_threshold'] = 'prob.th'
+    key_map['desired_clusters'] = 'desired.num.clusters'
+
+    parameter_set = {
+        'pairedReads': 'TRUE',
+        'store.data.obj': 'TRUE',
+        'reuse.data.obj': 'FALSE',
+        'bin.method': '"dynamic"',
+        'ord.method': '"greedy"',
+        'assembly.fasta': '"{}"'.format(input.reference),
+        'concat.fasta': None,
+        'remove.always.WC': 'TRUE',
+        'mask.regions': 'FALSE',
+    }
+    if use_case == 'haploid':
+        parameter_set['concat.fasta'] = 'FALSE'
+    elif use_case == 'squashed':
+        parameter_set['concat.fasta'] = 'TRUE'
+    else:
+        raise ValueError('Unknown use case for SaaRclust parameter loading: {}'.format(use_case))
+    
+    for cfg_key, sc_key in key_map.items():
+        if cfg_key == 'min_mapq':
+            parameter_set[sc_key] = config.get(cfg_key, 0)
+        else:
+            parameter_set[sc_key] = config.get(cfg_key, None)
+
+    individual = wildcards.sseq_reads.split('_')[0]
+    sample_sex = get_sample_sex(individual)
+
+    if sample_sex == 'male':
+        parameter_set['desired.num.clusters'] = config.get('desired_clusters_male', config.get('desired_clusters', None))
+    elif sample_sex == 'female':
+        parameter_set['desired.num.clusters'] = config.get('desired_clusters_female', config.get('desired_clusters', None))
+    else:
+        parameter_set['desired.num.clusters'] = config.get('desired_clusters', None)
+
+    use_case_to_rule = {
+        'squashed': 'write_saarclust_config_file',
+        'haploid': 'hac_write_saarclust_config_file'
+    }
+    
+    non_default_params = config.get('sample_non_default_parameters', dict())
+    if individual in non_default_params:
+        sample_non_defaults = non_default_params[individual]
+        use_non_defaults = True
+        if 'use_only_in' in sample_non_defaults:
+            try:
+                sample_non_defaults = sample_non_defaults['use_only_in'][use_case_to_rule[use_case]]
+            except KeyError:
+                use_non_defaults = False
+
+        if use_non_defaults:
+            for cfg_key, sc_key in key_map.items():
+                if cfg_key == 'min_mapq':
+                    parameter_set[sc_key] = config.get(cfg_key, parameter_set[sc_key])
+                else:
+                    parameter_set[sc_key] = config.get(cfg_key, parameter_set[sc_key])
+
+    # drop all entries that were not specified in the pipeline config,
+    # should default to whatever SaaRclust sets in this case
+    parameter_set = dict((k, v) for k, v in parameter_set.items() if v is not None)
+
+    # delete keys incompatible with earlier versions
+    pipeline_version = int(config['git_commit_version'])
+    if pipeline_version < 8:
+        del parameter_set['desired.num.clusters']
+
+    if pipeline_version < 9:
+        del parameter_set['min.mapq']
+
+    config_rows = ['[SaaRclust]'] + ['{} = {}'.format(k, parameter_set[k]) for k in sorted(parameter_set.keys())]
+
+    saarclust_config = '\n'.join(config_rows) + '\n'
+    return saarclust_config
+
+
 def validate_checkpoint_output(check_output, expected_type='list_of_files'):
     """
     Because of github issues #55 and #142, this function exists to make

@@ -365,6 +365,69 @@ rule compute_peregrine_nonhapres_assembly:
             ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.assm_copy}'
 
 
+rule compute_hifiasm_nonhapres_assembly:
+    """
+    Runtime for slow I/O systems
+    Memory consumption is fairly low and stable
+    """
+    input:
+        fastq = 'input/fastq/{sample}.fastq.gz',
+    output:
+        primary_unitigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_utg.gfa',
+        primary_contigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
+        raw_unitigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.r_utg.gfa',
+        discard = temp(
+            multiext(
+                'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}',
+                '.a_ctg.gfa', '.a_ctg.noseq.gfa',
+                '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
+                '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
+                '.r_utg.noseq.gfa'
+            )
+        )
+    log:
+        hifiasm = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.log',
+    benchmark:
+        os.path.join('run/output/reference_assembly/non-hap-res',
+                     '{sample}_nhr-hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((188416 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 188416 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt
+    params:
+        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0]
+    shell:
+        'hifiasm -o {params.prefix} -t {threads} {input.fastq} &> {log.hifiasm}'
+
+
+rule convert_nonhapres_gfa_to_fasta:
+    input:
+        'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
+    output:
+        fasta = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.fasta',
+        rc_map = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.read-contig.map',
+        stats = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.contig.stats',
+    log:
+        'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert.log'
+    benchmark:
+        'run/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+    conda:
+        '../environment/conda/conda_pyscript.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
+    shell:
+        '{params.script_exec} --gfa {input[0]} --n-cpus {threads} '
+        '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
+
+
 rule compute_shasta_nonhapres_assembly:
     """
     Non-haplotype resolved assembly = replaces known reference (such as hg38)
@@ -785,3 +848,89 @@ rule compute_canu_haploid_split_assembly:
             '{params.param_preset} {input.fastq} &> {log} '
             ' && '
             'cp {output.assm_source} {output.assembly}'
+
+
+rule reduce_haplotags_to_readlist:
+    input:
+        tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.{sequence}.tags.fq.tsv',
+    output:
+        list_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.h1.{sequence}.tags.list',
+        list_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.h2.{sequence}.tags.list'
+    shell:
+        'cut -f 1,2 {input} | egrep "H1" | cut -f 1 > {output.list_h1}'
+        ' && '
+        'cut -f 1,2 {input} | egrep "H2" | cut -f 1 > {output.list_h2}'
+
+
+rule compute_hifiasm_haploid_split_assembly:
+    """
+    Runtime for slow I/O systems
+    Memory consumption is fairly low and stable
+    """
+    input:
+        fastq_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h1.{sequence}.fastq.gz',
+        fastq_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h2.{sequence}.fastq.gz',
+        fastq_un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.un.{sequence}.fastq.gz',
+        tags_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.h1.{sequence}.tags.list',
+        tags_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.h2.{sequence}.tags.list',
+    output:
+        hap1_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap1.p_ctg.gfa',
+        hap2_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap2.p_ctg.gfa',
+        raw_unitigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.r_utg.gfa',
+        discard = temp(
+            multiext(
+                'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}',
+                '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
+                '.hap1.p_ctg.noseq.gfa', '.hap2.p_ctg.noseq.gfa',
+                '.dip.r_utg.noseq.gfa'
+            )
+        )
+    log:
+        hifiasm = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}.hifiasm.log',
+    benchmark:
+        os.path.join('run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/',
+                     '{hap_reads}.{sequence}.hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + 12288 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 12288 + 12288 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        prefix = lambda wildcards, output: output.hap1_contigs.rsplit('.', 3)[0]
+    shell:
+        'hifiasm -o {params.prefix} -t {threads} -3 {input.tags_h1} -4 {input.tags_h2} '
+            '{input.fastq_h1} {input.fastq_h2} {input.fastq_un} &> {log.hifiasm}'
+
+
+rule convert_cluster_gfa_to_fasta:
+    input:
+        hap1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap1.p_ctg.gfa',
+        hap2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap2.p_ctg.gfa',
+    output:
+        fasta_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.h1-un.{sequence}.fasta',
+        map_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.h1-un.{sequence}.read-contig.map',
+        stats_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.h1-un.{sequence}.contig.stats',
+        fasta_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.h2-un.{sequence}.fasta',
+        map_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.h2-un.{sequence}.read-contig.map',
+        stats_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.h2-un.{sequence}.contig.stats',
+    log:
+        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.{sequence}.gfa-convert.log'
+    benchmark:
+        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_low'])
+    conda:
+        '../environment/conda/conda_pyscript.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
+    shell:
+        '{params.script_exec} --gfa {input.hap1} --n-cpus {threads} '
+        '--out-fasta {output.fasta_h1} --out-map {output.map_h1} --out-stats {output.stats_h1} &> {log}'
+        ' && '
+        '{params.script_exec} --gfa {input.hap2} --n-cpus {threads} '
+        '--out-fasta {output.fasta_h2} --out-map {output.map_h2} --out-stats {output.stats_h2} &>> {log}'

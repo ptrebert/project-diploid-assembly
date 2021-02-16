@@ -243,11 +243,11 @@ TARGET_PATHS = {
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq00.stats"
     ),
 
-    "STATS_CONTIG_REF_ALN_CLUSTERED_ASSEMBLY_MQ30": os.path.join(
+    "STATS_CONTIG_REF_ALN_CLUSTERED_ASSEMBLY_MQ60": os.path.join(
         "output", "statistics", "contigs_to_ref_aln",
         "reference_assembly", "clustered",
         "{sseq_reads}",
-        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq30.stats"
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq60.stats"
     ),
 
     "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ00": os.path.join(
@@ -264,7 +264,7 @@ TARGET_PATHS = {
         "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}_map-to_{eval_align_ref}.mapq00.stats"
     ),
 
-    "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ30": os.path.join(
+    "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ60": os.path.join(
         "output", "statistics", "contigs_to_ref_aln",
         "diploid_assembly",
         "strandseq_{hap_assm_mode}",
@@ -275,7 +275,7 @@ TARGET_PATHS = {
         "polishing",
         "{pol_reads}",
         "haploid_assembly",
-        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}_map-to_{eval_align_ref}.mapq30.stats"
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}_map-to_{eval_align_ref}.mapq60.stats"
     ),
 
     "PLOT_INPUT_SAMPLE_STATS": os.path.join(

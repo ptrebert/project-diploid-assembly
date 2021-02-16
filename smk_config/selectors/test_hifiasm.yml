@@ -1,0 +1,4 @@
+
+select_targets:
+  name:
+    - hifiasm_test
