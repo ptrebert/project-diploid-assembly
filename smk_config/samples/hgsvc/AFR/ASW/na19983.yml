@@ -13,12 +13,15 @@ sample_description_NA19983:
         data_type: pacbio_native
         load_type: parts
     - strandseq:
-        readset: &sts_reads NA19983_hgsvc_ilnxs-80pe_sseq
+        readset: &sseq_reads NA19983_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
         library_fractions: one
     - short_reads:
-        readset: &short_reads NA19983_hgsvc_ilnvs-150pe_short
-        source_type: ftp
+        readset: &short_reads NA19983_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
 
 
 sample_targets_NA19983:
@@ -27,16 +30,28 @@ sample_targets_NA19983:
   - defaults:
       hap_reads: *clr_hgsvc
       vc_reads: *clr_hgsvc
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *clr_hgsvc
       pol_pass: arrow-p1
       hap_assm_mode: split
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
+  - defaults:
+      hap_reads: *clr_hgsvc
+      vc_reads: *clr_hgsvc
+      sseq_reads: *sseq_reads
+      pol_reads: *clr_hgsvc
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hhu26
       hap_assembler: flye
       var_caller: longshot

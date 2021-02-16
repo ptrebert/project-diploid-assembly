@@ -292,7 +292,7 @@ rule compute_flye_nonhapres_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
-        runtime_hrs = lambda wildcards, attempt: 47 if '-ccs' in wildcards.sample else 167
+        runtime_hrs = lambda wildcards, attempt: 47 if '-ccs' in wildcards.sample else 119
     params:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source),
@@ -341,17 +341,17 @@ rule compute_peregrine_nonhapres_assembly:
         assm = 'output/reference_assembly/non-hap-res/{sample}_nhr-pereg.fasta'
     log:
         pereg = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.log',
-        copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
+        assm_copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
     benchmark:
         os.path.join('run/output/reference_assembly/non-hap-res',
-                     '{sample}_nhr-pereg' + '.t{}.rsrc'.format(config['num_cpu_high']))
+                     '{sample}_nhr-pereg' + '.t{}.rsrc'.format(config['num_cpu_max']))
     envmodules:
         config['env_module_singularity']
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_high']),
+        mem_per_cpu_mb = lambda wildcards, attempt: int((1499136 if attempt <= 1 else 2949120) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards, attempt: 1499136 if attempt <= 1 else 2949120,
-        runtime_hrs = lambda wildcards, attempt: 35 if attempt <= 1 else 24 * attempt
+        runtime_hrs = lambda wildcards, attempt: 12 if attempt <= 1 else 16 * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         out_folder = lambda wildcards, output: os.path.split(output.dir_seqdb)[0],
@@ -362,7 +362,7 @@ rule compute_peregrine_nonhapres_assembly:
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.assm_copy}'
 
 
 rule compute_shasta_nonhapres_assembly:
@@ -497,7 +497,7 @@ rule compute_flye_haploid_assembly:
     resources:
         mem_per_cpu_mb = lambda wildcards: int((557056 if '-ccs' in wildcards.hap_reads else 1433600) / config['num_cpu_max']),
         mem_total_mb = lambda wildcards: 557056 if '-ccs' in wildcards.hap_reads else 1433600,
-        runtime_hrs = lambda wildcards: 30 if '-ccs' in wildcards.hap_reads else 128
+        runtime_hrs = lambda wildcards: 30 if '-ccs' in wildcards.hap_reads else 119
     params:
         param_preset = load_preset_file,
         out_prefix = lambda wildcards, output: os.path.dirname(output.assm_source)
@@ -561,7 +561,7 @@ rule compute_wtdbg_haploid_split_assembly_layout:
     input:
         fastq = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
         preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.preset.wtdbg',
-        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq'
+        seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq'
     output:
         layout = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.{sequence}/{hap_reads}.{hap}.ctg.lay.gz',
         aux = expand('output/' + PATH_STRANDSEQ_DGA_SPLIT_PROTECTED + '/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.{{sequence}}/{{hap_reads}}.{{hap}}.{ext}',
@@ -612,7 +612,7 @@ rule compute_flye_haploid_split_assembly:
     input:
         fastq = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
         preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.preset.flye',
-        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq'
+        seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq'
     output:
         layout = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/00-assembly'),
         consensus = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/flye/{hap_reads}.{hap}.{sequence}/10-consensus'),
@@ -672,7 +672,7 @@ rule compute_peregrine_haploid_split_assembly:
         assm = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.fasta',
     log:
         pereg = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.log',
-        copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
+        assm_copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
     envmodules:
@@ -692,7 +692,7 @@ rule compute_peregrine_haploid_split_assembly:
             ' asm {input.fofn} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} {threads} '
             ' --with-consensus --shimmer-r 3 --best_n_ovlp 8 --output /wd/{params.out_folder} &> {log.pereg} '
             ' && '
-            ' cp {output.dir_cns}/cns-merge/p_ctg_cns.fa {output.assm} &> {log.copy}'
+            ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.assm_copy}'
 
 
 rule compute_shasta_haploid_split_assembly:
@@ -747,7 +747,7 @@ rule compute_canu_haploid_split_assembly:
     input:
         fastq = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
         preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.preset.canu',
-        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq'
+        seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq'
     output:
         logs = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/canu-logs'),
         scripts = directory('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/canu/{hap_reads}.{hap}.{sequence}/canu-scripts'),

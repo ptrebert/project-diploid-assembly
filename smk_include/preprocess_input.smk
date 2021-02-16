@@ -2,7 +2,9 @@
 localrules: master_preprocess_input,
             write_fastq_input_parts_fofn,
             write_bam_input_parts_fofn,
-            merge_strandseq_libraries
+            merge_strandseq_libraries,
+            write_short_read_input_fofn,
+            relink_complete_short_read_input_samples
 
 
 rule master_preprocess_input:
@@ -145,6 +147,11 @@ rule write_bam_input_parts_fofn:
 
 
 rule merge_pacbio_native_bams:
+    """
+    switch to pbmerge ; bamtools merge
+    seems to create corrupt data blocks
+    every now and then
+    """
     input:
         fofn = 'input/bam/{mrg_sample}_1000.pbn.fofn'
     output:
@@ -156,13 +163,13 @@ rule merge_pacbio_native_bams:
     wildcard_constraints:
         mrg_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     conda:
-         '../environment/conda/conda_biotools.yml'
+         '../environment/conda/conda_pbtools.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 if (attempt <= 1 and '-ccs' in wildcards.mrg_sample) else 24 * attempt
     params:
-        bam_parts = lambda wildcards, input: load_fofn_file(input, prefix=' -in ', sep=' -in ')
+        bam_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'bamtools merge {params.bam_parts} -out {output}'
+        'pbmerge {params.bam_parts} > {output} 2> {log}'
 
 
 rule chs_child_filter_to_100x:
@@ -178,6 +185,7 @@ rule chs_child_filter_to_100x:
         'log/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.log'
     benchmark:
         'run/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.rsrc'
+    message: 'DEPRECATED: downsampling for sample HG00514 was only done for early chemistry read data'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
@@ -193,7 +201,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
     :return:
     """
     import os
-    source_path = 'input/fastq/{sts_reads}/{lib_id}.fastq.gz'
+    source_path = 'input/fastq/{sseq_reads}/{lib_id}.fastq.gz'
 
     if glob_collect:
         import glob
@@ -205,7 +213,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
             raise RuntimeError('collect_strandseq_libraries: no files collected with pattern {}'.format(pattern))
 
     else:
-        checkpoint_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sts_reads).output[0]
+        checkpoint_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
 
         glob_pattern = os.path.join(checkpoint_dir, '{lib_id}.request')
 
@@ -213,7 +221,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
 
         sseq_fastq = expand(
             source_path,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             lib_id=checkpoint_wildcards.lib_id
             )
 
@@ -222,16 +230,16 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
 
 rule merge_strandseq_libraries:
     """
-    To have a simple way of incorporating the sts_reads
+    To have a simple way of incorporating the sseq_reads
     wildcard into the workflow, create this file listing
     to be referred to downstream
     """
     input:
         sseq_libs = collect_strandseq_libraries
     output:
-        'input/fastq/{sts_reads}.fofn'
+        'input/fastq/{sseq_reads}.fofn'
     wildcard_constraints:
-        sts_reads = CONSTRAINT_STRANDSEQ_SAMPLES
+        sseq_reads = CONSTRAINT_STRANDSEQ_SAMPLES
     run:
         try:
             validate_checkpoint_output(input.sseq_libs)
@@ -243,3 +251,102 @@ rule merge_strandseq_libraries:
 
         with open(output[0], 'w') as dump:
             _ = dump.write('\n'.join(sorted(sseq_fastq)))
+
+
+def collect_short_read_input_parts(wildcards, glob_collect=False):
+    import os
+    source_path = 'input/fastq/{readset}/{lib_prefix}_{lib_id}_{mate}.fastq.gz'
+
+    lib_prefix = wildcards.readset.rsplit('_', 1)[0]
+
+    if glob_collect:
+        import glob
+        custom_wildcards = {
+            'readset': wildcards.readset,
+            'lib_prefix': lib_prefix,
+            'mate': wildcards.mate
+        }
+        pattern = source_path.replace('{lib_id}', '*')
+        pattern = pattern.format(**custom_wildcards)
+        short_fastq = glob.glob(pattern)
+
+        if not short_fastq:
+            raise RuntimeError('collect_short_read_input_parts: no files collected with pattern {}'.format(pattern))
+
+    else:
+        checkpoint_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.readset).output[0]
+
+        fix_mate_pattern = '_'.join([lib_prefix, '{lib_id}', wildcards.mate])
+
+        glob_pattern = os.path.join(checkpoint_dir, fix_mate_pattern + '.request')
+
+        checkpoint_wildcards = glob_wildcards(glob_pattern)
+
+        short_fastq = expand(
+            source_path,
+            readset=[wildcards.readset] * len(checkpoint_wildcards.lib_id),
+            lib_prefix=[lib_prefix] * len(checkpoint_wildcards.lib_id),
+            lib_id=checkpoint_wildcards.lib_id,
+            mate=[wildcards.mate] * len(checkpoint_wildcards.lib_id)
+        )
+
+    return short_fastq
+
+
+rule write_short_read_input_fofn:
+    input:
+        short_reads = collect_short_read_input_parts
+    output:
+        'input/fastq/{readset}_{mate}.fofn'
+    wildcard_constraints:
+        readset = CONSTRAINT_SHORT_READ_INPUT_SAMPLES
+    run:
+        try:
+            validate_checkpoint_output(input.short_reads)
+            short_fastq = input.short_reads
+        except (RuntimeError, ValueError) as error:
+            import sys
+            sys.stderr.write('\n{}\n'.format(str(error)))
+            short_fastq = collect_short_read_input_parts(wildcards, glob_collect=True)
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write('\n'.join(sorted(short_fastq)))
+
+
+rule merge_partial_short_read_input_samples:
+    input:
+         fofn = 'input/fastq/{readset}_{mate}.fofn'
+    output:
+        'input/fastq/{readset}_{mate}.fastq.gz'
+    log:
+        'log/input/fastq/{readset}_{mate}.merge.log'
+    benchmark:
+        'run/input/fastq/{readset}_{mate}.merge.rsrc'
+    wildcard_constraints:
+        readset = CONSTRAINT_PARTS_SHORT_READ_INPUT_SAMPLES
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+    params:
+        fastq_parts = lambda wildcards, input: load_fofn_file(input)
+    shell:
+         'gzip -d -c {params.fastq_parts} | gzip > {output} 2> {log}'
+
+
+rule relink_complete_short_read_input_samples:
+    """
+    TODO: fix download path for complete samples
+    """
+    input:
+        fofn = 'input/fastq/{readset}_{mate}.fofn'
+    output:
+        'input/fastq/{readset}_{mate}.fastq.gz'
+    log:
+        'log/input/fastq/{readset}_{mate}.merge.log'
+    benchmark:
+        'run/input/fastq/{readset}_{mate}.merge.rsrc'
+    wildcard_constraints:
+        readset = CONSTRAINT_COMPLETE_SHORT_READ_INPUT_SAMPLES
+    params:
+        fastq_parts = lambda wildcards, input: load_fofn_file(input)
+    shell:
+        'ln --symbolic --relative {params.fastq_parts} {output}'

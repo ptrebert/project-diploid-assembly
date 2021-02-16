@@ -29,3 +29,27 @@ reference_data_sources:
   HG00733_hgsvc_pbil-trio_hapB:
     local_path: references/downloads/HG00733_hgsvc_pbil-trio_hapB.fa.gz
     remote_path: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20180227_IlluminaPolishedPhasedSV/HG00733.h1.polish.fasta.gz
+  NA19240_hgsvc_pbil-trio_hapA:
+    local_path: references/downloads/NA19240_hgsvc_pbil-trio_hapA.fa.gz
+    remote_path: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20180227_IlluminaPolishedPhasedSV/NA19240.h0.polish.fasta.gz
+  NA19240_hgsvc_pbil-trio_hapB:
+    local_path: references/downloads/NA19240_hgsvc_pbil-trio_hapB.fa.gz
+    remote_path: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/hgsv_sv_discovery/working/20180227_IlluminaPolishedPhasedSV/NA19240.h1.polish.fasta.gz
+  HG002_hg38_giab_highconf:
+    local_path: references/downloads/HG002_hg38_giab_highconf.bed
+    remote_path: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/AshkenazimTrio/HG002_NA24385_son/latest/GRCh38/HG002_GRCh38_1_22_v4.1_draft_benchmark.bed
+  HG005_hg38_giab_highconf:
+    local_path: references/downloads/HG005_hg38_giab_highconf.bed
+    remote_path: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/ChineseTrio/HG005_NA24631_son/latest/GRCh38/HG005_GRCh38_GIAB_highconf_CG-Illfb-IllsentieonHC-Ion-10XsentieonHC-SOLIDgatkHC_CHROM1-22_v.3.3.2_highconf.bed
+  HG001_hg38_giab_highconf:
+    local_path: references/downloads/HG001_hg38_giab_highconf.bed
+    remote_path: ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/release/NA12878_HG001/latest/GRCh38/HG001_GRCh38_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel_noCENorHET7.bed
+  GRCh38_ENSEMBLv98_RegBuild:
+    local_path: references/downloads/GRCh38_ENSEMBLv98_RegBuild.gff3.gz
+    remote_path: ftp://ftp.ensembl.org/pub/release-98/regulation/homo_sapiens/homo_sapiens.GRCh38.Regulatory_Build.regulatory_features.20190329.gff.gz
+  GRCh38_HGSVC2_noalt:
+    local_path: references/downloads/GRCh38_HGSVC2_noalt.fa.gz
+    remote_path: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/HGSVC2/technical/reference/20200513_hg38_NoALT/hg38.no_alt.fa.gz
+  T2Tv1_T2TC_chm13:
+    local_path: references/downloads/T2Tv1_T2TC_chm13.fa.gz
+    remote_path: https://s3.amazonaws.com/nanopore-human-wgs/chm13/assemblies/chm13.draft_v1.0.fasta.gz

@@ -12,13 +12,17 @@ sample_description_NA20847:
         technology: pacbio
         data_type: pacbio_native
         load_type: parts
+        comment: "seq_center:UMIGS"
     - strandseq:
-        readset: &sts_reads NA20847_hgsvc_ilnxs-80pe_sseq
+        readset: &sseq_reads NA20847_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
         library_fractions: one
     - short_reads:
-        readset: &short_reads NA20847_hgsvc_ilnvs-150pe_short
-        source_type: ftp
+        readset: &short_reads NA20847_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB31736
+        load_type: complete
+        comment: "2504 cohort"
 
 
 sample_targets_NA20847:
@@ -27,16 +31,18 @@ sample_targets_NA20847:
   - defaults:
       hap_reads: *clr_reads
       vc_reads: *clr_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *clr_reads
       pol_pass: arrow-p1
       hap_assm_mode: split
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
+  - target:
+      nhr_assembler: hhu26
       hap_assembler: flye
       var_caller: longshot

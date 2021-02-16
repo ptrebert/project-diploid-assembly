@@ -180,7 +180,7 @@ rule install_rlib_saarclust:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096
     shell:
-        'TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
+        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
 
 
 if int(config['git_commit_version']) < 8:
@@ -209,7 +209,7 @@ rule install_rlib_breakpointr:
         script_exec = lambda wildcards: find_script_path('install_breakpointr.R'),
         version = BREAKPOINTR_VERSION
     shell:
-        'TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
+        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
 
 
 rule install_rlib_strandphaser:
@@ -228,7 +228,7 @@ rule install_rlib_strandphaser:
         script_exec = lambda wildcards: find_script_path('install_strandphaser.R'),
         version = config['git_commit_strandphaser']
     shell:
-        'TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
+        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
 
 
 rule download_quast_busco_databases:

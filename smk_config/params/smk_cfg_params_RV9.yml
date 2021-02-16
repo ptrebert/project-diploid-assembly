@@ -38,6 +38,11 @@ sample_non_default_parameters:
       write_saarclust_config_file:
         init_clusters: 150
         desired_clusters: 25
+  NA24385:
+    use_only_in:
+      write_saarclust_config_file:
+        init_clusters: 150
+        desired_clusters: 25
 
 # VARIANT CALLING
 # Postprocessing parameters

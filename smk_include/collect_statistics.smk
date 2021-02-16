@@ -45,6 +45,7 @@ rule compute_statistics_complete_input_fasta:
         summary = 'input/fasta/{sample}.stats'
     log: 'log/output/statistics/stat_dumps/{sample}.fasta.log',
     benchmark: 'run/output/statistics/stat_dumps/{sample}.fasta.t2.rsrc'
+    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     threads: 2
     resources:
         runtime_hrs= 8,
@@ -68,13 +69,13 @@ rule compute_statistics_complete_input_fasta:
 
 rule compute_statistics_split_cluster_fastq:
     input:
-         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
-         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
+         faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
     output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.pck',
-          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.t2.rsrc'
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.pck',
+          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.t2.rsrc'
     threads: 2
     resources:
              runtime_hrs= 1,
@@ -90,20 +91,47 @@ rule compute_statistics_split_cluster_fastq:
          '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
-rule compute_statistics_split_cluster_fasta:
+rule compute_statistics_joint_cluster_fastq:
     input:
-         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta',
-         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+        fasta = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.gz',
+        faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai',
     output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.pck',
-          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.t2.rsrc'
+        dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.pck',
+        summary = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.stats',
+    log:
+        'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.log',
+    benchmark:
+        'run/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.t2.rsrc'
     threads: 2
     resources:
-             runtime_hrs= 1,
-             mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
-             mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
+        runtime_hrs= lambda wildcards, attempt: attempt,
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
+    conda:
+        '../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
+    shell:
+        '{params.script_exec} --debug --input-files {input.fasta} '
+        '--output {output.dump} --summary-output {output.summary} '
+        '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
+
+
+rule compute_statistics_split_cluster_fasta:
+    input:
+         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta',
+         faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
+    output:
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.pck',
+          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.t2.rsrc'
+    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
+    threads: 2
+    resources:
+        runtime_hrs= 1,
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
     conda:
          '../environment/conda/conda_pyscript.yml'
     params:
@@ -116,18 +144,19 @@ rule compute_statistics_split_cluster_fasta:
 
 rule compute_statistics_joint_cluster_fasta:
     input:
-         fasta = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq',
-         faidx = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta.fai',
+         fasta = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta',
+         faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai',
     output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.pck',
-          summary = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.t2.rsrc'
+          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.pck',
+          summary = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.stats',
+    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.log',
+    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.t2.rsrc'
+    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     threads: 2
     resources:
-             runtime_hrs= 1,
-             mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
-             mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
+        runtime_hrs= 1,
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
     conda:
          '../environment/conda/conda_pyscript.yml'
     params:
@@ -168,6 +197,80 @@ rule compute_statistics_complete_input_bam:
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
+rule collect_snv_stats_per_cluster:
+    input:
+        vcf = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf',
+        fai = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai'
+    output:
+        'output/statistics/variant_calls/{var_caller}/{reference}/{sseq_reads}/{vc_reads}.snv.QUAL{qual}.GQ{gq}.vcf.cluster.stats'
+    priority: 200
+    run:
+        import statistics as stats
+        import collections as col
+
+        with open(input.fai, 'r') as index:
+            cluster_sizes = dict((l.split()[0], int(l.split()[1])) for l in index.readlines())
+
+        snv_per_chrom = col.Counter()
+        qual_per_snv = col.defaultdict(list)
+        depth_per_snv = col.defaultdict(list)
+        genoqual_per_snv = col.defaultdict(list)
+        with open(input.vcf, 'r') as vcf:
+            for line in vcf:
+                if line.startswith('#'):
+                    continue
+                chrom, _, _, _, _, qual, _, info, attributes, sample = line.strip().split()
+                snv_per_chrom[chrom] += 1
+                qual_per_snv[chrom].append(float(qual))
+                if wildcards.var_caller == 'longshot':
+                    assert info.startswith('DP='), 'Unexpected Longshot/INFO field (DP): {}'.format(line.strip())
+                    depth_per_snv[chrom].append(int(info.split(';')[0].replace('DP=', '')))
+                elif wildcards.var_caller == 'deepvar' or wildcards.var_caller == 'freebayes':
+                    assert attributes.split(':')[2] == 'DP', 'Unexpected DeepVariant/FORMAT field (DP): {}'.format(line.strip())
+                    depth_per_snv[chrom].append(int(sample.split(':')[2]))
+                else:
+                    raise RuntimeError('Unsupported variant caller for cluster stats rule: {}'.format(wildcards.var_caller))
+                assert attributes.split(':')[1] == 'GQ', 'Unexpected FORMAT field (GQ): {}'.format(line.strip())
+                genoqual_per_snv[chrom].append(int(sample.split(':')[1]))
+
+        fun_labels = ['mean', 'stddev']
+        stats_funs = [stats.mean, stats.stdev]
+
+        stats_labels = ['QUAL', 'DEPTH', 'GTQUAL']
+        stats_collect = [qual_per_snv, depth_per_snv, genoqual_per_snv]
+
+        with open(output[0], 'w') as stat_dump:
+            for seq in sorted(cluster_sizes.keys()):
+                _ = stat_dump.write('{}_size_bp\t{}\n'.format(seq, cluster_sizes[seq]))
+                _ = stat_dump.write('{}_HET-SNV_num\t{}\n'.format(seq, snv_per_chrom[seq]))
+                kbp_factor = cluster_sizes[seq] / 1000
+                snv_per_kbp = round(snv_per_chrom[seq] / kbp_factor, 3)
+                _ = stat_dump.write('{}_HET-SNV_per_kbp\t{}\n'.format(seq, snv_per_kbp))
+                for sl, sc in zip(stats_labels, stats_collect):
+                    for fl, fun in zip(fun_labels, stats_funs):
+                        result = round(fun(sc[seq]), 3)
+                        _ = stat_dump.write('{}_HET-SNV_{}_{}\t{}\n'.format(seq, sl, fl, result))
+
+
+rule collect_contig_to_ref_aln_statistics:
+    input:
+        ctg_ref_aln = 'output/alignments/contigs_to_reference/{folder_path}/{assembly}_map-to_{aln_reference}.bed',
+        ref_chroms = 'references/assemblies/{aln_reference}.fasta.fai',
+        assm_chroms = 'output/{folder_path}/{assembly}.fasta.fai'
+    output:
+        'output/statistics/contigs_to_ref_aln/{folder_path}/{assembly}_map-to_{aln_reference}.mapq{mapq}.stats'
+    priority: 200
+    conda:
+        '../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('collect_contig_aln_stats.py'),
+        mapq = lambda wildcards: int(wildcards.mapq)
+    shell:
+        '{params.script_exec} --contig-alignments {input.ctg_ref_aln} '
+        '--reference-chromosomes {input.ref_chroms} --contig-names {input.assm_chroms} '
+        '--min-mapq {params.mapq} --contig-groups --group-id-position 0 --output {output}'
+
+
 def collect_tag_lists(wildcards, glob_collect=False):
     """
     :param wildcards:
@@ -189,7 +292,7 @@ def collect_tag_lists(wildcards, glob_collect=False):
             raise RuntimeError('collect_tag_lists: no files collected with pattern {}'.format(pattern))
 
     else:
-        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
         checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
@@ -200,7 +303,7 @@ def collect_tag_lists(wildcards, glob_collect=False):
                            qual=wildcards.qual,
                            reference=wildcards.reference,
                            vc_reads=wildcards.vc_reads,
-                           sts_reads=wildcards.sts_reads,
+                           sseq_reads=wildcards.sseq_reads,
                            hap_reads=wildcards.hap_reads,
                            sequence=checkpoint_wildcards.sequence,
                            tag_type=wildcards.tag_type)
@@ -211,9 +314,9 @@ rule summarize_tagging_splitting_statistics:
     input:
         tags = collect_tag_lists
     output:
-        'output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.tsv'
+        'output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.tsv'
     benchmark:
-        'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}/{hap_reads}.tags.{tag_type}.rsrc'
+        'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.rsrc'
     priority: 200
     run:
         try:

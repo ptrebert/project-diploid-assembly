@@ -1,0 +1,17 @@
+name: bifrost
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.6
+  - pip
+  - c-compiler
+  - cmake>=3.0.0
+  - compilers
+  - cxx-compiler
+  - libclang>=8.0.0
+  - pkg-config
+  - pthread-stubs
+  - xz
+  - zlib

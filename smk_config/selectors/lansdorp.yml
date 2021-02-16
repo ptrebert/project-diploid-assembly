@@ -1,0 +1,17 @@
+
+select_targets:
+  nhr_assembler:
+    - hifiasm
+  hap_assembler:
+    - hifiasm
+  var_caller:
+    - deepvar
+  name:
+    - Lansdorp
+
+skip_targets:
+  name:
+    - pacbio_test
+    - nanopore_test
+    - hifi_subsampling
+

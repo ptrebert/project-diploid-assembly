@@ -12,6 +12,7 @@ import difflib
 import collections as col
 import itertools
 import hashlib
+import warnings
 
 import yaml
 
@@ -32,6 +33,7 @@ option_defaults = col.OrderedDict([
     ('ss_seq_platform', 'ilany'),
     ('ss_read_type', 'npe'),
     ('ss_library_fractions', None),
+    ('param_ver', 12),
     ('max_cpu', None),
     ('high_cpu', None),
     ('medium_cpu', None),
@@ -83,7 +85,8 @@ option_help = col.OrderedDict([
     ('population', 'Name or ID of population [Default: {}]'.format(option_defaults['population'])),
     ('family_name', 'Name or ID of family [Default: {}]'.format(option_defaults['family_name'])),
     ('lr_folder', 'Full path to folder containing long-read input data. '
-                  'All files in this folder are assumed to be input files. '
+                  'All files in this folder are assumed to be long-read input files. '
+                  'ATTENTION: remove any index or other auxiliary files from this folder. '
                   'Path must not be identical with the input data path for Strand-seq data.'),
     ('lr_project', 'Project name for long-read input data [Default: {}]'.format(option_defaults['lr_project'])),
     ('lr_seq_platform', 'Specify long-read sequencing '
@@ -92,7 +95,8 @@ option_help = col.OrderedDict([
     ('lr_input_format', 'Specify input data format: {} (FASTQ must be '
                         'gzipped)'.format(option_constraints['lr_input_format']['check'])),
     ('ss_folder', 'Full path to folder containing Strand-seq input data (gzipped FASTQ). '
-                  'All files in this folder are assumed to be input files. '
+                  'All files in this folder are assumed to be Strand-seq read input files. '
+                  'ATTENTION: remove any index or other auxiliary files from this folder. '
                   'Path must not be identical with the input path for long-read input data.'),
     ('ss_project', 'Project name for Strand-seq input data [Default: {}]'.format(option_defaults['ss_project'])),
     ('ss_seq_platform', 'Specify Strand-seq platform [Default: '
@@ -101,6 +105,8 @@ option_help = col.OrderedDict([
                      '{} (length N paired-end)]'.format(option_defaults['ss_read_type'])),
     ('ss_library_fractions', 'Specify number of different Strand-seq library fractions: '
                              '{}'.format(option_constraints['ss_library_fractions']['check'])),
+    ('param_ver', 'Specify the pipeline parameter version (number) to be used in the analysis. '
+                  '[Default: {}]'.format(option_defaults['param_ver'])),
     ('max_cpu', 'Number of CPU cores to use for tasks such as whole-genome assembly (should be max. available).'),
     ('high_cpu', 'Number of CPU cores to use for tasks such as whole-genome alignment of long reads.'),
     ('medium_cpu', 'Number of CPU cores to use for tasks such as chromosome-scale alignment of long reads.'),
@@ -122,7 +128,7 @@ assert all(k in option_defaults.keys() for k in option_help.keys()), 'Key missin
 
 load_configs = {
     'reference_sources': 'smk_config/ref_data/reference_data_sources.yml',
-    'params': 'smk_config/params/smk_cfg_params_RV9.yml'
+    'params': 'smk_config/params/smk_cfg_params_RV{param_version}.yml'
 }
 
 sample_targets_template = """
@@ -133,7 +139,7 @@ sample_targets_{sample_name}:
   - defaults:
       hap_reads: *long_reads
       vc_reads: *long_reads
-      sts_reads: *strandseq_reads
+      sseq_reads: *strandseq_reads
       pol_reads: *long_reads
       hap_assm_mode: split
       hap:
@@ -158,6 +164,15 @@ def parse_command_line():
         default=False,
         dest='accept_defaults',
         help='Accept default values for all parameters if available.'
+    )
+
+    parser.add_argument(
+        '--unique-id-length',
+        '-uil',
+        default=15,
+        type=int,
+        dest='unique_id_length',
+        help='Use this many letters from the generated MD5 as unique ID for run and/or library.'
     )
 
     parser.add_argument(
@@ -296,6 +311,16 @@ def parse_command_line():
         choices=option_constraints['ss_library_fractions']['check'],
         dest='ss_library_fractions',
         help=option_help['ss_library_fractions']
+    )
+
+    param_group = parser.add_argument_group('Parameter configuration')
+    param_group.add_argument(
+        '--parameter-version',
+        '-pv',
+        default=option_defaults['param_ver'],
+        type=int,
+        dest='param_ver',
+        help=option_help['param_ver']
     )
 
     runenv_group = parser.add_argument_group('Run environment configuration')
@@ -489,6 +514,12 @@ def collect_long_read_input(args):
     else:
         raise ValueError('Unexpected long-read data type: {}'.format(long_read_config['data_type']))
 
+    if args.lr_read_type == 'clr' and args.lr_input_format == 'fastq':
+        warnings.warn('Long-read data type was specified as FASTQ, but sequencing platform indicates '
+                      'CLR reads. Polishing CLR assemblies requires PacBio-specific quality information '
+                      'that is only contained in "pacbio-native" BAM files. You should absolutely be sure '
+                      'of what you are doing.')
+
     link_files = []
     if long_read_config['load_type'] == 'complete':
         new_file_name = long_read_config['readset'] + '_1000' + file_ext
@@ -505,12 +536,13 @@ def collect_long_read_input(args):
     return long_read_config, link_files
 
 
-def find_mate_pairs(strandseq_files):
+def find_mate_pairs(strandseq_files, unique_id_length):
     """
     Assume that second in pair is lexicographically
     closest to first in pair; just make a single confirmation
     (success or fail)
     :param strandseq_files: sorted list of Strand-seq input files
+    :param unique_id_length:
     :return:
     """
     pairs = []
@@ -531,7 +563,7 @@ def find_mate_pairs(strandseq_files):
                                  '{} / {} vs {}'.format(first_mate, second_mate, next_mate))
         except IndexError:
             pass
-        uniq_runid = hashlib.md5(common_substring.encode('utf-8')).hexdigest()[:9]
+        uniq_runid = hashlib.md5(common_substring.encode('utf-8')).hexdigest()[:unique_id_length]
         if uniq_runid in run_ids:
             raise ValueError('Created run ID is not unique: {} / {}'.format(uniq_runid, common_substring))
         run_ids.add(uniq_runid)
@@ -539,10 +571,11 @@ def find_mate_pairs(strandseq_files):
     return sorted(pairs, key=lambda x: x[2])
 
 
-def match_library_fractions(mate_pairs):
+def match_library_fractions(mate_pairs, unique_id_length):
     """
     This might also handle files with unreasonable names
     :param mate_pairs:
+    :param unique_id_length:
     :return:
     """
     last_fixed_id = mate_pairs[0][3]
@@ -562,9 +595,9 @@ def match_library_fractions(mate_pairs):
         sub_check, run_id_check = pair_check[2], pair_check[3]
         if run_id_fix != last_fixed_id:
             if matched_pair_ids is not None:
-                uniq_lib_id = hashlib.md5(longest_substring.encode('utf-8')).hexdigest()[:9]
+                uniq_lib_id = hashlib.md5(longest_substring.encode('utf-8')).hexdigest()[:unique_id_length]
                 if uniq_lib_id in generated_lib_ids:
-                    raise ValueError('Created lib ID is not unique: {} / {}'.format(uniq_lib_id, longest_substring))
+                    raise ValueError('Iter -> created lib ID is not unique: {} / {}'.format(uniq_lib_id, longest_substring))
                 # associate run id to lib id
                 run_to_lib_id[matched_pair_ids[0]] = uniq_lib_id
                 run_to_lib_id[matched_pair_ids[1]] = uniq_lib_id
@@ -591,9 +624,9 @@ def match_library_fractions(mate_pairs):
             longest_match = mobj.size
             longest_substring = sub_fix[mobj.b:mobj.b + mobj.size]
 
-    uniq_lib_id = hashlib.md5(longest_substring.encode('utf-8')).hexdigest()[:9]
+    uniq_lib_id = hashlib.md5(longest_substring.encode('utf-8')).hexdigest()[:unique_id_length]
     if uniq_lib_id in generated_lib_ids:
-        raise ValueError('Created lib ID is not unique: {} / {}'.format(uniq_lib_id, longest_substring))
+        raise ValueError('Last iter -> created lib ID is not unique: {} / {}'.format(uniq_lib_id, longest_substring))
     # associate run id to lib id
     run_to_lib_id[matched_pair_ids[0]] = uniq_lib_id
     run_to_lib_id[matched_pair_ids[1]] = uniq_lib_id
@@ -629,10 +662,10 @@ def collect_strandseq_input(args):
 
     strandseq_files = sorted(filter(lambda x: os.path.isfile(os.path.join(args.ss_folder, x)), os.listdir(args.ss_folder)))
 
-    pairs = find_mate_pairs(strandseq_files)
+    pairs = find_mate_pairs(strandseq_files, args.unique_id_length)
     lib_ids = None
     if args.ss_library_fractions > 1:
-        lib_ids = match_library_fractions(pairs)
+        lib_ids = match_library_fractions(pairs, args.unique_id_length)
 
     link_files = []
 
@@ -660,7 +693,7 @@ def define_default_polishing(args):
     return pol_pass
 
 
-def generate_sample_description(args, lr_readset, sts_readset):
+def generate_sample_description(args, lr_readset, sseq_readset):
 
     sample_desc = {
         'sample_description_{}'.format(args.sample_name): dict([
@@ -670,22 +703,22 @@ def generate_sample_description(args, lr_readset, sts_readset):
             ('family', args.family_name),
             ('data_sources', [
                 {'long_reads': lr_readset},
-                {'strandseq': sts_readset}
+                {'strandseq': sseq_readset}
             ])
         ])}
     return sample_desc
 
 
-def generate_sample_targets(args, lr_readset, sts_readset):
+def generate_sample_targets(args, lr_readset, sseq_readset):
 
     lr_readset_name = lr_readset + '_1000'
-    sts_readset_name = sts_readset
+    sseq_readset_name = sseq_readset
     polishing = define_default_polishing(args)
 
     sample_targets = sample_targets_template.format(**{
         'sample_name': args.sample_name,
         'long_reads': lr_readset_name,
-        'strandseq_reads': sts_readset_name,
+        'strandseq_reads': sseq_readset_name,
         'nhr_assembler': args.nhr_assembler,
         'hap_assembler': args.hap_assembler,
         'var_caller': args.var_caller,
@@ -710,6 +743,8 @@ def generate_run_env(args):
 
 def generate_data_source(args):
 
+    bam_extension = 'pbn.bam' if args.lr_input_format == 'pacbio_native' else 'bam'
+
     data_source = {
         'data_source_{}'.format(args.sample_name): {
             'output': '{}_local_data.json'.format(args.sample_name),
@@ -717,7 +752,7 @@ def generate_data_source(args):
             'data_source': os.path.join(args.exec_folder, 'autoconf_linked_data'),
             'collect_files': [
                 'fastq.gz',
-                'bam'
+                bam_extension
             ],
             'sort_into': [
                 'fastq',
@@ -735,19 +770,19 @@ def main():
     args = sanitize_user_input(args)
 
     lr_readset_config, lr_link_files = collect_long_read_input(args)
-    sts_readset_config, sts_link_files = collect_strandseq_input(args)
+    sseq_readset_config, sts_link_files = collect_strandseq_input(args)
 
     config_path = os.path.join(args.exec_folder, 'autoconf_config', 'run_assembly.yml')
     os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
     with open(config_path, 'w') as config_dump:
 
-        sample_desc = generate_sample_description(args, lr_readset_config, sts_readset_config)
+        sample_desc = generate_sample_description(args, lr_readset_config, sseq_readset_config)
         _ = config_dump.write('# SECTION: SAMPLE & READSET DESCRIPTION\n')
         _ = config_dump.write(yaml.dump(sample_desc, default_flow_style=False, sort_keys=False))
         _ = config_dump.write('\n\n')
 
-        sample_targets = generate_sample_targets(args, lr_readset_config['readset'], sts_readset_config['readset'])
+        sample_targets = generate_sample_targets(args, lr_readset_config['readset'], sseq_readset_config['readset'])
         _ = config_dump.write('# SECTION: SAMPLE TARGETS / SNAKEMAKE WILDCARDS\n')
         _ = config_dump.write(sample_targets)
         _ = config_dump.write('\n\n')

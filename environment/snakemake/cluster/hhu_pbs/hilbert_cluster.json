@@ -8,6 +8,91 @@
     "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
     "account": "RFDGA",
     "run_hrs": "{resources.runtime_hrs}",
-    "run_min": "{resources.runtime_min}"
+    "run_min": "{resources.runtime_min}",
+    "arch": ""
+  },
+  "install_source_bifrost":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "account": "RFDGA",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}",
+    "arch": ":arch=skylake"
+  },
+  "install_source_venn_diagram":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "account": "RFDGA",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}",
+    "arch": ":arch=skylake"
+  },
+  "build_bifrost_colored_dbg":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "account": "RFDGA",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}",
+    "arch": ":arch=skylake"
+  },
+  "count_kmers_per_color":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "account": "RFDGA",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}",
+    "arch": ":arch=skylake"
+  },
+  "query_bifrost_colored_dbg":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "account": "RFDGA",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}",
+    "arch": ":arch=skylake"
+  },
+  "racon_contig_polishing_pass1":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "account": "RFDGA",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}",
+    "arch": ":arch=skylake"
+  },
+  "racon_contig_polishing_pass2":
+  {
+    "cores": "{threads}",
+    "mem_mb": "{resources.mem_total_mb}",
+    "name": "{jobid}_{rule}",
+    "output": "log/cluster_jobs/stdout/{jobid}_{rule}.stdout",
+    "error": "log/cluster_jobs/stderr/{jobid}_{rule}.stderr",
+    "account": "RFDGA",
+    "run_hrs": "{resources.runtime_hrs}",
+    "run_min": "{resources.runtime_min}",
+    "arch": ":arch=skylake"
   }
 }

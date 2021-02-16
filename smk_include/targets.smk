@@ -19,7 +19,7 @@ TARGET_PATHS = {
 
     "BUILD_CLUSTERED_ASSEMBLY": os.path.join(
         "output", "reference_assembly", "clustered",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}.fasta",
     ),
 
@@ -29,7 +29,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "draft", "haploid_assembly",
         "{hap_reads}-{hap_assembler}.{hap}.fasta"
     ),
@@ -40,7 +40,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "haploid_assembly",
@@ -53,11 +53,38 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",
         "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}.scV{git_commit_version}.fasta"
+    ),
+
+    "HAPLOID_READ_COVERAGE_HAP1": os.path.join(
+        "output", "cov_tracks", "hap_reads",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "{hap_reads}_map-to_{eval_align_ref}.h1.bigWig"
+    ),
+
+    "HAPLOID_READ_COVERAGE_HAP2": os.path.join(
+        "output", "cov_tracks", "hap_reads",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "{hap_reads}_map-to_{eval_align_ref}.h2.bigWig"
+    ),
+
+    "HAPLOID_READ_COVERAGE_UN": os.path.join(
+        "output", "cov_tracks", "hap_reads",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "{hap_reads}_map-to_{eval_align_ref}.un.bigWig"
     ),
 
     "REPORT_NHR_ASSEMBLY": os.path.join(
@@ -75,7 +102,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "draft", "haploid_assembly",
         "{hap_reads}-{hap_assembler}.{hap}/report.pdf"
     ),
@@ -88,7 +115,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "haploid_assembly",
@@ -103,7 +130,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",
@@ -119,7 +146,7 @@ TARGET_PATHS = {
         "output", "statistics", "variant_calls",
         "{var_caller}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{vc_reads}.snv.QUAL{filter_vcf_qual}.vcf.stats"
     ),
 
@@ -127,8 +154,16 @@ TARGET_PATHS = {
         "output", "statistics", "variant_calls",
         "{var_caller}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{vc_reads}.snv.QUAL{filter_vcf_qual}.GQ{filter_vcf_gq}.vcf.stats"
+    ),
+
+    "STATS_VARIANT_CALLING_CLUSTER": os.path.join(
+        "output", "statistics", "variant_calls",
+        "{var_caller}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{sseq_reads}",
+        "{vc_reads}.snv.QUAL{filter_vcf_qual}.GQ{filter_vcf_gq}.vcf.cluster.stats"
     ),
 
     "STATS_STRANDPHASER": os.path.join(
@@ -136,7 +171,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}.spr-phased.stats.tsv"
     ),
 
@@ -145,7 +180,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}.wh-phased.stats.tsv"
     ),
 
@@ -154,8 +189,93 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}.tags.{tag_source}.tsv"
+    ),
+
+    # The following stat summary targets all fix the data format
+    # to FASTQ because no assembler works with pacbio-native BAM
+    # as input - will break if that changes
+    "STATS_READ_HAPLOID_SUMMARY_USERDEFINED": os.path.join(
+        "output", "statistics", "stat_dumps", "diploid_assembly", "strandseq_joint",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_fastq",
+        "{hap_reads}.{hap}.fastq.pck"
+    ),
+
+    "STATS_READ_HAPLOID_SUMMARY_HAP1": os.path.join(
+        "output", "statistics", "stat_dumps", "diploid_assembly", "strandseq_joint",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_fastq",
+        "{hap_reads}.h1.fastq.pck"
+    ),
+
+    "STATS_READ_HAPLOID_SUMMARY_HAP2": os.path.join(
+        "output", "statistics", "stat_dumps", "diploid_assembly", "strandseq_joint",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_fastq",
+        "{hap_reads}.h2.fastq.pck"
+    ),
+
+    "STATS_READ_HAPLOID_SUMMARY_UN": os.path.join(
+        "output", "statistics", "stat_dumps", "diploid_assembly", "strandseq_joint",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_fastq",
+        "{hap_reads}.un.fastq.pck"
+    ),
+
+    "STATS_CONTIG_REF_ALN_CLUSTERED_ASSEMBLY_MQ00": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "reference_assembly", "clustered",
+        "{sseq_reads}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq00.stats"
+    ),
+
+    "STATS_CONTIG_REF_ALN_CLUSTERED_ASSEMBLY_MQ30": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "reference_assembly", "clustered",
+        "{sseq_reads}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq30.stats"
+    ),
+
+    "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ00": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "polishing",
+        "{pol_reads}",
+        "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}_map-to_{eval_align_ref}.mapq00.stats"
+    ),
+
+    "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ30": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "polishing",
+        "{pol_reads}",
+        "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}.{pol_pass}_map-to_{eval_align_ref}.mapq30.stats"
     ),
 
     "PLOT_INPUT_SAMPLE_STATS": os.path.join(
@@ -165,13 +285,13 @@ TARGET_PATHS = {
 
     "PLOT_SAARCLUST_DIAG_ASSEMBLY_CLUSTERING": os.path.join(
         "output", "plotting", "saarclust_diagnostics", "reference_assembly", "clustered",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.clustering.pdf",
     ),
 
     "PLOT_SAARCLUST_DIAG_ASSEMBLY_ORIENTING": os.path.join(
         "output", "plotting", "saarclust_diagnostics", "reference_assembly", "clustered",
-        "{sts_reads}",
+        "{sseq_reads}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.orienting.pdf",
     ),
 
@@ -181,7 +301,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",
@@ -194,7 +314,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",
@@ -207,7 +327,7 @@ TARGET_PATHS = {
         "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
         "{vc_reads}",
-        "{sts_reads}",
+        "{sseq_reads}",
         "polishing",
         "{pol_reads}",
         "clustering",

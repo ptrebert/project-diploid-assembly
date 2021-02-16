@@ -1,0 +1,16 @@
+
+
+data_source_EMBL_strandseq:
+  comment: "HGSVC FTP source for Strand-seq data (EMBL)"
+  output: 'hgsvc_EMBL_strandseq.json'
+  server: 'ftp.1000genomes.ebi.ac.uk'
+  data_source: 'vol1/ftp/data_collections/HGSVC2/working/20200120_Strandseq/fastq'
+  collect_files:
+    - 'fastq.gz'
+  sort_into:
+    - 'fastq'
+  file_infix: 'hgsvc_ilnxs-'
+  fix_tech: '80pe'
+  file_suffix: 'library_id'
+  local_path_suffix: '{{individual}}_{{file_infix}}{{tech}}_sseq'
+  assume_paired_reads: True

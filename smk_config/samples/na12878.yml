@@ -15,10 +15,21 @@ sample_description_NA12878:
         source_type: ena
         bioproject: PRJNA540705
     - strandseq:
-        readset: &sts_reads NA12878_eriba_il25k-100pe_sseq
+        readset: &sseq_reads NA12878_eriba_il25k-100pe_sseq
         source_type: ena
         bioproject: PRJEB14185
         library_fractions: one
+    - short_reads:
+        readset: NA12878_ptg_il2k-100pe_short
+        source_type: ena
+        bioproject: PRJEB3381
+        load_type: complete
+    - short_reads:
+        readset: NA12878_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB31736
+        load_type: complete
+        comment: "2504 cohort"
 
 
 sample_targets_NA12878:
@@ -27,15 +38,13 @@ sample_targets_NA12878:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ccs_reads
       pol_pass: racon-p2
       hap_assm_mode: split
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: pereg
       hap_assembler: pereg

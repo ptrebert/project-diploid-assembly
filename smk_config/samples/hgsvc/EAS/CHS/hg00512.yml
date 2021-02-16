@@ -17,8 +17,9 @@ sample_description_HG00512:
         technology: pacbio
         data_type: pacbio_native
         load_type: parts
+        comment: "seq_center:UMIGS"
     - strandseq:
-        readset: &sts_reads HG00512_1kg_il25k-npe_sseq
+        readset: &sseq_reads HG00512_1kg_il25k-npe_sseq
         source_type: ena
         bioproject: PRJEB12849
         library_fractions: two
@@ -26,7 +27,13 @@ sample_description_HG00512:
         readset: &short_reads HG00512_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
-
+        load_type: parts
+    - short_reads:
+        readset: HG00512_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
 
 sample_targets_HG00512:
   - aliases:
@@ -35,15 +42,13 @@ sample_targets_HG00512:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ccs_reads
       pol_pass: racon-p2
       hap_assm_mode: split
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: pereg
       hap_assembler: pereg
@@ -55,16 +60,19 @@ sample_targets_HG00512:
   - defaults:
       hap_reads: *clr_reads
       vc_reads: *clr_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *clr_reads
       pol_pass: arrow-p1
       hap_assm_mode: split
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
       hap_assembler: flye
       var_caller: longshot
+  - target:
+      nhr_assembler: hhu26
+      hap_assembler: flye
+      var_caller: longshot
+

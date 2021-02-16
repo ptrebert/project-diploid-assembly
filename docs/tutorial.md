@@ -23,6 +23,8 @@ are as follows:
 - Oxford Nanopore: FASTQ (gzipped)
 - Strand-seq: FASTQ (gzipped)
 
+Note that index files for BAM input data are created by the pipeline if necessary.
+
 ## Get the pipeline code
 *(Always required)*
 
@@ -280,7 +282,7 @@ sample_targets_HG02011:
   - defaults:
       hap_reads: HG02011_hgsvc_pbsq2-clr_1000
       vc_reads: HG02011_hgsvc_pbsq2-clr_1000
-      sts_reads: HG02011_hgsvc_ilnxs-80pe_sseq
+      sseq_reads: HG02011_hgsvc_ilnxs-80pe_sseq
       pol_reads: HG02011_hgsvc_pbsq2-clr_1000
       pol_pass: arrow-p1
       hap_assm_mode: split
@@ -320,7 +322,7 @@ The abbreviations refer to the following:
 
 - hap_reads: (input) read set to be used for haplotyping/phasing
 - vc_reads: read set used for variant calling
-- sts_reads: Strand-seq read set
+- sseq_reads: Strand-seq read set
 - pol_reads: reads used for assembly polishing
 - pol_pass: number of passes for polisher, currently supported: `racon-p1`, `racon-p2`, and `arrow-p1`
 - hap_assm_mode: haploid assembly mode, either per cluster/haplotype (`split`) or only per haplotype (`joint`)

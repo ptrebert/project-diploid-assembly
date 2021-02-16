@@ -3,17 +3,18 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - Python=3.6.*
-  - pip=19.2.3
-  - ca-certificates=2019.11.28
-  - openssl=1.1.1d
+  - Python=3.7.*
+  - pip
+  - ca-certificates>=2020.10
+  - openssl>=1.1
   - quast=5.0.2
-  - augustus=3.3.3
-  - busco=3.0.2  # BUSCO has an R dependency
+  - augustus>=3.3
+  - busco>=4.1  # R dependency; update required b/c of LD_LIBRARY_PATH issue (2021/01)
   - circos=0.69.8
   - hmmer=3.1b2
-  - blast=2.2.31
-  - htslib=1.9
-  - perl=5.26.2
-  - r-base=3.5.1
+  - blast>=2.10
+  - htslib>=1.9
+  - perl>=5.26
+  - r-base>=4.0
+  - minimap2=2.17  # this is made explicit b/c of QUAST
 

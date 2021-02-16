@@ -6,9 +6,9 @@ localrules: master_strandseq_dga_split
 Components:
 vc_reads = FASTQ file used for variant calling relative to reference
 hap_reads = FASTQ file to be used for haplotype reconstruction
-sts_reads = FASTQ file used for strand-seq phasing
+sseq_reads = FASTQ file used for strand-seq phasing
 """
-PATH_STRANDSEQ_DGA_SPLIT = 'diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sts_reads}'
+PATH_STRANDSEQ_DGA_SPLIT = 'diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}'
 PATH_STRANDSEQ_DGA_SPLIT_PROTECTED = PATH_STRANDSEQ_DGA_SPLIT.replace('{', '{{').replace('}', '}}')
 
 
@@ -21,15 +21,15 @@ rule strandseq_dga_split_haplo_tagging:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     fq_hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    sseq_reads = FASTQ file used for strand-seq phasing
     """
     input:
         vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{fq_hap_reads}.wh-phased.vcf.bgz',
         tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{fq_hap_reads}.wh-phased.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{fq_hap_reads}_map-to_{reference}.psort.sam.bam',
-        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{fq_hap_reads}_map-to_{reference}.psort.sam.bam.bai',
-        fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+        bam = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{fq_hap_reads}_map-to_{reference}.psort.sam.bam',
+        bai = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{fq_hap_reads}_map-to_{reference}.psort.sam.bam.bai',
+        fasta = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
+        seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
     output:
         bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.tagged.sam.bam',
         tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.tags.fq.tsv',
@@ -55,15 +55,15 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     pbn_hap_reads = PacBio native BAM file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    sseq_reads = FASTQ file used for strand-seq phasing
     """
     input:
         vcf = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{pbn_hap_reads}.wh-phased.vcf.bgz',
         tbi = 'output/integrative_phasing/' + PATH_INTEGRATIVE_PHASING + '/{pbn_hap_reads}.wh-phased.vcf.bgz.tbi',
-        bam = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{pbn_hap_reads}_map-to_{reference}.psort.pbn.bam',
-        bai = 'output/alignments/reads_to_reference/clustered/{sts_reads}/{pbn_hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
-        fasta = 'output/reference_assembly/clustered/{sts_reads}/{reference}.fasta',
-        seq_info = 'output/reference_assembly/clustered/{sts_reads}/{reference}/sequences/{sequence}.seq',
+        bam = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{pbn_hap_reads}_map-to_{reference}.psort.pbn.bam',
+        bai = 'output/alignments/reads_to_reference/clustered/{sseq_reads}/{pbn_hap_reads}_map-to_{reference}.psort.pbn.bam.bai',
+        fasta = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
+        seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
     output:
         bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.tagged.pbn.bam',
         tags = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.tags.pbn.tsv',
@@ -89,7 +89,7 @@ rule strandseq_dga_split_haplo_splitting:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     fq_hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    sseq_reads = FASTQ file used for strand-seq phasing
     """
     input:
         fastq = 'input/fastq/{fq_hap_reads}.fastq.gz',
@@ -121,7 +121,7 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     pbn_hap_reads = PacBio native BAM file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    sseq_reads = FASTQ file used for strand-seq phasing
     """
     input:
         pbn_bam = 'input/bam/{pbn_hap_reads}.pbn.bam',
@@ -152,9 +152,11 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
 
 rule strandseq_dga_split_merge_tag_groups:
     """
-    vc_reads = FASTQ file used for variant calling relative to reference
-    fq_hap_reads = FASTQ file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    Why this compression overhead?
+    pysam has issues iterating through gzip files
+    that are the result of a simple concat.
+    So, merge by gunzip and gzip again to avoid
+    problems downstream
     """
     input:
         hap = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}.{sequence}.fastq.gz',
@@ -167,16 +169,18 @@ rule strandseq_dga_split_merge_tag_groups:
         '../environment/conda/conda_shelltools.yml'
     wildcard_constraints:
         haplotype = '(1|2)',
-        fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+',
+        fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt
     shell:
-        'cat {input.hap} {input.un} > {output}'
+        'gzip -d -c {input.hap} {input.un} | gzip > {output}'
 
 
 rule strandseq_dga_split_merge_tag_groups_pacbio_native:
     """
     vc_reads = FASTQ file used for variant calling relative to reference
     pbn_hap_reads = PacBio native BAM file to be used for haplotype reconstruction
-    sts_reads = FASTQ file used for strand-seq phasing
+    sseq_reads = FASTQ file used for strand-seq phasing
     """
     input:
         hap = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}.{sequence}.pbn.bam',
@@ -188,7 +192,7 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
     benchmark:
         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.rsrc'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../environment/conda/conda_pbtools.yml'
     wildcard_constraints:
         haplotype = '(1|2)',
         pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
@@ -197,7 +201,7 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
         mem_per_cpu_mb = lambda wildcards, attempt: 512 + 512 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt
     shell:
-        'bamtools merge -in {input.hap} -in {input.un} -out {output} &> {log}'
+        'pbmerge {input.hap} {input.un} > {output} 2> {log}'
 
 
 # The following merge step is primarily for convenience, i.e. for pushing
@@ -223,7 +227,7 @@ def collect_assembled_sequence_files(wildcards, glob_collect=False):
             raise RuntimeError('collect_assembled_sequence_files: no files collected with pattern {}'.format(pattern))
 
     else:
-        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
         checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.seq'))
@@ -235,7 +239,7 @@ def collect_assembled_sequence_files(wildcards, glob_collect=False):
             qual=wildcards.qual,
             reference=wildcards.reference,
             vc_reads=wildcards.vc_reads,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             hap_reads=wildcards.hap_reads,
             assembler=wildcards.assembler,
             hap=wildcards.hap,
@@ -277,8 +281,8 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
     resources:
-        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     run:
         import sys
         import io
@@ -349,7 +353,7 @@ def collect_polished_contigs(wildcards, glob_collect=False):
             raise RuntimeError('collect_polished_contigs: no files collected with pattern {}'.format(pattern))
 
     else:
-        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sts_reads)
+        reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
 
@@ -364,7 +368,7 @@ def collect_polished_contigs(wildcards, glob_collect=False):
             gq=wildcards.gq,
             reference=wildcards.reference,
             vc_reads=wildcards.vc_reads,
-            sts_reads=wildcards.sts_reads,
+            sseq_reads=wildcards.sseq_reads,
             pol_reads=wildcards.pol_reads,
             hap_reads=wildcards.hap_reads,
             assembler=wildcards.assembler,
@@ -408,8 +412,8 @@ rule merge_polished_contigs:
     params:
         polished_fastas = lambda wildcards, input: load_fofn_file(input)
     resources:
-        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     run:
         import sys
         import io

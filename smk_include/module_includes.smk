@@ -28,6 +28,7 @@ include: 'prepare_custom_references.smk'
 include: 'run_polishing.smk'
 
 include: 'haploid_assembly_clustering.smk'
+include: 'haploid_read_coverage.smk'
 
 include: 'create_plots.smk'
 include: 'eval_known_reference.smk'

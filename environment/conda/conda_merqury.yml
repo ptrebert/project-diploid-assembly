@@ -1,0 +1,18 @@
+name: merqury
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - Python<3.8
+  - r-base=3.6.1
+  - r-ggplot2
+  - r-argparse
+  - r-scales
+  - samtools
+  - bedtools
+  - igvtools
+  - openjdk
+  - c-compiler
+  - cxx-compiler
+  - compilers
+  - make

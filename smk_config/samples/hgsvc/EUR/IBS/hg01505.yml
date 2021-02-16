@@ -12,13 +12,17 @@ sample_description_HG01505:
         technology: pacbio
         data_type: pacbio_native
         load_type: parts
+        comment: "seq_center:UMIGS"
     - strandseq:
-        readset: &sts_reads HG01505_hgsvc_ilnxs-80pe_sseq
+        readset: &sseq_reads HG01505_hgsvc_ilnxs-80pe_sseq
         source_type: ftp
         library_fractions: one
     - short_reads:
-        readset: &short_reads HG01505_hgsvc_ilnvs-150pe_short
-        source_type: ftp
+        readset: &short_reads HG01505_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
 
 
 sample_targets_HG01505:
@@ -27,16 +31,18 @@ sample_targets_HG01505:
   - defaults:
       hap_reads: *clr_reads
       vc_reads: *clr_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *clr_reads
       pol_pass: arrow-p1
       hap_assm_mode: split
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: flye
+      hap_assembler: flye
+      var_caller: longshot
+  - target:
+      nhr_assembler: jax27
       hap_assembler: flye
       var_caller: longshot

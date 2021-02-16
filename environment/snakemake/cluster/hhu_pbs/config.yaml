@@ -1,22 +1,22 @@
 # Default runtime profile for HHU HILBERT infrastructure / PBS Professional
 
-#directory: /gpfs/project/ebertp/projects/rfdga
 cluster: >-
   qsub
   -A {cluster.account} -l walltime={cluster.run_hrs}:{cluster.run_min}:00
-  -l select=1:ncpus={cluster.cores}:mem={cluster.mem_mb}mb
+  -l select=1:ncpus={cluster.cores}:mem={cluster.mem_mb}mb{cluster.arch}
   -N {cluster.name} -o {cluster.output} -e {cluster.error}
 cluster-config: environment/snakemake/cluster/hhu_pbs/hilbert_cluster.json
 local-cores: 1
 jobs: 50
 latency-wait: 300
 keep-going: True
-keep-incomplete: True
+keep-incomplete: False
 rerun-incomplete: True
 restart-times: 1
 max-status-checks-per-second: 0.001
 use-conda: True
 use-envmodules: True
+conda-prefix: /gpfs/project/ebertp/projects/conda_envs
 nolock: False
 default-resources:
   - mem_per_cpu_mb=1024

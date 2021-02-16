@@ -12,37 +12,58 @@ sample_description_NA19240:
         technology: pacbio
         data_type: fastq
         load_type: parts
+    - long_reads:
+        readset: NA19240_hgsvc_pbsq2-clr
+        technology: pacbio
+        data_type: pacbio_native
+        load_type: parts
     - strandseq:
-        readset: &sts_reads NA19240_1kg_il25k-npe_sseq
+        readset: &sseq_reads NA19240_1kg_il25k-npe_sseq
         source_type: ena
         bioproject: PRJEB12849
         library_fractions: two
     - short_reads:
-        readset: &short_reads NA19240_1kg_il25k-125pe_short
+        readset: NA19240_1kg_il25k-125pe_short
         source_type: ena
         bioproject: PRJEB9396
+        load_type: parts
+    - short_reads:
+        readset: NA19240_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
 
 
 sample_targets_NA19240:
   - aliases:
       1: &ccs_reads NA19240_hgsvc_pbsq2-ccs_1000
+      2: &clr_reads NA19240_hgsvc_pbsq2-clr_1000
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-      sts_reads: *sts_reads
+      sseq_reads: *sseq_reads
       pol_reads: *ccs_reads
       pol_pass: racon-p2
       hap_assm_mode: split
       hap:
         - h1-un
         - h2-un
-        - h1
-        - h2
   - target:
       nhr_assembler: pereg
       hap_assembler: pereg
       var_caller: deepvar
+  - defaults:
+      hap_reads: *clr_reads
+      vc_reads: *clr_reads
+      sseq_reads: *sseq_reads
+      pol_reads: *clr_reads
+      pol_pass: arrow-p1
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
   - target:
-      nhr_assembler: flye
+      nhr_assembler: uw27
       hap_assembler: flye
-      var_caller: freebayes
+      var_caller: longshot
