@@ -12,6 +12,85 @@ rule master_preprocess_input:
         []
 
 
+rule download_hifi_adapter_db:
+    """
+    This is not part of the general env setup b/c it only applies to HiFi reads
+    and is likely to be deprecated soon (when PacBio has fixed the issue)
+    """
+    output:
+        'references/annotation/HiFiAdapterFilt-master/DB/pacbio_vectors_db.nhr'
+    conda:
+        '../environment/conda/conda_shelltools.yml'
+    shell:
+        'wget -O references/downloads/HiFiAdapterFilt.zip '
+            '-q https://github.com/sheinasim/HiFiAdapterFilt/archive/master.zip && '
+            'unzip -q references/downloads/HiFiAdapterFilt.zip -d references/annotation/ '
+
+
+rule blast_hifi_reads_adapter_contamination:
+    """
+    Scanning for adapter contamination follows this implementation:
+        github.com/sheinasim/HiFiAdapterFilt
+    BLAST output format #6:
+        qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore
+        [http://www.metagenomics.wiki/tools/blast/blastn-output-format-6]
+    """
+    input:
+        fastq_part = 'input/fastq/{readset}/{readset}.{partnum}.fastq.gz',
+        adapter_db = 'references/annotation/HiFiAdapterFilt-master/DB/pacbio_vectors_db.nhr',
+    output:
+        'input/fastq/{readset}/{readset}.{partnum}.blast.out',
+    benchmark:
+        'run/input/fastq/{readset}/{readset}.{partnum}.blast.rsrc',
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 2 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((4096 * attempt) / config['num_cpu_low']),
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+    params:
+        adapter_db_prefix = 'references/annotation/HiFiAdapterFilt-master/DB/pacbio_vectors_db',
+        blast_threads = int(config['num_cpu_low']) - 1
+    shell:
+        'seqtk seq -C -A {input.fastq_part} | '
+            'blastn -db {params.adapter_db_prefix} -query /dev/stdin -num_threads {params.blast_threads} -task blastn '
+            '-reward 1 -penalty -5 -gapopen 3 -gapextend 3 -dust no -soft_masking true -evalue .01 -searchsp 1750000000000 '
+            '-outfmt 6 > {output}'
+
+
+rule build_hifi_read_blocklist:
+    """
+    Filters apply to columns "% identity" and "match length"
+    """
+    input:
+        'input/fastq/{readset}/{readset}.{partnum}.blast.out',
+    output:
+        'input/fastq/{readset}/{readset}.{partnum}.contaminated-reads.txt',
+    conda:
+        '../environment/conda/conda_shelltools.yml'
+    shell:
+        "grep 'NGB0097' {input} | awk -v OFS='\t' '{{if (($2 ~ /NGB00972/ && $3 >= 97 && $4 >= 44) || ($2 ~ /NGB00973/ && $3 >= 97 && $4 >= 34)) print $1}}' | sort -u > {output}"
+
+
+rule select_clean_hifi_reads:
+    input:
+        fastq_part = 'input/fastq/{readset}/{readset}.{partnum}.fastq.gz',
+        blocklist = 'input/fastq/{readset}/{readset}.{partnum}.contaminated-reads.txt',
+    output:
+        'input/fastq/{readset}/{readset}.{partnum}.clean-reads.fastq.gz'
+    benchmark:
+        'run/input/fastq/{readset}/{readset}.{partnum}.clean-reads.filter.rsrc'
+    wildcard_constraints:
+        readset = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    shell:
+        'seqtk seq -C {input.fastq_part} | paste - - - - | grep -F -f {input.blocklist} | tr "\t" "\n" | gzip > {output}'
+
+
 def collect_fastq_input_parts(wildcards, glob_collect=False):
     """
     :param wildcards:
@@ -19,12 +98,23 @@ def collect_fastq_input_parts(wildcards, glob_collect=False):
     :return:
     """
     import os
+    import sys
     sample = wildcards.mrg_sample
     subfolder = os.path.join('fastq', sample)
 
+    infix = ''
+    try:
+        check_adapter_contamination = bool(config['check_hifi_adapter_contamination'])
+    except KeyError:
+        sys.stderr.write('\nWarning: no key "check_hifi_adapter_contamination" in parameter config - skipping\n')
+        check_adapter_contamination = False
+
+    if 'ccs' in sample and check_adapter_contamination:
+        infix = 'clean-reads.'
+
     if glob_collect:
         import glob
-        pattern = os.path.join('input', subfolder, sample + '.part*.fastq.gz')
+        pattern = os.path.join('input', subfolder, sample + '.part*.{}fastq.gz'.format(infix))
         fastq_parts = glob.glob(pattern)
 
         if not fastq_parts:
@@ -39,7 +129,7 @@ def collect_fastq_input_parts(wildcards, glob_collect=False):
         checkpoint_wildcards = glob_wildcards(os.path.join(request_path, sample + '.{part_num}.request'))
 
         fastq_parts = expand(
-            os.path.join(base_path, sample + '.{part_num}.fastq.gz'),
+            os.path.join(base_path, sample + '.{{part_num}}.{}fastq.gz'.format(infix)),
             part_num=checkpoint_wildcards.part_num
         )
 

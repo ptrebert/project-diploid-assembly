@@ -15,6 +15,9 @@ peregrine_version: 0.1.6.1
 deepvariant_version: 1.1.0
 shasta_version: 0.5.0
 
+# Long read preprocessing
+check_hifi_adapter_contamination: true
+
 # Assembler settings
 shasta_target_coverage: 60  # tech-independent recommendation: cov between 40x and 80x
 flye_target_coverage: 50  # dev recommendation: ~30x, but we have enough RAM to go a bit higher

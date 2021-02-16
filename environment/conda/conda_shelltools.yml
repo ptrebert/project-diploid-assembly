@@ -14,3 +14,7 @@ dependencies:
   - pbgzip=2016.08.04
   - zlib=1.2.11
   - bzip2=1.0.8
+  - zip=3.0
+  - unzip=6.0
+  - grep=3.4
+  - gawk=5.1.0
