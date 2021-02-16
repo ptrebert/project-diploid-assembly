@@ -6,7 +6,9 @@ QVEST_CONFIG = {
     'freebayes_timeout_sec': 14400,
     'variant_min_depth': 3,
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
-    'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396']
+    'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396', 'HPG', 'PTG'],
+    'PAV_version': 3,
+    'reciprocal_overlap': [50, 25]
 }
 
 
@@ -56,11 +58,16 @@ def illumina_qv_determine_targets(wildcards):
         'summary': os.path.join('output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}',
                         '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.summary.tsv'),
         'qv_est': os.path.join('output/evaluation/qv_estimation/illumina_calls_{known_ref}',
-                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.qv.tsv')
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.qv.tsv'),
+        'pav_isect_in': os.path.join('output/evaluation/qv_estimation/variant_calls/65-PAV-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.PAV-dropped-v{pav_freeze}.r{recip_ovl}.in-hc.bed'),
+        'pav_isect_out': os.path.join('output/evaluation/qv_estimation/variant_calls/65-PAV-{known_ref}',
+                        '{sample}_{readset}_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.PAV-dropped-v{pav_freeze}.r{recip_ovl}.out-hc.bed')
     }
 
     fix_wildcards = {
-        'known_ref': QVEST_CONFIG['ref_assembly']
+        'known_ref': QVEST_CONFIG['ref_assembly'],
+        'pav_freeze': QVEST_CONFIG['PAV_version']
     }
 
     compute_results = set()
@@ -88,9 +95,21 @@ def illumina_qv_determine_targets(wildcards):
             for target in module_outputs.values():
                 if target.endswith('stats'):
                     continue
-                fmt_target = target.format(**tmp)
-                compute_results.add(fmt_target)
+                if 'PAV' in target:
+                    for rovl in QVEST_CONFIG['reciprocal_overlap']:
+                        for vt, gt in [('ins', 'hom'), ('ins', 'het'), ('dels', 'hom'), ('dels', 'het')]:
+                            tmp['recip_ovl'] = rovl
+                            tmp['var_type'] = vt
+                            tmp['genotype'] = gt
+                            fmt_target = target.format(**tmp)
+                            compute_results.add(fmt_target)
+                else:
+                    fmt_target = target.format(**tmp)
+                    compute_results.add(fmt_target)
     
+    compute_results.add('output/evaluation/qv_estimation/variant_calls/25-collect-variants/freebayes_indels.h5')
+    compute_results.add('output/evaluation/qv_estimation/variant_calls/25-collect-variants/freebayes_snvs.h5')
+
     return sorted(compute_results)
 
 
@@ -463,6 +482,52 @@ rule split_callset_by_variant_type:
          'bgzip -c /dev/stdin > {output.indels}'
 
 
+def collect_vcf_files(wildcards):
+    import glob
+    import sys
+    path = 'output/evaluation/qv_estimation/variant_calls/20-split-vtype/'
+    if not os.path.isdir(path):
+        return []
+    try:
+        vcf_files = glob.glob(os.path.join(path, '*{}.vcf.bgz'.format(wildcards.var_type)))
+    except FileNotFoundError:
+        sys.stderr.write('\nWarning, no VCF files found for variant type {}\n'.format(wildcards.var_type))
+        return []
+    return sorted(vcf_files)
+
+
+def collect_index_files(wildcards):
+    import glob
+    import sys
+    path = 'output/evaluation/qv_estimation/variant_calls/20-split-vtype/'
+    if not os.path.isdir(path):
+        return []
+    try:
+        tbi_files = glob.glob(os.path.join(path, '*{}.vcf.bgz.tbi'.format(wildcards.var_type)))
+    except FileNotFoundError:
+        sys.stderr.write('\nWarning, no VCF/TBI files found for variant type {}\n'.format(wildcards.var_type))
+        return []
+    return sorted(tbi_files)
+
+
+rule collect_sample_variants:
+    input:
+        vcf = collect_vcf_files,
+        tbi = collect_index_files
+    output:
+        'output/evaluation/qv_estimation/variant_calls/25-collect-variants/freebayes_{var_type}.h5'
+    conda:
+        '../../environment/conda/conda_evaltools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        exec = lambda wildcards: find_script_path('summarize_vcf.py', 'utilities')
+    shell:
+        '{params.exec} --input {input.vcf} --output {output}'
+
+
 rule split_callset_by_genotype:
     input:
         vcf = os.path.join(
@@ -637,6 +702,28 @@ rule restrict_calls_to_high_conf_regions:
         'bedtools intersect -u -a {input.calls} -b {input.regions} > {output.hc_in}'
         ' && '
         'bedtools intersect -v -a {input.calls} -b {input.regions} > {output.hc_out}'
+
+
+rule intersect_illumina_assembly_variants:
+    input:
+        pav = 'references/annotation/PAV_sv-insdel-dropped_v{freeze_version}.4c.bed',
+        hc_in = rules.restrict_calls_to_high_conf_regions.output.hc_in,
+        hc_out = rules.restrict_calls_to_high_conf_regions.output.hc_out
+    output:
+        isec_hc_in = os.path.join('output/evaluation/qv_estimation/variant_calls',
+                        '65-PAV-{known_ref}',
+                        '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.PAV-dropped-v{freeze_version}.r{recip_ovl}.in-hc.bed'),
+        isec_hc_out = os.path.join('output/evaluation/qv_estimation/variant_calls',
+                        '65-PAV-{known_ref}',
+                        '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.{var_type}.{genotype}.PAV-dropped-v{freeze_version}.r{recip_ovl}.out-hc.bed'),
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    params:
+        recip_ovl = lambda wildcards: str(round(int(wildcards.recip_ovl) / 100, 2))
+    shell:
+        'bedtools intersect -wao -f {params.recip_ovl} -r -a {input.pav} -b {input.hc_in} > {output.isec_hc_in}'
+        ' && '
+        'bedtools intersect -wao -f {params.recip_ovl} -r -a {input.pav} -b {input.hc_out} > {output.isec_hc_out}'
 
 
 def parse_full_vcf_bed_line(line):

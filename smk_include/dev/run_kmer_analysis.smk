@@ -7,7 +7,7 @@ KMER_CONFIG = {
     'ref_assembly': 'GRCh38_HGSVC2_noalt',
     'ref_annotation': 'ENSEMBLv98_RegBuild',
     'kmer_ratio': 99,  # values below ~95 lower chances of detecting hap-specific sequence
-    'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396']
+    'skip_short_read_sources': ['PRJEB3381', 'PRJEB9396', 'HPG', 'PTG']
 }
 
 

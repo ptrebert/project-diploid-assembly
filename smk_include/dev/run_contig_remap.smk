@@ -7,10 +7,23 @@ REMAP_CONFIG = {
     'annotations': [
         '20200723_GRCh38_p13_regions',
         '20200723_GRCh38_p13_unresolved-issues',
-        'GRCh38_cytobands'
+        'GRCh38_cytobands',
+        'GRCh38_segdups',
+        'PAV_sv-insdel-dropped_v3',
     ]
 }
 
+REMAP_CONFIG = {
+    'ref_assembly': 'T2Tv1_38p13Y_chm13',
+    'min_mapq': 60,
+    'annotations': []
+}
+
+REMAP_CONFIG = {
+    'ref_assembly': 'GRCh38_HGSVC2_incalt',
+    'min_mapq': 60,
+    'annotations': []
+}
 
 def contig_remap_determine_targets(wildcards):
 
@@ -34,6 +47,8 @@ def contig_remap_determine_targets(wildcards):
 
     # limit to phased assemblies for now
     for path, trg_type in search_paths:
+        if not os.path.isdir(path):
+            continue
         remap_trg = contig_remap_targets[trg_type]
         assembly_type = os.path.split(path)[-1]
         tmp = dict(fix_wildcards)
@@ -60,8 +75,12 @@ def contig_remap_determine_targets(wildcards):
     }
 
     cov_path = 'output/evaluation/hap_read_coverage'
+    try:
+        bigwig_files = os.listdir(cov_path)
+    except FileNotFoundError:
+        bigwig_files = []
 
-    for fname in os.listdir(cov_path):
+    for fname in bigwig_files:
         if fname.startswith('v1'):
             version, new_name = fname.split('_', 1)
             os.rename(os.path.join(cov_path, fname), os.path.join(cov_path, new_name))
@@ -89,6 +108,17 @@ def contig_remap_determine_targets(wildcards):
                     fmt_target = trg.format(**tmp)
                     compute_results.add(fmt_target)
 
+    # add some nuc profiling results
+    # 'references/annotation/{known_ref}_{annotation}.nuc.stats'
+    for ann_file in REMAP_CONFIG['annotations']:
+        if 'PAV' in ann_file:
+            continue
+        out_path = 'references/annotation/{}_{}.nuc.stats'.format(
+            REMAP_CONFIG['ref_assembly'],
+            ann_file
+        )
+        compute_results.add(out_path)
+
     return sorted(compute_results)
 
 
@@ -100,7 +130,7 @@ rule filter_merge_contig_alignments:
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
-        'egrep "\s60\s" {input} | bedtools merge -i - > {output}'
+        'egrep "\s60\s" {input} | bedtools merge -delim "@" -c 4 -o distinct -i - > {output}'
 
 
 rule intersect_contig_alignments_annotation:
@@ -124,8 +154,8 @@ rule haploid_read_coverage_annotation:
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 32768 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 32768 * attempt
+        mem_total_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 49152 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 if attempt < 2 else 49152 * attempt
     shell:
         'bigWigAverageOverBed {input[1]} {input[0]} {output}'
 

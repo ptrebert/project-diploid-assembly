@@ -50,3 +50,6 @@ reference_data_sources:
   GRCh38_HGSVC2_noalt:
     local_path: references/downloads/GRCh38_HGSVC2_noalt.fa.gz
     remote_path: ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/HGSVC2/technical/reference/20200513_hg38_NoALT/hg38.no_alt.fa.gz
+  T2Tv1_T2TC_chm13:
+    local_path: references/downloads/T2Tv1_T2TC_chm13.fa.gz
+    remote_path: https://s3.amazonaws.com/nanopore-human-wgs/chm13/assemblies/chm13.draft_v1.0.fasta.gz

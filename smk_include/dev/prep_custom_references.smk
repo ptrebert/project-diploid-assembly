@@ -55,6 +55,57 @@ rule separate_mitochondrial_sequence:
             dump.write(buffer.getvalue())
 
 
+rule retain_alt_seq_in_reference:
+    input:
+        hgsvc_chroms = 'references/assemblies/GRCh38_HGSVC2_noalt.sizes',
+        full_ref = 'references/assemblies/GRCh38_GCA_p13.fasta'
+    output:
+        ref_with_alt = 'references/assemblies/GRCh38_HGSVC2_incalt.fasta',
+        ref_with_alt_sizes = 'references/assemblies/GRCh38_HGSVC2_incalt.sizes'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 6144 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 6144 * attempt
+    run:
+        import io
+        import collections
+
+        hgsvc_chroms = set()
+        with open(input.hgsvc_chroms, 'r') as table:
+            for line in table:
+                hgsvc_chroms.add(line.split()[0])
+
+        chrom_sizes = collections.Counter()
+
+        out_buffer = io.StringIO()
+        keep_chrom = None
+        with open(input.full_ref, 'r') as fasta:
+            for line in fasta:
+                if line.startswith('>'):
+                    chrom_name = line.strip('>').strip()
+                    if chrom_name.endswith('_alt'):
+                        keep_chrom = chrom_name
+                    elif chrom_name.endswith('_random'):
+                        keep_chrom = chrom_name
+                    elif chrom_name.startswith('chrUn'):
+                        keep_chrom = chrom_name
+                    else:
+                        keep_chrom = chrom_name if chrom_name in hgsvc_chroms else None
+                    if keep_chrom is not None:
+                        out_buffer.write(line)
+                    continue
+                if keep_chrom is not None:
+                    chrom_sizes[chrom_name] += len(line.strip())
+                    out_buffer.write(line)
+        
+        with open(output.ref_with_alt, 'w') as dump:
+            _ = dump.write(out_buffer.getvalue())
+
+        with open(output.ref_with_alt_sizes, 'w') as dump:
+            for name, length in chrom_sizes.most_common():
+                _ = dump.write('{}\t{}\n'.format(name, length))
+    # END OF RUN BLOCK
+
+
 rule intersect_highconf_files:
     input:
         hg001 = 'references/downloads/HG001_hg38_giab_highconf.bed',
@@ -222,6 +273,28 @@ rule add_sequences_to_bed:
          'bedtools getfasta -fo {output} -name+ -fi {input.fasta} -bed {input.bed}'
 
 
+rule profile_sequences_in_bed:
+    """
+    Limit BED input, some characters in the input
+    may crash bedtools nuc / core dump or exception
+    """
+    input:
+        bed = 'references/annotation/{annotation}.4c.bed',
+        fasta = 'references/assemblies/{known_ref}.fasta',
+        fai = 'references/assemblies/{known_ref}.fasta.fai'
+    output:
+        'references/annotation/{known_ref}_{annotation}.nuc.stats'
+    log:
+        'log/references/annotation/{known_ref}_{annotation}.nuc.stats.log'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
+    shell:
+         'bedtools nuc -fi {input.fasta} -bed {input.bed} > {output} 2> {log}'
+
+
 rule convert_fasta_to_hdf:
     input:
         'references/annotation/{known_ref}-{annotation}.fasta'
@@ -294,3 +367,44 @@ rule reduce_to_4col_bed:
     shell:
         'cut -f 1,2,3,4 {input} > {output}'
     
+
+rule prep_pav_calls:
+    """
+    PAV call set here is not the published one (i.e. Zenodo)
+    variant IDs may no longer match with published version,
+    in particular relevant for the list of dropped variants
+    used here
+    MD5: 36c95ab5684535033bcea988ceb8c3e3
+    """
+    input:
+        good = 'references/downloads/variants_freeze{version}_sv_insdel.prepublish.tsv.gz',
+        bad = 'references/downloads/variants-dropped_freeze{version}_sv_insdel.tsv.gz'
+    output:
+        bad = 'references/annotation/PAV_sv-insdel-dropped_v{version}.bed',
+        both = 'references/annotation/PAV_sv-insdel_v{version}.h5'
+    benchmark:
+        'run/references/annotation/PAV_sv-insdel_v{version}.hdf.rsrc'
+    run:
+        import pandas as pd
+
+        lowq = pd.read_csv(input.bad, sep='\t', index_col=False, encoding='ascii', dtype=str)
+        lowq['quality'] = '0'
+
+        hiq = pd.read_csv(input.good, sep='\t', index_col=False, encoding='ascii', dtype=str)
+        hiq['quality'] = '1'
+
+        bed_out = lowq.loc[:, ['#CHROM', 'POS', 'END', 'ID']].copy()
+        bed_out['POS'] = bed_out['POS'].astype('int64')
+        bed_out['END'] = bed_out['END'].astype('int64')
+        bed_out.sort_values(['#CHROM', 'POS'], inplace=True)
+        bed_out.to_csv(output.bad, sep='\t', index=False, header=False)
+
+        both = pd.concat([hiq, lowq], axis=0)
+        both['POS'] = both['POS'].astype('int64')
+        both['END'] = both['END'].astype('int64')
+        both.sort_values(['#CHROM', 'POS', 'END'], inplace=True)
+        both['POS'] = both['POS'].astype(str)
+        both['END'] = both['END'].astype(str)
+        both.reset_index(drop=True, inplace=True)
+
+        both.to_hdf(output.both, key='PAV_v{}'.format(wildcards.version), mode='w', format='fixed')

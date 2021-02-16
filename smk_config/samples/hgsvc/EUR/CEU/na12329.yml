@@ -17,7 +17,7 @@ sample_description_NA12329:
         source_type: ftp
         library_fractions: one
     - short_reads:
-        readset: &short_reads NA12329_hgsvc_ilnvs-150pe_short
+        readset: &short_reads NA12329_1kg_ilnvs-150pe_short
         source_type: ena
         bioproject: PRJEB36890
         load_type: complete

@@ -105,3 +105,7 @@ venv.bak/
 
 # PyCharm idea folder
 .idea/
+
+# Cached data
+cache*
+.cache*

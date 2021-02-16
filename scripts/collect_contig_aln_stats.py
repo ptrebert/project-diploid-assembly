@@ -193,7 +193,7 @@ def create_output_table(aln_info, aln_lengths, ref_seq_sizes, assm_seq_sizes):
     aligned_refs = sorted(set(k[0] for k in aln_lengths.keys()), key=lambda x: ref_seq_sizes[x], reverse=True)
 
     table_rows = []
-    for ref_seq in aligned_refs:
+    for ref_seq in ref_seq_sizes.keys():
         row_record = collect_row_alignment_stats(
             ref_seq,
             aln_lengths,
@@ -203,16 +203,6 @@ def create_output_table(aln_info, aln_lengths, ref_seq_sizes, assm_seq_sizes):
         row_record['ref_seq'] = ref_seq
         row_record['ref_length'] = ref_seq_sizes[ref_seq]
         table_rows.append(row_record)
-
-    row_record = collect_row_alignment_stats(
-        'genome',
-        aln_lengths,
-        ref_seq_sizes,
-        assm_seq_sizes
-    )
-    row_record['ref_seq'] = 'genome'
-    row_record['ref_length'] = ref_seq_sizes['genome']
-    table_rows.append(row_record)
 
     out_header = [
         'ref_seq',
