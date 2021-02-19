@@ -320,7 +320,7 @@ rule check_max_cluster_size:
         with open(input[0], 'r') as fasta_list:
             for fasta_file in fasta_list:
                 seq_len = 0
-                with open(fasta_file, 'r') as fasta:
+                with open(fasta_file.strip(), 'r') as fasta:
                     for line in fasta:
                         if line.startswith('>'):
                             continue
