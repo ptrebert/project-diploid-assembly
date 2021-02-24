@@ -462,6 +462,31 @@ def annotate_readset_data_types(sample_desc):
     return source_annotation
 
 
+def define_experimental_file_targets():
+    """
+    Convenience function to collectively deactivate all
+    SaaRclust-related pipeline outputs downstream of the
+    polished haploid assembly ("Strand-seq based scaffolding")
+
+    These tasks are unlikely to be re-introduced into a default
+    pipeline run as ONT-based scaffolding is the more promising approach
+    """
+    experimental_targets = [
+        'BUILD_POLISHED_CLUSTERED_HAPLOID_ASSEMBLY',
+        'REPORT_POLISHED_CLUSTERED_HAPLOID_ASSEMBLY',
+        'PLOT_SAARCLUST_DIAG_HAPLOID_ASSEMBLY_CLUSTERING',
+        'PLOT_SAARCLUST_DIAG_HAPLOID_ASSEMBLY_ORDERING',
+        'PLOT_SAARCLUST_DIAG_HAPLOID_ASSEMBLY_ORIENTING'
+    ]
+    build_experimental_targets = False
+    try:
+        build_experimental_targets = bool(config['build_experimental_targets'])
+    except KeyError:
+        pass
+    
+    return build_experimental_targets, experimental_targets
+
+
 def define_file_targets(wildcards):
     """
     :param wildcards:
@@ -501,6 +526,9 @@ def define_file_targets(wildcards):
             raise ValueError('Selected target path does not exist: '
                              '{} // {}'.format(selected_path, sorted(TARGET_PATHS.keys())))
 
+    # switch off Strand-seq based scaffolding by default
+    build_experimental_targets, experimental_targets = define_experimental_file_targets()
+
     for target_specification in sample_targets:
         if 'aliases' in target_specification:
             continue
@@ -534,6 +562,8 @@ def define_file_targets(wildcards):
                 continue
 
             for target_name, target_path in TARGET_PATHS.items():
+                if not build_experimental_targets and target_name in experimental_targets:
+                    continue
                 if keep_path and selected_path != target_name:
                     if target_name.startswith('INIT'):
                         # Init targets are always needed
