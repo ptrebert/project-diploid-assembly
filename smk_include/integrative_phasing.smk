@@ -261,7 +261,7 @@ rule run_integrative_phasing:
     benchmark:
         'run/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.rsrc'
     conda:
-        '../environment/conda/conda_whatshap.yml'
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -363,7 +363,7 @@ rule compute_strandphaser_phased_vcf_stats:
     log:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.spr-phased.stats.log'
     conda:
-        '../environment/conda/conda_whatshap.yml'
+        '../environment/conda/conda_biotools.yml'
     priority: 200
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -385,7 +385,7 @@ rule compute_whatshap_phased_vcf_stats:
     log:
         'log/output/statistics/phasing/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.stats.log'
     conda:
-        '../environment/conda/conda_whatshap.yml'
+        '../environment/conda/conda_biotools.yml'
     priority: 200
     resources:
              mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,

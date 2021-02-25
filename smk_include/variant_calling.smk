@@ -296,7 +296,7 @@ rule whatshap_regenotype_variant_calls:
     benchmark:
         'run/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.rsrc'
     conda:
-        '../environment/conda/conda_whatshap.yml'
+        '../environment/conda/conda_biotools.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 2048 + 1024 * attempt,
         mem_total_mb = lambda wildcards, attempt: 2048 + 1024 * attempt,
