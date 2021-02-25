@@ -352,6 +352,7 @@ def compute_dataset_statistics(cargs, logger):
             os.makedirs(os.path.abspath(os.path.dirname(cargs.summary_output)), exist_ok=True)
             with open(cargs.summary_output, 'w') as stats:
                 _ = stats.write('\n'.join(['\t'.join([k, str(v)]) for k, v in summary_stats]))
+                _ = stats.write('\n')
             logger.debug('Summary statistics written to file {}'.format(cargs.summary_output))
 
     logger.debug('Done - processed {} reads'.format(read_count))
