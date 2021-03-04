@@ -5,7 +5,9 @@ import argparse
 import csv
 import operator as op
 import collections as col
+import re
 
+import pandas as pd
 
 def parse_command_line():
 
@@ -37,6 +39,28 @@ def parse_command_line():
         type=int,
         default=0,
         dest='minmapq'
+    )
+    parser.add_argument(
+        '--min-chrom-coverage',
+        '-mcc',
+        type=int,
+        default=0,
+        choices=range(0, 101),
+        metavar='[0...100]',
+        dest='min_chrom_coverage',
+        help='Specify the minimum (alignment) coverage per chromosome as percent of chromosome length '
+                'covered that has to be attained for a single cluster. Otherwise, this script will '
+                'abort as it is assumed that there is at least one large assembly error for this '
+                'cluster/chromosome. Default: 0 pct. (0...100)'
+    )
+    parser.add_argument(
+        '--chrom-coverage-select',
+        '-ccs',
+        type=str,
+        default='^chr[0-9X]+$',
+        dest='chrom_coverage_select',
+        help='Specify regular expression to limit checking the minimum coverage threshold only for '
+                'matching chromosomes. Default: chr[0-9X]+ (i.e., autosomes and chrX)'
     )
     parser.add_argument(
         '--combine-sequences',
@@ -131,33 +155,65 @@ def read_chromosome_sizes(fpath, combine_chroms, name_extractor):
 
 
 def read_contig_alignment_table(fpath, ref_seqs, assm_seqs, minmapq):
+    """
+    Interval merging based on nifty trick found in
+    https://stackoverflow.com/a/65282946
+    """
 
     strand_mapping = {
         '+': 1,
-        '-': -1
+        '-': -1,
+        '.': 0
     }
-    aln_infos = col.defaultdict(list)
+
+    columns = [
+        'ref_seq',
+        'start',
+        'end',
+        'assm_seq',
+        'mapq',
+        'strand'
+    ]
+
+    df = pd.read_csv(
+        fpath,
+        sep='\t',
+        header=None,
+        names=columns
+    )
+    df = df.loc[df['mapq'] >= minmapq, :].copy()
+
+    # if user specified, this would replace, e.g., chrX and chrY with chrXchrY
+    df['ref_seq'].replace(ref_seqs, inplace=True)
+
+    # if contigs are grouped (i.e. by cluster ID),
+    # this replaces the full name by the group [cluster] ID
+    df['assm_seq'].replace(assm_seqs, inplace=True)
+
+    df['strand'].replace(strand_mapping, inplace=True)
+
+    df.sort_values(['ref_seq', 'start', 'end'], inplace=True, ascending=True)
+
     aln_lengths = col.Counter()
-    with open(fpath, 'r') as table:
-        for line in table:
-            columns = line.strip().split()
-            ref_seq = columns[0]
-            start = int(columns[1])
-            end = int(columns[2])
-            assm_seq = columns[3]  # BED name field
-            mapq = int(columns[4])  # BED score field
-            if mapq < minmapq:
-                continue
-            strand = strand_mapping.get(columns[5], 0)
-            ref_seq_store = ref_seqs[ref_seq]
-            assm_seq_store = assm_seqs[assm_seq]
-            aligned_length = end - start
-            aln_infos[(ref_seq_store, assm_seq_store)].append((aligned_length, mapq, strand))
-            aln_lengths[(ref_seq_store, assm_seq_store)] += aligned_length
-    return aln_infos, aln_lengths
+    for (ref_seq, assm_seq), alignments in df.groupby(['ref_seq', 'assm_seq']):
+        intervals = pd.arrays.IntervalArray.from_tuples(
+            [(row.start, row.end) for row in alignments.itertuples(index=False)],
+        )
+        if intervals.is_non_overlapping_monotonic:
+            aln_length = sum([iv.length for iv in intervals])
+            aln_lengths[(ref_seq, assm_seq)] += aln_length
+            continue
+        merge_intervals = alignments[['start', 'end']].copy()
+        merge_intervals['interval_id'] = (merge_intervals['start'] > merge_intervals['end'].shift().cummax()).cumsum()
+        merge_intervals = merge_intervals.groupby("interval_id").agg({"start":"min", "end": "max"})
+        
+        aln_length = (merge_intervals['end'] - merge_intervals['start']).sum()
+        aln_lengths[(ref_seq, assm_seq)] += aln_length
+
+    return aln_lengths
 
 
-def collect_row_alignment_stats(ref_seq, aln_lengths, ref_seq_sizes, assm_seq_sizes):
+def collect_row_alignment_stats(ref_seq, aln_lengths, ref_seq_sizes, assm_seq_sizes, min_chrom_cov, chrom_cov_select):
 
     if ref_seq == 'genome':
         ref_counts = col.Counter()
@@ -172,10 +228,18 @@ def collect_row_alignment_stats(ref_seq, aln_lengths, ref_seq_sizes, assm_seq_si
     row_records = dict()
     ref_counts = ref_counts.most_common()
 
+    chrom_matcher = re.compile(chrom_cov_select.strip('"'))
+
     for k, (assm_seq, aligned_bases) in zip(top_keys, ref_counts[:3]):
         assm_pct = str(round(aligned_bases / assm_seq_sizes[assm_seq] * 100, 2))
-        ref_pct = str(round(aligned_bases / ref_seq_sizes[ref_seq] * 100, 2))
-        item = '|'.join([assm_seq, str(aligned_bases), assm_pct, ref_pct])
+        ref_pct = round(aligned_bases / ref_seq_sizes[ref_seq] * 100, 2)
+        if k == 'top1_alignment':
+            if chrom_matcher.match(ref_seq) is not None and ref_pct < min_chrom_cov:
+                raise ValueError(
+                    'Top 1 alignment from assembly {} below coverage threshold for reference chromosome {}: {}% (< {}%)'.format(
+                        assm_seq, ref_seq, ref_pct, min_chrom_cov
+                        ))
+        item = '|'.join([assm_seq, str(aligned_bases), assm_pct, str(ref_pct)])
         row_records[k] = item
 
     ref_counts = sorted(ref_counts, key=lambda x: x[0])
@@ -187,7 +251,7 @@ def collect_row_alignment_stats(ref_seq, aln_lengths, ref_seq_sizes, assm_seq_si
     return row_records
 
 
-def create_output_table(aln_info, aln_lengths, ref_seq_sizes, assm_seq_sizes):
+def create_output_table(aln_lengths, ref_seq_sizes, assm_seq_sizes, min_chrom_cov, chrom_cov_select):
 
     aligned_contigs = sorted(set(k[1] for k in aln_lengths.keys()))
     aligned_refs = sorted(set(k[0] for k in aln_lengths.keys()), key=lambda x: ref_seq_sizes[x], reverse=True)
@@ -198,7 +262,9 @@ def create_output_table(aln_info, aln_lengths, ref_seq_sizes, assm_seq_sizes):
             ref_seq,
             aln_lengths,
             ref_seq_sizes,
-            assm_seq_sizes
+            assm_seq_sizes,
+            min_chrom_cov,
+            chrom_cov_select
         )
         row_record['ref_seq'] = ref_seq
         row_record['ref_length'] = ref_seq_sizes[ref_seq]
@@ -229,17 +295,18 @@ def main():
         [],
         name_extractor
     )
-    aln_info, aln_lengths = read_contig_alignment_table(
+    aln_lengths = read_contig_alignment_table(
         args.alignments,
         ref_chrom_names,
         assm_chrom_names,
         args.minmapq
     )
     table_rows, header = create_output_table(
-        aln_info,
         aln_lengths,
         ref_chroms_sizes,
-        assm_chrom_sizes
+        assm_chrom_sizes,
+        args.min_chrom_coverage,
+        args.chrom_coverage_select
     )
 
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
