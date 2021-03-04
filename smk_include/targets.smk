@@ -250,6 +250,36 @@ TARGET_PATHS = {
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq60.stats"
     ),
 
+
+    # added contig coverage summary stats for draft haploid assembly
+    # to check for large missing pieces (misassemblies) before polishing starts.
+    # Big errors like that show up in the chrom/contig alignment coverage,
+    # although this check is rough at best due to the acro chromosomes.
+    # Also, hifiasm assemblies may be used unpolished.
+    "STATS_CONTIG_REF_ALN_HAPLOID_DRAFT_ASSEMBLY_MQ00": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}_map-to_{eval_align_ref}.mapq00.stats"
+    ),
+
+    "STATS_CONTIG_REF_ALN_HAPLOID_DRAFT_ASSEMBLY_MQ60": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}_map-to_{eval_align_ref}.mapq60.stats"
+    ),
+
     "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ00": os.path.join(
         "output", "statistics", "contigs_to_ref_aln",
         "diploid_assembly",

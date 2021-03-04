@@ -309,6 +309,11 @@ rule bwa_strandseq_to_haploid_assembly_alignment:
             ' samtools view -b -F {params.discard_flag} /dev/stdin > {output.bam} 2> {log.samtools}'
 
 
+#################################################################################
+# BELOW: alignments for haploid reads to haploid sequence / needed for polishing
+#################################################################################
+
+
 rule minimap_racon_polish_alignment_pass1:
     """
     From module "strandseq_dga_split.smk"
@@ -319,6 +324,7 @@ rule minimap_racon_polish_alignment_pass1:
         reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.fastq.gz',
         preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.preset.minimap',
         contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
+        check_cov = 'output/statistics/contigs_to_ref_aln/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}_map-to_{aln_reference}.mapq60.stats'
     output:
         sam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.psort.sam',
     log:
@@ -409,6 +415,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
         reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pol_reads}.{hap}.{sequence}.pbn.bam',
         preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pol_reads}.{hap}.{sequence}.preset.pbmm2',
         contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
+        check_cov = 'output/statistics/contigs_to_ref_aln/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}_map-to_{aln_reference}.mapq60.stats'
     output:
         bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.pbn.bam',
     log:

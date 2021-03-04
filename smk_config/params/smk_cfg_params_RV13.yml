@@ -55,6 +55,13 @@ minimap_contigref_aln_discard: 260
 minimap_racon_aln_discard: 1796  # same as 0x704
 minimap_racon_aln_min_qual: 10
 
+# Minimal breadth of coverage (in percent) for contig/cluster
+# to reference chromosome alignments. Pipeline aborts if threshold
+# is not met, could indicate a large missing piece (misassembly)
+# Note that acrocentric chromosomes are not treated in any particular
+# way, so setting this too high will always result in failure.
+min_chromosome_coverage: 60
+
 # main chromosomes to be used
 # for known references for main
 # pipeline steps (i.e., everything
