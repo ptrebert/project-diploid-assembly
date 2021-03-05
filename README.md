@@ -8,16 +8,16 @@ please cite the following two papers:
 > Porubsky and Ebert et al.  
 > "Fully Phased Human Genome Assembly without Parental Data Using Single-Cell Strand Sequencing and Long Reads."  
 > Nature Biotechnology, December 2020  
-> [DOI:10.1038/s41587-020-0719-5](https://doi.org/10.1038/s41587-020-0719-5)
+> [DOI: 10.1038/s41587-020-0719-5](https://doi.org/10.1038/s41587-020-0719-5)
 
 > Ebert, Audano, Zhu and Rodriguez-Martin et al.  
-> "De novo assembly of 64 haplotype-resolved human genomes of diverse ancestry and integrated analysis of structural variation"  
-> bioRxiv preprint (*article in press*)  
-> [DOI:10.1101/2020.12.16.423102](https://doi.org/10.1101/2020.12.16.423102)
+> "Haplotype-resolved diverse human genomes and integrated analysis of structural variation"  
+> Science, February 2021  
+> [DOI: 10.1126/science.abf7117](https://doi.org/10.1126/science.abf7117)
 
-#### Deprecated citation
+#### Deprecated citations
 
-Please do not reference the preprint ([10.1101/855049](https://doi.org/10.1101/855049)) of the *Nature Biotechnology* paper anymore.
+Please do not reference the preprints ([10.1101/855049](https://doi.org/10.1101/855049) and [10.1101/2020.12.16.423102](https://doi.org/10.1101/2020.12.16.423102)) anymore.
 
 ## Scope of this repository
 
