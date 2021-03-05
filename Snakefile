@@ -101,7 +101,6 @@ rule setup_env:
         rules.create_conda_environment_r_tools.output,
         rules.create_conda_environment_r_script.output,
         rules.create_conda_environment_bio_tools.output,
-        rules.create_conda_environment_whatshap.output,
         rules.create_conda_environment_pyscript.output,
         rules.download_shasta_executable.output,
         rules.download_quast_busco_databases.output,

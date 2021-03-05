@@ -87,25 +87,6 @@ rule create_conda_environment_bio_tools:
          '--export-conda-env --outfile {output} --logfile {log}'
 
 
-rule create_conda_environment_whatshap:
-    """
-    Exists in dedicated environment because a specific
-    dev version is installed - this can be changed as
-    soon as there is a compatible release via pip or conda
-    """
-    output:
-        'output/check_files/environment/conda_whatshap.ok'
-    log:
-        'log/output/check_files/environment/conda_whatshap.log'
-    params:
-        script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities')
-    conda:
-        '../environment/conda/conda_whatshap.yml'
-    shell:
-         '{params.script_exec} '
-         '--export-conda-env --outfile {output} --logfile {log}'
-
-
 rule create_conda_environment_pyscript:
     output:
         'output/check_files/environment/conda_pyscript.ok'
