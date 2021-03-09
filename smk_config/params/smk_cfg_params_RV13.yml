@@ -67,7 +67,9 @@ min_chromosome_coverage: 60
 # pipeline steps (i.e., everything
 # before evaluation)
 eval_known_ref: GRCh38_HGSVC2_noalt
-eval_align_ref: hg38_HGSVC2_noalt
+eval_align_ref:
+  - hg38_HGSVC2_noalt
+  - T2Tv1_38p13Y_chm13
 eval_gene_model: GRCh38_GENCODEv31_basic
 use_genome_size: hg38_HGSVC2_noalt
 main_chromosomes:
