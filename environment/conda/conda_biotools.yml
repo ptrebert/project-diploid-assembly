@@ -40,8 +40,8 @@ dependencies:
   - longshot=0.4.1
   - wtdbg=2.5
   - flye=2.8.3
-  - canu=2.0
-  - hifiasm=0.13
+  - canu=2.1.1
+  - hifiasm=0.14
   - racon=1.4.10
   - lighter=1.1.2
   - bcalm=2.2.2
