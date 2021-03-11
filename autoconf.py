@@ -61,12 +61,12 @@ option_constraints = {
         'check': [1, 2]
     },
     'nhr_assembler': {
-        'check': ['flye', 'shasta', 'wtdbg', 'pereg'],
-        'display': ['flye', 'shasta', 'wtdbg [wtdbg2]', 'pereg [Peregrine]']
+        'check': ['flye', 'shasta', 'wtdbg', 'pereg', 'hifiasm'],
+        'display': ['flye', 'shasta', 'wtdbg [wtdbg2]', 'pereg [Peregrine]', 'hifiasm']
     },
     'hap_assembler': {
-        'check': ['flye', 'shasta', 'wtdbg', 'pereg', 'canu'],
-        'display': ['flye', 'shasta', 'wtdbg [wtdbg2]', 'pereg [Peregrine]', 'canu']
+        'check': ['flye', 'shasta', 'wtdbg', 'pereg', 'canu', 'hifiasm'],
+        'display': ['flye', 'shasta', 'wtdbg [wtdbg2]', 'pereg [Peregrine]', 'canu', 'hifiasm']
     },
     'var_caller': {
         'check': ['freebayes', 'longshot', 'deepvar'],
