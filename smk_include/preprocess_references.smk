@@ -11,7 +11,6 @@ rule normalize_reference_assembly_names:
         'references/downloads/{known_ref}.fa.gz'
     output:
         seq = 'references/assemblies/{known_ref}.fasta',
-        table = 'references/assemblies/{known_ref}.sizes'
     resources:
         mem_total_mb = 12288,
         mem_per_cpu_mb = 12288
@@ -26,14 +25,12 @@ rule normalize_reference_assembly_names:
         remove_chars = ['*', ':', '-', '|']
 
         out_buffer = io.StringIO()
-        chromosome_sizes = []
         chrom_length = 0
         current_chrom = None
         with gzip.open(input[0], 'rt') as genome:
             for line in genome:
                 if line.startswith('>'):
                     if current_chrom is not None:
-                        chromosome_sizes.append((current_chrom, chrom_length))
                         chrom_length = 0
                     chrom_name = line.split()[0].strip('>')
                     try:
@@ -88,14 +85,9 @@ rule normalize_reference_assembly_names:
                     out_buffer.write(line)
                     chrom_length += len(line.strip())
 
-        chromosome_sizes.append((current_chrom, chrom_length))
-
         with open(output.seq, 'w') as dump:
             _ = dump.write(out_buffer.getvalue())
 
-        with open(output.table, 'w') as dump:
-            for chrom, size in chromosome_sizes:
-                _ = dump.write('{}\t{}\n'.format(chrom, size))
     # end of rule
 
 
@@ -104,7 +96,6 @@ rule reduce_reference_to_main_chromosomes:
         full_ref = 'references/assemblies/GRCh3{num}_{ref_id}.fasta'
     output:
         red_ref = 'references/assemblies/hg3{num}_{ref_id}.fasta',
-        red_sizes = 'references/assemblies/hg3{num}_{ref_id}.sizes'
     wildcard_constraints:
         num = '[0-9]'
     resources:
@@ -116,7 +107,6 @@ rule reduce_reference_to_main_chromosomes:
         import io
 
         out_buffer = io.StringIO()
-        chromosome_sizes = []
         skip = True
         current_chrom = None
         chrom_length = 0
@@ -125,7 +115,6 @@ rule reduce_reference_to_main_chromosomes:
             for line in fasta:
                 if line.startswith('>'):
                     if current_chrom is not None:
-                        chromosome_sizes.append((current_chrom, chrom_length))
                         chrom_length = 0
                     chrom_name = line.strip('>').split()[0]
                     if chrom_name not in chrom_set:
@@ -142,15 +131,9 @@ rule reduce_reference_to_main_chromosomes:
                     out_buffer.write(line)
                     chrom_length += len(line.strip())
 
-        if current_chrom is not None:
-            chromosome_sizes.append((current_chrom, chrom_length))
-
         with open(output.red_ref, 'w') as dump:
             _ = dump.write(out_buffer.getvalue())
 
-        with open(output.red_sizes, 'w') as dump:
-            for chrom, size in chromosome_sizes:
-                _ = dump.write('{}\t{}\n'.format(chrom, size))
     # end of rule
 
 

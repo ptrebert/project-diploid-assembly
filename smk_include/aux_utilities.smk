@@ -1,4 +1,16 @@
 
+localrules: make_chromosome_size_file
+
+
+rule make_chromosome_size_file:
+    input:
+        'references/assemblies/{ref_genome}.fasta.fai'
+    output:
+        'references/assemblies/{ref_genome}.sizes'
+    shell:
+        "cut -f 1,2 {input} > {output}"
+
+
 rule compute_md5_checksum:
     input:
         '{filepath}'
