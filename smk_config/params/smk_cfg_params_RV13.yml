@@ -11,6 +11,16 @@ git_commit_breakpointr: 268d99d
 # git commits are changed!
 git_commit_version: 13
 
+# automatic scraping of "temp" data sources (e.g., FTP)
+# is now deprecated and deactivated by default. New behavior
+# assumes that data are always available locally with path
+# and type defined as part of the sample config (per readset)
+# Set the below parameter to true to work with data sources
+# defined in separate config files or for downloading data
+# from repositories (currently only implemented for a few
+# ENA bioprojects needed for HGSVC2 data)
+use_legacy_data_scraping: false
+
 peregrine_version: 0.1.6.1
 deepvariant_version: 1.1.0
 shasta_version: 0.5.0

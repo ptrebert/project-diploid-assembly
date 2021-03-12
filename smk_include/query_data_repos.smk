@@ -77,9 +77,15 @@ def read_configured_repo_sources():
     return source_names, source_outputs, source_syscalls
 
 
-REPO_SOURCE_NAMES, REPO_SOURCE_OUTPUTS, REPO_SOURCE_CALLS = read_configured_repo_sources()
+if bool(config.get('use_legacy_data_scraping', False)):
 
-REPO_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 2)[0], call) for source, call in zip(REPO_SOURCE_OUTPUTS, REPO_SOURCE_CALLS))
+    REPO_SOURCE_NAMES, REPO_SOURCE_OUTPUTS, REPO_SOURCE_CALLS = read_configured_repo_sources()
+
+    REPO_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 2)[0], call) for source, call in zip(REPO_SOURCE_OUTPUTS, REPO_SOURCE_CALLS))
+
+else:
+    REPO_SOURCE_OUTPUTS = list()
+    REPO_SOURCE_TO_CALL = dict()
 
 
 rule master_query_repo_sources:

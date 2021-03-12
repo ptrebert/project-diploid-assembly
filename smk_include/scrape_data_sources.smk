@@ -1,6 +1,7 @@
 
 import os
 import sys
+import collections as col
 
 localrules: master_scrape_data_sources
 
@@ -99,32 +100,375 @@ def read_configured_data_sources():
     return source_names, source_outputs, source_syscalls
 
 
-DATA_SOURCE_NAMES, DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS = read_configured_data_sources()
+def collect_input_data_files(top_path, sample, file_ext):
+    """
+    """
+    selected_files = []
+    for root, dirs, files in os.walk(top_path, followlinks=False):
+        if 'ignore' in root:
+            continue
+        level_files = [f for f in files if sample in f and f.endswith(file_ext)]
+        if not level_files:
+            level_files = [f for f in files if f.endswith(file_ext)]
+        level_files = [(f, os.path.join(root, f)) for f in level_files]
+        selected_files.extend(level_files)
+    selected_files = sorted(set(selected_files))
+    if len(selected_files) < 1:
+        raise ValueError('No data files found: {} / {} / {}'.format(top_path, sample, file_ext))
+    return selected_files
 
-DATA_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 1)[0], call) for source, call in zip(DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS))
 
+def check_readset_name(readset_type, readset_name, sample_name):
+    """
+    """
+    if not readset_name.startswith(sample_name):
+        raise ValueError('Readset name has to start with sample name: {} / {}'.format(readset_name, sample_name))
+    if readset_type == 'long_reads':
+        try:
+            sample, project, platform = readset_name.split('_')
+        except ValueError:
+            raise ValueError('Readset name does not follow naming convention: SAMPLE_PROJECT_SEQPLATFORM')
+    
+    elif readset_type in ['strandseq', 'short_reads']:
+        try:
+            sample, project, platform, suffix = readset_name.split('_')
+        except ValueError:
+            expected_suffix = 'sseq' if readset_type == 'strandseq' else 'short'
+            raise ValueError('Readset name does not follow naming convention: SAMPLE_PROJECT_SEQPLATFORM_{}'.format(expected_suffix))
+    else:
+        raise ValueError('Unknown type of readset: {} / {}'.format(readset_type, readset_name))
+
+
+def determine_data_source_file_extension(readset_spec):
+    """
+    """
+
+    has_data_type = 'data_type' in readset_spec
+
+    if 'data_source_filter' in readset_spec:
+        file_ext = readset_spec['data_source_filter'].strip().strip('"')
+        if has_data_type and readset_spec['data_type'] == 'pacbio_native':
+            sort_folder = 'input/bam'
+            pgas_ext = '.pbn.bam'
+        elif (not has_data_type) or readset_spec['data_type'] == 'fastq':
+            sort_folder = 'input/fastq'
+            pgas_ext = '.fastq.gz'
+        else:
+            raise ValueError('Cannot process readset data type: {} / {}'.format(readset_spec['readset'], readset_spec['data_type']))
+    elif has_data_type and readset_spec['data_type'] == 'pacbio_native':
+        file_ext = '.bam'
+        sort_folder = 'input/bam'
+        pgas_ext = '.pbn.bam'
+    elif (not has_data_type) or readset_spec['data_type'] == 'fastq':
+        file_ext = '.fastq.gz'
+        sort_folder = 'input/fastq'
+        pgas_ext = '.fastq.gz'
+    else:
+        raise ValueError('Cannot determine file extension to filter data source: {}'.format(readset_spec))
+    return file_ext, sort_folder, pgas_ext
+
+
+def handle_long_read_data_source(readset_spec, sample_name):
+    """
+    """
+    file_ext, sort_folder, pgas_ext = determine_data_source_file_extension(readset_spec)
+    input_data_files = collect_input_data_files(
+        readset_spec['data_source_folder'],
+        sample_name,
+        file_ext
+    )
+    readset_name = readset_spec['readset']
+    data_sources = col.OrderedDict()
+    if len(input_data_files) == 1:
+        if not readset_spec['load_type'] == 'complete':
+            raise ValueError('Only one input file for readset {}, but specified as coming in "parts" '
+                            '- incomplete input data?'.format(readset_name))
+        req_key = os.path.join(sort_folder, readset_name + '_1000')
+        data_sources[req_key] = {
+                'local_path': os.path.join(sort_folder, readset_name + '_1000' + pgas_ext),
+                'remote_path': input_data_files[0][1]
+            }
+    else:
+        for pos, (fname, remote_path) in enumerate(input_data_files, start=1):
+            part_file = readset_name + '.part' + str(pos)
+            req_key = os.path.join(sort_folder, readset_name, part_file)
+            data_sources[req_key] = {
+                'local_path': os.path.join(sort_folder, readset_name, part_file + pgas_ext),
+                'remote_path': remote_path
+            }
+    return data_sources
+
+
+def compile_data_source_entry(sort_folder, readset_name, readset_prefix, fraction, library_id, run_id):
+    """
+    """
+    if fraction is None:
+        read1_file_prefix = '_'.join([readset_prefix, library_id, '1'])
+        read1_key = os.path.join(sort_folder, readset_name, read1_file_prefix)
+
+        read2_file_prefix = '_'.join([readset_prefix, library_id, '2'])
+        read2_key = os.path.join(sort_folder, readset_name, read2_file_prefix)
+
+    else:
+        read1_file_prefix = '_'.join([readset_prefix + '-' + fraction, library_id, run_id, '1'])
+        read1_key = os.path.join(sort_folder, readset_name, read1_file_prefix)
+
+        read2_file_prefix = '_'.join([readset_prefix + '-' + fraction, library_id, run_id, '2'])
+        read2_key = os.path.join(sort_folder, readset_name, read2_file_prefix)
+
+    return read1_key, read2_key
+
+
+def group_by_two_iterator(file_list, readset_name, sort_folder, pgas_ext):
+    """
+    """
+    import hashlib
+
+    if len(file_list) % 2 != 0:
+        raise ValueError('Number of data files cannot be grouped by {} ({})'.format(grouping, len(file_list)))
+
+    readset_prefix = readset_name.rsplit('_', 1)[0]
+
+    for i in range(0, len(file_list), 2):
+        (read1_fname, read1_fpath), (read2_fname, read2_fpath) = file_list[i:i+2]
+        library_id = ''.join([read1_fname, read2_fname])
+        library_id = hashlib.md5(library_id.encode('utf-8')).hexdigest()
+
+        read1_key, read2_key = compile_data_source_entry(
+            sort_folder,
+            readset_name,
+            readset_prefix,
+            None,
+            library_id,
+            None,
+        )
+
+        read_info = {
+            read1_key: {
+                'local_path': read1_key + pgas_ext,
+                'remote_path': read1_fpath
+            },
+            read2_key: {
+                'local_path': read2_key + pgas_ext,
+                'remote_path': read2_fpath
+            }
+        }
+        
+        yield read_info
+
+    return
+
+
+def group_by_four_iterator(file_list, readset_name, sort_folder, pgas_ext):
+    """
+    """
+    import hashlib
+
+    if len(file_list) % 4 != 0:
+        raise ValueError('Number of data files cannot be grouped by {} ({})'.format(grouping, len(file_list)))
+
+    # - This is different from "grouping by two" because we need to account
+    # here for the two different sequencing fraction per library
+    # - This cannot fail because it has already been checked before
+    sample, project, platform, suffix = readset_name.split('_')
+    if '-' not in platform:
+        raise ValueError('For Strand-seq samples with two sequencing fractions per library, '
+                        'the platform string ({}) needs to be separable by "minus" to encode '
+                        'the two fraction (i.e. SOMETHING-frac1 and SOMETHING-frac2'.format(platform))
+    sequencer = platform.split('-')[0]
+    readset_prefix = '_'.join([sample, project, sequencer])
+
+    for i in range(0, len(file_list), 4):
+        read_file_names = [t[0] for t in file_list[i:i+4]]
+        read_file_paths = [t[1] for t in file_list[i:i+4]]
+        
+        library_id = ''.join(read_file_names)
+        library_id = hashlib.md5(library_id.encode('utf-8')).hexdigest()
+
+        frac1_run_id = ''.join(read_file_names[:2])
+        frac1_run_id = hashlib.md5(frac1_run_id.encode('utf-8')).hexdigest()
+
+        frac1_read1_key, frac1_read2_key = compile_data_source_entry(
+            sort_folder,
+            readset_name,
+            readset_prefix,
+            'frac1',
+            library_id,
+            frac1_run_id,
+        )
+
+        frac2_run_id = ''.join(read_file_names[2:])
+        frac2_run_id = hashlib.md5(frac2_run_id.encode('utf-8')).hexdigest()
+
+        frac2_read1_key, frac2_read2_key = compile_data_source_entry(
+            sort_folder,
+            readset_name,
+            readset_prefix,
+            'frac2',
+            library_id,
+            frac2_run_id,
+        )
+
+        read_info = {
+            frac1_read1_key: {
+                'local_path': frac1_read1_key + pgas_ext,
+                'remote_path': read_file_paths[0]
+            },
+            frac1_read2_key: {
+                'local_path': frac1_read2_key + pgas_ext,
+                'remote_path': read_file_paths[1]
+            },
+            frac2_read1_key: {
+                'local_path': frac2_read1_key + pgas_ext,
+                'remote_path': read_file_paths[2]
+            },
+            frac2_read2_key: {
+                'local_path': frac2_read2_key + pgas_ext,
+                'remote_path': read_file_paths[3]
+            }
+        }
+              
+        yield read_info
+
+    return
+
+
+def handle_strandseq_data_source(readset_spec, sample_name):
+    """
+    """
+    file_ext, sort_folder, pgas_ext = determine_data_source_file_extension(readset_spec)
+    input_data_files = collect_input_data_files(
+        readset_spec['data_source_folder'],
+        sample_name,
+        file_ext
+    )
+    readset_name = readset_spec['readset']
+    data_sources = col.OrderedDict()
+    num_lib_fractions = readset_spec['library_fractions']
+    # TODO: with a little more abstraction, the below iterators
+    # could be realized as a single function
+    if num_lib_fractions == 'one':
+        for read_info in group_by_two_iterator(input_data_files, readset_name, sort_folder, pgas_ext):
+            data_sources.update(read_info)
+
+    elif num_lib_fractions == 'two':
+        for read_info in group_by_four_iterator(input_data_files, readset_name, sort_folder, pgas_ext):
+            data_sources.update(read_info)
+    else:
+        raise ValueError('Cannot process number of Strand-seq library fractions: {}'.format(readset_spec))
+    return data_sources
+
+
+def handle_short_read_data_source(readset_spec, sample_name):
+    raise NotImplementedError('TODO: implement short read input data')
+
+
+def read_local_data_sources():
+    """
+    Create a quick and dirty JSON annotation for locally available data sources.
+    This relies on a proper user annotation of readsets in the sample config.
+    """
+
+    readset_handlers = {
+        'long_reads': handle_long_read_data_source,
+        'strandseq': handle_strandseq_data_source,
+        'short_reads': handle_short_read_data_source,
+    }
+
+    show_warnings = bool(config.get('show_warnings', False))
+
+    formatted_data_sources = dict()
+
+    for key, values in config.items():
+        if not key.startswith('sample_description'):
+            continue
+        sample = key.split('_')[-1]
+
+        for ds in values['data_sources']:
+            for readset_type, readset_spec in ds.items():
+                readset_name = readset_spec['readset']
+                if 'data_source_folder' not in readset_spec:
+                    if show_warnings:
+                        sys.stderr.write('\nWarning: no data source folder for readset {} - skipping\n'.format(readset_name))
+                    continue
+                if not os.path.isdir(readset_spec['data_source_folder']):
+                    if show_warnings:
+                        sys.stderr.write('\nWarning: skipping over non-existing data source folder: {}\n'.format(readset_spec['data_source_folder']))
+                    continue
+                if readset_name in formatted_data_sources:
+                    raise ValueError('Duplicate data source entry for readset {}'.format(readset_name))
+                check_readset_name(readset_type, readset_name, sample)
+                readset_sources = readset_handlers[readset_type](readset_spec, sample)
+                formatted_data_sources[readset_name] = readset_sources
+    
+    return formatted_data_sources
+
+
+USE_LEGACY_DATA_SCRAPING = bool(config.get('use_legacy_data_scraping', False))
+
+if USE_LEGACY_DATA_SCRAPING:
+
+    DATA_SOURCE_NAMES, DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS = read_configured_data_sources()
+
+    DATA_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 1)[0], call) for source, call in zip(DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS))
+
+else:
+    DATA_SOURCE_OUTPUTS = sorted(list(read_local_data_sources().keys()))
+    DATA_SOURCE_TO_CALL = dict()
 
 rule master_scrape_data_sources:
     input:
         DATA_SOURCE_OUTPUTS
 
 
-rule scrape_data_source:
-    """
-    2020-02-06
-    This was originally an anon rule iterating through the above lists.
-    This worked locally, but resulted in wrong system calls matched to certain
-    output file names in a cluster environment (maybe an issue with the job
-    submission script for anon rules?). Don't wait for snakemake fix, work around...
-    """
-    output:
-        'input/data_sources/{data_source}.json'
-    log:
-        'log/input/data_sources/{data_source}.log'
-    message: 'Processing data source: {output}'
-    conda:
-        '../environment/conda/conda_pyscript.yml'
-    params:
-        scrape_call = lambda wildcards: DATA_SOURCE_TO_CALL[wildcards.data_source]
-    shell:
-        '{params.scrape_call}'
+if USE_LEGACY_DATA_SCRAPING:
+    rule scrape_data_source:
+        """
+        2020-02-06
+        This was originally an anon rule iterating through the above lists.
+        This worked locally, but resulted in wrong system calls matched to certain
+        output file names in a cluster environment (maybe an issue with the job
+        submission script for anon rules?). Don't wait for snakemake fix, work around...
+        """
+        output:
+            'input/data_sources/{data_source}.json'
+        log:
+            'log/input/data_sources/{data_source}.log'
+        message: 'Processing data source: {output}'
+        conda:
+            '../environment/conda/conda_pyscript.yml'
+        params:
+            scrape_call = lambda wildcards: DATA_SOURCE_TO_CALL[wildcards.data_source]
+        shell:
+            '{params.scrape_call}'
+
+else:
+    rule scan_local_data_sources:
+        """
+        Check all sample configs for data paths and build a quick and dirty
+        data source json from the gathered info.
+        """
+        output:
+            'input/data_sources/{data_source}.json'
+        log:
+            'log/input/data_sources/{data_source}.log'
+        message: 'Processing local data sources for PGAS run: {wildcards.data_source}'
+        run:
+            import json
+
+            local_data_sources = read_local_data_sources()
+
+            if not local_data_sources:
+                raise ValueError('\nERROR: no local data sources could be configured. Check your sample configuration.\n')
+
+            for readset, input_sources in local_data_sources.items():
+                if readset != wildcards.data_source:
+                    continue
+                with open(output[0], 'w') as dump:
+                    json.dump(
+                        input_sources,
+                        dump,
+                        ensure_ascii=True,
+                        indent=1,
+                        sort_keys=False
+                    )            
