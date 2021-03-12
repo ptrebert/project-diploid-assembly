@@ -1,7 +1,4 @@
 name: rtools
-channels:
-  - conda-forge
-  - bioconda
 dependencies:
   - Python=3.7.*
   - pip

@@ -1,7 +1,4 @@
 name: pyscript
-channels:
-  - conda-forge
-  - bioconda
 dependencies:
   - Python=3.6.*
   - pip=19.2.3

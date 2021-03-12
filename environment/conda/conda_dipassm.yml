@@ -1,7 +1,4 @@
 name: dipassm
-channels:
-  - conda-forge
-  - bioconda
 dependencies:
   - Python=3.7.*
   - pip=21.0.1

@@ -1,7 +1,4 @@
 name: pbtools
-channels:
-  - conda-forge
-  - bioconda
 dependencies:
   - python=2.7.*
   - python-consensuscore2=3.4.1
