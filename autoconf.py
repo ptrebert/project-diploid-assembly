@@ -733,6 +733,7 @@ def generate_run_env(args):
     run_env = {
         'env_module_singularity': args.singularity_module,
         'force_local_copy': args.local_copy,
+        'use_legacy_data_scraping': True,
         'num_cpu_max': args.max_cpu,
         'num_cpu_high': args.high_cpu,
         'num_cpu_medium': args.medium_cpu,
@@ -799,7 +800,10 @@ def main():
 
         _ = config_dump.write('# SECTION: PIPELINE PARAMETERS\n')
         with open(os.path.join(args.repo_folder, load_configs['params'].format(parameter_version=args.param_ver)), 'r') as cfg:
-            _ = config_dump.write(cfg.read())
+            for line in cfg:
+                if 'use_legacy_data_scraping' in line:
+                    continue
+                _ = config_dump.write(line)
             _ = config_dump.write('\n\n')
 
         _ = config_dump.write('# SECTION: REFERENCE DATA\n')
