@@ -12,11 +12,11 @@ sample_description_HG00512:
         technology: pacbio
         data_type: fastq
         load_type: parts
-        data_source_path: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG00512/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG00512/
     - strandseq:
         readset: &sseq_reads HG00512_1kg_il25k-npe_sseq
         library_fractions: two
-        data_source_path: /gpfs/project/projects/medbioinf/data/1000GP_strandseq/HG00512/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/1000GP_strandseq/HG00512/
     - short_reads:
         readset: &short_reads HG00512_1kg_il25k-125pe_short
         source_type: ena

@@ -12,11 +12,11 @@ sample_description_HG00731:
         technology: pacbio
         data_type: fastq
         load_type: parts
-        data_source_path: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG00731/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG00731/
     - strandseq:
         readset: &sseq_reads HG00731_1kg_il25k-npe_sseq
         library_fractions: two
-        data_source_path: /gpfs/project/projects/medbioinf/data/1000GP_strandseq/HG00731/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/1000GP_strandseq/HG00731/
     - short_reads:
         readset: HG00731_1kg_il25k-125pe_short
         source_type: ena

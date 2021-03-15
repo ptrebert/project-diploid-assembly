@@ -12,11 +12,11 @@ sample_description_NA19239:
         technology: pacbio
         data_type: fastq
         load_type: parts
-        data_source_path: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/NA19239/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/NA19239/
     - strandseq:
         readset: &sseq_reads NA19239_1kg_il25k-npe_sseq
         library_fractions: two
-        data_source_path: /gpfs/project/projects/medbioinf/data/1000GP_strandseq/NA19239/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/1000GP_strandseq/NA19239/
     - short_reads:
         readset: NA19239_1kg_il25k-125pe_short
         source_type: ena
