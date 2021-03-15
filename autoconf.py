@@ -33,7 +33,7 @@ option_defaults = col.OrderedDict([
     ('ss_seq_platform', 'ilany'),
     ('ss_read_type', 'npe'),
     ('ss_library_fractions', None),
-    ('param_ver', 12),
+    ('param_ver', 13),
     ('max_cpu', None),
     ('high_cpu', None),
     ('medium_cpu', None),
@@ -128,7 +128,7 @@ assert all(k in option_defaults.keys() for k in option_help.keys()), 'Key missin
 
 load_configs = {
     'reference_sources': 'smk_config/ref_data/reference_data_sources.yml',
-    'params': 'smk_config/params/smk_cfg_params_RV{param_version}.yml'
+    'params': 'smk_config/params/smk_cfg_params_RV{parameter_version}.yml'
 }
 
 sample_targets_template = """
@@ -798,7 +798,7 @@ def main():
         _ = config_dump.write('\n\n')
 
         _ = config_dump.write('# SECTION: PIPELINE PARAMETERS\n')
-        with open(os.path.join(args.repo_folder, load_configs['params']), 'r') as cfg:
+        with open(os.path.join(args.repo_folder, load_configs['params'].format(parameter_version=args.param_ver)), 'r') as cfg:
             _ = config_dump.write(cfg.read())
             _ = config_dump.write('\n\n')
 
