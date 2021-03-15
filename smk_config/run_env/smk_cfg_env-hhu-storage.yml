@@ -1,0 +1,10 @@
+
+notify: False
+notify_email: ebertp@hhu.de
+
+env_module_singularity: Singularity
+
+num_cpu_max: 6
+num_cpu_high: 4
+num_cpu_medium: 2
+num_cpu_low: 1

@@ -1,0 +1,19 @@
+# Default runtime profile for HHU HILBERT infrastructure / storage server
+
+jobs: 6
+latency-wait: 10
+keep-going: True
+keep-incomplete: False
+rerun-incomplete: True
+restart-times: 1
+use-conda: True
+use-envmodules: True
+conda-prefix: /gpfs/project/ebertp/projects/conda_envs
+nolock: False
+resources:
+  mem_total_mb=32768
+default-resources:
+  - mem_per_cpu_mb=1024
+  - mem_total_mb=1024
+  - runtime_hrs=1
+  - runtime_min=59
