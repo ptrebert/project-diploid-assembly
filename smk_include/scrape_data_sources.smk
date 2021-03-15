@@ -413,7 +413,8 @@ if USE_LEGACY_DATA_SCRAPING:
     DATA_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 1)[0], call) for source, call in zip(DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS))
 
 else:
-    DATA_SOURCE_OUTPUTS = sorted(list(read_local_data_sources().keys()))
+    DATA_SOURCE_FILES = sorted(list(read_local_data_sources().keys()))
+    DATA_SOURCE_OUTPUTS = ['input/data_sources/{}.json'.format(fn) for fn in DATA_SOURCE_FILES]
     DATA_SOURCE_TO_CALL = dict()
 
 rule master_scrape_data_sources:
