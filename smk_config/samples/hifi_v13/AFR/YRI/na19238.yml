@@ -37,8 +37,6 @@ sample_targets_NA19238:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
       sseq_reads: *sseq_reads
-      pol_reads: *ccs_reads
-      pol_pass: racon-p2
       hap_assm_mode: split
       hap:
         - h1-un
