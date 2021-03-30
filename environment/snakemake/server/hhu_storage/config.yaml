@@ -7,6 +7,7 @@ keep-incomplete: False
 rerun-incomplete: True
 restart-times: 1
 use-conda: True
+conda-frontend: mamba
 use-envmodules: True
 conda-prefix: /gpfs/project/ebertp/projects/conda_envs
 nolock: False

@@ -6,6 +6,7 @@ rerun-incomplete: True
 keep-incomplete: True
 restart-times: 0
 use-conda: True
+conda-frontend: mamba
 use-envmodules: False
 nolock: False
 resources:

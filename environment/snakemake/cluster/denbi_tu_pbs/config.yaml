@@ -14,6 +14,7 @@ rerun-incomplete: True
 keep-incomplete: False
 restart-times: 1
 use-conda: True
+conda-frontend: mamba
 use-envmodules: False
 nolock: True
 max-status-checks-per-second: 0.01

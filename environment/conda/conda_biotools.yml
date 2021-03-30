@@ -6,12 +6,13 @@ dependencies:
   - gxx_impl_linux-64=7.3.0
   - gxx_linux-64=7.3.0
   - ld_impl_linux-64=2.33.1
+  - libboost=1.73.0
   - libblas=3.8.0
   - libcblas=3.8.0
   - liblapack=3.8.0
   - libopenblas=0.3.6
   - libgfortran-ng=7.3.0
-  - libgcc-ng=9.1.0
+  - libgcc-ng=9.3.0
   - libstdcxx-ng=9.1.0
   - libxml2=2.9.9
   - lp_solve=5.5.2.5
@@ -21,6 +22,11 @@ dependencies:
   - blast=2.5.0
   - bwa=0.7.17
   - minimap2=2.17
+  - _libgcc_mutex=0.1
+  - libgomp=9.3.0
+  - _openmp_mutex=4.5
+  - meryl=1.2
+  - winnowmap=2.0
   - mummer4
   - sambamba=0.7.1  # FIX github.com/biod/sambamba/issues/393 - DO NOT DOWNGRADE
   - ldc=1.13.0=h02c9852_1  # FIX https://github.com/bcbio/bcbio-nextgen/issues/3032 - DO NOT UP- or DOWNGRADE
@@ -46,7 +52,9 @@ dependencies:
   - cutadapt=2.10
   - trim-galore=0.6.5
   - fastp=0.20.1
-  - graphaligner=1.0.12
+  - mbg=1.0.3
+  - graphaligner=1.0.13
+  - vg=1.31.0
   - ucsc-bedgraphtobigwig=377
   - ucsc-bigwigaverageoverbed=377
   - ucsc-bigwigcorrelate=377

@@ -10,3 +10,4 @@ dependencies:
   - pytables=3.6.1
   - intervaltree=3.0.2
   - pulp=2.4
+  - mamba=0.8.2
