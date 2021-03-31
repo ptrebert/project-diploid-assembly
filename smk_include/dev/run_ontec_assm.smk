@@ -115,11 +115,11 @@ rule clean_mbg_graph:
     input:
         'output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.gfa'
     output:
-        'output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
+        'output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
     log:
-        'log/output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.log'
+        'log/output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.log'
     benchmark:
-        'rsrc/output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.rsrc'
+        'rsrc/output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
@@ -132,7 +132,7 @@ rule clean_mbg_graph:
 
 rule ont_error_correction:
     input:
-        graph = 'output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.gfa',
+        graph = 'output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.gfa',
         reads = 'input/ont/{filename}.fa.gz',
     output:
         gaf = 'output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.gaf',
