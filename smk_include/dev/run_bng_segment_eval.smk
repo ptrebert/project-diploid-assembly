@@ -247,7 +247,7 @@ rule merge_segment_stats:
         merged.fillna(0., inplace=True)
         merged.columns = merged_cols
 
-        merged.to_csv(merged, sep='\t', header=True, index=True)
+        merged.to_csv(output[0], sep='\t', header=True, index=True, index_label='statistic')
 
 
 rule master:
