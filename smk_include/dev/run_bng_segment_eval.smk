@@ -124,6 +124,8 @@ rule intersect_alignment_with_annotation:
         annotation = '/beeond/data/hifiasm_v13_assemblies/coordinates/{sample}_{hap}_segments.bed'
     output:
         'output/intersect/{sample}_{hap}_isect.tsv'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
     shell:
         'bedtools intersect -wao -a {input.annotation} -b {input.aln} > {output}'
 
