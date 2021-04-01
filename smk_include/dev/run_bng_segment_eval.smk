@@ -52,8 +52,8 @@ rule count_hap1_assembly_kmers:
     input:
         fasta = '/beeond/data/hifiasm_v13_assemblies/{sample}_hgsvc_pbsq2-ccs_1000-hifiasm.h1-un.fasta'
     output:
-        kmer_db = directory('output/kmer/{sample}_H1.k15.db/'),
-        rep_kmer = 'output/kmer/{sample}_H1.k15.rep-grt09998.txt'
+        kmer_db = directory('output/kmer/{sample}_H1.k19.db/'),
+        rep_kmer = 'output/kmer/{sample}_H1.k19.rep-grt09998.txt'
     benchmark:
         'rsrc/output/kmer/{sample}_H1.count-dump.rsrc'
     conda:
