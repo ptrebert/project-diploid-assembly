@@ -99,9 +99,9 @@ rule build_hifi_read_graph:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt // config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int(91136 * attempt // config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 91136 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     shell:
         'MBG -i {input} -o {output} -t {threads} --blunt -k {wildcards.kmer} -w {wildcards.window} &> {log}'
 
