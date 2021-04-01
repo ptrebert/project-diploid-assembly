@@ -15,7 +15,7 @@ output_files = []
 
 for hap in ['H1', 'H2']:
     for s in samples:
-        tmp = 'output/segment_align/{sample}_{hap}.wmap-k19.bam'.format(**{'sample': s, 'hap': hap})
+        tmp = 'output/intersect/{sample}_{hap}_isect.tsv'.format(**{'sample': s, 'hap': hap})
         output_files.append(tmp)
 
 rule extract_hap1_contigs:
@@ -105,6 +105,27 @@ rule align_segments_to_assemblies:
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
     shell:
         'winnowmap -W {input.kmers} -t {threads} -ax asm20 {input.tigs} {input.segments} | samtools sort | samtools view -b > {output}'
+
+
+rule dump_to_bed:
+    input:
+        'output/segment_align/{sample}_{hap}.wmap-k19.bam'
+    output:
+        'output/segment_align/{sample}_{hap}.wmap-k19.bed'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bedtools bamtobed -i {input} > {output}'
+
+
+rule intersect_alignment_with_annotation:
+    input:
+        aln = 'output/segment_align/{sample}_{hap}.wmap-k19.bed',
+        annotation = '/beeond/data/hifiasm_v13_assemblies/coordinates/{sample}_{hap}_segments.bed'
+    output:
+        'output/intersect/{sample}_{hap}_isect.tsv'
+    shell:
+        'bedtools intersect -wao -a {input.annotation} -b {input.aln} > {output}'
 
 
 rule master:
