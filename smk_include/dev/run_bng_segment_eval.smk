@@ -115,7 +115,7 @@ rule dump_to_bed:
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
-        'bedtools bamtobed -i {input} > {output}'
+        'bedtools bamtobed -ed -i {input} > {output}'
 
 
 rule intersect_alignment_with_annotation:
