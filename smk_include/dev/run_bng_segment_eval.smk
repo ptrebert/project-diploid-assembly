@@ -235,7 +235,7 @@ rule merge_segment_stats:
 
         for stat_file in input:
             filename = stat_file.split('/')[-1].rsplit('_', 1)[0]
-            merged_idx.append(filename)
+            merged_cols.append(filename)
             df = pd.read_csv(stat_file, sep='\t', header=None, index_col=0)
             merged.append(df)
 
@@ -244,6 +244,7 @@ rule merge_segment_stats:
             axis=1,
             ignore_index=False
         )
+        merged.fillna(0., inplace=True)
         merged.columns = merged_cols
 
         merged.to_csv(merged, sep='\t', header=True, index=True)
