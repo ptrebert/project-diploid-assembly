@@ -7,6 +7,6 @@ force_local_copy: True
 env_module_singularity: False
 
 num_cpu_max: 36
-num_cpu_high: 36
+num_cpu_high: 18
 num_cpu_medium: 12
 num_cpu_low: 6
