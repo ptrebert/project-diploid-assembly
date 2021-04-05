@@ -34,7 +34,7 @@ rule clean_hpg_ont:
     benchmark:
         'rsrc/input/ont/{filename}.clean.rsrc'
     wildcard_constraints:
-        filename = '(' + '|'.join([f.rsplit('.', 2)[0] for f in hpg_ont]) + ')'
+        filename = '(' + '|'.join(ont_read_files) + ')'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
