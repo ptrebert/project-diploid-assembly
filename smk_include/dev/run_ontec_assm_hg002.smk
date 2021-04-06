@@ -61,9 +61,9 @@ rule build_hifi_read_graph:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(91136 * attempt // config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 91136 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int(122880 + 122880 * attempt // config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 122880 + 122880 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 3 * attempt
     shell:
         'MBG -i {input} -o {output} -t {threads} --blunt -k {wildcards.kmer} -w {wildcards.window} &> {log}'
 
@@ -85,8 +85,8 @@ rule clean_mbg_graph:
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 16384 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt ** attempt
     shell:
         'vg view -Fv {input} | vg mod -n -U 100 - 2> {log} | vg view - > {output}'
@@ -107,9 +107,9 @@ rule ont_error_correction:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(91136 * attempt // config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 91136 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 16 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int(737280 * attempt // config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 737280 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 24 * attempt
     shell:
         'GraphAligner -t {threads} -g {input.graph} -f {input.reads} -x dbg --corrected-clipped-out {output.ec_reads} -a {output.gaf} &> {log}'
 
