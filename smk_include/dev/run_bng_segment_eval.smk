@@ -18,7 +18,9 @@ for hap in ['H1', 'H2']:
         tmp = 'output/intersect/{sample}_{hap}_isect.tsv'.format(**{'sample': s, 'hap': hap})
         output_files.append(tmp)
 
-output_files.append('output/score_stats/merged_stats.tsv')
+output_files.append('output/score_stats/merged_stats.mindist.tsv')
+output_files.append('output/score_stats/merged_stats.maxscore.tsv')
+
 
 rule extract_hap1_contigs:
     input:
@@ -132,37 +134,39 @@ rule intersect_alignment_with_annotation:
         'bedtools intersect -wao -a {input.annotation} -b {input.aln} > {output}'
 
 
-rule score_bng_segments:
-    input:
-        'output/intersect/{sample}_{hap}_isect.tsv'
-    output:
-        'output/score_stats/{sample}_{hap}_stats.tsv'
-    run:
-        import collections as col
-        import pandas as pd
-
-        colors = ['pink', 'green', 'cyan', 'unknown', 'blue',
+BNG_SEGMENT_COLORS = ['pink', 'green', 'cyan', 'unknown', 'blue',
             'orange', 'purple', 'red']
 
-        def extract_segment_color(seg_name):
-            for c in colors:
+BNG_SEGMENT_INTERSECT_HEADER = ['assm_cluster', 'assm_start', 'assm_end',
+            'assm_name', 'seg_cluster', 'seg_start', 'seg_end', 'seg_name',
+            'edist', 'strand', 'overlap']
+
+def extract_segment_color(seg_name):
+            for c in BNG_SEGMENT_COLORS:
                 if c in seg_name:
                     return c
             return 'blank'
 
-        def compute_match_score(row):
-            score = 0
-            if row['assm_color'] == row['seg_color']:
-                score += 1
-                if row['assm_strand'] == row['strand']:
-                    score += 1
-            return score
 
-        header = ['assm_cluster', 'assm_start', 'assm_end', 'assm_name',
-            'seg_cluster', 'seg_start', 'seg_end', 'seg_name',
-            'edist', 'strand', 'overlap']
+def compute_match_score(row):
+    score = 0
+    if row['assm_color'] == row['seg_color']:
+        score += 1
+        if row['assm_strand'] == row['strand']:
+            score += 1
+    return score
 
-        df = pd.read_csv(input[0], sep='\t', names=header,
+
+rule score_bng_segments_mindist:
+    input:
+        'output/intersect/{sample}_{hap}_isect.tsv'
+    output:
+        'output/score_stats/{sample}_{hap}_stats.mindist.tsv'
+    run:
+        import collections as col
+        import pandas as pd    
+
+        df = pd.read_csv(input[0], sep='\t', names=BNG_SEGMENT_INTERSECT_HEADER,
             usecols=['assm_name', 'seg_name', 'edist', 'strand', 'overlap'])
 
         df['assm_color'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
@@ -222,11 +226,82 @@ rule score_bng_segments:
                     _ = dump.write('{}\t{}\n'.format(row_label, num_k))
 
 
+rule score_bng_segments_maxscore:
+    input:
+        'output/intersect/{sample}_{hap}_isect.tsv'
+    output:
+        'output/score_stats/{sample}_{hap}_stats.maxscore.tsv'
+    run:
+        import collections as col
+        import pandas as pd    
+
+        df = pd.read_csv(input[0], sep='\t', names=BNG_SEGMENT_INTERSECT_HEADER,
+            usecols=['assm_name', 'seg_name', 'edist', 'strand', 'overlap'])
+
+        df['assm_color'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
+        df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-2])
+        df['strand'].replace({'-': 'minus', '+': 'plus'}, inplace=True)
+        df['seg_color'] = df['seg_name'].apply(extract_segment_color)
+
+        df['score'] = df.apply(compute_match_score, axis=1)
+
+        full_match = col.Counter()
+        color_match = col.Counter()
+        missed = col.Counter()
+        unknown_pair = col.Counter()
+        mismatch_pair = col.Counter()
+        num_counts = col.Counter()
+
+        select_columns = ['assm_color', 'seg_color', 'score']
+
+        for assm_region, region_alns in df.groupby('assm_name'):
+            num_counts['segments'] += 1
+
+            tmp = region_alns.sort_values(['score', 'edist'], ascending=[False, True], inplace=False)
+
+            row_indexer = tmp.index[0]
+            
+            assm_color, seg_color, score = region_alns.loc[row_indexer, select_columns].values[0]
+            if score == 2:
+                full_match[assm_color] += 1
+                num_counts['full_match'] += 1
+                num_counts['any_match'] += 1
+            elif score == 1:
+                color_match[assm_color] += 1
+                num_counts['color_match'] += 1
+                num_counts['any_match'] += 1
+            else:
+                if seg_color == 'unknown':
+                    unknown_pair[assm_color] += 1
+                elif seg_color == 'blank':
+                    missed[assm_color] += 1
+                elif assm_color != seg_color:
+                    mismatch_pair[assm_color] += 1
+                else:
+                    raise ValueError('unexpected ', assm_color, seg_color, score)
+
+        with open(output[0], 'w') as dump:
+            _ = dump.write('num_segments\t{}\n'.format(num_counts['segments']))
+            _ = dump.write('num_any_match\t{}\n'.format(num_counts['any_match']))
+            _ = dump.write('pct_any_match\t{}\n'.format(round(num_counts['any_match'] / num_counts['segments'] * 100, 1)))
+            _ = dump.write('num_full_match\t{}\n'.format(num_counts['full_match']))
+            _ = dump.write('pct_full_match\t{}\n'.format(round(num_counts['full_match'] / num_counts['segments'] * 100, 1)))
+            _ = dump.write('num_color_match\t{}\n'.format(num_counts['color_match']))
+            _ = dump.write('pct_color_match\t{}\n'.format(round(num_counts['color_match'] / num_counts['segments'] * 100, 1)))
+
+            for counter, label in [(unknown_pair,'unknown'),(mismatch_pair,'mismatch'),(missed, 'missed')]:
+                
+                for k in sorted(counter.keys()):
+                    num_k = counter[k]
+                    row_label = label + '_' + k
+                    _ = dump.write('{}\t{}\n'.format(row_label, num_k))
+
+
 rule merge_segment_stats:
     input:
-        stats = expand('output/score_stats/{sample}_{hap}_stats.tsv', sample=samples, hap=['H1', 'H2'])
+        stats = expand('output/score_stats/{sample}_{hap}_stats.{{stattype}}.tsv', sample=samples, hap=['H1', 'H2'])
     output:
-        'output/score_stats/merged_stats.tsv'
+        'output/score_stats/merged_stats.{stattype}.tsv'
     run:
         import pandas as pd
 
