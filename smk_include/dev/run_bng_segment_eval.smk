@@ -168,8 +168,10 @@ rule extract_reference_segments:
         with open(output.tig_names, 'w') as tig_names:
             _ = tig_names.write('chr1\n')
 
-        segments = df.loc[df['sample'] == 'chm13', ['cluster_id', 'start', 'end', 'color', 'color_rgb']].copy()
-        segments['name'] = 'CHM13_1p3613_' + segments[['start', 'end', 'color', 'color_rgb']].astype(str).apply(lambda row: '_'.join(row), axis=1)
+        segments = df.loc[df['sample'] == 'chm13', ['cluster_id', 'start', 'end', 'color', 'color_rgb', 'orientation']].copy()
+        segments['orientation'] = 'plus'
+        segments['name'] = 'CHM13_1p3613_' + \
+            segments[['start', 'end', 'color', 'color_rgb', 'orientation']].astype(str).apply(lambda row: '_'.join(row), axis=1)
         segments.sort_values(['start', 'end'], inplace=True)
         segments.to_csv(
             output.segment_bed,
@@ -228,14 +230,15 @@ rule extract_assembly_segments:
 
         row_indexer = (df['sample'] == wildcards.sample) & (df['haplotype'] == wildcards.hap)
 
-        segments = df.loc[row_indexer, ['cluster_id', 'start', 'end', 'color', 'color_rgb']].copy()
+        segments = df.loc[row_indexer, ['cluster_id', 'start', 'end', 'color', 'color_rgb', 'orientation']].copy()
+        segments['orientation'].replace({1: 'plus', -1: 'minus'}, inplace=True)
 
         tigs = set(segments['cluster_id'].values)
         with open(output.tig_names, 'w') as tig_names:
             _ = tig_names.write('\n'.join(sorted(tigs)) + '\n')
 
         segments['name'] = '{}_{}_'.format(wildcards.sample, wildcards.hap) + \
-            segments[['cluster_id', 'start', 'end', 'color', 'color_rgb']].astype(str).apply(lambda row: '_'.join(row), axis=1)
+            segments[['cluster_id', 'start', 'end', 'color', 'color_rgb', 'orientation']].astype(str).apply(lambda row: '_'.join(row), axis=1)
         segments.sort_values(['start', 'end'], inplace=True)
         segments.to_csv(
             output.segment_bed,
@@ -470,8 +473,8 @@ rule score_bng_segments_mindist:
         df = pd.read_csv(input[0], sep='\t', names=BNG_SEGMENT_INTERSECT_HEADER,
             usecols=['assm_name', 'seg_name', 'edist', 'strand', 'overlap'])
 
-        df['assm_color'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
-        df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-2])
+        df['assm_color'] = df['assm_name'].apply(extract_segment_color)
+        df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
         df['strand'].replace({'-': 'minus', '+': 'plus'}, inplace=True)
         df['seg_color'] = df['seg_name'].apply(extract_segment_color)
 
@@ -539,8 +542,8 @@ rule score_bng_segments_maxscore:
         df = pd.read_csv(input[0], sep='\t', names=BNG_SEGMENT_INTERSECT_HEADER,
             usecols=['assm_name', 'seg_name', 'edist', 'strand', 'overlap'])
 
-        df['assm_color'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
-        df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-2])
+        df['assm_color'] = df['assm_name'].apply(extract_segment_color)
+        df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
         df['strand'].replace({'-': 'minus', '+': 'plus'}, inplace=True)
         df['seg_color'] = df['seg_name'].apply(extract_segment_color)
 
