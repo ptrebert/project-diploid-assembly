@@ -13,8 +13,8 @@ samples = [
 output_files = []
 output_files.append('output/score_stats/CHM13_reftoassm_stats.mindist.tsv')
 output_files.append('output/score_stats/CHM13_reftoassm_stats.maxscore.tsv')
-#output_files.append('output/score_stats/CHM13_assmtoref_stats.mindist.tsv')
-#output_files.append('output/score_stats/CHM13_assmtoref_stats.maxscore.tsv')
+output_files.append('output/score_stats/CHM13_assmtoref_stats.mindist.tsv')
+output_files.append('output/score_stats/CHM13_assmtoref_stats.maxscore.tsv')
 
 
 BNG_SEGMENT_COLORS = [
@@ -474,11 +474,6 @@ rule intersect_annotation_assm_to_ref:
         'bedtools intersect -wao -a {input.annotation} -b {input.aln} > {output}'
 
 
-BNG_SEGMENT_INTERSECT_HEADER = ['assm_cluster', 'assm_start', 'assm_end',
-            'assm_name', 'seg_cluster', 'seg_start', 'seg_end', 'seg_name',
-            'edist', 'strand', 'overlap']
-
-
 def compute_match_score(row):
     score = 0
     if row['assm_color'] == row['seg_color']:
@@ -488,20 +483,41 @@ def compute_match_score(row):
     return score
 
 
-rule score_bng_segments_mindist:
+def extract_scored_color_pair(alignments, scoring, select_columns):
+
+    if scoring == 'mindist':
+        row_indexer = alignments['edist'] == alignments['edist'].min()    
+        assm_color, seg_color, score = alignments.loc[row_indexer, select_columns].values[0]
+    elif scoring == 'maxscore':
+        tmp = alignments.sort_values(['score', 'edist'], ascending=[False, True], inplace=False)
+        row_indexer = tmp.index[0]    
+        assm_color, seg_color, score = alignments.loc[row_indexer, select_columns].values
+    else:
+        raise ValueError('unexpected scoring: {}'.format(scoring))
+    return assm_color, seg_color, score
+ 
+
+rule score_bng_segments:
     input:
-        'output/intersect/CHM13.{sample}_{hap}.isect.tsv'
+        'output/intersect/{assembly_1}.{assembly_2}.isect.tsv'
     output:
-        'output/score_stats/CHM13.{sample}_{hap}.stats.mindist.tsv'
+        'output/score_stats/{assembly_1}.{assembly_2}.stats.{scoring}.tsv'
     run:
         import collections as col
         import pandas as pd    
+
+        BNG_SEGMENT_INTERSECT_HEADER = ['assm_cluster', 'assm_start', 'assm_end',
+            'assm_name', 'seg_cluster', 'seg_start', 'seg_end', 'seg_name',
+            'edist', 'strand', 'overlap']
 
         df = pd.read_csv(input[0], sep='\t', names=BNG_SEGMENT_INTERSECT_HEADER,
             usecols=['assm_name', 'seg_name', 'edist', 'strand', 'overlap'])
 
         df['assm_color'] = df['assm_name'].apply(extract_segment_color)
-        df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
+        if wildcards.assembly_1 == 'CHM13':
+            df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
+        else:
+            df['assm_strand'] = df['seg_name'].apply(lambda x: x.split('_')[-1])
         df['strand'].replace({'-': 'minus', '+': 'plus'}, inplace=True)
         df['seg_color'] = df['seg_name'].apply(extract_segment_color)
 
@@ -518,10 +534,12 @@ rule score_bng_segments_mindist:
 
         for assm_region, region_alns in df.groupby('assm_name'):
             num_counts['segments'] += 1
-
-            row_indexer = region_alns['edist'] == region_alns['edist'].min()
             
-            assm_color, seg_color, score = region_alns.loc[row_indexer, select_columns].values[0]
+            assm_color, seg_color, score = extract_scored_color_pair(
+                region_alns,
+                wildcards.scoring,
+                select_columns
+            )
             if score == 2:
                 full_match[assm_color] += 1
                 num_counts['full_match'] += 1
@@ -555,77 +573,77 @@ rule score_bng_segments_mindist:
                     num_k = counter[k]
                     row_label = label + '_' + k
                     _ = dump.write('{}\t{}\n'.format(row_label, num_k))
+    # END OF RUN BLOCK
 
+# rule score_bng_segments_maxscore:
+#     input:
+#         'output/intersect/CHM13.{sample}_{hap}.isect.tsv'
+#     output:
+#         'output/score_stats/CHM13.{sample}_{hap}.stats.maxscore.tsv'
+#     run:
+#         import collections as col
+#         import pandas as pd    
 
-rule score_bng_segments_maxscore:
-    input:
-        'output/intersect/CHM13.{sample}_{hap}.isect.tsv'
-    output:
-        'output/score_stats/CHM13.{sample}_{hap}.stats.maxscore.tsv'
-    run:
-        import collections as col
-        import pandas as pd    
+#         df = pd.read_csv(input[0], sep='\t', names=BNG_SEGMENT_INTERSECT_HEADER,
+#             usecols=['assm_name', 'seg_name', 'edist', 'strand', 'overlap'])
 
-        df = pd.read_csv(input[0], sep='\t', names=BNG_SEGMENT_INTERSECT_HEADER,
-            usecols=['assm_name', 'seg_name', 'edist', 'strand', 'overlap'])
+#         df['assm_color'] = df['assm_name'].apply(extract_segment_color)
+#         df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
+#         df['strand'].replace({'-': 'minus', '+': 'plus'}, inplace=True)
+#         df['seg_color'] = df['seg_name'].apply(extract_segment_color)
 
-        df['assm_color'] = df['assm_name'].apply(extract_segment_color)
-        df['assm_strand'] = df['assm_name'].apply(lambda x: x.split('_')[-1])
-        df['strand'].replace({'-': 'minus', '+': 'plus'}, inplace=True)
-        df['seg_color'] = df['seg_name'].apply(extract_segment_color)
+#         df['score'] = df.apply(compute_match_score, axis=1)
 
-        df['score'] = df.apply(compute_match_score, axis=1)
+#         full_match = col.Counter()
+#         color_match = col.Counter()
+#         missed = col.Counter()
+#         unknown_pair = col.Counter()
+#         mismatch_pair = col.Counter()
+#         num_counts = col.Counter()
 
-        full_match = col.Counter()
-        color_match = col.Counter()
-        missed = col.Counter()
-        unknown_pair = col.Counter()
-        mismatch_pair = col.Counter()
-        num_counts = col.Counter()
+#         select_columns = ['assm_color', 'seg_color', 'score']
 
-        select_columns = ['assm_color', 'seg_color', 'score']
+#         for assm_region, region_alns in df.groupby('assm_name'):
+#             num_counts['segments'] += 1
 
-        for assm_region, region_alns in df.groupby('assm_name'):
-            num_counts['segments'] += 1
+#             tmp = region_alns.sort_values(['score', 'edist'], ascending=[False, True], inplace=False)
 
-            tmp = region_alns.sort_values(['score', 'edist'], ascending=[False, True], inplace=False)
-
-            row_indexer = tmp.index[0]
+#             row_indexer = tmp.index[0]
             
-            assm_color, seg_color, score = region_alns.loc[row_indexer, select_columns].values
-            if score == 2:
-                full_match[assm_color] += 1
-                num_counts['full_match'] += 1
-                num_counts['any_match'] += 1
-            elif score == 1:
-                color_match[assm_color] += 1
-                num_counts['color_match'] += 1
-                num_counts['any_match'] += 1
-            else:
-                if seg_color == 'unknown':
-                    unknown_pair[assm_color] += 1
-                elif seg_color == 'blank':
-                    missed[assm_color] += 1
-                elif assm_color != seg_color:
-                    mismatch_pair[assm_color] += 1
-                else:
-                    raise ValueError('unexpected ', assm_color, seg_color, score)
+#             assm_color, seg_color, score = region_alns.loc[row_indexer, select_columns].values
+#             if score == 2:
+#                 full_match[assm_color] += 1
+#                 num_counts['full_match'] += 1
+#                 num_counts['any_match'] += 1
+#             elif score == 1:
+#                 color_match[assm_color] += 1
+#                 num_counts['color_match'] += 1
+#                 num_counts['any_match'] += 1
+#             else:
+#                 if seg_color == 'unknown':
+#                     unknown_pair[assm_color] += 1
+#                 elif seg_color == 'blank':
+#                     missed[assm_color] += 1
+#                 elif assm_color != seg_color:
+#                     mismatch_pair[assm_color] += 1
+#                 else:
+#                     raise ValueError('unexpected ', assm_color, seg_color, score)
 
-        with open(output[0], 'w') as dump:
-            _ = dump.write('num_segments\t{}\n'.format(num_counts['segments']))
-            _ = dump.write('num_any_match\t{}\n'.format(num_counts['any_match']))
-            _ = dump.write('pct_any_match\t{}\n'.format(round(num_counts['any_match'] / num_counts['segments'] * 100, 1)))
-            _ = dump.write('num_full_match\t{}\n'.format(num_counts['full_match']))
-            _ = dump.write('pct_full_match\t{}\n'.format(round(num_counts['full_match'] / num_counts['segments'] * 100, 1)))
-            _ = dump.write('num_color_match\t{}\n'.format(num_counts['color_match']))
-            _ = dump.write('pct_color_match\t{}\n'.format(round(num_counts['color_match'] / num_counts['segments'] * 100, 1)))
+#         with open(output[0], 'w') as dump:
+#             _ = dump.write('num_segments\t{}\n'.format(num_counts['segments']))
+#             _ = dump.write('num_any_match\t{}\n'.format(num_counts['any_match']))
+#             _ = dump.write('pct_any_match\t{}\n'.format(round(num_counts['any_match'] / num_counts['segments'] * 100, 1)))
+#             _ = dump.write('num_full_match\t{}\n'.format(num_counts['full_match']))
+#             _ = dump.write('pct_full_match\t{}\n'.format(round(num_counts['full_match'] / num_counts['segments'] * 100, 1)))
+#             _ = dump.write('num_color_match\t{}\n'.format(num_counts['color_match']))
+#             _ = dump.write('pct_color_match\t{}\n'.format(round(num_counts['color_match'] / num_counts['segments'] * 100, 1)))
 
-            for counter, label in [(unknown_pair,'unknown'),(mismatch_pair,'mismatch'),(missed, 'missed')]:
+#             for counter, label in [(unknown_pair,'unknown'),(mismatch_pair,'mismatch'),(missed, 'missed')]:
                 
-                for k in sorted(counter.keys()):
-                    num_k = counter[k]
-                    row_label = label + '_' + k
-                    _ = dump.write('{}\t{}\n'.format(row_label, num_k))
+#                 for k in sorted(counter.keys()):
+#                     num_k = counter[k]
+#                     row_label = label + '_' + k
+#                     _ = dump.write('{}\t{}\n'.format(row_label, num_k))
 
 
 rule merge_segment_stats:
@@ -641,6 +659,34 @@ rule merge_segment_stats:
 
         for stat_file in input:
             filename = stat_file.split('/')[-1].split('.')[1]
+            merged_cols.append(filename)
+            df = pd.read_csv(stat_file, sep='\t', header=None, index_col=0)
+            merged.append(df)
+
+        merged = pd.concat(
+            merged,
+            axis=1,
+            ignore_index=False
+        )
+        merged.fillna(0., inplace=True)
+        merged.columns = merged_cols
+
+        merged.to_csv(output[0], sep='\t', header=True, index=True, index_label='statistic')
+
+
+rule merge_segment_stats:
+    input:
+        stats = expand('output/score_stats/{sample}_{hap}.CHM13.stats.{{stattype}}.tsv', sample=samples, hap=['H1', 'H2'])
+    output:
+        'output/score_stats/CHM13_assmtoref_stats.{stattype}.tsv'
+    run:
+        import pandas as pd
+
+        merged = []
+        merged_cols = []
+
+        for stat_file in input:
+            filename = stat_file.split('/')[-1].split('.')[0]
             merged_cols.append(filename)
             df = pd.read_csv(stat_file, sep='\t', header=None, index_col=0)
             merged.append(df)
