@@ -229,7 +229,7 @@ rule extract_assembly_tigs:
 
         df = pd.read_csv(input.table, sep='\t', header=0, index_col=None)
 
-        tig_names = set(df.loc[(df['sample'] == wildcards.sample & df['haplotype'] == wildcards.hap), 'cluster_id'].values)
+        tig_names = set(df.loc[(df['sample'] == wildcards.sample) & (df['haplotype'] == wildcards.hap), 'cluster_id'].values)
 
         with open(output.tig_names, 'w') as dump:
             _ = dump.write('\n'.join(sorted(tig_names)) + '\n')
