@@ -128,9 +128,9 @@ rule get_sequence_stats:
     input:
         '{filepath}/{filename}.fa.gz'
     output:
-        'output/seq_stats/{file_path}/{filename}.seqtk.stats'
+        'output/seq_stats/{filepath}/{filename}.seqtk.stats'
     benchmark:
-        'rsrc/output/seq_stats/{file_path}/{filename}.seqtk.rsrc'
+        'rsrc/output/seq_stats/{filepath}/{filename}.seqtk.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
