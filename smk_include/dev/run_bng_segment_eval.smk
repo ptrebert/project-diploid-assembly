@@ -232,7 +232,7 @@ rule extract_assembly_segments:
     input:
         table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
     output:
-        tig_names = 'output/tig_names/{sample}_{hap}_tigs.txt'
+        tig_names = 'output/tig_names/{sample}_{hap}_tigs.txt',
         segment_bed = 'output/segment_coordinates/{sample}_{hap}.segments.bed',
         track_bed = 'output/segment_coordinates/{sample}_{hap}.track.bed'
     run:
