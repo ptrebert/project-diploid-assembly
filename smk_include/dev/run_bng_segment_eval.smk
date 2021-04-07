@@ -168,7 +168,7 @@ rule extract_reference_segments:
     run:
         import pandas as pd
 
-        df = pd.read_csv(input.table, sep='\t', header=0, index=None)
+        df = pd.read_csv(input.table, sep='\t', header=0, index_col=None)
 
         with open(output.tig_names, 'w') as tig_names:
             _ = tig_names.write('chr1\n')
