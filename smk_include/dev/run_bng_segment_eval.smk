@@ -212,22 +212,6 @@ rule extract_reference_segment_sequences:
         'bedtools getfasta -fi {input.reference_fasta} -bed {input.segment_bed} -nameOnly > {output}'
 
 
-rule extract_assembly_tigs:
-    input:
-        table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
-    output:
-        tig_names = 'output/tig_names/{sample}_{hap}_tigs.txt'
-    run:
-        import pandas as pd
-
-        df = pd.read_csv(input.table, sep='\t', header=0, index_col=None)
-
-        tig_names = set(df.loc[(df['sample'] == wildcards.sample) & (df['haplotype'] == wildcards.hap), 'cluster_id'].values)
-
-        with open(output.tig_names, 'w') as dump:
-            _ = dump.write('\n'.join(sorted(tig_names)) + '\n')
-
-
 rule extract_assembly_segments:
     input:
         table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
@@ -246,7 +230,7 @@ rule extract_assembly_segments:
 
         tigs = set(segments['cluster_id'].values)
         with open(output.tig_names, 'w') as tig_names:
-            _ = tig_names.write('\n'.join(sorted(tigs)))
+            _ = tig_names.write('\n'.join(sorted(tigs)) + '\n')
 
         segments['name'] = '{}_{}_'.format(wildcards.sample, wildcards.hap) + \
             segments[['cluster_id', 'start', 'end', 'color', 'color_rgb']].astype(str).apply(lambda row: '_'.join(row), axis=1)
