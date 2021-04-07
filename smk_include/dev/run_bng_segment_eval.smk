@@ -11,15 +11,8 @@ samples = [
     'NA19240'
 ]
 
-output_files = []
-
-for hap in ['H1', 'H2']:
-    for s in samples:
-        tmp = 'output/intersect/{sample}_{hap}_isect.tsv'.format(**{'sample': s, 'hap': hap})
-        output_files.append(tmp)
-
-output_files.append('output/score_stats/merged_stats.mindist.tsv')
-output_files.append('output/score_stats/merged_stats.maxscore.tsv')
+output_files.append('output/score_stats/CHM13_reftoassm_stats.mindist.tsv')
+output_files.append('output/score_stats/CHM13_reftoassm_stats.maxscore.tsv')
 
 
 BNG_SEGMENT_COLORS = [
@@ -224,8 +217,6 @@ rule extract_assembly_tigs:
         table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
     output:
         tig_names = 'output/tig_names/{sample}_{hap}_tigs.txt'
-    wildcard_constraints:
-        sample = '(' + '|'.join(samples) + ')'
     run:
         import pandas as pd
 
@@ -235,6 +226,85 @@ rule extract_assembly_tigs:
 
         with open(output.tig_names, 'w') as dump:
             _ = dump.write('\n'.join(sorted(tig_names)) + '\n')
+
+
+rule extract_assembly_segments:
+    input:
+        table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
+    output:
+        tig_names = 'output/tig_names/{sample}_{hap}_tigs.txt'
+        segment_bed = 'output/segment_coordinates/{sample}_{hap}.segments.bed',
+        track_bed = 'output/segment_coordinates/{sample}_{hap}.track.bed'
+    run:
+        import pandas as pd
+
+        df = pd.read_csv(input.table, sep='\t', header=0, index_col=None)
+
+        row_indexer = (df['sample'] == wildcards.sample) & (df['haplotype'] == wildcards.hap)
+
+        segments = df.loc[row_indexer, ['cluster_id', 'start', 'end', 'color', 'color_rgb']].copy()
+
+        tigs = set(segments['cluster_id'].values)
+        with open(output.tig_names, 'w') as tig_names:
+            _ = tig_names.write('\n'.join(sorted(tigs)))
+
+        segments['name'] = '{}_{}_'.format(wildcards.sample, wildcards.hap) + \
+            segments[['cluster_id', 'start', 'end', 'color', 'color_rgb']].astype(str).apply(lambda row: '_'.join(row), axis=1)
+        segments.sort_values(['start', 'end'], inplace=True)
+        segments.to_csv(
+            output.segment_bed,
+            sep='\t',
+            header=False,
+            index=False,
+            columns=['cluster_id', 'start', 'end', 'name']
+        )
+
+        segments['score'] = (segments['end'] - segments['start']).astype(int)
+        segments['score'].clip(0, 1000, inplace=True)
+        segments['strand'] = '.'
+        segments['thickStart'] = segments['start']
+        segments['thickEnd'] = segments['end']
+        segments['color'] = segments['color_rgb'].map(lambda x: ','.join(x.split('-')))
+
+        with open(output.track_bed, 'w') as track_bed:
+            _ = track_bed.write('track name="{}_{}_segments" itemRgb="On"\n'.format(wildcards.sample, wildcards.hap))
+            track.to_csv(
+                track_bed,
+                sep='\t',
+                header=False,
+                index=False,
+                columns=['cluster_id', 'start', 'end', 'name', 'score', 'strand', 'thickStart', 'thickEnd', 'color']
+            )
+
+
+rule extract_hap1_segment_sequences:
+    input:
+        segment_bed = 'output/segment_coordinates/{sample}_H1.segments.bed',
+        reference_fasta = '/beeond/data/hifiasm_v13_assemblies/{sample}_hgsvc_pbsq2-ccs_1000-hifiasm.h1-un.fasta'
+    output:
+        'output/segment_sequences/{sample}_H1.segments.fasta'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+    shell:
+        'bedtools getfasta -fi {input.reference_fasta} -bed {input.segment_bed} -nameOnly > {output}'
+
+
+rule extract_hap2_segment_sequences:
+    input:
+        segment_bed = 'output/segment_coordinates/{sample}_H2.segments.bed',
+        reference_fasta = '/beeond/data/hifiasm_v13_assemblies/{sample}_hgsvc_pbsq2-ccs_1000-hifiasm.h2-un.fasta'
+    output:
+        'output/segment_sequences/{sample}_H2.segments.fasta'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+    shell:
+        'bedtools getfasta -fi {input.reference_fasta} -bed {input.segment_bed} -nameOnly > {output}'
 
 
 rule extract_hap1_contigs:
@@ -307,13 +377,33 @@ rule count_hap2_assembly_kmers:
         'meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}'
 
 
-rule align_segments_to_assemblies:
+rule count_reference_kmers:
     input:
-        tigs = 'output/tig_sequences/{sample}_{hap}_tigs.fasta',
-        segments = 'output/segment_sequences/T2Tv1_38p13Y_chm13.segments.fasta',
-        kmers = 'output/kmer/{sample}_{hap}.k19.rep-grt09998.txt'
+        fasta = '/beeond/data/hifiasm_v13_assemblies/T2Tv1_38p13Y_chm13.fasta'
     output:
-        'output/segment_align/{sample}_{hap}.wmap-k19.bam'
+        kmer_db = directory('output/kmer/T2Tv1_38p13Y_chm13.k19.db/'),
+        rep_kmer = 'output/kmer/T2Tv1_38p13Y_chm13.k19.rep-grt09998.txt'
+    benchmark:
+        'rsrc/output/kmer/T2Tv1_38p13Y_chm13.count-dump.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        mem_total_gb = lambda wildcards, attempt: 32 * attempt
+    shell:
+        'meryl count k=19 threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.fasta} && '
+        'meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}'
+
+
+rule align_assembly_segments_to_reference:
+    input:
+        tigs = 'output/tig_sequences/chm13_H0_tigs.fasta',
+        segments = 'output/segment_sequences/{sample}_{hap}.segments.fasta',
+        kmers = 'output/kmer/T2Tv1_38p13Y_chm13.k19.rep-grt09998.txt'
+    output:
+        'output/segment_align/{sample}_{hap}.CHM13.wmap-k19.bam'
     benchmark:
         'rsrc/output/segment_align/{sample}_{hap}.CHM13.wmap.rsrc'
     conda:
@@ -326,23 +416,42 @@ rule align_segments_to_assemblies:
         'winnowmap -W {input.kmers} -t {threads} -ax asm20 {input.tigs} {input.segments} | samtools sort | samtools view -b > {output}'
 
 
+rule align_reference_segments_to_assembly:
+    input:
+        tigs = 'output/tig_sequences/{sample}_{hap}_tigs.fasta',
+        segments = 'output/segment_sequences/T2Tv1_38p13Y_chm13.segments.fasta',
+        kmers = 'output/kmer/{sample}_{hap}.k19.rep-grt09998.txt'
+    output:
+        'output/segment_align/CHM13.{sample}_{hap}.wmap-k19.bam'
+    benchmark:
+        'rsrc/output/segment_align/CHM13.{sample}_{hap}.wmap.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+    shell:
+        'winnowmap -W {input.kmers} -t {threads} -ax asm20 {input.tigs} {input.segments} | samtools sort | samtools view -b > {output}'
+
+
 rule dump_to_bed:
     input:
-        'output/segment_align/{sample}_{hap}.wmap-k19.bam'
+        'output/segment_align/{filename}.wmap-k19.bam'
     output:
-        'output/segment_align/{sample}_{hap}.wmap-k19.bed'
+        'output/segment_align/{filename}.wmap-k19.bed'
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
         'bedtools bamtobed -ed -i {input} > {output}'
 
 
-rule intersect_alignment_with_annotation:
+rule intersect_annotation_ref_to_assm:
     input:
-        aln = 'output/segment_align/{sample}_{hap}.wmap-k19.bed',
-        annotation = '/beeond/data/hifiasm_v13_assemblies/coordinates/{sample}_{hap}_segments.bed'
+        aln = 'output/segment_align/CHM13.{sample}_{hap}.wmap-k19.bed',
+        annotation = 'output/segment_coordinates/{sample}_{hap}.segments.bed'
     output:
-        'output/intersect/{sample}_{hap}_isect.tsv'
+        'output/intersect/CHM13.{sample}_{hap}.isect.tsv'
     conda:
         '../../environment/conda/conda_biotools.yml'
     shell:
@@ -365,9 +474,9 @@ def compute_match_score(row):
 
 rule score_bng_segments_mindist:
     input:
-        'output/intersect/{sample}_{hap}_isect.tsv'
+        'output/intersect/CHM13.{sample}_{hap}.isect.tsv'
     output:
-        'output/score_stats/{sample}_{hap}_stats.mindist.tsv'
+        'output/score_stats/CHM13.{sample}_{hap}.stats.mindist.tsv'
     run:
         import collections as col
         import pandas as pd    
@@ -434,9 +543,9 @@ rule score_bng_segments_mindist:
 
 rule score_bng_segments_maxscore:
     input:
-        'output/intersect/{sample}_{hap}_isect.tsv'
+        'output/intersect/CHM13.{sample}_{hap}.isect.tsv'
     output:
-        'output/score_stats/{sample}_{hap}_stats.maxscore.tsv'
+        'output/score_stats/CHM13.{sample}_{hap}.stats.maxscore.tsv'
     run:
         import collections as col
         import pandas as pd    
@@ -505,9 +614,9 @@ rule score_bng_segments_maxscore:
 
 rule merge_segment_stats:
     input:
-        stats = expand('output/score_stats/{sample}_{hap}_stats.{{stattype}}.tsv', sample=samples, hap=['H1', 'H2'])
+        stats = expand('output/score_stats/CHM13.{sample}_{hap}.stats.{{stattype}}.tsv', sample=samples, hap=['H1', 'H2'])
     output:
-        'output/score_stats/merged_stats.{stattype}.tsv'
+        'output/score_stats/CHM13_reftoassm_stats.{stattype}.tsv'
     run:
         import pandas as pd
 
