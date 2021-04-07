@@ -13,6 +13,8 @@ samples = [
 output_files = []
 output_files.append('output/score_stats/CHM13_reftoassm_stats.mindist.tsv')
 output_files.append('output/score_stats/CHM13_reftoassm_stats.maxscore.tsv')
+#output_files.append('output/score_stats/CHM13_assmtoref_stats.mindist.tsv')
+#output_files.append('output/score_stats/CHM13_assmtoref_stats.maxscore.tsv')
 
 
 BNG_SEGMENT_COLORS = [
@@ -252,7 +254,7 @@ rule extract_assembly_segments:
 
         with open(output.track_bed, 'w') as track_bed:
             _ = track_bed.write('track name="{}_{}_segments" itemRgb="On"\n'.format(wildcards.sample, wildcards.hap))
-            track.to_csv(
+            segments.to_csv(
                 track_bed,
                 sep='\t',
                 header=False,
@@ -608,7 +610,7 @@ rule merge_segment_stats:
         merged_cols = []
 
         for stat_file in input:
-            filename = stat_file.split('/')[-1].rsplit('_', 1)[0]
+            filename = stat_file.split('/')[-1].split('.')[1]
             merged_cols.append(filename)
             df = pd.read_csv(stat_file, sep='\t', header=None, index_col=0)
             merged.append(df)
