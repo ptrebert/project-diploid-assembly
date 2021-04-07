@@ -13,6 +13,9 @@ output_files = [
     'output/mbg_hifi/HG002_HiFi.mbg-k5001-w2000.gfa',
     'output/mbg_hifi/HG002_HiFi.mbg-k2001-w1000.gfa',
     'output/mbg_hifi/HG002_HiFi.mbg-k501-w100.gfa',
+    'output/seq_stats/input/ont/HG002_giab_ULfastqs_guppy324.seqtk.stats',
+    'output/seq_stats/input/ont/HG002_ONT_PAD64459_Guppy32.seqtk.stats',
+
 ]
 
 pattern = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.clip-ec.fa.gz'
@@ -24,6 +27,10 @@ for orf in ont_read_files:
             'window': w
         })
         output_files.append(tmp)
+
+        stats_output = tmp.rsplit('.', 2)[0] + '.seqtk.stats'
+        stats_output = os.path.join('output', 'seq_stats', stats_output)
+        output_files.append(stats_output)
 
 
 rule clean_hpg_ont:
@@ -93,6 +100,9 @@ rule clean_mbg_graph:
 
 
 rule ont_error_correction:
+    """
+    CPU and runtime resources adapted for ultra-slow cluster I/O
+    """
     input:
         graph = 'output/mbg_hifi_clean/HG002_HiFi.mbg-k{kmer}-w{window}.clean.gfa',
         reads = 'input/ont/{filename}.fa.gz',
@@ -105,13 +115,30 @@ rule ont_error_correction:
         'rsrc/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ga.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(737280 * attempt // config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 737280 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 24 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int(94208 * attempt // config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 94208 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 72 * attempt
     shell:
         'GraphAligner -t {threads} -g {input.graph} -f {input.reads} -x dbg --corrected-clipped-out {output.ec_reads} -a {output.gaf} &> {log}'
+
+
+rule get_sequence_stats:
+    input:
+        '{filepath}/{filename}.fa.gz'
+    output:
+        'output/seq_stats/{file_path}/{filename}.seqtk.stats'
+    benchmark:
+        'rsrc/output/seq_stats/{file_path}/{filename}.seqtk.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096,
+        mem_total_mb = lambda wildcards, attempt: 4096,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+    shell:
+        'seqtk comp {input} > {output}'
 
 
 rule master:
