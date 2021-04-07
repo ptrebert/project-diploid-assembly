@@ -227,7 +227,7 @@ rule extract_assembly_tigs:
     run:
         import pandas as pd
 
-        df = pd.read_csv(input.table, sep='\t', header=0, index=None)
+        df = pd.read_csv(input.table, sep='\t', header=0, index_col=None)
 
         tig_names = set(df.loc[(df['sample'] == wildcards.sample & df['haplotype'] == wildcards.hap), 'cluster_id'].values)
 
