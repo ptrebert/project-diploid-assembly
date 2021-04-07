@@ -73,7 +73,10 @@ def split_segments(segment_chain):
             raise ValueError('Likely annotation error: {} - {} ({})'.format(start, end, color))
         color = color.strip()
         regular_color = extract_segment_color(color)
-        color_rgb = BNG_SEGMENT_COLORS_RGB[regular_color]
+        try:
+            color_rgb = BNG_SEGMENT_COLORS_RGB[regular_color]
+        except KeyError:
+            raise ValueError('Cannot process segment name: {} / {} / {}'.format(segment, color, regular_color))
         split_segments.append((start, end, color, color_rgb))
 
     return split_segments
