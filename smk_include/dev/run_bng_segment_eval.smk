@@ -30,7 +30,8 @@ BNG_SEGMENT_COLORS = [
     'blue',
     'orange',
     'purple',
-    'red'
+    'red',
+    'yellow'
 ]
 
 BNG_SEGMENT_COLORS_RGB = {
@@ -41,7 +42,8 @@ BNG_SEGMENT_COLORS_RGB = {
     'blue': '0-0-255',
     'orange': '255-165-0',
     'purple': '128-0-128',
-    'red': '255-0-0'
+    'red': '255-0-0',
+    'yellow': '255-255-0'
 }
 
 
