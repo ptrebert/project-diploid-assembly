@@ -22,12 +22,212 @@ output_files.append('output/score_stats/merged_stats.mindist.tsv')
 output_files.append('output/score_stats/merged_stats.maxscore.tsv')
 
 
+BNG_SEGMENT_COLORS = [
+    'pink',
+    'green',
+    'cyan',
+    'unknown',
+    'blue',
+    'orange',
+    'purple',
+    'red'
+]
+
+BNG_SEGMENT_COLORS_RGB = {
+    'pink': '255-192-203',
+    'green': '0-255-0',
+    'cyan': '0-255-255',
+    'unknown': '0-0-0',
+    'blue': '0-0-255',
+    'orange': '255-165-0',
+    'purple': '128-0-128',
+    'red': '255-0-0'
+}
+
+def split_segments(segment_chain):
+    
+    split_segments = []
+    
+    segments = segment_chain.split(';')
+    for segment in segments:
+        color, start, end = segment.split('-')
+        color = color.strip()
+        try:
+            end = int(end)
+        except ValueError:
+            start, end, color = segment.split('-')
+            start = int(start)
+            end = int(end)
+        else:
+            start = int(start)
+        if start > end:
+            start, end = end, start
+        if end - start > 100000:
+            raise ValueError('Likely annotation error: {} - {} ({})'.format(start, end, color))
+        color = color.strip()
+        color_rgb = BNG_SEGMENT_COLORS_RGB[color]
+        split_segments.append((start, end, color, color_rgb))
+
+    return split_segments
+
+
+rule flatten_bng_segments_table:
+    input:
+        '/beeond/projects/bng_eval/annotation/20210327_1p36_HiFiAsm_SegmentInfo.xlsx'
+    output:
+        'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
+    run:
+        import pandas as pd
+
+        table_header = ['sample', 'cluster_id', 'cluster_length', 'sample_id',
+            'haplotype', 'contig_id', 'orientation', 'segments']
+        
+        df = pd.read_excel(
+            input[0],
+            header=0,
+            names=table_header,
+        )
+        df.drop('sample_id', axis=1, inplace=True)
+
+        # specific for T2T reference
+        df['cluster_id'].fillna('chr1', inplace=True)
+        df['cluster_length'].fillna('248387497', inplace=True)
+        df['cluster_length'] = df['cluster_length'].astype(int)
+        df['haplotype'].fillna('H0', inplace=True)
+        df['haplotype'].replace({'h1': 'H1', 'h2': 'H2'}, inplace=True)
+        df['contig_id'].fillna(1, inplace=True)
+        df['orientation'].fillna(0, inplace=True)
+        df['orientation'].replace({'direct': 1, 'inverted': -1}, inplace=True)
+
+        new_rows = []
+        for idx, row in df.iterrows():
+            assembly_segments = split_segments(row['segments'])
+            for (start, end, color, color_rgb) in assembly_segments:
+                new_rows.append(
+                    (
+                        row['sample'].strip(),
+                        row['haplotype'].strip(),
+                        row['cluster_id'].strip(),
+                        row['cluster_length'],
+                        row['contig_id'],
+                        row['orientation'],
+                        start,
+                        end,
+                        color,
+                        color_rgb
+                    )
+                )
+
+        df = pd.DataFrame(
+            new_rows,
+            columns=[
+                'sample',
+                'haplotype',
+                'cluster_id',
+                'cluster_length',
+                'contig_id',
+                'orientation',
+                'start',
+                'end',
+                'color',
+                'color_rgb'
+            ]
+        )
+        df['contig_id'] = df['contig_id'].astype(int)
+
+        df.to_csv(
+            output[0],
+            sep='\t',
+            header=True,
+            index=False,
+            encoding='ascii'
+        )
+    # END OF RUN BLOCK
+
+
+rule extract_reference_segments:
+    input:
+        table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
+    output:
+        tig_names = 'output/tig_names/T2Tv1_38p13Y_chm13.tigs.txt',
+        segment_bed = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.segments.bed',
+        track_bed = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.track.bed'
+    run:
+        import pandas as pd
+
+        df = pd.read_csv(input.table, sep='\t', header=0, index=None)
+
+        with open(output.tig_names, 'w') as tig_names:
+            _ = tig_names.write('chr1\n')
+
+        segments = df.loc[df['sample'] == 'chm13', ['cluster_id', 'start', 'end', 'color', 'color_rgb']].copy()
+        segments['name'] = 'CHM13_1p3613_' + segments[['start', 'end', 'color', 'color_rgb']].astype(str).apply(lambda row: '_'.join(row), axis=1)
+        segments.sort_values(['start', 'end'], inplace=True)
+        segments.to_csv(
+            output.segment_bed,
+            sep='\t',
+            header=False,
+            index=False,
+            columns=['contig_id', 'start', 'end', 'name']
+        )
+
+        track = df.loc[df['sample'] == 'chm13', ['cluster_id', 'start', 'end', 'color', 'color_rgb']].copy()
+        track['name'] = track['color']
+        track['score'] = (track['end'] - track['start']).astype(int)
+        track['score'].clip(0, 1000, inplace=True)
+        track['strand'] = '.'
+        track['thickStart'] = track['start']
+        track['thickEnd'] = track['end']
+        track['color'] = track['color_rgb'].map(lambda x: ','.join(x.split('-')))
+
+        with open(output.track_bed, 'w') as track_bed:
+            _ = track_bed.write('track name="CHM13_1p3613_segments" itemRgb="On"\n')
+            track.to_csv(
+                track_bed,
+                sep='\t',
+                header=False,
+                index=False,
+                columns=['contig_id', 'start', 'end', 'name', 'score', 'strand', 'thickStart', 'thickEnd', 'color']
+            )
+
+
+rule extract_reference_segment_sequences:
+    input:
+        segment_bed = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.segments.bed',
+        reference_fasta = '/beeond/data/hifiasm_v13_assemblies/T2Tv1_38p13Y_chm13.fasta',
+    output:
+        'output/segment_sequences/T2Tv1_38p13Y_chm13.segments.fasta'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+    shell:
+        'bedtools getfasta -fi {input.reference_fasta} -bed {input.segment_bed} -nameOnly > {output}'
+
+
+rule extract_assembly_tigs:
+    input:
+        table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
+    output:
+        tig_names = 'output/tig_names/{sample}_{hap}_tigs.txt'
+    wildcard_constraints:
+        sample = '(' + '|'.join(samples) + ')'
+    run:
+        import pandas as pd
+
+        df = pd.read_csv(input.table, sep='\t', header=0, index=None)
+
+        tig_names = set(df.loc[(df['sample'] == wildcards.sample & df['haplotype'] == wildcards.hap), 'cluster_id'].values)
+
+        with open(output.tig_names, 'w') as dump:
+            _ = dump.write('\n'.join(sorted(tig_names)) + '\n')
+
+
 rule extract_hap1_contigs:
     input:
-        tig_names = '/beeond/data/hifiasm_v13_assemblies/tig_names/{sample}_H1_tigs.txt',
+        tig_names = 'output/tig_names/{sample}_H1_tigs.txt',
         assm_fasta = '/beeond/data/hifiasm_v13_assemblies/{sample}_hgsvc_pbsq2-ccs_1000-hifiasm.h1-un.fasta',
     output:
-        assm_tigs = 'output/tigs/{sample}_H1_tigs.fasta'
+        assm_tigs = 'output/tig_sequences/{sample}_H1_tigs.fasta'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
@@ -39,10 +239,10 @@ rule extract_hap1_contigs:
 
 rule extract_hap2_contigs:
     input:
-        tig_names = '/beeond/data/hifiasm_v13_assemblies/tig_names/{sample}_H2_tigs.txt',
+        tig_names = 'output/tig_names/{sample}_H2_tigs.txt',
         assm_fasta = '/beeond/data/hifiasm_v13_assemblies/{sample}_hgsvc_pbsq2-ccs_1000-hifiasm.h2-un.fasta',
     output:
-        assm_tigs = 'output/tigs/{sample}_H2_tigs.fasta'
+        assm_tigs = 'output/tig_sequences/{sample}_H2_tigs.fasta'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
@@ -94,8 +294,8 @@ rule count_hap2_assembly_kmers:
 
 rule align_segments_to_assemblies:
     input:
-        tigs = 'output/tigs/{sample}_{hap}_tigs.fasta',
-        segments = '/beeond/data/hifiasm_v13_assemblies/chm13_H0_segments.fasta',
+        tigs = 'output/tig_sequences/{sample}_{hap}_tigs.fasta',
+        segments = 'output/segment_sequences/T2Tv1_38p13Y_chm13.segments.fasta',
         kmers = 'output/kmer/{sample}_{hap}.k19.rep-grt09998.txt'
     output:
         'output/segment_align/{sample}_{hap}.wmap-k19.bam'
@@ -134,12 +334,10 @@ rule intersect_alignment_with_annotation:
         'bedtools intersect -wao -a {input.annotation} -b {input.aln} > {output}'
 
 
-BNG_SEGMENT_COLORS = ['pink', 'green', 'cyan', 'unknown', 'blue',
-            'orange', 'purple', 'red']
-
 BNG_SEGMENT_INTERSECT_HEADER = ['assm_cluster', 'assm_start', 'assm_end',
             'assm_name', 'seg_cluster', 'seg_start', 'seg_end', 'seg_name',
             'edist', 'strand', 'overlap']
+
 
 def extract_segment_color(seg_name):
             for c in BNG_SEGMENT_COLORS:
@@ -261,7 +459,7 @@ rule score_bng_segments_maxscore:
 
             row_indexer = tmp.index[0]
             
-            assm_color, seg_color, score = region_alns.loc[row_indexer, select_columns].values[0]
+            assm_color, seg_color, score = region_alns.loc[row_indexer, select_columns].values
             if score == 2:
                 full_match[assm_color] += 1
                 num_counts['full_match'] += 1
