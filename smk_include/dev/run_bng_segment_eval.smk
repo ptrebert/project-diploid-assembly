@@ -210,6 +210,8 @@ rule extract_reference_segment_sequences:
         reference_fasta = '/beeond/data/hifiasm_v13_assemblies/T2Tv1_38p13Y_chm13.fasta',
     output:
         'output/segment_sequences/T2Tv1_38p13Y_chm13.segments.fasta'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
