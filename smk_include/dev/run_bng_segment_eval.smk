@@ -44,6 +44,14 @@ BNG_SEGMENT_COLORS_RGB = {
     'red': '255-0-0'
 }
 
+
+def extract_segment_color(seg_name):
+    for c in BNG_SEGMENT_COLORS:
+        if c in seg_name:
+            return c
+    return 'blank'
+
+
 def split_segments(segment_chain):
     
     split_segments = []
@@ -51,7 +59,6 @@ def split_segments(segment_chain):
     segments = segment_chain.split(';')
     for segment in segments:
         color, start, end = segment.split('-')
-        color = color.strip()
         try:
             end = int(end)
         except ValueError:
@@ -65,7 +72,8 @@ def split_segments(segment_chain):
         if end - start > 100000:
             raise ValueError('Likely annotation error: {} - {} ({})'.format(start, end, color))
         color = color.strip()
-        color_rgb = BNG_SEGMENT_COLORS_RGB[color]
+        regular_color = extract_segment_color(color)
+        color_rgb = BNG_SEGMENT_COLORS_RGB[regular_color]
         split_segments.append((start, end, color, color_rgb))
 
     return split_segments
@@ -337,13 +345,6 @@ rule intersect_alignment_with_annotation:
 BNG_SEGMENT_INTERSECT_HEADER = ['assm_cluster', 'assm_start', 'assm_end',
             'assm_name', 'seg_cluster', 'seg_start', 'seg_end', 'seg_name',
             'edist', 'strand', 'overlap']
-
-
-def extract_segment_color(seg_name):
-            for c in BNG_SEGMENT_COLORS:
-                if c in seg_name:
-                    return c
-            return 'blank'
 
 
 def compute_match_score(row):
