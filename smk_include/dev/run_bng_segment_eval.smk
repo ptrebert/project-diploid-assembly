@@ -10,7 +10,7 @@ samples = [
     'NA19239',
     'NA19240'
 ]
-
+output_files = []
 output_files.append('output/score_stats/CHM13_reftoassm_stats.mindist.tsv')
 output_files.append('output/score_stats/CHM13_reftoassm_stats.maxscore.tsv')
 
