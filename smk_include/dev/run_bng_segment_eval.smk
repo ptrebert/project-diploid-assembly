@@ -447,6 +447,18 @@ rule intersect_annotation_ref_to_assm:
         'bedtools intersect -wao -a {input.annotation} -b {input.aln} > {output}'
 
 
+rule intersect_annotation_ref_to_assm:
+    input:
+        aln = 'output/segment_align/{sample}_{hap}.CHM13.wmap-k19.bed',
+        annotation = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.segments.bed'
+    output:
+        'output/intersect/{sample}_{hap}.CHM13.isect.tsv'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bedtools intersect -wao -a {input.annotation} -b {input.aln} > {output}'
+
+
 BNG_SEGMENT_INTERSECT_HEADER = ['assm_cluster', 'assm_start', 'assm_end',
             'assm_name', 'seg_cluster', 'seg_start', 'seg_end', 'seg_name',
             'edist', 'strand', 'overlap']
