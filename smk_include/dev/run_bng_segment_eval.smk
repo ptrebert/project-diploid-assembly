@@ -296,6 +296,21 @@ rule extract_hap2_segment_sequences:
         'bedtools getfasta -fi {input.reference_fasta} -bed {input.segment_bed} -nameOnly > {output}'
 
 
+rule extract_reference_contigs:
+    input:
+        tig_names = 'output/tig_names/T2Tv1_38p13Y_chm13.tigs.txt',
+        assm_fasta = '/beeond/data/hifiasm_v13_assemblies/T2Tv1_38p13Y_chm13.fasta',
+    output:
+        assm_tigs = 'output/tig_sequences/T2Tv1_38p13Y_chm13_tigs.fasta'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+    shell:
+        'seqtk subseq -l 120 {input.assm_fasta} {input.tig_names} > {output}'
+
+
 rule extract_hap1_contigs:
     input:
         tig_names = 'output/tig_names/{sample}_H1_tigs.txt',
@@ -388,7 +403,7 @@ rule count_reference_kmers:
 
 rule align_assembly_segments_to_reference:
     input:
-        tigs = 'output/tig_sequences/chm13_H0_tigs.fasta',
+        tigs = 'output/tig_sequences/T2Tv1_38p13Y_chm13_tigs.fasta',
         segments = 'output/segment_sequences/{sample}_{hap}.segments.fasta',
         kmers = 'output/kmer/T2Tv1_38p13Y_chm13.k19.rep-grt09998.txt'
     output:
@@ -447,7 +462,7 @@ rule intersect_annotation_ref_to_assm:
         'bedtools intersect -wao -a {input.annotation} -b {input.aln} > {output}'
 
 
-rule intersect_annotation_ref_to_assm:
+rule intersect_annotation_assm_to_ref:
     input:
         aln = 'output/segment_align/{sample}_{hap}.CHM13.wmap-k19.bed',
         annotation = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.segments.bed'
