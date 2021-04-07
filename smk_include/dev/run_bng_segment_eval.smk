@@ -181,7 +181,7 @@ rule extract_reference_segments:
             sep='\t',
             header=False,
             index=False,
-            columns=['contig_id', 'start', 'end', 'name']
+            columns=['cluster_id', 'start', 'end', 'name']
         )
 
         track = df.loc[df['sample'] == 'chm13', ['cluster_id', 'start', 'end', 'color', 'color_rgb']].copy()
@@ -200,7 +200,7 @@ rule extract_reference_segments:
                 sep='\t',
                 header=False,
                 index=False,
-                columns=['contig_id', 'start', 'end', 'name', 'score', 'strand', 'thickStart', 'thickEnd', 'color']
+                columns=['cluster_id', 'start', 'end', 'name', 'score', 'strand', 'thickStart', 'thickEnd', 'color']
             )
 
 
