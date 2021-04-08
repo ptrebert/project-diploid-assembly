@@ -121,7 +121,7 @@ rule strip_sequences_from_graph:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt ** attempt
     shell:
-        'gfatools -S {input} > {output}'
+        'gfatools view -S {input} > {output}'
 
 
 
