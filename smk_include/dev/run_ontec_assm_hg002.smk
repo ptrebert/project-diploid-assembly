@@ -13,24 +13,32 @@ output_files = [
     'output/mbg_hifi/HG002_HiFi.mbg-k5001-w2000.gfa',
     'output/mbg_hifi/HG002_HiFi.mbg-k2001-w1000.gfa',
     'output/mbg_hifi/HG002_HiFi.mbg-k501-w100.gfa',
-    'output/seq_stats/input/ont/HG002_giab_ULfastqs_guppy324.seqtk.stats',
-    'output/seq_stats/input/ont/HG002_ONT_PAD64459_Guppy32.seqtk.stats',
+    'output/seq_stats/input/ont/HG002_giab_ULfastqs_guppy324.stats.tsv.gz',
+    'output/seq_stats/input/ont/HG002_ONT_PAD64459_Guppy32.stats.tsv.gz',
 
 ]
 
-pattern = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.clip-ec.fa.gz'
+pattern_reads = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ev{evalue}.clip-ec.fa.gz'
+pattern_graph = 'output/mbg_hifi_clean/HG002_HiFi.mbg-k{kmer}-w{window}.clean.noseq.gfa'
 for orf in ont_read_files:
     for k, w in [(5001,2000), (2001,1000), (501,100)]:
-        tmp = pattern.format(**{
+        tmp = pattern_reads.format(**{
             'filename': orf,
+            'kmer': k,
+            'window': w,
+            'evalue': '1e-2'
+        })
+        output_files.append(tmp)
+
+        stats_output = tmp.rsplit('.', 2)[0] + '.stats.tsv.gz'
+        stats_output = os.path.join('output', 'seq_stats', stats_output)
+        output_files.append(stats_output)
+
+        tmp = pattern_graph.format(**{
             'kmer': k,
             'window': w
         })
         output_files.append(tmp)
-
-        stats_output = tmp.rsplit('.', 2)[0] + '.seqtk.stats'
-        stats_output = os.path.join('output', 'seq_stats', stats_output)
-        output_files.append(stats_output)
 
 
 rule clean_hpg_ont:
@@ -99,6 +107,24 @@ rule clean_mbg_graph:
         'vg view -Fv {input} | vg mod -n -U 100 - 2> {log} | vg view - > {output}'
 
 
+rule strip_sequences_from_graph:
+    input:
+        'output/mbg_hifi_clean/HG002_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
+    output:
+        'output/mbg_hifi_clean/HG002_HiFi.mbg-k{kmer}-w{window}.clean.noseq.gfa'
+    benchmark:
+        'rsrc/output/mbg_hifi_clean/HG002_HiFi.mbg-k{kmer}-w{window}.noseq.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt ** attempt
+    shell:
+        'gfatools -S {input} > {output}'
+
+
+
 rule ont_error_correction:
     """
     CPU and runtime resources adapted for ultra-slow cluster I/O
@@ -107,8 +133,8 @@ rule ont_error_correction:
         graph = 'output/mbg_hifi_clean/HG002_HiFi.mbg-k{kmer}-w{window}.clean.gfa',
         reads = 'input/ont/{filename}.fa.gz',
     output:
-        gaf = 'output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.gaf',
-        ec_reads = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.clip-ec.fa.gz',
+        gaf = 'output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ev{evalue}.gaf',
+        ec_reads = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ev{evalue}.clip-ec.fa.gz',
     log:
         'log/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ga.log'
     benchmark:
@@ -120,25 +146,33 @@ rule ont_error_correction:
         mem_per_cpu_mb = lambda wildcards, attempt: int(94208 * attempt // config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 94208 * attempt,
         runtime_hrs = lambda wildcards, attempt: 72 * attempt
+    params:
+        evalue = lambda wildcards: float(wildcards.evalue)
     shell:
-        'GraphAligner -t {threads} -g {input.graph} -f {input.reads} -x dbg --corrected-clipped-out {output.ec_reads} -a {output.gaf} &> {log}'
+        'GraphAligner -t {threads} -g {input.graph} -f {input.reads} '
+            '-x dbg --E-cutoff {params.evalue} '
+            '--corrected-clipped-out {output.ec_reads} '
+            '-a {output.gaf} &> {log}'
 
 
 rule get_sequence_stats:
     input:
         '{filepath}/{filename}.fa.gz'
     output:
-        'output/seq_stats/{filepath}/{filename}.seqtk.stats'
+        'output/seq_stats/{filepath}/{filename}.stats.tsv.gz'
     benchmark:
         'rsrc/output/seq_stats/{filepath}/{filename}.seqtk.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096,
         mem_total_mb = lambda wildcards, attempt: 4096,
-        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+    params:
+        threads = int(config['num_cpu_low'] - 1)
     shell:
-        'seqtk comp {input} > {output}'
+        'seqtk comp {input} | pigz -p {params.threads} --best > {output}'
 
 
 rule master:
