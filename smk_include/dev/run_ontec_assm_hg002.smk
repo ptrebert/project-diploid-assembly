@@ -136,9 +136,9 @@ rule ont_error_correction:
         gaf = 'output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ev{evalue}.gaf',
         ec_reads = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ev{evalue}.clip-ec.fa.gz',
     log:
-        'log/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ga.log'
+        'log/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ev{evalue}.ga.log'
     benchmark:
-        'rsrc/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ga.rsrc'
+        'rsrc/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ev{evalue}.ga.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
