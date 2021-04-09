@@ -9,8 +9,8 @@ dependencies:
   - liblapack=3.8.0
   - libopenblas=0.3.6
   - libgfortran-ng=7.3.0
-  - libgcc-ng=9.1.0
-  - libstdcxx-ng=9.1.0
+  - libgcc-ng=9.3.0
+  - libstdcxx-ng=9.3.0
   - libxml2=2.9.9
   - libcurl=7.64.0
   - lp_solve=5.5.2.5
@@ -21,7 +21,10 @@ dependencies:
   - htslib=1.9
   - libdeflate=1.3  # v1.0 may trigger pysam import error - DO NOT DOWNGRADE
   - pysam=0.15.3
-  - dnaio=0.4.1
+  - dnaio=0.5.0  # Python and compression - the holy quaternity:
+  - xopen=1.1.0  # always jointly go for xopen, dnaio, pigz and python-isal
+  - pigz=2.6     # (should be automatic via dependencies) 
+  - python-isal=0.9.0  # most efficient way to handle gzipped files (plus fasta/fastq via dnaio)
   - biopython=1.76
   - pandas=1.0.5
   - pytables=3.6.1
