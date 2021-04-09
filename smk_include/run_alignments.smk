@@ -324,7 +324,7 @@ rule minimap_racon_polish_alignment_pass1:
         reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.fastq.gz',
         preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{pol_reads}.{hap}.{sequence}.preset.minimap',
         contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
-        check_cov = 'output/statistics/contigs_to_ref_aln/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}_map-to_{aln_reference}.mapq60.stats'
+        #check_cov = 'output/statistics/contigs_to_ref_aln/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}_map-to_{aln_reference}.mapq60.stats'
     output:
         sam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.psort.sam',
     log:
@@ -415,7 +415,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
         reads = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pol_reads}.{hap}.{sequence}.pbn.bam',
         preset = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pol_reads}.{hap}.{sequence}.preset.pbmm2',
         contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta',
-        check_cov = 'output/statistics/contigs_to_ref_aln/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}_map-to_{aln_reference}.mapq60.stats'
+        #check_cov = 'output/statistics/contigs_to_ref_aln/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}_map-to_{aln_reference}.mapq60.stats'
     output:
         bam = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.pbn.bam',
     log:
@@ -619,6 +619,11 @@ rule pbmm2_hapreads_to_known_reference_alignment_pacbio_native:
 
 
 rule pbmm2_hapreads_to_known_reference_alignment_pacbio_fastq:
+    """
+    2021/04
+    Job resources lowered and now better adapted to HiFi reads
+    (predominant data type for PGAS)
+    """
     input:
         reads = os.path.join('output', 'diploid_assembly', 'strandseq_joint',
                              '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
@@ -638,18 +643,18 @@ rule pbmm2_hapreads_to_known_reference_alignment_pacbio_fastq:
     benchmark:
         os.path.join('run', 'output', 'alignments', 'hap_reads_to_reference',
                      '{callset}', '{clust_assm}', '{vc_reads}', '{sseq_reads}',
-                     '{hap_reads}_map-to_{aln_ref}.{hap}.fq' + '.t{}.rsrc'.format(config['num_cpu_high']))
+                     '{hap_reads}_map-to_{aln_ref}.{hap}.fq' + '.t{}.rsrc'.format(config['num_cpu_medium']))
     wildcard_constraints:
         hap_reads = CONSTRAINT_PACBIO_SAMPLES
     conda:
          '../environment/conda/conda_pbtools.yml'
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
-        runtime_hrs = lambda wildcards, attempt: 3 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int((24768 + 8192 * attempt) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 24768 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        align_threads = config['num_cpu_high'] - 2,
+        align_threads = config['num_cpu_medium'] - 2,
         sort_threads = 2,
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
