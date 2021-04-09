@@ -233,7 +233,7 @@ rule compute_stats_input_reads:
 rule compute_stats_corrected_reads:
     input:
         fasta = expand(
-            'output/ont_ec/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.fa.gz'
+            'output/ont_ec/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.fa.gz',
             filename=ont_read_files
             )
     output:
