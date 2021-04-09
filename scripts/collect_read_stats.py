@@ -5,6 +5,7 @@ import sys as sys
 import shutil as sh
 import logging as log
 import io as io
+import csv as csv
 import traceback as trb
 import argparse as argp
 import pickle as pck
@@ -16,6 +17,7 @@ import multiprocessing as mp
 import numpy as np
 import pysam as pysam
 import dnaio as dnaio
+import xopen as xopen
 
 
 Read = col.namedtuple('Read', 'record_num name sequence')
@@ -42,7 +44,8 @@ def parse_command_line():
         required=True,
         dest="input",
         nargs='+',
-        help="Full path FASTQ/FASTA read files (can be compressed) or BAM alignments.",
+        help="Full path FASTQ/FASTA read files, BAM alignments or 'seqtk comp' output "
+            "(text-based files can be compressed).",
     )
     parser.add_argument(
         "--output",
@@ -131,6 +134,21 @@ def compute_read_statistics(read):
     return length, bases, pct_gc
 
 
+def extract_read_statistics(read):
+    """
+    """
+    length = int(read.sequence['sequence_length'])
+    bases = {
+        'A': int(read.sequence['num_A']),
+        'C': int(read.sequence['num_C']),
+        'G': int(read.sequence['num_G']),
+        'T': int(read.sequence['num_T']),
+        'N': int(read.sequence['num_N'])
+    }
+    pct_gc = round((bases['G'] + bases['C']) / length, 3)
+    return length, bases, pct_gc
+
+
 def read_sequence_length_file(fpath):
     """
     :param fpath: FASTA index (.fai file)
@@ -166,6 +184,42 @@ def read_text_sequence_records(fpath):
     return
 
 
+def read_seqtk_records(fpath):
+    """
+    :param fpath:
+    :return:
+    """
+    header = [
+        'sequence_name',
+        'sequence_length',
+        'num_A',
+        'num_C',
+        'num_G',
+        'num_T',
+        'num_RYKMSW',
+        'num_BDHV',
+        'num_N',
+        'num_CpG',
+        'num_transversions',
+        'num_transitions',
+        'num_CpG_transitions'
+    ]
+    with xopen.xopen(fpath, 'rt', threads=2) as table:
+        reader = csv.DictReader(
+            table,
+            fieldnames=header,
+            delimiter='\t'
+        )
+        for idx, row in enumerate(reader, start=1):
+            rd = Read(
+                record_num=idx,
+                name=row['sequence_name'],
+                sequence=row
+            )
+            yield rd
+    return
+
+
 def read_bam_sequence_records(fpath):
     """
     :param fpath:
@@ -196,7 +250,10 @@ def assemble_file_processors(input_files, logger):
             chunk_readers.append(read_bam_sequence_records)
             read_processors.append(compute_read_statistics)
         else:
-            raise ValueError('Unrecognized input file format: {}'.format(input_file))
+            # assume seqtk comp output
+            logger.debug('Adding seqtk processor for file {}'.format(os.path.basename(input_file)))
+            chunk_readers.append(read_seqtk_records)
+            read_processors.append(extract_read_statistics)
     return file_paths, chunk_readers, read_processors
 
 
@@ -212,6 +269,37 @@ def get_total_genome_size(fpath, gsize):
     if fpath is not None:
         total_length = read_sequence_length_file(fpath)
     return total_length
+
+
+def determine_cov_steps(average_read_length, max_read_length):
+    """
+    Depending on the read length statistic, determine which coverage
+    steps should be included in the textual summary output
+    """
+    if average_read_length < 1000:
+        # ~ Illumina short
+        cov_steps = list(range(0, max_read_length // 25 * 25 + 25, 25))
+    elif average_read_length < 20000:
+        # ~ HiFi reads
+        cov_steps = [0, 1000]
+        if max_read_length < 100000:
+            cov_steps += list(range(5000, 55000, 5000))
+        elif 100000 < max_read_length < 500000:
+            cov_steps += [5000, 10000]
+            cov_steps += list(range(20000, 220000, 20000))
+        else:
+            cov_steps += [5000, 10000, 25000]
+            cov_steps += list(range(50000, 550000, 25000))
+    elif average_read_length < 50000 and max_read_length < 200000:
+        cov_steps = [0, 1000, 5000, 10000]
+        cov_steps += list(range(20000, 100000, 10000))
+    elif average_read_length < 50000 and max_read_length > 200000:
+        cov_steps = [0, 1000, 5000, 10000]
+        cov_steps += list(range(25000, 525000, 25000))
+    else:
+        cov_steps = [0, 1000, 5000, 20000]
+        cov_steps += list(range(50000, 1e6, 50000))
+    return cov_steps
 
 
 def prepare_summary_statistics(length_stat, genome_size, num_reads):
@@ -242,6 +330,7 @@ def prepare_summary_statistics(length_stat, genome_size, num_reads):
     total_seq_giga_bp = round(total_seq_bp / 1e9, 2)
     temp_selector = np.asarray((cum_temp / cum_temp.max()) <= 0.5)
     n50_read_length = unpacked[0, temp_selector].min()
+    max_read_length = unpacked[0, ].max()  # needed for coverage steps
 
     summary_stats = [
         ('num_reads', num_reads),
@@ -260,15 +349,13 @@ def prepare_summary_statistics(length_stat, genome_size, num_reads):
     )
 
     summary_stats.append(('read_length_mean', int(avg_rlen)))
-    summary_stats.append(('read_length_max', unpacked[0, ].max()))
+    summary_stats.append(('read_length_max', max_read_length))
     summary_stats.append(('read_length_N50', n50_read_length))
 
     total_cov = round(total_seq_bp / genome_size, 2)
     summary_stats.append(('cov_total', total_cov))
 
-    cov_steps = [0, 1000] + list(range(5000, 55000, 5000))
-    if avg_rlen < 1000:
-        cov_steps = list(range(0, 325, 25))
+    cov_steps = determine_cov_steps(avg_rlen, max_read_length)
     for s in cov_steps:
         temp_selector = np.asarray(unpacked[0, :] >= s)
         try:
