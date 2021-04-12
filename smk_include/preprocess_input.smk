@@ -175,12 +175,14 @@ rule merge_fastq_input_parts:
         mrg_sample = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     conda:
         '../environment/conda/conda_shelltools.yml'
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        fastq_parts = lambda wildcards, input: load_fofn_file(input)
+        fastq_parts = lambda wildcards, input: load_fofn_file(input),
+        threads = lambda wildcards: config['num_cpu_low'] // 2
     shell:
-        'gzip -d -c {params.fastq_parts} | gzip > {output} 2> {log}'
+        'pigz -p {params.threads} -d -c {params.fastq_parts} | pigz -p {params.threads} > {output} 2> {log}'
 
 
 def collect_pacbio_bam_input_parts(wildcards, glob_collect=False):
@@ -414,12 +416,14 @@ rule merge_partial_short_read_input_samples:
         'run/input/fastq/{readset}_{mate}.merge.rsrc'
     wildcard_constraints:
         readset = CONSTRAINT_PARTS_SHORT_READ_INPUT_SAMPLES
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        fastq_parts = lambda wildcards, input: load_fofn_file(input)
+        fastq_parts = lambda wildcards, input: load_fofn_file(input),
+        threads = lambda wildcards: config['num_cpu_low'] // 2
     shell:
-         'gzip -d -c {params.fastq_parts} | gzip > {output} 2> {log}'
+         'pigz -p {params.threads} -d -c {params.fastq_parts} | pigz -p {threads} > {output} 2> {log}'
 
 
 rule relink_complete_short_read_input_samples:

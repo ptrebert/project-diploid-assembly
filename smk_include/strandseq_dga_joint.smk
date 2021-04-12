@@ -130,12 +130,14 @@ rule concat_haploid_fastq:
         os.path.join('run', 'output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_fastq/{hap_reads}.{hap}.fq-concat.rsrc')
     conda:
          '../environment/conda/conda_shelltools.yml'
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        splits = lambda wildcards, input: load_fofn_file(input)
+        splits = lambda wildcards, input: load_fofn_file(input),
+        threads = lambda wildcards: config['num_cpu_low'] // 2
     shell:
-         'gzip -d -c {params.splits} | gzip > {output}'
+         'pigz -p {params.threads} -d -c {params.splits} | pigz -p {params.threads} > {output}'
 
 
 rule concat_haploid_pbn_bam:

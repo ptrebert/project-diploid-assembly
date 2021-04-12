@@ -170,10 +170,13 @@ rule strandseq_dga_split_merge_tag_groups:
     wildcard_constraints:
         haplotype = '(1|2)',
         fq_hap_reads = CONSTRAINT_ALL_FASTQ_INPUT_SAMPLES + '_[0-9]+'
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        threads = lambda wildcards: config['num_cpo_low'] // 2
     shell:
-        'gzip -d -c {input.hap} {input.un} | gzip > {output}'
+        'pigz -p {params.threads} -d -c {input.hap} {input.un} | pigz -p {params.threads} > {output}'
 
 
 rule strandseq_dga_split_merge_tag_groups_pacbio_native:
