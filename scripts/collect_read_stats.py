@@ -298,7 +298,7 @@ def determine_cov_steps(average_read_length, max_read_length):
         cov_steps += list(range(25000, 525000, 25000))
     else:
         cov_steps = [0, 1000, 5000, 20000]
-        cov_steps += list(range(50000, 1e6, 50000))
+        cov_steps += list(range(50000, int(1e6), 50000))
     return cov_steps
 
 
@@ -405,7 +405,7 @@ def compute_dataset_statistics(cargs, logger):
                     gc_stats.update(col.Counter(np.digitize(gc_buffer, gc_bins, right=False)))
                     gc_buffer = np.zeros(cargs.buffer_size, dtype=np.float16)
                     gc_idx = 0
-                if read_count % 500000 == 0:
+                if read_count % int(1e6) == 0:
                     logger.debug('Processed {} reads...'.format(read_count))
             logger.debug('All reads processed (total: {})'.format(read_count))
 
