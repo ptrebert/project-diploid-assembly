@@ -292,13 +292,13 @@ def determine_cov_steps(average_read_length, max_read_length):
             cov_steps += list(range(50000, 550000, 25000))
     elif average_read_length < 50000 and max_read_length < 200000:
         cov_steps = [0, 1000, 5000, 10000]
-        cov_steps += list(range(20000, 100000, 10000))
+        cov_steps += list(range(20000, 110000, 10000))
     elif average_read_length < 50000 and max_read_length > 200000:
         cov_steps = [0, 1000, 5000, 10000]
         cov_steps += list(range(25000, 525000, 25000))
     else:
         cov_steps = [0, 1000, 5000, 20000]
-        cov_steps += list(range(50000, int(1e6), 50000))
+        cov_steps += list(range(50000, int(1e6) + 50000, 50000))
     return cov_steps
 
 
