@@ -86,10 +86,13 @@ def split_segments(segment_chain):
 
 
 rule flatten_bng_segments_table:
+    """
+    '/beeond/projects/bng_eval/annotation/20210327_1p36_HiFiAsm_SegmentInfo.xlsx'
+    """
     input:
-        '/beeond/projects/bng_eval/annotation/20210327_1p36_HiFiAsm_SegmentInfo.xlsx'
+        '/beeond/projects/bng_eval/annotation/20210412_1p36_HiFiAsm_SegmentInfo.xlsx'
     output:
-        'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
+        'input/table/20210412_1p36_HiFiAsm_SegmentInfo.flat.tsv'
     run:
         import pandas as pd
 
@@ -149,6 +152,9 @@ rule flatten_bng_segments_table:
         )
         df['contig_id'] = df['contig_id'].astype(int)
 
+        # red segments just indicate region boundaries
+        df = df.loc[df['color'] != 'red', :].copy()
+
         df.to_csv(
             output[0],
             sep='\t',
@@ -161,7 +167,7 @@ rule flatten_bng_segments_table:
 
 rule extract_reference_segments:
     input:
-        table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
+        table = 'input/table/20210412_1p36_HiFiAsm_SegmentInfo.flat.tsv'
     output:
         tig_names = 'output/tig_names/T2Tv1_38p13Y_chm13.tigs.txt',
         segment_bed = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.segments.bed',
@@ -224,7 +230,7 @@ rule extract_reference_segment_sequences:
 
 rule extract_assembly_segments:
     input:
-        table = 'input/table/20210327_1p36_HiFiAsm_SegmentInfo.flat.tsv'
+        table = 'input/table/20210412_1p36_HiFiAsm_SegmentInfo.flat.tsv'
     output:
         tig_names = 'output/tig_names/{sample}_{hap}_tigs.txt',
         segment_bed = 'output/segment_coordinates/{sample}_{hap}.segments.bed',
