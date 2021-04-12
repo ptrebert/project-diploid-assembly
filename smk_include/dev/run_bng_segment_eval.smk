@@ -675,7 +675,7 @@ rule define_region_complement:
         import io
 
         out_buffer = io.StringIO()
-        curreent_start = 0
+        current_start = 0
         current_end = 0
         complement_id = 0
 
@@ -683,14 +683,15 @@ rule define_region_complement:
             chrom, start, end, _ = segments.readline().split()
             current_end = start
             current_start = int(current_end) - 100000
-            name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(curreent_start, current_end, complement_id)
+            name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(current_start, current_end, complement_id)
+            out_buffer.write('{}\t{}\t{}\t{}\n'.format(chrom, current_start, current_end, name))
             segments.seek(0)
             for ln, line in enumerate(segments, start=1):
                 _, start, end, _ = line.split()
                 if ln % 2 == 0:
                     current_end = start
                     complement_id += 1
-                    name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(curreent_start, current_end, complement_id)
+                    name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(current_start, current_end, complement_id)
                     out_buffer.write('{}\t{}\t{}\t{}\n'.format(chrom, current_start, current_end, name))
                 else:
                     current_start = end
@@ -698,7 +699,7 @@ rule define_region_complement:
         current_start = end
         current_end = int(current_start) + 100000
         complement_id += 1
-        name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(curreent_start, current_end, complement_id)
+        name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(current_start, current_end, complement_id)
         out_buffer.write('{}\t{}\t{}\t{}\n'.format(chrom, current_start, current_end, name))
 
         with open(output[0], 'w') as complements:
