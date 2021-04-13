@@ -684,7 +684,12 @@ rule define_extended_region:
         temp('output/segment_coordinates/T2Tv1_38p13Y_chm13.ext-region.bed')
     run:
         import pandas as pd
-        df = pd.read_csv(input[0], sep='\t', names=['chrom', 'start', 'end'])
+        df = pd.read_csv(
+            input[0],
+            sep='\t',
+            names=['chrom', 'start', 'end', 'name'],
+            usecols=['chrom', 'start', 'end']
+        )
 
         chrom = df['chrom'].values[0]
         start = df['start'].min() - 100000
