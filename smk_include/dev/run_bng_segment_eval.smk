@@ -666,44 +666,80 @@ rule merge_segment_stats_assembly_to_reference:
         merged.to_csv(output[0], sep='\t', header=True, index=True, index_label='statistic')
 
 
-rule define_region_complement:
+rule merge_reference_segments:
     input:
         'output/segment_coordinates/T2Tv1_38p13Y_chm13.segments.bed'
     output:
-        'output/segment_coordinates/T2Tv1_38p13Y_chm13.complement.bed'
+        temp('output/segment_coordinates/T2Tv1_38p13Y_chm13.merged.bed')
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bedtools merge -i {input} | cut -f 1-3 > {output}'
+
+
+rule define_extended_region:
+    input:
+        'output/segment_coordinates/T2Tv1_38p13Y_chm13.segments.bed'
+    output:
+        temp('output/segment_coordinates/T2Tv1_38p13Y_chm13.ext-region.bed')
     run:
-        import io
+        import pandas as pd
+        df = pd.read_csv(input[0], sep='\t', names=['chrom', 'start', 'end'])
 
-        out_buffer = io.StringIO()
-        current_start = 0
-        current_end = 0
-        complement_id = 0
+        chrom = df['chrom'].values[0]
+        start = df['start'].min() - 100000
+        end = df['end'].max() + 100000
 
-        with open(input[0], 'r') as segments:
-            chrom, start, end, _ = segments.readline().split()
-            current_end = start
-            current_start = int(current_end) - 100000
-            name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(current_start, current_end, complement_id)
-            out_buffer.write('{}\t{}\t{}\t{}\n'.format(chrom, current_start, current_end, name))
-            segments.seek(0)
-            for ln, line in enumerate(segments, start=1):
-                _, start, end, _ = line.split()
-                if ln % 2 == 0:
-                    current_end = start
-                    complement_id += 1
-                    name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(current_start, current_end, complement_id)
-                    out_buffer.write('{}\t{}\t{}\t{}\n'.format(chrom, current_start, current_end, name))
-                else:
-                    current_start = end
+        with open(output[0], 'w') as dump:
+            _ = dump.write('{}\t{}\t{}\n'.format(chrom, int(start), int(end)))
+
+
+rule subtract_reference_segments:
+    input:
+        region = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.ext-region.bed',
+        segments = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.merged.bed'
+    output:
+        temp('output/segment_coordinates/T2Tv1_38p13Y_chm13.subtract.bed')
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bedtools subtract -a {input.region} -b {input.segments} > {output}'
+
+
+rule build_segment_complements:
+    input:
+        'output/segment_coordinates/T2Tv1_38p13Y_chm13.subtract.bed'
+    output:
+        bed = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.complements.bed',
+        track = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.complements.track.bed',
+    run:
+        track_line = 'track name="CHM13_1p3613_complements" itemRgb="On"'
+        name_template = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'
+        bed_template = '{}\t{}\t{}\t{}'
+        track_template = '{}\t{}\t{}\t{}\t1000\t.\t{}\t{}\t128,128,128'
+
+        bed_rows = []
+        track_rows = []
+
+        with open(input[0], 'r') as bedfile:
+            for ln, line in enumerate(bedfile, start=1):
+                chrom, start, end = line.strip().split()
+                row_name = name_template.format(start, end, ln)
+
+                bed_row = bed_template.format(chrom, start, end, row_name)
+                bed_rows.append(bed_row)
+
+                track_row = track_template.format(chrom, start, end, row_name, start, end)
+                track_rows.append(track_row)
         
-        current_start = end
-        current_end = int(current_start) + 100000
-        complement_id += 1
-        name = 'CHM13_1p3613_{}_{}_grey-{}_128-128-128_plus'.format(current_start, current_end, complement_id)
-        out_buffer.write('{}\t{}\t{}\t{}\n'.format(chrom, current_start, current_end, name))
+        with open(output.bed, 'w') as dump:
+            _ = dump.write('\n'.join(bed_rows) + '\n')
 
-        with open(output[0], 'w') as complements:
-            _ = complements.write(out_buffer.getvalue())
+        with open(input.track, 'w') as dump:
+            _ = dump.write(track_line + '\n')
+            _ = dump.write('\n'.join(track_rows) + '\n')
+        
+
 
 
 rule master:
