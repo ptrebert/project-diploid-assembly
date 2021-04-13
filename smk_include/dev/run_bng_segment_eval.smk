@@ -1,4 +1,4 @@
-localrules: master, merge_segment_stats
+localrules: master
 
 samples = [
     'HG00512',
@@ -753,7 +753,7 @@ rule average_read_hapcov_over_bed:
         table = 'output/signal_average/T2Tv1_38p13Y_chm13.{sample}_{hap}.{region_type}.tsv'
     conda:
         '../../environment/conda/conda_biotools.yml'
-    run:
+    shell:
         'bigWigAverageOverBed {input.cov_track} {input.bed} {output}'
 
 
@@ -799,7 +799,7 @@ rule merge_signal_averages:
 
         with open(output[0], 'w') as track_bed:
             _ = track_bed.write('track name="{}_{}_1p3613_read_hapcov" itemRgb="On"'.format(wildcards.sample, wildcards.hap))
-            for row in df.iterrows():
+            for idx, row in df.iterrows():
                 score = min(1000, round(row['cov_mean'] * 100, 0))
                 track_line = track_template.format(
                     row['chrom'],
