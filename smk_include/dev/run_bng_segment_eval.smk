@@ -780,9 +780,11 @@ rule merge_signal_averages:
         pos_mean_mean = df.loc[df['cov_mean'] > 0, 'cov_mean'].mean()
         pos_mean_stddev = df.loc[df['cov_mean'] > 0, 'cov_mean'].std()
 
-        threshold_high = pos_mean_mean + 2 * pos_mean_stddev
-        threshold_low = pos_mean_mean - 2 * pos_mean_stddev
+        threshold_high = pos_mean_mean + 1 * pos_mean_stddev
+        threshold_low = pos_mean_mean - 1 * pos_mean_stddev
 
+        df['pos_mean_mean'] = pos_mean_mean
+        df['pos_mean_stddev'] = pos_mean_stddev
         df['treshold_high'] = threshold_high
         df['threshold_low'] = threshold_low
 
