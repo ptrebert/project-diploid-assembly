@@ -745,6 +745,73 @@ rule build_segment_complements:
             _ = dump.write('\n'.join(track_rows) + '\n')
         
 
+rule average_read_hapcov_over_bed:
+    input:
+        bed = 'output/segment_coordinates/T2Tv1_38p13Y_chm13.{region_type}.bed',
+        cov_track = '/beeond/data/hifiasm_v13_covtracks/{sample}_hgsvc_pbsq2-ccs_1000_map-to_T2Tv1_38p13Y_chm13.{hap}.bigWig'
+    output:
+        table = 'output/signal_average/T2Tv1_38p13Y_chm13.{sample}_{hap}.{region_type}.tsv'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    run:
+        'bigWigAverageOverBed {input.cov_track} {input.bed} {output}'
+
+
+rule merge_signal_averages:
+    input:
+        segments = 'output/signal_average/T2Tv1_38p13Y_chm13.{sample}_{hap}.segments.tsv',
+        complements = 'output/signal_average/T2Tv1_38p13Y_chm13.{sample}_{hap}.complements.tsv'
+    output:
+        'output/read_cov_signal/T2Tv1_38p13Y_chm13.{sample}_{hap}.rdcovsig.track.bed'
+    run:
+        import pandas as pd
+        header = ['name', 'length', 'cov_bp', 'cov_sum', 'cov_mean', 'cov_nzmean']
+        df = [
+            pd.read_csv(input.segments, sep='\t', names=header),
+            pd.read_csv(input.complements, sep='\t', names=header)
+        ]
+        df = pd.concat(df, axis=0, ignore_index=False)
+        df['chrom'] = 'chr1'
+        df['start'] = df['name'].map(lambda x: int(x.split('_')[2]))
+        df['end'] = df['name'].map(lambda x: int(x.split('_')[3]))
+        df.sort_values(['start', 'end'], inplace=True)
+
+        pos_mean_mean = df.loc[df['cov_mean'] > 0, 'cov_mean'].mean()
+        pos_mean_stddev = df.loc[df['cov_mean'] > 0, 'cov_mean'].std()
+
+        threshold_high = pos_mean_mean + 2 * pos_mean_stddev
+        threshold_low = pos_mean_mean - 2 * pos_mean_stddev
+
+        df['color'] = 'average'
+        df.loc[df['cov_mean'] > threshold_high, 'color'] = 'higher'
+        df.loc[df['cov_mean'] < threshold_low, 'color'] = 'lower'
+        df.loc[df['cov_mean'] == 0, 'color'] = 'uncovered'
+
+        colors = {
+            'uncovered': '255,255,255',
+            'average': '105,105,105',
+            'lower': '162,210,223',
+            'higher': '255,42,4'
+        }
+        df['color_rgb'] = df['color'].replace(colors, inplace=False)
+
+        track_template = '{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\t{}\n'
+
+        with open(output[0], 'w') as track_bed:
+            _ = track_bed.write('track name="{}_{}_1p3613_read_hapcov" itemRgb="On"'.format(wildcards.sample, wildcards.hap))
+            for row in df.iterrows():
+                score = min(1000, round(row['cov_mean'] * 100, 0))
+                track_line = track_template.format(
+                    row['chrom'],
+                    row['start'],
+                    row['end'],
+                    row['name'],
+                    score,
+                    row['start'],
+                    row['end'],
+                    row['color_rgb']
+                )
+        # END OF RUN BLOCK
 
 
 rule master:
