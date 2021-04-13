@@ -762,7 +762,8 @@ rule merge_signal_averages:
         segments = 'output/signal_average/T2Tv1_38p13Y_chm13.{sample}_{hap}.segments.tsv',
         complements = 'output/signal_average/T2Tv1_38p13Y_chm13.{sample}_{hap}.complements.tsv'
     output:
-        'output/read_cov_signal/T2Tv1_38p13Y_chm13.{sample}_{hap}.rdcovsig.track.bed'
+        track = 'output/read_cov_signal/T2Tv1_38p13Y_chm13.{sample}_{hap}.rdcovsig.track.bed',
+        table = 'output/read_cov_signal/T2Tv1_38p13Y_chm13.{sample}_{hap}.rdcovsig.tsv',
     run:
         import pandas as pd
         header = ['name', 'length', 'cov_bp', 'cov_sum', 'cov_mean', 'cov_nzmean']
@@ -782,6 +783,9 @@ rule merge_signal_averages:
         threshold_high = pos_mean_mean + 2 * pos_mean_stddev
         threshold_low = pos_mean_mean - 2 * pos_mean_stddev
 
+        df['treshold_high'] = threshold_high
+        df['threshold_low'] = threshold_low
+
         df['color'] = 'average'
         df.loc[df['cov_mean'] > threshold_high, 'color'] = 'higher'
         df.loc[df['cov_mean'] < threshold_low, 'color'] = 'lower'
@@ -795,10 +799,12 @@ rule merge_signal_averages:
         }
         df['color_rgb'] = df['color'].replace(colors, inplace=False)
 
+        df.to_csv(output.table, sep='\t', header=True)
+
         track_template = '{}\t{}\t{}\t{}\t{}\t.\t{}\t{}\t{}\n'
 
-        with open(output[0], 'w') as track_bed:
-            _ = track_bed.write('track name="{}_{}_1p3613_read_hapcov" itemRgb="On"'.format(wildcards.sample, wildcards.hap))
+        with open(output.track, 'w') as track_bed:
+            _ = track_bed.write('track name="{}_{}_1p3613_read_hapcov" itemRgb="On"\n'.format(wildcards.sample, wildcards.hap))
             for idx, row in df.iterrows():
                 score = min(1000, round(row['cov_mean'] * 100, 0))
                 track_line = track_template.format(
@@ -811,6 +817,7 @@ rule merge_signal_averages:
                     row['end'],
                     row['color_rgb']
                 )
+                _ = track_bed.write(track_line)
         # END OF RUN BLOCK
 
 
