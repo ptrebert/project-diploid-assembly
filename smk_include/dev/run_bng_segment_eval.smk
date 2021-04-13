@@ -688,7 +688,7 @@ rule define_extended_region:
             input[0],
             sep='\t',
             names=['chrom', 'start', 'end', 'name'],
-            usecols=['chrom', 'start', 'end']
+            usecols=['chrom', 'start', 'end ']
         )
 
         chrom = df['chrom'].values[0]
@@ -740,7 +740,7 @@ rule build_segment_complements:
         with open(output.bed, 'w') as dump:
             _ = dump.write('\n'.join(bed_rows) + '\n')
 
-        with open(input.track, 'w') as dump:
+        with open(output.track, 'w') as dump:
             _ = dump.write(track_line + '\n')
             _ = dump.write('\n'.join(track_rows) + '\n')
         
