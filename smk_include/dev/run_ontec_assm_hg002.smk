@@ -85,11 +85,11 @@ rule build_hifi_read_graph:
     input:
         HIFI_READS_PATH
     output:
-        'output/mbg_hifi/{}_HiFi.mbg-k{kmer}-w{window}.gfa'.format(SAMPLE)
+        'output/mbg_hifi/{}_HiFi.mbg-k{{kmer}}-w{{window}}.gfa'.format(SAMPLE)
     log:
-        'log/output/mbg_hifi/{}_HiFi.mbg-k{kmer}-w{window}.log'.format(SAMPLE)
+        'log/output/mbg_hifi/{}_HiFi.mbg-k{{kmer}}-w{{window}}.log'.format(SAMPLE)
     benchmark:
-        'rsrc/output/mbg_hifi/{}_HiFi.mbg-k{kmer}-w{window}.rsrc'.format(SAMPLE)
+        'rsrc/output/mbg_hifi/{}_HiFi.mbg-k{{kmer}}-w{{window}}.rsrc'.format(SAMPLE)
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
