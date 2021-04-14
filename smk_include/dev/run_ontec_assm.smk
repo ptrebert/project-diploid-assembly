@@ -28,7 +28,7 @@ GA_MIN_SCORE = config['params']['GraphAligner']['minscore']
 if SAMPLE == 'HG00733':
 
     ONT_SPLIT_FILES = config['ont_split_files']
-    ONT_ALL_FILES = ONT_ALL_FILES.append('HG00733_EEE_ONT')
+    ONT_ALL_FILES.append('HG00733_EEE_ONT')
     rule merge_ont_splits:
         input:
             fastq = expand('{}/{{filename}}.fastq.gz'.format(ONT_RAW_FOLDER), filename=ONT_SPLIT_FILES)
@@ -75,7 +75,7 @@ rule clean_hpg_ont:
 
 def set_mbg_memory(wildcards, attempt):
 
-    if wildcards.kmer < 1000:
+    if int(wildcards.kmer) < 1000:
         return MEMORY_MBG_HIGH + MEMORY_MBG_HIGH * attempt
     else:
         return MEMORY_MBG_LOW + MEMORY_MBG_LOW * attempt
@@ -95,7 +95,7 @@ rule build_hifi_read_graph:
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = set_mbg_memory,
-        runtime_hrs = lambda wildcards, attempt: RUNTIME_MBG * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
         'MBG -i {input} -o {output} -t {threads} --blunt -k {wildcards.kmer} -w {wildcards.window} &> {log}'
 
@@ -181,8 +181,8 @@ rule get_sequence_stats:
     params:
         pigz_cpu = lambda wildcards: int(config['num_cpu_low']) // 2
     shell:
-        'pigz -p {params.pigz_cpu} -d -c | '
-        'seqtk comp {input} | '
+        'pigz -p {params.pigz_cpu} -d -c {input} | '
+        'seqtk comp | '
         'pigz -p {params.pigz_cpu} --best > {output}'
 
 
@@ -235,7 +235,6 @@ rule compute_stats_input_reads:
         '../../environment/conda/conda_pyscript.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: (1024 * attempt) / config['num_cpu_low'],
         mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
