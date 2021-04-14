@@ -44,6 +44,9 @@ memory:
   MBG_high:
     HG00733: 262144
     HG002: 172032
+  GraphAligner:
+    HG00733: 65536
+    HG002: 65536
 
 params:
   MBG:

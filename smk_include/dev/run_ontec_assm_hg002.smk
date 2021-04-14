@@ -52,7 +52,7 @@ if SAMPLE == 'HG00733':
 
 rule clean_hpg_ont:
     input:
-        fastq = '{ont_path}/{{filename}}.fastq.gz'.format(ONT_RAW_FOLDER)
+        fastq = '{}/{{filename}}.fastq.gz'.format(ONT_RAW_FOLDER)
     output:
         fasta = 'input/ont/{filename}.fa.gz'
     benchmark:
@@ -143,7 +143,7 @@ rule ont_error_correction:
     """
     """
     input:
-        graph = 'output/mbg_hifi_clean/{sample}_HiFi.mbg-k{{kmer}}-w{{window}}.clean.gfa'.format(SAMPLE),
+        graph = 'output/mbg_hifi_clean/{}_HiFi.mbg-k{{kmer}}-w{{window}}.clean.gfa'.format(SAMPLE),
         reads = 'input/ont/{filename}.fa.gz',
     output:
         gaf = 'output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.gaf',
