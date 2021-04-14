@@ -1,0 +1,59 @@
+
+ont_hpg_files:
+  HG00733:
+    - HG00733_1_Guppy_4.2.2_prom
+    - HG00733_2_Guppy_4.2.2_prom
+    - HG00733_3_Guppy_4.2.2_prom
+  HG002:
+    - HG002_giab_ULfastqs_guppy324
+    - HG002_ONT_PAD64459_Guppy32
+
+ont_raw_folder:
+  HG00733:
+    valet: not_set
+    hilbert: /gpfs/project/projects/medbioinf/data/hg00733_ont
+  HG002:
+    valet: /beeond/data/ont
+    hilbert: not_set
+
+hifi_reads_path:
+  HG00733:
+    valet: not_set
+    hilbert: /gpfs/project/projects/medbioinf/projects/hifi_v13/run_folder/input/fastq/HG00733_hgsvc_pbsq2-ccs_1000.fastq.gz
+  HG002:
+    valet: /beeond/projects/lansdorp/run_folder/input/fastq/NA24385_hpg_pbsq2-ccs_1000.fastq.gz
+    hilbert: not_set
+
+ont_split_files:
+  - HG00733_ont-ul_SRR13356541_1
+  - HG00733_ont-ul_SRR13362355_2
+  - HG00733_ont-ul_SRR13362356_3
+  - HG00733_ont-ul_SRR13362357_4
+  - HG00733_ont-ul_SRR13362358_5
+  - HG00733_ont-ul_SRR13362359_6
+
+runtime:
+  GraphAligner:
+    valet: 32
+    hilbert: 12
+
+memory:
+  MBG_low:
+    HG00733: 131072
+    HG002: 131072
+  MBG_high:
+    HG00733: 262144
+    HG002: 172032
+
+params:
+  MBG:
+    kmer:
+      - 501
+      - 2001
+      - 5001
+    window:
+      - 100
+      - 1000
+      - 2000
+  GraphAligner:
+    minscore: 20000
