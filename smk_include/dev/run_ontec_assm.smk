@@ -1,114 +1,101 @@
 localrules: master
 
-### INPUTFILES
+# config values data
+SAMPLE = config['sample']
+RUN_SYSTEM = config['system']
 
-eee_ont = [
-    'HG00733_ont-ul_SRR13356541_1.fastq.gz',
-    'HG00733_ont-ul_SRR13362355_2.fastq.gz',
-    'HG00733_ont-ul_SRR13362356_3.fastq.gz',
-    'HG00733_ont-ul_SRR13362357_4.fastq.gz',
-    'HG00733_ont-ul_SRR13362358_5.fastq.gz',
-    'HG00733_ont-ul_SRR13362359_6.fastq.gz'
-]
+ONT_HPG_FILES = config['ont_hpg_files'][SAMPLE]
+ONT_ALL_FILES = ONT_HPG_FILES
 
-hpg_ont = [
-    'HG00733_1_Guppy_4.2.2_prom.fastq.gz',
-    'HG00733_2_Guppy_4.2.2_prom.fastq.gz',
-    'HG00733_3_Guppy_4.2.2_prom.fastq.gz'
-]
+ONT_RAW_FOLDER = config['ont_raw_folder'][SAMPLE][RUN_SYSTEM]
+HIFI_READS_PATH = config['hifi_reads_path'][SAMPLE][RUN_SYSTEM]
 
-### OUTPUTFILES
+# config values system
+RUNTIME_GA = config['runtime']['GraphAligner'][RUN_SYSTEM]
 
-ont_read_files = [
-    'HG00733_EEE_ONT',
-    'HG00733_1_Guppy_4.2.2_prom',
-    'HG00733_2_Guppy_4.2.2_prom',
-    'HG00733_3_Guppy_4.2.2_prom'
-]
+MEMORY_MBG_LOW = config['memory']['MBG_low'][SAMPLE]  # large k-mer
+MEMORY_MBG_HIGH = config['memory']['MBG_high'][SAMPLE]  # small k-mer
 
-output_files = [
-    'input/ont/HG00733_EEE_ONT.fa.gz',
-    'output/mbg_hifi/HG00733_HiFi.mbg-k5001-w2000.noseq.gfa',
-    'output/mbg_hifi/HG00733_HiFi.mbg-k2001-w1000.noseq.gfa',
-    'output/mbg_hifi/HG00733_HiFi.mbg-k501-w100.noseq.gfa',
-]
+MEMORY_GA = config['memory']['GraphAligner'][SAMPLE]
 
-pattern_reads = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.fa.gz'
-pattern_stats = 'output/seq_stats/summary/HG00733_ONT_clip-ec.k{kmer}-w{window}.ms{minscore}.stats.tsv'
+# config values parameters
+MBG_KMER_SIZE = config['params']['MBG']['kmer']
+MBG_WINDOW_SIZE = config['params']['MBG']['window']
 
-for orf in ont_read_files:
-    for k, w in [(5001,2000), (2001,1000), (501,100)]:        
-        for ms in [0]:
-            tmp = pattern_reads.format(**values)
-            output_files.append(tmp)
-            values = {
-                'filename': orf,
-                'kmer': k,
-                'window': w,
-                'minscore': ms
-            }
-            tmp = pattern_stats.format(**values)
-            output_files.append(tmp)
+GA_MIN_SCORE = config['params']['GraphAligner']['minscore']
 
 
-rule merge_eee_ont:
-    input:
-        fastq = expand('/gpfs/project/projects/medbioinf/data/hg00733_ont/{filename}', filename=eee_ont)
-    output:
-        fasta = 'input/ont/HG00733_EEE_ONT.fa.gz'
-    benchmark:
-        'rsrc/input/ont/HG00733_EEE_ONT.merge.rsrc'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_low']
-    resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(2048 * attempt // config['num_cpu_low']),
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt ** attempt
-    params:
-        pigz_cpu = lambda wildcards: int(config['num_cpu_low']) // 2
-    shell:
-        'pigz -p {params.pigz_cpu} -c -d {input.fastq} | seqtk seq -S -A -l 120 -C | pigz -p {params.pigz_cpu} > {output.fasta}'
+if SAMPLE == 'HG00733':
+
+    ONT_SPLIT_FILES = config['ont_split_files']
+    ONT_ALL_FILES = ONT_ALL_FILES.append('HG00733_EEE_ONT')
+    rule merge_ont_splits:
+        input:
+            fastq = expand('{}/{{filename}}.fastq.gz'.format(ONT_RAW_FOLDER), filename=ONT_SPLIT_FILES)
+        output:
+            fasta = 'input/ont/HG00733_EEE_ONT.fa.gz'
+        benchmark:
+            'rsrc/input/ont/HG00733_EEE_ONT.merge.rsrc'
+        conda:
+            '../../environment/conda/conda_biotools.yml'
+        threads: config['num_cpu_low']
+        resources:
+            mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+            runtime_hrs = lambda wildcards, attempt: attempt ** attempt
+        params:
+            pigz_cpu = lambda wildcards: int(config['num_cpu_low']) // 2
+        shell:
+            'pigz -p {params.pigz_cpu} -c -d {input.fastq} | '
+            'seqtk seq -S -A -l 120 -C | '
+            'pigz -p {params.pigz_cpu} > {output.fasta}'
 
 
 rule clean_hpg_ont:
     input:
-        fastq = '/gpfs/project/projects/medbioinf/data/hg00733_ont/{filename}.fastq.gz'
+        fastq = '{}/{{filename}}.fastq.gz'.format(ONT_RAW_FOLDER)
     output:
         fasta = 'input/ont/{filename}.fa.gz'
     benchmark:
         'rsrc/input/ont/{filename}.clean.rsrc'
     wildcard_constraints:
-        filename = '(' + '|'.join([f.rsplit('.', 2)[0] for f in hpg_ont]) + ')'
+        filename = '(' + '|'.join(ONT_HPG_FILES) + ')'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(2048 * attempt // config['num_cpu_low']),
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt + attempt ** attempt
+        runtime_hrs = lambda wildcards, attempt: attempt ** attempt
     params:
-        pigz_cpu = lambda wildcards: int(config['num_cpu_low']) - 1
+        pigz_cpu = lambda wildcards: int(config['num_cpu_low']) // 2
     shell:
-        'seqtk seq -S -A -l 120 -C {input.fastq} | pigz -p {params.pigz_cpu} > {output.fasta}'
+        'pigz -p {params.pigz_cpu} -c -d {input.fastq} | '
+        'seqtk seq -S -A -l 120 -C {input.fastq} | '
+        'pigz -p {params.pigz_cpu} > {output.fasta}'
+
+
+def set_mbg_memory(wildcards, attempt):
+
+    if wildcards.kmer < 1000:
+        return MEMORY_MBG_HIGH + MEMORY_MBG_HIGH * attempt
+    else:
+        return MEMORY_MBG_LOW + MEMORY_MBG_LOW * attempt
 
 
 rule build_hifi_read_graph:
     input:
-        '/gpfs/project/projects/medbioinf/projects/hifi_v13/run_folder/input/fastq/HG00733_hgsvc_pbsq2-ccs_1000.fastq.gz'
+        HIFI_READS_PATH
     output:
-        'output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.gfa'
+        'output/mbg_hifi/{}_HiFi.mbg-k{{kmer}}-w{{window}}.gfa'.format(SAMPLE)
     log:
-        'log/output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.log'
+        'log/output/mbg_hifi/{}_HiFi.mbg-k{{kmer}}-w{{window}}.log'.format(SAMPLE)
     benchmark:
-        'rsrc/output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.rsrc'
+        'rsrc/output/mbg_hifi/{}_HiFi.mbg-k{{kmer}}-w{{window}}.rsrc'.format(SAMPLE)
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(245760 + (122880 if int(wildcards.kmer) > 5000 else 245760) * attempt // config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 245760 + (122880 if int(wildcards.kmer) > 5000 else 245760) * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+        mem_total_mb = set_mbg_memory,
+        runtime_hrs = lambda wildcards, attempt: RUNTIME_MBG * attempt
     shell:
         'MBG -i {input} -o {output} -t {threads} --blunt -k {wildcards.kmer} -w {wildcards.window} &> {log}'
 
@@ -120,17 +107,16 @@ rule clean_mbg_graph:
     ### I've used vg: vg view -Fv graph.gfa | vg mod -n -U 100 - | vg view - > blunt-graph.gfa
     """
     input:
-        'output/mbg_hifi/HG00733_HiFi.mbg-k{kmer}-w{window}.gfa'
+        'output/mbg_hifi/{sample}_HiFi.mbg-k{kmer}-w{window}.gfa'
     output:
-        'output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
+        'output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
     log:
-        'log/output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.log'
+        'log/output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.log'
     benchmark:
-        'rsrc/output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.rsrc'
+        'rsrc/output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 16384 * attempt,
         mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt ** attempt
     shell:
@@ -139,24 +125,25 @@ rule clean_mbg_graph:
 
 rule strip_sequences_from_graph:
     input:
-        'output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
+        gfa = 'output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
     output:
-        'output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.noseq.gfa'
+        gfa = 'output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.noseq.gfa'
     benchmark:
-        'rsrc/output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.noseq.rsrc'
+        'rsrc/output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.noseq.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt ** attempt
+        runtime_hrs = lambda wildcards, attempt: attempt
     shell:
-        'gfatools view -S {input} > {output}'
+        'gfatools view -S {input.gfa} > {output.gfa}'
 
 
 rule ont_error_correction:
+    """
+    """
     input:
-        graph = 'output/mbg_hifi_clean/HG00733_HiFi.mbg-k{kmer}-w{window}.clean.gfa',
+        graph = 'output/mbg_hifi_clean/{}_HiFi.mbg-k{{kmer}}-w{{window}}.clean.gfa'.format(SAMPLE),
         reads = 'input/ont/{filename}.fa.gz',
     output:
         gaf = 'output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.gaf',
@@ -167,11 +154,10 @@ rule ont_error_correction:
         'rsrc/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.ga.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 + 32768 * attempt // config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+        mem_total_mb = lambda wildcards, attempt: MEMORY_GA * attempt,
+        runtime_hrs = lambda wildcards, attempt: RUNTIME_GA * attempt
     shell:
         'GraphAligner -t {threads} -g {input.graph} -f {input.reads} '
             '-x dbg --min-alignment-score {wildcards.minscore} '
@@ -190,13 +176,14 @@ rule get_sequence_stats:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 4096,
         mem_total_mb = lambda wildcards, attempt: 4096,
-        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        threads = int(config['num_cpu_low'] - 1)
+        pigz_cpu = lambda wildcards: int(config['num_cpu_low']) // 2
     shell:
-        'seqtk comp {input} | pigz -p {params.threads} --best > {output}'
+        'pigz -p {params.pigz_cpu} -d -c | '
+        'seqtk comp {input} | '
+        'pigz -p {params.pigz_cpu} --best > {output}'
 
 
 def find_script_path(script_name, subfolder=''):
@@ -236,20 +223,21 @@ def find_script_path(script_name, subfolder=''):
 
 rule compute_stats_input_reads:
     input:
-        fastq = expand(
-            'output/seq_stats/input/ont/{filename}.stats.tsv.gz',
-            filename=ont_read_files
-        )
+        fastq = expand('output/seq_stats/input/ont/{filename}.stats.tsv.gz', filename=ONT_ALL_FILES)
     output:
-        summary = 'output/seq_stats/summary/HG00733_ONT_input.stats.tsv',
-        dump = 'output/seq_stats/summary/HG00733_ONT_input.stats.pck'
+        summary = 'output/seq_stats/summary/{}_ONT_input.stats.tsv'.format(SAMPLE),
+        dump = 'output/seq_stats/summary/{}_ONT_input.stats.pck'.format(SAMPLE)
     log:
-        'log/output/seq_stats/summary/HG00733_ONT_input.stats.log'
+        'log/output/seq_stats/summary/{}_ONT_input.stats.log'.format(SAMPLE)
     benchmark:
-        'rsrc/output/seq_stats/summary/HG00733_ONT_input.stats.rsrc'
+        'rsrc/output/seq_stats/summary/{}_ONT_input.stats.rsrc'.format(SAMPLE)
     conda:
         '../../environment/conda/conda_pyscript.yml'
     threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: (1024 * attempt) / config['num_cpu_low'],
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
@@ -262,18 +250,21 @@ rule compute_stats_corrected_reads:
     input:
         fasta = expand(
             'output/seq_stats/output/ont_ec/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.stats.tsv.gz',
-            filename=ont_read_files
+            filename=ONT_ALL_FILES
             )
     output:
-        summary = 'output/seq_stats/summary/HG00733_ONT_clip-ec.k{kmer}-w{window}.ms{minscore}.stats.tsv',
-        dump = 'output/seq_stats/summary/HG00733_ONT_clip-ec.k{kmer}-w{window}.ms{minscore}.stats.pck'
+        summary = 'output/seq_stats/summary/{}_ONT_clip-ec.k{{kmer}}-w{{window}}.ms{{minscore}}.stats.tsv'.format(SAMPLE),
+        dump = 'output/seq_stats/summary/{}_ONT_clip-ec.k{{kmer}}-w{{window}}.ms{{minscore}}.stats.pck'.format(SAMPLE)
     log:
-        'log/output/seq_stats/summary/HG00733_ONT_clip-ec.k{kmer}-w{window}.ms{minscore}.stats.log'
+        'log/output/seq_stats/summary/{}_ONT_clip-ec.k{{kmer}}-w{{window}}.ms{{minscore}}.stats.log'.format(SAMPLE)
     benchmark:
-        'rsrc/output/seq_stats/summary/HG00733_ONT_clip-ec.k{kmer}-w{window}.ms{minscore}.stats.rsrc'
+        'rsrc/output/seq_stats/summary/{}_ONT_clip-ec.k{{kmer}}-w{{window}}.ms{{minscore}}.stats.rsrc'.format(SAMPLE)
     conda:
         '../../environment/conda/conda_pyscript.yml'
     threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
@@ -284,4 +275,18 @@ rule compute_stats_corrected_reads:
 
 rule master:
     input:
-        output_files
+        expand(
+            rules.strip_sequences_from_graph.output.gfa,
+            zip,
+            sample=[SAMPLE] * len(MBG_KMER_SIZE),
+            kmer=MBG_KMER_SIZE,
+            window=MBG_WINDOW_SIZE
+        ),
+        rules.compute_stats_input_reads.output.summary,
+        expand(
+            rules.compute_stats_corrected_reads.output.summary,
+            zip,
+            kmer=MBG_KMER_SIZE,
+            window=MBG_WINDOW_SIZE,
+            minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE)
+        )
