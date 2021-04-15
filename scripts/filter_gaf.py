@@ -213,7 +213,6 @@ def store_gaf_as_hdf(gaf, output_file, logger):
 
 def split_paths(paths):
     """
-    TODO: this is slow...
     """
     translation_table = dict((i,i) for i in '1234567890')
     translation_table['>'] = ' '
@@ -259,7 +258,7 @@ def dump_size_fraction_info(gaf, threshold, output_path, logger):
 
     logger.debug('Dumping path node IDs...')
     path_node_file = '.'.join([base_out, name_infix, 'path-nodes', 'txt'])
-    path_nodes = split_paths(gaf['path'])
+    path_nodes = split_paths(sub['path'])
     with open(path_node_file, 'w', encoding='ascii') as dump:
         _ = dump.write('\n'.join(path_nodes) + '\n')
     
