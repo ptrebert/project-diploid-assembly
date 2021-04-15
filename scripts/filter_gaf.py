@@ -7,6 +7,10 @@ import traceback as trb
 import argparse as argp
 import logging as log
 
+# change in the numexpr package / dep of pandas
+# if not set, issues pointless info logging message
+os.environ['NUMEXPR_MAX_THREADS'] = '2'
+
 import numpy as np
 import pandas as pd
 
@@ -211,17 +215,25 @@ def split_paths(paths):
     """
     TODO: this is slow...
     """
-    nodes = set()
-    for p in paths:
-        nodes = nodes.union(set(p.replace('>', ' ').replace('<', ' ').split()))
-    return sorted(nodes)
+    translation_table = dict((i,i) for i in '1234567890')
+    translation_table['>'] = ' '
+    translation_table['<'] = ' '
+    translation_table = str.maketrans(translation_table)
+
+    all_paths = paths.apply(lambda x: x.translate(translation_table).split()).values
+
+    nodes = sorted(
+        set().union(*all_paths)
+    )
+
+    return nodes
 
 
 def dump_size_fraction_info(gaf, threshold, output_path, logger):
     """
     """
     base_out, h5_ext = output_path.rsplit('.', 1)
-    assert h5_ext == 'h5', 'Outout file extension should be .h5'
+    assert h5_ext == 'h5', 'Output file extension should be .h5'
 
     ec_name_infos = ['read_name', 'read_align_start', 'read_align_end']
     if 'readec_name' not in gaf:

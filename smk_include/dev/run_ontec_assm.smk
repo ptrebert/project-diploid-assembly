@@ -254,7 +254,7 @@ rule extract_read_info_from_gaf:
     output:
         hdf = 'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
         listings = expand(
-            'output/read_info/{{filename}}_MAP-TO_mbg-k{{kmer}}-w{window}.ms{{minscore}}.geq{size_fraction}.{ext}',
+            'output/read_info/{{filename}}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.geq{size_fraction}.{ext}',
             size_fraction=[0] + READ_SIZE_FRACTIONS,
             ext=['path-nodes.txt', 'readec-path.tsv', 'read-ec.txt']
             )
@@ -300,7 +300,7 @@ rule extract_ec_reads_by_size:
 rule compute_stats_corrected_reads:
     input:
         tsv = expand(
-            'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.geq0.stats.tsv.gz',
+            'output/seq_stats/output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.geq0.stats.tsv.gz',
             filename=ONT_ALL_FILES
             )
     output:
