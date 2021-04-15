@@ -288,7 +288,7 @@ rule extract_ec_reads_by_size:
     threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
     params:
         pigz_cpu = lambda wildcards: int(config['num_cpu_low']) // 2
     shell:
