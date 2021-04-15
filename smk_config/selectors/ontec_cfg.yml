@@ -35,7 +35,7 @@ ont_split_files:
 runtime:
   GraphAligner:
     valet: 32
-    hilbert: 12
+    hilbert: 8
 
 memory:
   MBG_low:
@@ -60,3 +60,7 @@ params:
       - 2000
   GraphAligner:
     minscore: 20000
+  SizeFractions:
+    - 50000
+    - 100000
+    - 500000

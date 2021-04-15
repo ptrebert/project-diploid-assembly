@@ -24,6 +24,9 @@ MBG_WINDOW_SIZE = config['params']['MBG']['window']
 
 GA_MIN_SCORE = config['params']['GraphAligner']['minscore']
 
+# size fraction zero = dump all reads
+READ_SIZE_FRACTIONS = config['params']['SizeFractions']
+
 
 if SAMPLE == 'HG00733':
 
@@ -48,6 +51,41 @@ if SAMPLE == 'HG00733':
             'pigz -p {params.pigz_cpu} -c -d {input.fastq} | '
             'seqtk seq -S -A -l 120 -C | '
             'pigz -p {params.pigz_cpu} > {output.fasta}'
+
+
+def find_script_path(script_name, subfolder=''):
+    """
+    Find full path to script to be executed. Function exists
+    to avoid config parameter "script_dir"
+
+    :param script_name:
+    :param subfolder:
+    :return:
+    """
+    import os
+
+    current_root = workflow.basedir
+    last_root = ''
+
+    script_path = None
+
+    for _ in range(workflow.basedir.count('/')):
+        if last_root.endswith('project-diploid-assembly'):
+            raise RuntimeError('Leaving project directory tree (next: {}). '
+                               'Cannot find script {} (subfolder: {}).'.format(current_root, script_name, subfolder))
+        check_path = os.path.join(current_root, 'scripts', subfolder).rstrip('/')  # if subfolder is empty string
+        if os.path.isdir(check_path):
+            check_script = os.path.join(check_path, script_name)
+            if os.path.isfile(check_script):
+                script_path = check_script
+                break
+        last_root = current_root
+        current_root = os.path.split(current_root)[0]
+
+    if script_path is None:
+        raise RuntimeError('Could not find script {} (subfolder {}). '
+                           'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
+    return script_path
 
 
 rule clean_hpg_ont:
@@ -186,44 +224,9 @@ rule get_sequence_stats:
         'pigz -p {params.pigz_cpu} --best > {output}'
 
 
-def find_script_path(script_name, subfolder=''):
-    """
-    Find full path to script to be executed. Function exists
-    to avoid config parameter "script_dir"
-
-    :param script_name:
-    :param subfolder:
-    :return:
-    """
-    import os
-
-    current_root = workflow.basedir
-    last_root = ''
-
-    script_path = None
-
-    for _ in range(workflow.basedir.count('/')):
-        if last_root.endswith('project-diploid-assembly'):
-            raise RuntimeError('Leaving project directory tree (next: {}). '
-                               'Cannot find script {} (subfolder: {}).'.format(current_root, script_name, subfolder))
-        check_path = os.path.join(current_root, 'scripts', subfolder).rstrip('/')  # if subfolder is empty string
-        if os.path.isdir(check_path):
-            check_script = os.path.join(check_path, script_name)
-            if os.path.isfile(check_script):
-                script_path = check_script
-                break
-        last_root = current_root
-        current_root = os.path.split(current_root)[0]
-
-    if script_path is None:
-        raise RuntimeError('Could not find script {} (subfolder {}). '
-                           'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
-    return script_path
-
-
 rule compute_stats_input_reads:
     input:
-        fastq = expand('output/seq_stats/input/ont/{filename}.stats.tsv.gz', filename=ONT_ALL_FILES)
+        tsv = expand('output/seq_stats/input/ont/{filename}.stats.tsv.gz', filename=ONT_ALL_FILES)
     output:
         summary = 'output/seq_stats/summary/{}_ONT_input.stats.tsv'.format(SAMPLE),
         dump = 'output/seq_stats/summary/{}_ONT_input.stats.pck'.format(SAMPLE)
@@ -240,15 +243,64 @@ rule compute_stats_input_reads:
     params:
         script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
-        '{params.script_exec} --debug --input-files {input.fastq} '
+        '{params.script_exec} --debug --input-files {input.tsv} '
         '--output {output.dump} --summary-output {output.summary} '
         '--num-cpu {threads} --genome-size 3100000000 &> {log}'
 
 
+rule extract_read_info_from_gaf:
+    input:
+        gaf = 'output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.gaf'
+    output:
+        hdf = 'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
+        listings = expand(
+            'output/read_info/{{filename}}_MAP-TO_mbg-k{{kmer}}-w{window}.ms{{minscore}}.geq{size_fraction}.{ext}',
+            size_fraction=[0] + READ_SIZE_FRACTIONS,
+            ext=['path-nodes.txt', 'readec-path.tsv', 'read-ec.txt']
+            )
+    log:
+        'log/output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.gaf-filter.log',
+    benchmark:
+        'rsrc/output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.gaf-filter.rsrc',
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: max(0, attempt-1) * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('filter_gaf.py'),
+        size_fractions = lambda wildcards: ' '.join(list(map(str, READ_SIZE_FRACTIONS)))
+    shell:
+        '{params.script_exec} --debug --input {input.gaf} '
+        '--output {output.hdf} --size-fractions {params.size_fractions} &> {log}'
+
+
+rule extract_ec_reads_by_size:
+    input:
+        ec_reads = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.fa.gz',
+        read_list = 'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.geq{size_fraction}.read-ec.txt'
+    output:
+        'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.geq{size_fraction}.fa.gz'
+    benchmark:
+        'rsrc/output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.geq{size_fraction}.seqtk.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        pigz_cpu = lambda wildcards: int(config['num_cpu_low']) // 2
+    shell:
+        'pigz -p {params.pigz_cpu} -d -c {input.ec_reads} | '
+        'seqtk subseq -l 120 /dev/stdin {input.read_list} | '
+        'pigz -p {params.pigz_cpu} --best > {output}'
+
+
 rule compute_stats_corrected_reads:
     input:
-        fasta = expand(
-            'output/seq_stats/output/ont_ec/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.stats.tsv.gz',
+        tsv = expand(
+            'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.geq0.stats.tsv.gz',
             filename=ONT_ALL_FILES
             )
     output:
@@ -267,7 +319,7 @@ rule compute_stats_corrected_reads:
     params:
         script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
-        '{params.script_exec} --debug --input-files {input.fasta} '
+        '{params.script_exec} --debug --input-files {input.tsv} '
         '--output {output.dump} --summary-output {output.summary} '
         '--num-cpu {threads} --genome-size 3100000000 &> {log}'
 
