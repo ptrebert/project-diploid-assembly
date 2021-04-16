@@ -334,7 +334,7 @@ rule compute_stats_corrected_reads:
 
 def set_hifiasm_memory(wildcards, attempt, run_system):
 
-    if run_system = 'valet':
+    if run_system == 'valet':
         return MEMORY_HIFIASM
     else:
         return MEMORY_HIFIASM * attempt
@@ -373,7 +373,7 @@ rule hifiasm_hifi_ontec_assembly:
 #        '../environment/conda/conda_biotools.yml'       
     threads: config['num_cpu_max']
     resources:
-        mem_total_mb = lambda wildcards, attempt: set_hifiasm_memory(wildcards, attempt, run_system),
+        mem_total_mb = lambda wildcards, attempt: set_hifiasm_memory(wildcards, attempt, RUN_SYSTEM),
         runtime_hrs = lambda wildcards, attempt: 48 + 48 * attempt
     params:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
