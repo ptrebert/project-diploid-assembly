@@ -345,7 +345,7 @@ rule hifiasm_hifi_ontec_assembly:
     """
     input:
         container = 'hifiasm-v0142r315.sif',
-        hifi_reads = HIFI_READS_PATH,
+        hifi_reads = os.path.basename(HIFI_READS_PATH),
         ontec_reads = expand(
             'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.geq{{size_fraction}}.fa.gz',
             zip,
