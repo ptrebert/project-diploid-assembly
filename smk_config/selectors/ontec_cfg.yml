@@ -3,7 +3,7 @@ ont_hpg_files:
   HG00733:
     - HG00733_1_Guppy_4.2.2_prom
     - HG00733_2_Guppy_4.2.2_prom
-    - HG00733_3_Guppy_4.2.2_prom
+  #  - HG00733_3_Guppy_4.2.2_prom -- contains problematic read, GA segfault
   HG002:
     - HG002_giab_ULfastqs_guppy324
     - HG002_ONT_PAD64459_Guppy32
@@ -35,18 +35,22 @@ ont_split_files:
 runtime:
   GraphAligner:
     valet: 32
-    hilbert: 12
+    hilbert: 6
+  ExtractSequence:
+    valet: 18
+    hilbert: 8
 
 memory:
   MBG_low:
     HG00733: 131072
     HG002: 131072
   MBG_high:
-    HG00733: 262144
+    HG00733: 491520
     HG002: 172032
   GraphAligner:
     HG00733: 65536
     HG002: 65536
+  HifiAsm: 1463396
 
 params:
   MBG:

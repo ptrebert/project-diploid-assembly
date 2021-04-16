@@ -1,0 +1,11 @@
+Bootstrap: debootstrap
+OSVersion: xenial
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%post
+    apt-get update && apt-get install -y zlib1g-dev g++ wget tar make &&
+    wget https://github.com/chhylp123/hifiasm/archive/refs/tags/0.14.2.tar.gz &&
+    tar xzf 0.14.2.tar.gz &&
+    cd hifiasm-0.14.2/ &&
+    make && cp hifiasm /usr/bin/ &&
+    apt-get autoremove
