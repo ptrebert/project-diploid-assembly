@@ -371,35 +371,36 @@ rule compute_hifiasm_nonhapres_assembly:
     Memory consumption is fairly low and stable
     """
     input:
+        container = 'hifiasm-v0142r315.sif',
         fastq = 'input/fastq/{sample}.fastq.gz',
     output:
         primary_unitigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_utg.gfa',
         primary_contigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
         raw_unitigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.r_utg.gfa',
-        discard = temp(
-            multiext(
+        discard = multiext(
                 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}',
                 '.a_ctg.gfa', '.a_ctg.noseq.gfa',
                 '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
                 '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
                 '.r_utg.noseq.gfa'
             )
-        )
     log:
         hifiasm = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.log',
     benchmark:
         os.path.join('run/output/reference_assembly/non-hap-res',
                      '{sample}_nhr-hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
-    conda:
-        '../environment/conda/conda_biotools.yml'
+#    conda:
+#        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((188416 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 188416 * attempt,
         runtime_hrs = lambda wildcards, attempt: 36 * attempt
     params:
-        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0]
+        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
+        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
+        '{params.singularity} singularity exec {input.container} '
         'hifiasm -o {params.prefix} -t {threads} {input.fastq} &> {log.hifiasm}'
 
 
@@ -868,6 +869,7 @@ rule compute_hifiasm_haploid_split_assembly:
     Memory consumption is fairly low and stable
     """
     input:
+        container = 'hifiasm-v0142r315.sif',
         fastq_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h1.{sequence}.fastq.gz',
         fastq_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h2.{sequence}.fastq.gz',
         fastq_un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.un.{sequence}.fastq.gz',
@@ -877,29 +879,29 @@ rule compute_hifiasm_haploid_split_assembly:
         hap1_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap1.p_ctg.gfa',
         hap2_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap2.p_ctg.gfa',
         raw_unitigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.r_utg.gfa',
-        discard = temp(
-            multiext(
+        discard = multiext(
                 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}',
                 '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
                 '.hap1.p_ctg.noseq.gfa', '.hap2.p_ctg.noseq.gfa',
                 '.dip.r_utg.noseq.gfa'
             )
-        )
     log:
         hifiasm = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}.hifiasm.log',
     benchmark:
         os.path.join('run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/',
                      '{hap_reads}.{sequence}.hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
-    conda:
-        '../environment/conda/conda_biotools.yml'
+#    conda:
+#        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + 12288 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 12288 + 12288 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        prefix = lambda wildcards, output: output.hap1_contigs.rsplit('.', 3)[0]
+        prefix = lambda wildcards, output: output.hap1_contigs.rsplit('.', 3)[0],
+        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
+        '{params.singularity} singularity exec {input.container} '
         'hifiasm -o {params.prefix} -t {threads} -3 {input.tags_h1} -4 {input.tags_h2} '
             '{input.fastq_h1} {input.fastq_h2} {input.fastq_un} &> {log.hifiasm}'
 
