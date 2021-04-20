@@ -283,10 +283,51 @@ rule extract_read_info_from_gaf:
         '--output {output.hdf} --size-fractions {params.size_fractions} &> {log}'
 
 
+rule deduplicate_ec_reads:
+    input:
+        listings = expand(
+            'output/read_info/{{filename}}_MAP-TO_mbg-k{kmer}-w{window}.ms{{minscore}}.geq{{size_fraction}}.read-ec.txt',
+            zip,
+            kmer=MBG_KMER_SIZE,
+            window=MBG_WINDOW_SIZE,
+            )
+    output:
+        listings = expand(
+            'output/read_info/{{filename}}_MAP-TO_mbg-k{kmer}-w{window}.ms{{minscore}}.geq{{size_fraction}}.read-ec.dedup.txt',
+            zip,
+            kmer=MBG_KMER_SIZE,
+            window=MBG_WINDOW_SIZE,
+            )
+    run:
+        import collections as col
+        import random as rand
+        import io as io
+
+        assert isinstance(input.listings, list), 'Expected more than one input file: {}'.format(input)
+
+        read_to_readset = col.defaultdict(set)
+        output_buffers = dict()
+
+        for read_ec_file in input.listings:
+            output_file = read_ec_file.rsplit('.', 1)[0] + '.dedup.txt'
+            output_buffers[output_file] = io.StringIO()
+            with open(read_ec_file, 'r') as listing:
+                for line in listing:
+                    read_to_readset[line.strip()].add(output_file)
+        
+        for read, readset in read_to_readset.items():
+            select_buffer = output_buffers[rand.choice(readset)]
+            _ = select_buffer.write(read + '\n')
+
+        for output_file, output_buffer in output_buffers.items():
+            with open(output_file, 'w') as dump:
+                _ = dump.write(output_buffer.getvalue())
+        
+
 rule extract_ec_reads_by_size:
     input:
         ec_reads = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.fa.gz',
-        read_list = 'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.geq{size_fraction}.read-ec.txt'
+        read_list = 'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.geq{size_fraction}.read-ec.dedup.txt'
     output:
         'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.geq{size_fraction}.fa.gz'
     benchmark:
