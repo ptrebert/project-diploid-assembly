@@ -298,6 +298,8 @@ rule deduplicate_ec_reads:
             kmer=MBG_KMER_SIZE,
             window=MBG_WINDOW_SIZE,
             )
+    benchmark:
+        'rsrc/output/read_info/{filename}_MAP-TO_mbg-kALL-wALL.ms{minscore}.dedup.rsrc',
     run:
         import collections as col
         import random as rand
@@ -305,7 +307,7 @@ rule deduplicate_ec_reads:
 
         assert isinstance(input.listings, list), 'Expected more than one input file: {}'.format(input)
 
-        read_to_readset = col.defaultdict(set)
+        read_to_readset = col.defaultdict(list)
         output_buffers = dict()
 
         for read_ec_file in input.listings:
@@ -313,7 +315,7 @@ rule deduplicate_ec_reads:
             output_buffers[output_file] = io.StringIO()
             with open(read_ec_file, 'r') as listing:
                 for line in listing:
-                    read_to_readset[line.strip()].add(output_file)
+                    read_to_readset[line.strip()].append(output_file)
         
         for read, readset in read_to_readset.items():
             select_buffer = output_buffers[rand.choice(readset)]
