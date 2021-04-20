@@ -1,0 +1,10 @@
+Bootstrap: library
+From: library/default/alpine:3.9
+
+%post
+    apk --no-cache add wget tar zlib-dev make g++ 
+    wget https://github.com/chhylp123/hifiasm/archive/refs/tags/0.14.2.tar.gz 
+    tar xzf 0.14.2.tar.gz 
+    cd hifiasm-0.14.2/ 
+    make && cp hifiasm /usr/bin/ 
+    apk del wget tar g++ make zlib-dev 
