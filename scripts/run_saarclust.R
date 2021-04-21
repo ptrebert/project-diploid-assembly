@@ -1,5 +1,11 @@
 #!/usr/bin/env Rscript
 
+host.name = Sys.info()['nodename']
+
+if (any(grepl('login', host.name, fixed=TRUE), grepl('submit', host.name, fixed=TRUE))) {
+    stop('Running on cluster login/submit node - exiting')
+}
+
 suppressMessages(library(SaaRclust))
 
 args = commandArgs(trailingOnly=TRUE)
