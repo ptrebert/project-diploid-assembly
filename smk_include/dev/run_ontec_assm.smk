@@ -10,6 +10,11 @@ ONT_ALL_FILES = ONT_HPG_FILES
 ONT_RAW_FOLDER = config['ont_raw_folder'][SAMPLE][RUN_SYSTEM]
 HIFI_READS_PATH = config['hifi_reads_path'][SAMPLE][RUN_SYSTEM]
 
+SHORT_READS_PATH = config['short_reads_path'][SAMPLE][RUN_SYSTEM]
+
+REFERENCE_FOLDER = config['reference_folder'][RUN_SYSTEM]
+REFERENCE_ASSEMBLIES = config['reference_assemblies']
+
 # config values system
 RUNTIME_GA = config['runtime']['GraphAligner'][RUN_SYSTEM]
 RUNTIME_ES = config['runtime']['ExtractSequence'][RUN_SYSTEM]
@@ -299,7 +304,7 @@ rule deduplicate_ec_reads:
             window=MBG_WINDOW_SIZE,
             )
     benchmark:
-        'rsrc/output/read_info/{filename}_MAP-TO_mbg-kALL-wALL.ms{minscore}.dedup.rsrc',
+        'rsrc/output/read_info/{filename}_MAP-TO_mbg-kALL-wALL.ms{minscore}.geq{size_fraction}.dedup.rsrc',
     run:
         import collections as col
         import random as rand
@@ -426,8 +431,176 @@ rule hifiasm_hifi_ontec_assembly:
         'hifiasm -o {params.prefix} -t {threads} {input.hifi_reads} {input.ontec_reads} &> {log.hifiasm}'
 
 
-rule master:
+rule count_reference_kmers:
     input:
+        fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+    output:
+        kmer_db = directory(os.path.join(REFERENCE_FOLDER, '{reference}.k15.db/')),
+        rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k15.rep-grt09998.txt')
+    benchmark:
+        'rsrc/output/kmer/{reference}.k15.count-dump.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        mem_total_gb = lambda wildcards, attempt: 32 * attempt
+    params:
+        kmer_size = 15
+    shell:
+        'meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.fasta} && '
+        'meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}'
+
+
+rule align_hifi_input_reads:
+    input:
+        reads = HIFI_READS_PATH,
+        fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+        rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k15.rep-grt09998.txt')
+    output:
+        bam = 'output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.bam'.format(sample)
+    benchmark:
+        'rsrc/output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.wmap.rsrc'.format(sample)
+    log:
+        'log/output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.wmap.log'.format(sample)
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads = config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    params:
+        sample = SAMPLE,
+        sort_threads = 6,
+        align_threads = int(config['num_cpu_high'] - 6)
+    shell:
+        'winnowmap -W {input.rep_kmer} -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.fasta} {input.reads} | '
+        'samtools sort -m 16384M --threads {params.sort_threads} | samtools view -F 4 -b > {output}'
+
+
+rule align_ontec_output_reads:
+    input:
+        reads = expand(
+            'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.geq{{size_fraction}}.fa.gz',
+            zip,
+            filename=ONT_ALL_FILES * len(MBG_KMER_SIZE),
+            kmer=MBG_KMER_SIZE * len(ONT_ALL_FILES),
+            window=MBG_WINDOW_SIZE * len(ONT_ALL_FILES),
+            minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE) * len(ONT_ALL_FILES)
+        ),
+        fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+        rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k15.rep-grt09998.txt')
+    output:
+        bam = 'output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.bam'.format(sample)
+    benchmark:
+        'rsrc/output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.wmap.rsrc'.format(sample)
+    log:
+        'log/output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.wmap.log'.format(sample)
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads = config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    params:
+        sample = SAMPLE,
+        sort_threads = 6,
+        align_threads = int(config['num_cpu_high'] - 6)
+    shell:
+        'winnowmap -W {input.rep_kmer} -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.fasta} {input.reads} | '
+        'samtools sort -m 16384M --threads {params.sort_threads} | samtools view -F 4 -b > {output}'
+
+
+rule merge_short_reads:
+    input:
+        reads1 = '{}_1_val_1.cor.fq.gz'.format(SHORT_READS_PATH),
+        reads2 = '{}_2_val_2.cor.fq.gz'.format(SHORT_READS_PATH)
+    output:
+        fastq = 'output/fastq/{}_SHORT.fastq.gz'.format(SAMPLE)
+    benchmark:
+        'rsrc/output/fastq/{}_SHORT.mrg.rsrc'.format(SAMPLE)
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads = config['num_cpu_medium']
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    params:
+        threads = int(config['num_cpu_medium'] // 2)
+    shell:
+        'pigz -p {params.threads} -d -c {input.reads1} {input.reads2} | '
+        'pigz -p {params.threads} --best > {output.fastq}'
+
+
+rule merge_ontec_reads:
+    input:
+        reads = expand(
+            'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.geq0.fa.gz',
+            filename=ONT_ALL_FILES * len(MBG_KMER_SIZE),
+        )
+    output:
+        fastq = 'output/fastq/{}_ONTEC_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.geq0.fastq.gz'.format(SAMPLE)
+    benchmark:
+        'rsrc/output/fastq/{}_ONTEC_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.geq0.mrg.rsrc'.format(SAMPLE)
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads = config['num_cpu_medium']
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    params:
+        threads = int(config['num_cpu_medium'] // 2)
+    shell:
+        'pigz -p {params.threads} -d -c {input.reads} | '
+        'pigz -p {params.threads} --best > {output.fastq}'
+
+
+rule write_reads_fofn:
+    input:
+        short_reads = 'output/fastq/{}_SHORT.fastq.gz'.format(SAMPLE),
+        ontec_reads = expand(
+            'output/fastq/{}_ONTEC_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.geq0.fastq.gz'.format(SAMPLE),
+            zip
+            kmer=MBG_KMER_SIZE,
+            window=MBG_WINDOW_SIZE,
+            minsore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE)
+        ),
+        hifi_reads = HIFI_READS_PATH
+    output:
+        fofn = 'output/fofn/{}_all_reads.fofn'
+    run:
+        import os
+        with open(output.fofn, 'w') as listing:
+            for entry in input:
+                assert os.path.isfile(entry), 'Error record: {} / {}'.format(entry, input)
+                full_path = os.path.abspath(entry)
+                _ = listing.write(full_path + '\n')
+
+
+rule build_colored_dbg:
+    input:
+        fofn = 'output/fofn/{}_all_reads.fofn'
+    output:
+        gfa = 'output/cdbg/{}.gfa'.format(SAMPLE),
+        colors = 'output/cdbg/{}.bfg_colors'.format(SAMPLE)
+    log:
+       'log/output/cdbg/{}.build.log'.format(SAMPLE),
+    benchmark:
+        'rsrc/output/cdbg/{}.build.rsrc'.format(SAMPLE),
+    conda: '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_max']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 65536 + 65536 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt
+    params:
+        kmer_size = 31,
+        out_prefix = lambda wildcards, output: output.gfa.rsplit('.', 1)[0]
+    shell:
+        'Bifrost build --input-ref-file {input.fofn} '
+        '--output-file {params.out_prefix} --threads {threads} --colors --kmer-length {params.kmer_size} '
+        '--verbose &> {log}'
+
+
+PIPELINE_OUTPUT = [
         expand(
             rules.strip_sequences_from_graph.output.gfa,
             zip,
@@ -444,6 +617,28 @@ rule master:
             minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE)
         ),
         expand(
+            rules.align_hifi_input_reads.output.bam,
+            reference=REFERENCE_ASSEMBLIES
+        ),
+        expand(
+            rules.align_ontec_output_reads.output.bam,
+            reference=REFERENCE_ASSEMBLIES,
+            size_fraction[100000, 500000]
+        ),
+        rule.build_colored_dbg.output.gfa
+]
+
+if RUN_SYSTEM == 'hilbert':
+    # not enough memory on VALET system to run
+    # hifiasm assemblies with ONTEC reads
+    PIPELINE_OUTPUT.append(
+        expand(
             rules.hifiasm_hifi_ontec_assembly.output.raw_unitigs,
             size_fraction=[0, 100000]
         )
+    )
+
+
+rule master:
+    input:
+        PIPELINE_OUTPUT

@@ -24,6 +24,22 @@ hifi_reads_path:
     valet: /beeond/projects/lansdorp/run_folder/input/fastq/NA24385_hpg_pbsq2-ccs_1000.fastq.gz
     hilbert: not_set
 
+short_reads_path:
+  HG00733:
+    valet: not_set
+    hilbert: not_set
+  HG002:
+    valet: /beeond/data/short_reads/NA24385_giab_il25k-150pe_short
+    hilbert: not_set
+
+reference_folder:
+  valet: /beeond/data/references
+  hilbert: not_set
+
+reference_assemblies:
+  - T2Tv1_38p13Y_chm13
+
+
 ont_split_files:
   - HG00733_ont-ul_SRR13356541_1
   - HG00733_ont-ul_SRR13362355_2
