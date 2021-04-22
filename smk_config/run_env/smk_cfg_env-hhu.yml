@@ -2,6 +2,8 @@
 notify: False
 notify_email: ebertp@hhu.de
 
+show_debug_messages: True
+
 env_module_singularity: Singularity
 
 num_cpu_max: 72

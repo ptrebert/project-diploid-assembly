@@ -3,6 +3,7 @@ notify: False
 notify_email: pebert@mpi-inf.mpg.de
 
 force_local_copy: True
+show_debug_messages: True
 
 env_module_singularity: False
 

@@ -250,31 +250,58 @@ checkpoint run_saarclust_assembly_clustering:
 def collect_clustered_fasta_sequences(wildcards, glob_collect=False):
     """
     """
+    import sys
+    debug = bool(config.get('show_debug_messages', False))
+    func_name = '\nchk::agg::collect_clustered_fasta_sequences: {}\n'
+
+    if debug:
+        sys.stderr.write(func_name.format('wildcards ' + str(wildcards)))
+
     source_path = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly/{sequence}.fasta'
 
     if glob_collect:
+        if debug:
+            sys.stderr.write(func_name.format('called w/ glob collect'))
         import glob
         pattern = source_path.replace('{sequence}', '*')
         pattern = pattern.format(**dict(wildcards))
         fasta_files = glob.glob(pattern)
 
         if not fasta_files:
+            if debug:
+                sys.stderr.write(func_name.format('glob collect failed'))
             raise RuntimeError('collect_clustered_fasta_sequences: no files collected with pattern {}'.format(pattern))
 
     else:
+        if debug:
+            sys.stderr.write(func_name.format('called w/ chk::get'))
+        from snakemake.exceptions import IncompleteCheckpointException as ICE
+
         strandseq_reads = wildcards.sseq_reads
         nhr_assembly = wildcards.reference
 
-        # this output folder is the /clustered_assembly subfolder
-        seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=nhr_assembly, sseq_reads=strandseq_reads).output.dir_fasta
-        checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.fasta'))
+        try:
+            # this output folder is the /clustered_assembly subfolder
+            seq_output_dir = checkpoints.run_saarclust_assembly_clustering.get(reference=nhr_assembly, sseq_reads=strandseq_reads).output.dir_fasta
+            checkpoint_wildcards = glob_wildcards(os.path.join(seq_output_dir, '{sequence}.fasta'))
 
-        fasta_files = expand(
-            source_path,
-            reference=nhr_assembly,
-            sseq_reads=strandseq_reads,
-            sequence=checkpoint_wildcards.sequence
-        )
+            fasta_files = expand(
+                source_path,
+                reference=nhr_assembly,
+                sseq_reads=strandseq_reads,
+                sequence=checkpoint_wildcards.sequence
+            )
+        except ICE as ice:
+            if debug:
+                sys.stderr.write(func_name.format('chk::get raised SMK::ICE'))
+            try:
+                fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True)
+            except RuntimeError:
+                if debug:
+                    sys.stderr.write(func_name.format('glob collect failed - re-raising SMK::ICE'))
+                raise ice
+            if debug:
+                sys.stderr.write('glob collect success - SMK::ICE raised in error')
 
     return fasta_files
 
