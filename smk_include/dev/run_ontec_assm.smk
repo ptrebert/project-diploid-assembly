@@ -459,11 +459,11 @@ rule align_hifi_input_reads:
         fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
         rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k15.rep-grt09998.txt')
     output:
-        bam = 'output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.bam'.format(sample)
+        bam = 'output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.bam'.format(SAMPLE)
     benchmark:
-        'rsrc/output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.wmap.rsrc'.format(sample)
+        'rsrc/output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.wmap.rsrc'.format(SAMPLE)
     log:
-        'log/output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.wmap.log'.format(sample)
+        'log/output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.wmap.log'.format(SAMPLE)
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -492,11 +492,11 @@ rule align_ontec_output_reads:
         fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
         rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k15.rep-grt09998.txt')
     output:
-        bam = 'output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.bam'.format(sample)
+        bam = 'output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.bam'.format(SAMPLE)
     benchmark:
-        'rsrc/output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.wmap.rsrc'.format(sample)
+        'rsrc/output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.wmap.rsrc'.format(SAMPLE)
     log:
-        'log/output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.wmap.log'.format(sample)
+        'log/output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.wmap.log'.format(SAMPLE)
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -556,17 +556,17 @@ rule merge_ontec_reads:
 
 rule write_reads_fofn:
     input:
-        short_reads = 'output/fastq/{}_SHORT.fastq.gz'.format(SAMPLE),
+        short_reads = 'output/fastq/{sample}_SHORT.fastq.gz',
         ontec_reads = expand(
-            'output/fastq/{}_ONTEC_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.geq0.fastq.gz'.format(SAMPLE),
-            zip
+            'output/fastq/{{sample}}_ONTEC_mbg-k{kmer}-w{window}.ms{minscore}.geq0.fastq.gz',
+            zip,
             kmer=MBG_KMER_SIZE,
             window=MBG_WINDOW_SIZE,
-            minsore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE)
+            minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE)
         ),
         hifi_reads = HIFI_READS_PATH
     output:
-        fofn = 'output/fofn/{}_all_reads.fofn'
+        fofn = 'output/fofn/{sample}_all_reads.fofn'
     run:
         import os
         with open(output.fofn, 'w') as listing:
@@ -578,14 +578,14 @@ rule write_reads_fofn:
 
 rule build_colored_dbg:
     input:
-        fofn = 'output/fofn/{}_all_reads.fofn'
+        fofn = 'output/fofn/{sample}_all_reads.fofn'
     output:
-        gfa = 'output/cdbg/{}.gfa'.format(SAMPLE),
-        colors = 'output/cdbg/{}.bfg_colors'.format(SAMPLE)
+        gfa = 'output/cdbg/{sample}.gfa',
+        colors = 'output/cdbg/{sample}.bfg_colors'
     log:
-       'log/output/cdbg/{}.build.log'.format(SAMPLE),
+       'log/output/cdbg/{sample}.build.log',
     benchmark:
-        'rsrc/output/cdbg/{}.build.rsrc'.format(SAMPLE),
+        'rsrc/output/cdbg/{sample}.build.rsrc',
     conda: '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
     resources:
@@ -623,9 +623,9 @@ PIPELINE_OUTPUT = [
         expand(
             rules.align_ontec_output_reads.output.bam,
             reference=REFERENCE_ASSEMBLIES,
-            size_fraction[100000, 500000]
+            size_fraction=[100000, 500000]
         ),
-        rule.build_colored_dbg.output.gfa
+        expand(rules.build_colored_dbg.output.gfa, sample=SAMPLE)
 ]
 
 if RUN_SYSTEM == 'hilbert':
