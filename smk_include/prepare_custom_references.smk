@@ -208,7 +208,7 @@ rule write_saarclust_config_file:
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True)
+            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True, caller='write_saarclust_config_file')
 
         outfolder = os.path.dirname(bam_files[0])
 
@@ -247,12 +247,12 @@ checkpoint run_saarclust_assembly_clustering:
         '{params.script_exec} {input.cfg} {params.in_folder} {params.out_folder} {params.version} &> {log} '
 
 
-def collect_clustered_fasta_sequences(wildcards, glob_collect=False):
+def collect_clustered_fasta_sequences(wildcards, glob_collect=False, caller='snakemake'):
     """
     """
     import sys
     debug = bool(config.get('show_debug_messages', False))
-    func_name = '\nchk::agg::collect_clustered_fasta_sequences: {}\n'
+    func_name = '\nCALL::{}\nchk::agg::collect_clustered_fasta_sequences: {{}}\n'.format(caller)
 
     if debug:
         sys.stderr.write(func_name.format('wildcards ' + str(wildcards)))
@@ -295,15 +295,19 @@ def collect_clustered_fasta_sequences(wildcards, glob_collect=False):
             if debug:
                 sys.stderr.write(func_name.format('chk::get raised SMK::ICE'))
             try:
-                fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True)
+                fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True, caller='debug-internal')
             except RuntimeError:
                 if debug:
                     sys.stderr.write(func_name.format('glob collect failed - re-raising SMK::ICE'))
                 raise ice
+            else:
+                if debug:
+                    sys.stderr.write('glob collect success - SMK::ICE raised in error')
+        else:
             if debug:
-                sys.stderr.write('glob collect success - SMK::ICE raised in error')
+                sys.stderr.write('chk::get did not raise ICE - checkpoint passed')
 
-    return fasta_files
+    return sorted(fasta_files)
 
 
 rule write_reference_fasta_clusters_fofn:
@@ -321,7 +325,7 @@ rule write_reference_fasta_clusters_fofn:
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True)
+            fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True, caller='write_reference_fasta_clusters_fofn')
 
         with open(output.fofn, 'w') as dump:
             for file_path in sorted(fasta_files):

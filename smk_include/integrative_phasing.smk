@@ -41,7 +41,7 @@ rule write_breakpointr_config_file:
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True)
+            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True, caller='write_breakpointr_config_file')
 
         outfolder = os.path.dirname(bam_files[0])
 
@@ -130,7 +130,7 @@ rule write_strandphaser_config_file:
         except (RuntimeError, ValueError) as error:
             import sys
             sys.stderr.write('\n{}\n'.format(str(error)))
-            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True)
+            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True, caller='write_strandphaser_config_file')
 
         outfolder = os.path.dirname(bam_files[0])
 

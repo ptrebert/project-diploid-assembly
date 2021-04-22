@@ -278,15 +278,33 @@ rule singularity_pull_container:
             '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
 
 
-def collect_strandseq_alignments(wildcards, glob_collect=False):
+def collect_strandseq_alignments(wildcards, glob_collect=False, caller='snakemake'):
     """
     """
-    source_path = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup.sam.bam{ext}'
+    import os
+    import sys
+
+    debug = bool(config.get('show_debug_messages', False))
+    func_name = '\nCALL::{}\nchk::agg::collect_strandseq_alignments: {{}}\n'.format(caller)
+
+    if debug:
+        sys.stderr.write(func_name.format('wildcards ' + str(wildcards)))
+
+    source_path = os.path.join(
+        'output',
+        'alignments',
+        'strandseq_to_reference',
+        '{reference}',
+        '{sseq_reads}',
+        '{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.psort.mdup.sam.bam{ext}'
+    )
 
     individual, project, platform_spec = wildcards.sseq_reads.split('_')[:3]
     platform, spec = platform_spec.split('-')
 
     if glob_collect:
+        if debug:
+            sys.stderr.write(func_name.format('called w/ glob collect'))
         import glob
         source_path = source_path.replace('{ext}', '*')
         source_path = source_path.replace('{lib_id}', '*')
@@ -298,32 +316,55 @@ def collect_strandseq_alignments(wildcards, glob_collect=False):
                                         'spec': spec})
         bam_files = glob.glob(pattern)
         if not bam_files:
+            if debug:
+                sys.stderr.write(func_name.format('glob collect failed'))
             raise RuntimeError('collect_strandseq_alignments: no files collected with pattern {}'.format(pattern))
 
     else:
-        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
+        if debug:
+            sys.stderr.write(func_name.format('called w/ chk::get'))
+        from snakemake.exceptions import IncompleteCheckpointException as ICE
 
-        # this is a bit tricky given that there are different varieties of Strand-seq libraries
-        glob_pattern = '_'.join([individual, project, platform + '-{spec,[0-9a-z]+}', '{lib_id}'])
+        try:
+            requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
 
-        if wildcards.sseq_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
-            glob_pattern += '_{run_id,[a-zA-Z0-9]+}_1.request'
+            # this is a bit tricky given that there are different varieties of Strand-seq libraries
+            glob_pattern = '_'.join([individual, project, platform + '-{spec,[0-9a-z]+}', '{lib_id}'])
+
+            if wildcards.sseq_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
+                glob_pattern += '_{run_id,[a-zA-Z0-9]+}_1.request'
+            else:
+                glob_pattern += '_1.request'
+            search_path = os.path.join(requests_dir, glob_pattern)
+
+            checkpoint_wildcards = glob_wildcards(search_path)
+
+            bam_files = expand(
+                source_path,
+                reference=wildcards.reference,
+                individual=individual,
+                sseq_reads=wildcards.sseq_reads,
+                project=project,
+                platform=platform,
+                spec=spec,
+                lib_id=checkpoint_wildcards.lib_id,
+                ext=['', '.bai'])
+
+        except ICE as ice:
+            if debug:
+                sys.stderr.write(func_name.format('chk::get raised SMK::ICE'))
+            try:
+                bam_files = collect_strandseq_alignments(wildcards, glob_collect=True, caller='debug-internal')
+            except RuntimeError:
+                if debug:
+                    sys.stderr.write(func_name.format('glob collect failed - re-raising SMK::ICE'))
+                raise ice
+            else:
+                if debug:
+                    sys.stderr.write('glob collect success - SMK::ICE raised in error')
         else:
-            glob_pattern += '_1.request'
-        search_path = os.path.join(requests_dir, glob_pattern)
-
-        checkpoint_wildcards = glob_wildcards(search_path)
-
-        bam_files = expand(
-            source_path,
-            reference=wildcards.reference,
-            individual=individual,
-            sseq_reads=wildcards.sseq_reads,
-            project=project,
-            platform=platform,
-            spec=spec,
-            lib_id=checkpoint_wildcards.lib_id,
-            ext=['', '.bai'])
+            if debug:
+                sys.stderr.write('chk::get did not raise ICE - checkpoint passed')
 
     return sorted(bam_files)
 
