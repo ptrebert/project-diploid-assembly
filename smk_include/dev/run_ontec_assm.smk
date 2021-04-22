@@ -466,7 +466,7 @@ rule align_hifi_input_reads:
         'log/output/read_align/{}_HiFi_input_MAP-TO_{{reference}}.k15.wmap.log'.format(sample)
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads = config['num_cpu_high']
+    threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
@@ -499,7 +499,7 @@ rule align_ontec_output_reads:
         'log/output/read_align/{}_ONTEC_geq{{size_fraction}}_MAP-TO_{{reference}}.k15.wmap.log'.format(sample)
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads = config['num_cpu_high']
+    threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
@@ -522,7 +522,7 @@ rule merge_short_reads:
         'rsrc/output/fastq/{}_SHORT.mrg.rsrc'.format(SAMPLE)
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads = config['num_cpu_medium']
+    threads: config['num_cpu_medium']
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 * attempt
     params:
@@ -544,7 +544,7 @@ rule merge_ontec_reads:
         'rsrc/output/fastq/{}_ONTEC_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.geq0.mrg.rsrc'.format(SAMPLE)
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads = config['num_cpu_medium']
+    threads: config['num_cpu_medium']
     resources:
         runtime_hrs = lambda wildcards, attempt: 6 * attempt
     params:
