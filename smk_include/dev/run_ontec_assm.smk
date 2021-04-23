@@ -544,7 +544,7 @@ rule compute_coverage_per_bp:
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
     params:
-        compress_threds = int(config['num_cpu_low'] - 1)
+        compress_threads = int(config['num_cpu_low'] - 1)
     shell:
         'bedtools genomecov -dz -ibam {input.read_ref_aln} | pigz -p {params.compress_threads} > {output}'
 
@@ -554,7 +554,9 @@ rule cache_positional_coverages:
         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta.fai'),
         coverage = 'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cov.bg.gz',
     output:
-        'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.chk'
+        cache_ok = 'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.chk'
+    benchmark:
+        'rsrc/output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.rsrc'
     resources:
          mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt
     run:
@@ -573,13 +575,13 @@ rule cache_positional_coverages:
                 chrom, position, cov = line.split()
                 if chrom != current_chrom:
                     if current_chrom is not None:
-                        chrom_cache = output[0].replace('.chk', '.{}.npy'.format(current_chrom))
+                        chrom_cache = output.cache_ok.rsplit('.', 1)[0] + '.{}.npy'.format(current_chrom)
                         np.save(chrom_cache, chrom_coverage, allow_pickle=False)
                     current_chrom = chrom
                     chrom_coverage = np.zeros(chrom_sizes[chrom], dtype=np.int16)
                 chrom_coverage[int(position)] = int(cov)
         
-        with open(output[0], 'w') as checkfile:
+        with open(output.cache_ok, 'w') as checkfile:
             pass
 
 
@@ -589,6 +591,8 @@ rule compute_binned_coverage:
         cache_ok = 'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.chk'
     output:
         'output/binned_coverage/{reads}_MAP-TO_{reference}.{kmer}.{binsize}.{chrom}.tsv'
+    benchmark:
+        'rsrc/output/binned_coverage/{reads}_MAP-TO_{reference}.{kmer}.{binsize}.{chrom}.poscov.rsrc'
     resources:
          mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt
     run:
@@ -602,7 +606,7 @@ rule compute_binned_coverage:
                 if chrom == wildcards.chrom:
                     chrom_size = int(size)
                     break
-        cache_file = input.cache_ok.replace('.chk', '.{}.npy'.format(wildcards.chrom))
+        cache_file = input.cache_ok.rsplit('.', 1)[0] + '.{}.npy'.format(wildcards.chrom)
         try:
             chrom_cov = np.load(cache_file)
         except IOError:
