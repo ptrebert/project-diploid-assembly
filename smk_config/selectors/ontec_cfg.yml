@@ -27,14 +27,14 @@ hifi_reads_path:
 short_reads_path:
   HG00733:
     valet: not_set
-    hilbert: not_set
+    hilbert: /gpfs/project/projects/medbioinf/data/short_reads/HG00733_1kg_ilnvs-150pe_short
   HG002:
     valet: /beeond/data/short_reads/NA24385_giab_il25k-150pe_short
     hilbert: not_set
 
 reference_folder:
   valet: /beeond/data/references
-  hilbert: not_set
+  hilbert: /gpfs/project/projects/medbioinf/data/references
 
 reference_assemblies:
   - T2Tv1_38p13Y_chm13
