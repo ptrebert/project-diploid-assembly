@@ -468,15 +468,15 @@ rule align_hifi_input_reads:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 57344 + 57344 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
     params:
         sample = SAMPLE,
-        sort_threads = 6,
-        align_threads = int(config['num_cpu_high'] - 6)
+        sort_threads = 4,
+        align_threads = int(config['num_cpu_high'] - 4)
     shell:
         'winnowmap -W {input.rep_kmer} -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.fasta} {input.reads} | '
-        'samtools sort -m 16384M --threads {params.sort_threads} | samtools view -F 4 -b > {output}'
+        'samtools sort -m 4096M --threads {params.sort_threads} | samtools view -F 4 -b > {output}'
 
 
 rule align_ontec_output_reads:
@@ -501,15 +501,173 @@ rule align_ontec_output_reads:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 57344 + 57344 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
     params:
         sample = SAMPLE,
-        sort_threads = 6,
-        align_threads = int(config['num_cpu_high'] - 6)
+        sort_threads = 4,
+        align_threads = int(config['num_cpu_high'] - 4)
     shell:
         'winnowmap -W {input.rep_kmer} -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.fasta} {input.reads} | '
-        'samtools sort -m 16384M --threads {params.sort_threads} | samtools view -F 4 -b > {output}'
+        'samtools sort -m 4096M --threads {params.sort_threads} | samtools view -F 4 -b > {output}'
+
+
+rule compute_bam_index:
+    input:
+        '{filepath}/{filename}.bam'
+    output:
+        '{filepath}/{filename}.bam.bai'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        'samtools index -@ {threads} {input}'
+
+
+rule compute_coverage_per_bp:
+    """
+    Print positions of non-zero coverage in zero-based coordinates
+    """
+    input:
+        read_ref_aln = 'output/read_align/{read_ref_align}.bam',
+        aln_idx = 'output/read_align/{read_ref_align}.bam.bai',
+    output:
+        'output/read_align_cov/{read_ref_align}.cov.bg.gz',
+    benchmark:
+        'rsrc/output/read_align_cov/{read_ref_align}.cov.rsrc',
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
+    params:
+        compress_threds = int(config['num_cpu_low'] - 1)
+    shell:
+        'bedtools genomecov -dz -ibam {input.read_ref_aln} | pigz -p {params.compress_threads} > {output}'
+
+
+rule cache_positional_coverages:
+    input:
+        reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta.fai'),
+        coverage = 'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cov.bg.gz',
+    output:
+        'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.chk'
+    resources:
+         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt
+    run:
+        import numpy as np
+        import gzip as gzip
+        chrom_sizes = dict()
+        with open(input.reference, 'r') as index:
+            for line in index:
+                chrom, size = line.split()[:2]
+                chrom_sizes[chrom.strip()] = int(size)
+        
+        current_chrom = None
+        chrom_coverage = None
+        with gzip.open(input.coverage, 'rt') as track:
+            for line in track:
+                chrom, position, cov = line.split()
+                if chrom != current_chrom:
+                    if current_chrom is not None:
+                        chrom_cache = output[0].replace('.chk', '.{}.npy'.format(current_chrom))
+                        np.save(chrom_cache, chrom_coverage, allow_pickle=False)
+                    current_chrom = chrom
+                    chrom_coverage = np.zeros(chrom_sizes[chrom], dtype=np.int16)
+                chrom_coverage[int(position)] = int(cov)
+        
+        with open(output[0], 'w') as checkfile:
+            pass
+
+
+rule compute_binned_coverage:
+    input:
+        reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta.fai'),
+        cache_ok = 'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.chk'
+    output:
+        'output/binned_coverage/{reads}_MAP-TO_{reference}.{kmer}.{binsize}.{chrom}.tsv'
+    resources:
+         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt
+    run:
+        import numpy as np
+        import io as io
+        chrom_size = 0
+        binsize = int(wildcards.binsize)
+        with open(input.reference, 'r') as index:
+            for line in index:
+                chrom, size = line.split()[:2]
+                if chrom == wildcards.chrom:
+                    chrom_size = int(size)
+                    break
+        cache_file = input.cache_ok.replace('.chk', '.{}.npy'.format(wildcards.chrom))
+        try:
+            chrom_cov = np.load(cache_file)
+        except IOError:
+            chrom_cov = np.zeros(chrom_size, dtype=np.int16)
+        
+        tail_cut = chrom_size // binsize * binsize
+
+        chrom_tail = chrom_cov[tail_cut:]
+        chrom_tail.sort()
+
+        chrom_cov = np.reshape(chrom_cov[:tail_cut], (-1, binsize))
+        chrom_cov.sort(axis=1)
+
+        cov_bp = (chrom_cov > 0).sum(axis=1)
+        summed_cov = chrom_cov.sum(axis=1)
+        mean_cov = chrom_cov.mean(axis=1).round(2)
+        median_cov = chrom_cov[:, binsize // 2]
+        mean_nzcov = (summed_cov / cov_bp).round(2)
+
+        out_buffer = io.String()
+        _ = out_buffer.write(
+            '\t'.join([
+                '#chrom',
+                'start',
+                'end',
+                'mean_cov',
+                'median_cov',
+                'mean_nzcov',
+                'cov_bp',
+                'summed_cov'
+            ]) + '\n'
+        )
+        chrom = wildcards.chrom
+        row_template = '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
+        for idx, start in enumerate(range(0, tail_cut, binsize)):
+            end = start + binsize
+            _ = out_buffer.write(
+                row_template.format(
+                    chrom,
+                    start,
+                    end,
+                    mean_cov[i],
+                    median_cov[i],
+                    mean_nzcov[i],
+                    cov_bp[i],
+                    summed_cov[i]
+                )
+            )
+            
+        _ = out_buffer.write(
+                row_template.format(
+                    chrom,
+                    tail_cut,
+                    tail_cut + chrom_tail.size,
+                    chrom_tail.mean().round(2),
+                    chrom_tail[chrom_tail.size // 2],
+                    (chrom_tail.sum() / (chrom_tail > 0).sum()).round(2),
+                    (chrom_tail > 0).sum(),
+                    chrom_tail.sum()
+                )
+            )
+
+        with open(output[0], 'w') as table:
+            _ = table.write(out_buffer.getvalue())
+    # END OF RUN BLOCK
 
 
 rule merge_short_reads:
