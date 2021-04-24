@@ -627,7 +627,7 @@ rule compute_binned_coverage:
         mean_cov = chrom_cov.mean(axis=1).round(2)
         median_cov = chrom_cov[:, binsize // 2]
         mean_nzcov = (summed_cov / cov_bp).round(2)
-        numpy.nan_to_num(mean_nzcov, copy=False, nan=0.0, posinf=1000000000, neginf=-1)
+        np.nan_to_num(mean_nzcov, copy=False, nan=0.0, posinf=1000000000, neginf=-1)
 
         out_buffer = io.StringIO()
         _ = out_buffer.write(
@@ -644,7 +644,7 @@ rule compute_binned_coverage:
             ]) + '\n'
         )
         chrom = wildcards.chrom
-        row_template = '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
+        row_template = '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
         for i, start in enumerate(range(0, tail_cut, binsize)):
             end = start + binsize
             _ = out_buffer.write(
