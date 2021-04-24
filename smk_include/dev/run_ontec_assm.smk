@@ -543,6 +543,7 @@ rule compute_coverage_per_bp:
     threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         compress_threads = int(config['num_cpu_low'] - 1)
     shell:
@@ -558,7 +559,7 @@ rule cache_positional_coverages:
     benchmark:
         'rsrc/output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.rsrc'
     resources:
-         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt
+         mem_total_mb = lambda wildcards, attempt: 1024 * attempt
     run:
         import numpy as np
         import gzip as gzip
@@ -626,7 +627,7 @@ rule compute_binned_coverage:
         median_cov = chrom_cov[:, binsize // 2]
         mean_nzcov = (summed_cov / cov_bp).round(2)
 
-        out_buffer = io.String()
+        out_buffer = io.StringIO()
         _ = out_buffer.write(
             '\t'.join([
                 '#chrom',
@@ -738,6 +739,11 @@ rule write_reads_fofn:
                 _ = listing.write(full_path + '\n')
 
 
+if RUN_SYSTEM == 'valet':
+    bifrost_cpu = config['num_cpu_max']
+else:
+    bifrost_cpu = config['num_cpu_high']
+
 rule build_colored_dbg:
     input:
         fofn = 'output/fofn/{sample}_all_reads.fofn'
@@ -749,10 +755,10 @@ rule build_colored_dbg:
     benchmark:
         'rsrc/output/cdbg/{sample}.build.rsrc',
     conda: '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_max']
+    threads: bifrost_cpu
     resources:
         mem_total_mb = lambda wildcards, attempt: 65536 + 65536 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 16 * attempt
+        runtime_hrs = lambda wildcards, attempt: 32 * attempt
     params:
         kmer_size = 31,
         out_prefix = lambda wildcards, output: output.gfa.rsplit('.', 1)[0]
