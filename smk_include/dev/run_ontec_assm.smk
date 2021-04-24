@@ -595,7 +595,7 @@ rule compute_binned_coverage:
     benchmark:
         'rsrc/output/binned_coverage/{reads}_MAP-TO_{reference}.{kmer}.{binsize}.{chrom}.poscov.rsrc'
     resources:
-         mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt
+         mem_total_mb = lambda wildcards, attempt: 1024 * attempt
     run:
         import numpy as np
         import io as io
@@ -622,10 +622,12 @@ rule compute_binned_coverage:
         chrom_cov.sort(axis=1)
 
         cov_bp = (chrom_cov > 0).sum(axis=1)
+        cov_pct = (cov_bp / binsize * 100).round(2)
         summed_cov = chrom_cov.sum(axis=1)
         mean_cov = chrom_cov.mean(axis=1).round(2)
         median_cov = chrom_cov[:, binsize // 2]
         mean_nzcov = (summed_cov / cov_bp).round(2)
+        numpy.nan_to_num(mean_nzcov, copy=False, nan=0.0, posinf=1000000000, neginf=-1)
 
         out_buffer = io.StringIO()
         _ = out_buffer.write(
@@ -637,12 +639,13 @@ rule compute_binned_coverage:
                 'median_cov',
                 'mean_nzcov',
                 'cov_bp',
+                'cov_bp_pct',
                 'summed_cov'
             ]) + '\n'
         )
         chrom = wildcards.chrom
         row_template = '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
-        for idx, start in enumerate(range(0, tail_cut, binsize)):
+        for i, start in enumerate(range(0, tail_cut, binsize)):
             end = start + binsize
             _ = out_buffer.write(
                 row_template.format(
@@ -653,10 +656,15 @@ rule compute_binned_coverage:
                     median_cov[i],
                     mean_nzcov[i],
                     cov_bp[i],
+                    cov_pct[i],
                     summed_cov[i]
                 )
             )
-            
+        
+        tail_mean_nzcov = (chrom_tail.sum() / (chrom_tail > 0).sum()).round(2)
+        if np.isnan(tail_mean_nzcov):
+            tail_mean_nzcov = 0.
+
         _ = out_buffer.write(
                 row_template.format(
                     chrom,
@@ -664,8 +672,9 @@ rule compute_binned_coverage:
                     tail_cut + chrom_tail.size,
                     chrom_tail.mean().round(2),
                     chrom_tail[chrom_tail.size // 2],
-                    (chrom_tail.sum() / (chrom_tail > 0).sum()).round(2),
+                    tail_mean_nzcov,
                     (chrom_tail > 0).sum(),
+                    ((chrom_tail > 0).sum() / chrom_tail.size * 100).round(2),
                     chrom_tail.sum()
                 )
             )
