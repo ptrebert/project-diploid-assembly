@@ -102,11 +102,39 @@ rule dump_tig_alignments_to_bed:
         'bedtools bamtobed -splitD -i {input.bam} | pigz -p {params.compress_threads} > {output.bed}'
 
 
+rule tig_alignments_on_sex_chromosomes:
+    input:
+        bed_aln = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.bed.gz',
+        bed_regions = os.path.join(REFERENCES_FOLDER, 'T2Tv1_38p13Y_chm13.chrXY.bed')
+    output:
+        'output/tig_intersect/tig_to_sex/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.chrXY.tsv'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bedtools intersect -wo -a {input.bed_aln} -b {input.bed_regions} > {output}'
+
+
+rule subset_assembly_graph:
+    input:
+        table = 'output/tig_intersect/tig_to_sex/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.chrXY.tsv',
+        graph = os.path.join(ASSEMBLY_GRAPHS_FOLDER, '{assembly_graph}.{tigs}.gfa')
+    output:
+        graph = 'output/subset_graphs/sex/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.chrXY.gfa',
+        table = 'output/subset_graphs/sex/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.chrXY.csv',
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_subset.py')
+    shell:
+        '{params.script_exec} --debug --input-gfa {input.graph} --input-table {input.table} '
+        '--output-graph {output.graph} --output-table {output.table}'
+
+
 OUTPUT_FILES = [
-    'output/alignments/tig_to_ref/HG00512_hgsvc_pbsq2-ccs_1000.r_utg_MAP-TO_T2Tv1_38p13Y_chm13.k15.bed.gz',
-    'output/alignments/tig_to_ref/HG00731_hgsvc_pbsq2-ccs_1000.r_utg_MAP-TO_T2Tv1_38p13Y_chm13.k15.bed.gz',
-    'output/alignments/tig_to_ref/NA19239_hgsvc_pbsq2-ccs_1000.r_utg_MAP-TO_T2Tv1_38p13Y_chm13.k15.bed.gz',
-    'output/alignments/tig_to_ref/NA24385_hpg_pbsq2-ccs_1000.r_utg_MAP-TO_T2Tv1_38p13Y_chm13.k15.bed.gz',
+    'output/subset_graphs/sex/HG00512_hgsvc_pbsq2-ccs_1000.r_utg_MAP-TO_T2Tv1_38p13Y_chm13.k15.chrXY.gfa',
+    'output/subset_graphs/sex/HG00731_hgsvc_pbsq2-ccs_1000.r_utg_MAP-TO_T2Tv1_38p13Y_chm13.k15.chrXY.gfa',
+    'output/subset_graphs/sex/NA19239_hgsvc_pbsq2-ccs_1000.r_utg_MAP-TO_T2Tv1_38p13Y_chm13.k15.chrXY.gfa',
+    'output/subset_graphs/sex/NA24385_hpg_pbsq2-ccs_1000.r_utg_MAP-TO_T2Tv1_38p13Y_chm13.k15.chrXY.gfa',
 ]
 
 rule master:

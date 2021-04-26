@@ -25,6 +25,7 @@ dependencies:
   - xopen=1.1.0  # always jointly go for xopen, dnaio, pigz and python-isal
   - pigz=2.6     # (should be automatic via dependencies) 
   - python-isal=0.9.0  # most efficient way to handle gzipped files (plus fasta/fastq via dnaio)
+  - networkx=2.5.1
   - biopython=1.76
   - pandas=1.0.5
   - pytables=3.6.1
