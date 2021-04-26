@@ -252,6 +252,7 @@ def collect_clustered_fasta_sequences(wildcards, glob_collect=False, caller='sna
     """
     import sys
     debug = bool(config.get('show_debug_messages', False))
+    warn = bool(config.get('show_warnings', False))
     func_name = '\nCALL::{}\nchk::agg::collect_clustered_fasta_sequences: {{}}\n'.format(caller)
 
     if debug:
@@ -301,11 +302,11 @@ def collect_clustered_fasta_sequences(wildcards, glob_collect=False, caller='sna
                     sys.stderr.write(func_name.format('glob collect failed - re-raising SMK::ICE'))
                 raise ice
             else:
-                if debug:
-                    sys.stderr.write('glob collect success - SMK::ICE raised in error')
+                if debug or warn:
+                    sys.stderr.write(func_name.format('Snakemake error: glob collect success, but SMK::ICE raised (#216)'))
         else:
             if debug:
-                sys.stderr.write('chk::get did not raise ICE - checkpoint passed')
+                sys.stderr.write(func_name.format('chk::get did not raise ICE - checkpoint passed'))
 
     return sorted(fasta_files)
 

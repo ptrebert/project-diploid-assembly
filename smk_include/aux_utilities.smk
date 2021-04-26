@@ -285,6 +285,7 @@ def collect_strandseq_alignments(wildcards, glob_collect=False, caller='snakemak
     import sys
 
     debug = bool(config.get('show_debug_messages', False))
+    warn = bool(config.get('show_warnings', False))
     func_name = '\nCALL::{}\nchk::agg::collect_strandseq_alignments: {{}}\n'.format(caller)
 
     if debug:
@@ -360,11 +361,11 @@ def collect_strandseq_alignments(wildcards, glob_collect=False, caller='snakemak
                     sys.stderr.write(func_name.format('glob collect failed - re-raising SMK::ICE'))
                 raise ice
             else:
-                if debug:
-                    sys.stderr.write('glob collect success - SMK::ICE raised in error')
+                if debug or warn:
+                    sys.stderr.write(func_name.format('Snakemake error: glob collect success, but SMK::ICE raised (#216)'))
         else:
             if debug:
-                sys.stderr.write('chk::get did not raise ICE - checkpoint passed')
+                sys.stderr.write(func_name.format('chk::get did not raise ICE - checkpoint passed'))
 
     return sorted(bam_files)
 
