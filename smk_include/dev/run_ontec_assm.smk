@@ -827,7 +827,7 @@ if RUN_SYSTEM == 'valet':
     bifrost_runtime = 167
 else:
     bifrost_cpu = config['num_cpu_high']
-    bifrost_runtime = 71
+    bifrost_runtime = 167
 
 rule build_colored_dbg:
     input:
@@ -890,7 +890,6 @@ PIPELINE_OUTPUT = [
             kmer=[15],
             binsize=[100000]
         )
-    )
 ]
 
 if RUN_SYSTEM == 'hilbert':
