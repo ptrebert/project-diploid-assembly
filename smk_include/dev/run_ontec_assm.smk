@@ -799,7 +799,7 @@ rule hifiasm_ontec_only_assembly:
         singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
         '{params.singularity} singularity exec {input.container} '
-        'hifiasm -o {params.prefix} -t {threads} {input.hifi_reads} {input.ontec_reads} &> {log.hifiasm}'
+        'hifiasm -o {params.prefix} -t {threads} {input.ontec_reads} &> {log.hifiasm}'
 
 
 rule write_reads_fofn:
