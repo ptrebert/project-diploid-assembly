@@ -555,11 +555,11 @@ rule compute_coverage_per_bp:
 rule cache_positional_coverages:
     input:
         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta.fai'),
-        coverage = 'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cov.bg.gz',
+        coverage = 'output/read_align_cov/{reads}_MAP-TO_{reference}.k{kmer}.cov.bg.gz',
     output:
-        cache_ok = 'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.chk'
+        cache_ok = 'output/read_align_cov/{reads}_MAP-TO_{reference}.k{kmer}.cache.chk'
     benchmark:
-        'rsrc/output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.rsrc'
+        'rsrc/output/read_align_cov/{reads}_MAP-TO_{reference}.k{kmer}.cache.rsrc'
     resources:
          mem_total_mb = lambda wildcards, attempt: 1024 * attempt
     run:
@@ -591,11 +591,11 @@ rule cache_positional_coverages:
 rule compute_binned_coverage:
     input:
         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta.fai'),
-        cache_ok = 'output/read_align_cov/{reads}_MAP-TO_{reference}.{kmer}.cache.chk'
+        cache_ok = 'output/read_align_cov/{reads}_MAP-TO_{reference}.k{kmer}.cache.chk'
     output:
-        'output/binned_coverage/{reads}_MAP-TO_{reference}.{kmer}.{binsize}.{chrom}.tsv'
+        'output/binned_coverage/{reads}_MAP-TO_{reference}.k{kmer}.{binsize}.{chrom}.tsv'
     benchmark:
-        'rsrc/output/binned_coverage/{reads}_MAP-TO_{reference}.{kmer}.{binsize}.{chrom}.poscov.rsrc'
+        'rsrc/output/binned_coverage/{reads}_MAP-TO_{reference}.k{kmer}.{binsize}.{chrom}.poscov.rsrc'
     resources:
          mem_total_mb = lambda wildcards, attempt: 1024 * attempt
     run:
@@ -688,10 +688,10 @@ rule compute_binned_coverage:
 
 rule merge_binned_coverage:
     input:
-        tables = expand('output/binned_coverage/{{reads}}_MAP-TO_{{reference}}.{{kmer}}.{{binsize}}.{chrom}.tsv',
+        tables = expand('output/binned_coverage/{{reads}}_MAP-TO_{{reference}}.k{{kmer}}.{{binsize}}.{chrom}.tsv',
                         chrom=MAIN_CHROMOSOMES)
     output:
-        table = 'output/binned_coverage/{reads}_MAP-TO_{reference}.{kmer}.{binsize}.merged.tsv'
+        table = 'output/binned_coverage/{reads}_MAP-TO_{reference}.k{kmer}.{binsize}.merged.tsv'
     run:
         import pandas as pd
         chrom_coverages = []
