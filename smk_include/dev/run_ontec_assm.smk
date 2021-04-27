@@ -826,10 +826,11 @@ rule write_reads_fofn:
 
 if RUN_SYSTEM == 'valet':
     bifrost_cpu = config['num_cpu_max']
-    bifrost_runtime = 167
+    bifrost_runtime = 48
 else:
     bifrost_cpu = config['num_cpu_high']
-    bifrost_runtime = 167
+    bifrost_runtime = 48
+
 
 rule build_colored_dbg:
     input:
@@ -853,6 +854,29 @@ rule build_colored_dbg:
         'Bifrost build --input-ref-file {input.fofn} '
         '--output-file {params.out_prefix} --threads {threads} --colors --kmer-length {params.kmer_size} '
         '--verbose &> {log}'
+
+
+rule count_cdbg_kmers:
+    input:
+        container = 'cdbg_kmc.sif'
+        gfa = 'output/cdbg/{sample}.gfa',
+        colors = 'output/cdbg/{sample}.bfg_colors'
+    output:
+        'output/cdbg_kcount/{sample}.kmc.txt'
+    log:
+       'log/output/cdbg_kcount/{sample}.kmc.log',
+    benchmark:
+        'rsrc/output/cdbg_kcount/{sample}.kmc.rsrc',
+    threads: config['num_cpu_medium']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 172032 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt
+    params:
+        kmer_size = 31,
+        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
+    shell:
+        '{params.singularity} singularity exec {input.container} venn_diagram '
+            '{input.gfa} {input.colors} {params.kmer_size} {threads} {output} &> {log}'
 
 
 PIPELINE_OUTPUT = [
@@ -902,6 +926,12 @@ if RUN_SYSTEM == 'hilbert':
             rules.hifiasm_hifi_ontec_assembly.output.raw_unitigs,
             size_fraction=[0, 100000]
         )
+    )
+
+
+if RUN_SYSTEM == 'valet':
+    PIPELINE_OUTPUT.append(
+        'output/cdbg_kcount/{sample}.kmc.txt'.format(SAMPLE)
     )
 
 
