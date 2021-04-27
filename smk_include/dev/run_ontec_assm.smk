@@ -858,7 +858,7 @@ rule build_colored_dbg:
 
 rule count_cdbg_kmers:
     input:
-        container = 'cdbg_kmc.sif'
+        container = 'cdbg_kmc.sif',
         gfa = 'output/cdbg/{sample}.gfa',
         colors = 'output/cdbg/{sample}.bfg_colors'
     output:
@@ -867,7 +867,7 @@ rule count_cdbg_kmers:
        'log/output/cdbg_kcount/{sample}.kmc.log',
     benchmark:
         'rsrc/output/cdbg_kcount/{sample}.kmc.rsrc',
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 172032 * attempt,
         runtime_hrs = lambda wildcards, attempt: 36 * attempt
