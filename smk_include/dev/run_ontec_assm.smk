@@ -35,6 +35,7 @@ GA_MIN_SCORE = config['params']['GraphAligner']['minscore']
 # size fraction zero = dump all reads
 READ_SIZE_FRACTIONS = config['params']['SizeFractions']
 
+MAIN_CHROMOSOMES = ['chr' + str(i) for i in range(1,23)] + ['chrX', 'chrY']
 
 if SAMPLE == 'HG00733':
 
@@ -381,11 +382,12 @@ rule compute_stats_corrected_reads:
 
 
 def set_hifiasm_memory(wildcards, attempt, run_system):
-
+    if attempt > 1:
+        raise RuntimeError('hifiasm assembly failed first attempt: {}'.format(wildcards))
     if run_system == 'valet':
         return MEMORY_HIFIASM
     else:
-        return MEMORY_HIFIASM * attempt
+        return MEMORY_HIFIASM * 2  # ~3 TB
 
 
 rule hifiasm_hifi_ontec_assembly:
@@ -422,7 +424,7 @@ rule hifiasm_hifi_ontec_assembly:
     threads: config['num_cpu_max']
     resources:
         mem_total_mb = lambda wildcards, attempt: set_hifiasm_memory(wildcards, attempt, RUN_SYSTEM),
-        runtime_hrs = lambda wildcards, attempt: 48 + 48 * attempt
+        runtime_hrs = lambda wildcards, attempt: 52 + 52 * attempt
     params:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
         singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
@@ -469,7 +471,7 @@ rule align_hifi_input_reads:
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 57344 + 57344 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+        runtime_hrs = lambda wildcards, attempt: 32 * attempt
     params:
         sample = SAMPLE,
         sort_threads = 4,
@@ -684,6 +686,32 @@ rule compute_binned_coverage:
     # END OF RUN BLOCK
 
 
+rule merge_binned_coverage:
+    input:
+        tables = expand('output/binned_coverage/{{reads}}_MAP-TO_{{reference}}.{{kmer}}.{{binsize}}.{chrom}.tsv',
+                        chrom=MAIN_CHROMOSOMES)
+    output:
+        table = 'output/binned_coverage/{reads}_MAP-TO_{reference}.{kmer}.{binsize}.merged.tsv'
+    run:
+        import pandas as pd
+        chrom_coverages = []
+        for tsv_file in input.tables:
+            df = pd.read_csv(tsv_file, sep='\t', header=0, index_col=None)
+            chrom_coverages.append(df)
+        chrom_coverages = pd.concat(
+            chrom_coverages,
+            axis=0,
+            ignore_index=False
+        )
+        chrom_coverages.sort_values(['#chrom', 'start', 'end'], ascending=True, inplace=True)
+        chrom_coverages.to_csv(
+            output.table,
+            sep='\t',
+            header=True,
+            index=False
+        )
+
+
 rule merge_short_reads:
     input:
         reads1 = '{}_1_val_1.cor.fq.gz'.format(SHORT_READS_PATH),
@@ -705,6 +733,10 @@ rule merge_short_reads:
 
 
 rule merge_ontec_reads:
+    """
+    This rule merges ONTEC reads per MBG and minscore parameterization
+    Goal: one file of input reads per combination of k/w/minscore for Bifrost
+    """
     input:
         reads = expand(
             'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{{kmer}}-w{{window}}.ms{{minscore}}.clip-ec.geq0.fa.gz',
@@ -724,6 +756,48 @@ rule merge_ontec_reads:
     shell:
         'pigz -p {params.threads} -d -c {input.reads} | '
         'pigz -p {params.threads} --best > {output.fastq}'
+
+
+rule hifiasm_ontec_only_assembly:
+    """
+    """
+    input:
+        container = 'hifiasm-v0142r315.sif',
+        ontec_reads = expand(
+            'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.geq{{size_fraction}}.fa.gz',
+            zip,
+            filename=ONT_ALL_FILES * len(MBG_KMER_SIZE),
+            kmer=MBG_KMER_SIZE * len(ONT_ALL_FILES),
+            window=MBG_WINDOW_SIZE * len(ONT_ALL_FILES),
+            minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE) * len(ONT_ALL_FILES)
+        )
+    output:
+        primary_unitigs = 'output/assembly/layout/{}_ontec-only_{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.p_utg.gfa'.format(SAMPLE, SAMPLE),
+        primary_contigs = 'output/assembly/layout/{}_ontec-only_{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.p_ctg.gfa'.format(SAMPLE, SAMPLE),
+        raw_unitigs = 'output/assembly/layout/{}_ontec-only_{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.r_utg.gfa'.format(SAMPLE, SAMPLE),
+        discard = multiext(
+            'output/assembly/layout/{}_ontec-only_{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}'.format(SAMPLE, SAMPLE),
+            '.a_ctg.gfa', '.a_ctg.noseq.gfa',
+            '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
+            '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
+            '.r_utg.noseq.gfa'
+        )
+    log:
+        hifiasm = 'log/output/assembly/layout/{}_ontec-only_{{size_fraction}}.hifiasm.log'.format(SAMPLE)
+    benchmark:
+        'rsrc/output/assembly/layout/{}_ontec-only_{{size_fraction}}.hifiasm'.format(SAMPLE) + '.t{}.rsrc'.format(config['num_cpu_max']) 
+#    conda:
+#        '../environment/conda/conda_biotools.yml'       
+    threads: config['num_cpu_max']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: set_hifiasm_memory(wildcards, attempt, RUN_SYSTEM),
+        runtime_hrs = lambda wildcards, attempt: 52 + 52 * attempt
+    params:
+        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
+        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
+    shell:
+        '{params.singularity} singularity exec {input.container} '
+        'hifiasm -o {params.prefix} -t {threads} {input.hifi_reads} {input.ontec_reads} &> {log.hifiasm}'
 
 
 rule write_reads_fofn:
@@ -750,8 +824,10 @@ rule write_reads_fofn:
 
 if RUN_SYSTEM == 'valet':
     bifrost_cpu = config['num_cpu_max']
+    bifrost_runtime = 167
 else:
     bifrost_cpu = config['num_cpu_high']
+    bifrost_runtime = 71
 
 rule build_colored_dbg:
     input:
@@ -766,8 +842,8 @@ rule build_colored_dbg:
     conda: '../../environment/conda/conda_biotools.yml'
     threads: bifrost_cpu
     resources:
-        mem_total_mb = lambda wildcards, attempt: 65536 + 65536 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 32 * attempt
+        mem_total_mb = lambda wildcards, attempt: 376832 * attempt,
+        runtime_hrs = lambda wildcards, attempt: bifrost_runtime
     params:
         kmer_size = 31,
         out_prefix = lambda wildcards, output: output.gfa.rsplit('.', 1)[0]
@@ -802,7 +878,19 @@ PIPELINE_OUTPUT = [
             reference=REFERENCE_ASSEMBLIES,
             size_fraction=[100000, 500000]
         ),
-        expand(rules.build_colored_dbg.output.gfa, sample=SAMPLE)
+        expand(rules.build_colored_dbg.output.gfa, sample=SAMPLE),
+        expand(
+            rules.hifiasm_ontec_only_assembly.output.raw_unitigs,
+            size_fraction=[0, 100000]
+        ),
+        expand(
+            rules.merge_binned_coverage.output.table,
+            reads=[x.format(SAMPLE) for x in ['{}_HiFi_input', '{}_ONTEC_geq100000', '{}_ONTEC_geq500000']],
+            reference=REFERENCE_ASSEMBLIES,
+            kmer=[15],
+            binsize=[100000]
+        )
+    )
 ]
 
 if RUN_SYSTEM == 'hilbert':
