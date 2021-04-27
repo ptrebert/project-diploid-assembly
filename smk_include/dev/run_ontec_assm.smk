@@ -598,6 +598,8 @@ rule compute_binned_coverage:
         'rsrc/output/binned_coverage/{reads}_MAP-TO_{reference}.k{kmer}.{binsize}.{chrom}.poscov.rsrc'
     resources:
          mem_total_mb = lambda wildcards, attempt: 1024 * attempt
+    wildcard_constraints:
+        chrom='(' + '|'.join(MAIN_CHROMOSOMES) + ')'
     run:
         import numpy as np
         import io as io
