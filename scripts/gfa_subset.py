@@ -60,22 +60,44 @@ def parse_command_line():
         dest="output_table",
         help="Full path to CSV output table (to be loaded in Bandage)."
     )
+    parser.add_argument(
+        "--component-tag-coverage",
+        "-ctc",
+        type=int,
+        default=20,
+        choices=list(range(0, 101)),
+        metavar="(0 ... 100)",
+        dest="tag_coverage",
+        help="Percentage of connected component length tagged in subset to be selected from graph. "
+            "Default: 20%%"
+    )
     return parser.parse_args()
 
 
-def buffer_graph(gfa_path):
+def buffer_node_information(gfa_path):
     """
+    A lines in hifiasm output: https://github.com/chhylp123/hifiasm/issues/16
+    numbers:
+    - start position in unitig
+    - start position in read
+    - read length (not alignment length!)
+    - id is hifiasm internal
+    haplotype-label at the end
     """
     links = []
     node_map = []
+    node_lengths = dict()
     with xopen.xopen(gfa_path, 'r') as graph:
         for ln, line in enumerate(graph):
             line_type = line[0]
             if line_type == '#':
                 continue
             elif line_type == 'S':
-                node = line.split()[1]
+                node, node_seq = line.split()[1:3]
+                assert node_seq != '*', 'No sequence record in GFA: {} / {}'.format(ln, line.strip())
+                node_length = len(node_seq)
                 node_map.append((ln, node))
+                node_lengths[node] = node_length
                 continue
             elif line_type == 'A':
                 continue
@@ -86,7 +108,7 @@ def buffer_graph(gfa_path):
                 node_map.append((ln, node2))
             else:
                 raise ValueError('Unexpected line type in GFA: {} / {}'.format(line_type, line[:30]))
-    return links, node_map
+    return links, node_map, nodes_lengths
 
 
 def load_table(tig_table):
@@ -126,33 +148,59 @@ def load_table(tig_table):
     return select_tigs, annotations
 
 
-def determine_connected_tigs(edges, select_tigs):
+def determine_connected_tigs(edges, select_tigs, node_lengths, tag_coverage_threshold, logger):
     """
     """
     g = nx.Graph()
     g.add_edges_from(edges)
 
     num_cc = 0
+    untagged = 0
+    below_threshold = 0
     connected_tigs = set().union(select_tigs)
     for cc in nx.connected_components(g):
         num_cc += 1
         if len(select_tigs.intersection(cc)) == 0:
+            untagged += 1
             continue
+        if tag_coverage_threshold > 0:
+            # check tag coverage threshold
+            # compute total node length of connected component
+            cc_length = sum(node_lengths[unitig] for unitig in cc)
+            # compute length of all unitigs tagged / selected for subsetting GFA
+            tag_length = sum(node_lengths[unitig] for unitig in cc if unitig in select_tigs)
+            length_ratio = round(tag_length / cc_length * 100, 0)
+            if length_ratio < tag_coverage_threshold:
+                below_threshold += 1
+                continue
         connected_tigs = connected_tigs.union(cc)
-    return connected_tigs, num_cc
+    selected_cc = num_cc - untagged - below_threshold
+
+    logger.debug('Total connected components: {}'.format(num_cc))
+    logger.debug('Conn. comp. discarded as untagged: {}'.format(untagged))
+    logger.debug('Conn. comp. discarded below tagging threshold: {}'.format(below_threshold))
+    logger.debug('Connected components selected for subset: {}'.format(selected_cc))
+    logger.debug('...{} tigs selected'.format(len(connected_tigs)))
+
+    return connected_tigs
 
 
 def main(logger, cargs):
     """
     """
     logger.debug('Loading GFA file: {}'.format(cargs.input_gfa))
-    links, node_map = buffer_graph(cargs.input_gfa)
-    logger.debug('GFA loading complete')
+    edges, node_map, node_lengths = buffer_node_information(cargs.input_gfa)
+    logger.debug('GFA loading complete: {} nodes / {} edges'.format(len(node_map), len(edges)))
     select_tigs, annotations = load_table(cargs.input_table)
     logger.debug('{} tigs selected as GFA subset'.format(len(select_tigs)))
 
-    connected_tigs, num_cc = determine_connected_tigs(links, select_tigs)
-    logger.debug('{} tigs selected as connected (total {} conn. comp.)'.format(len(connected_tigs), num_cc))
+    connected_tigs = determine_connected_tigs(
+        edges,
+        select_tigs,
+        node_lengths,
+        cargs.tag_coverage,
+        logger
+    )
 
     keep_lines = set(t[0] for t in node_map if t[1] in connected_tigs)
 

@@ -119,15 +119,17 @@ rule subset_assembly_graph:
         table = 'output/tig_intersect/tig_to_sex/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.{subset}.tsv',
         graph = os.path.join(ASSEMBLY_GRAPHS_FOLDER, '{assembly_graph}.{tigs}.gfa')
     output:
-        graph = 'output/subset_graphs/sex/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.{subset}.gfa',
-        table = 'output/subset_graphs/sex/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.{subset}.csv',
+        graph = 'output/subset_graphs/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.{subset}.gfa',
+        table = 'output/subset_graphs/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.{subset}.csv',
+    log:
+        'output/subset_graphs/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.{subset}.subset.log',
     conda:
         '../../environment/conda/conda_pyscript.yml'
     params:
         script_exec = lambda wildcards: find_script_path('gfa_subset.py')
     shell:
         '{params.script_exec} --debug --input-gfa {input.graph} --input-table {input.table} '
-        '--output-gfa {output.graph} --output-table {output.table}'
+        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 20 &> {log}'
 
 
 OUTPUT_FILES = [
