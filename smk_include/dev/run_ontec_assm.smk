@@ -471,7 +471,7 @@ rule align_hifi_input_reads:
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 57344 + 57344 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 32 * attempt
+        runtime_hrs = lambda wildcards, attempt: 48 * attempt
     params:
         sample = SAMPLE,
         sort_threads = 4,
@@ -504,7 +504,7 @@ rule align_ontec_output_reads:
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 57344 + 57344 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+        runtime_hrs = lambda wildcards, attempt: 48 * attempt
     params:
         sample = SAMPLE,
         sort_threads = 4,
@@ -826,32 +826,33 @@ rule write_reads_fofn:
 
 if RUN_SYSTEM == 'valet':
     bifrost_cpu = config['num_cpu_max']
-    bifrost_runtime = 48
 else:
     bifrost_cpu = config['num_cpu_high']
-    bifrost_runtime = 48
 
 
-rule build_colored_dbg:
+rule build_colored_dbg_allref:
     input:
         fofn = 'output/fofn/{sample}_all_reads.fofn'
     output:
-        gfa = 'output/cdbg/{sample}.gfa',
-        colors = 'output/cdbg/{sample}.bfg_colors'
+        gfa = 'output/cdbg/{sample}.{strategy}.gfa',
+        colors = 'output/cdbg/{sample}.{strategy}.bfg_colors'
     log:
-       'log/output/cdbg/{sample}.build.log',
+       'log/output/cdbg/{sample}.{strategy}.build.log',
     benchmark:
-        'rsrc/output/cdbg/{sample}.build.rsrc',
+        'rsrc/output/cdbg/{sample}.{strategy}.build.rsrc',
+    wildcard_constraints:
+        strategy = '(all\-ref|all\-seq)'
     conda: '../../environment/conda/conda_biotools.yml'
     threads: bifrost_cpu
     resources:
-        mem_total_mb = lambda wildcards, attempt: 376832 * attempt,
-        runtime_hrs = lambda wildcards, attempt: bifrost_runtime
+        mem_total_mb = lambda wildcards, attempt: 63488 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 48 * attempt
     params:
         kmer_size = 31,
-        out_prefix = lambda wildcards, output: output.gfa.rsplit('.', 1)[0]
+        out_prefix = lambda wildcards, output: output.gfa.rsplit('.', 1)[0],
+        input_type = lambda wildcards: '--input-ref-file' if wildcards.strategy == 'all-ref' else '--input-seq-file'
     shell:
-        'Bifrost build --input-ref-file {input.fofn} '
+        'Bifrost build {params.input_type} {input.fofn} '
         '--output-file {params.out_prefix} --threads {threads} --colors --kmer-length {params.kmer_size} '
         '--verbose &> {log}'
 
@@ -859,14 +860,14 @@ rule build_colored_dbg:
 rule count_cdbg_kmers:
     input:
         container = 'cdbg_kmc.sif',
-        gfa = 'output/cdbg/{sample}.gfa',
-        colors = 'output/cdbg/{sample}.bfg_colors'
+        gfa = 'output/cdbg/{sample}.{strategy}.gfa',
+        colors = 'output/cdbg/{sample}.{strategy}.bfg_colors'
     output:
-        'output/cdbg_kcount/{sample}.kmc.txt'
+        'output/cdbg_kcount/{sample}.{strategy}.kmc.txt'
     log:
-       'log/output/cdbg_kcount/{sample}.kmc.log',
+       'log/output/cdbg_kcount/{sample}.{strategy}.kmc.log',
     benchmark:
-        'rsrc/output/cdbg_kcount/{sample}.kmc.rsrc',
+        'rsrc/output/cdbg_kcount/{sample}.{strategy}.kmc.rsrc',
     threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 172032 * attempt,
@@ -911,7 +912,7 @@ PIPELINE_OUTPUT = [
         ),
         expand(
             rules.merge_binned_coverage.output.table,
-            reads=[x.format(SAMPLE) for x in ['{}_HiFi_input', '{}_ONTEC_geq100000', '{}_ONTEC_geq500000']],
+            reads=[x.format(SAMPLE) for x in ['{}_HiFi_input', '{}_ONTEC_geq0', '{}_ONTEC_geq100000', '{}_ONTEC_geq500000']],
             reference=REFERENCE_ASSEMBLIES,
             kmer=[15],
             binsize=[100000]
@@ -931,7 +932,10 @@ if RUN_SYSTEM == 'hilbert':
 
 if RUN_SYSTEM == 'valet':
     PIPELINE_OUTPUT.append(
-        'output/cdbg_kcount/{sample}.kmc.txt'.format(SAMPLE)
+        'output/cdbg_kcount/{sample}.all-ref.kmc.txt'.format(SAMPLE)
+    )
+    PIPELINE_OUTPUT.append(
+        'output/cdbg_kcount/{sample}.all-seq.kmc.txt'.format(SAMPLE)
     )
 
 
