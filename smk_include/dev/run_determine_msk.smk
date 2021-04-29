@@ -129,7 +129,7 @@ rule build_male_specific_db:
     input:
         male_kmers = 'output/kmer_db/male-shared.k{kmer_size}.db',
         female_kmers = 'output/kmer_db/female-merged.k{kmer_size}.db',
-        reference_kmers = 'output/kmer_db_sample/{{reference}}.k{kmer_size}.db'.format(REFERENCE_ASSEMBLY),
+        reference_kmers = 'output/kmer_db_sample/{}.k{{kmer_size}}.db'.format(REFERENCE_ASSEMBLY),
     output:
         male_specific = directory('output/kmer_db/male-specific.k{kmer_size}.db')
     benchmark:
