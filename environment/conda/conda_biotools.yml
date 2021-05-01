@@ -2,7 +2,7 @@ name: biotools
 dependencies:
   - Python=3.6.*
   - pip=19.2.3
-  - openssl=1.0.2t
+  - openssl=1.1.1k=h7f98852_0
   - gxx_impl_linux-64=7.3.0
   - gxx_linux-64=7.3.0
   - ld_impl_linux-64=2.33.1
@@ -21,31 +21,31 @@ dependencies:
   - seqtk=1.3
   - blast=2.5.0
   - bwa=0.7.17
-  - minimap2=2.17
+  - minimap2=2.18
   - _libgcc_mutex=0.1
   - libgomp=9.3.0
   - _openmp_mutex=4.5
   - bifrost=1.0.5
-  - meryl=1.2
-  - winnowmap=2.01
+  - meryl=1.3
+  - winnowmap=2.02
   - mummer4
-  - sambamba=0.7.1  # FIX github.com/biod/sambamba/issues/393 - DO NOT DOWNGRADE
-  - ldc=1.13.0=h02c9852_1  # FIX https://github.com/bcbio/bcbio-nextgen/issues/3032 - DO NOT UP- or DOWNGRADE
-  - htslib=1.9
-  - libdeflate=1.3  # v1.0 may trigger pysam import error - DO NOT DOWNGRADE
-  - pysam=0.15.3
-  - samtools=1.9
+  - sambamba=0.8.0
+  - ldc=1.20.0
+  - htslib=1.10.2
+  - libdeflate=1.6
+  - pysam=0.16.0
+  - samtools=1.10
   - bamtools=2.5.1
-  - bedtools=2.29.2  # FIX https://github.com/arq5x/bedtools2/issues/779 - DO NOT DOWNGRADE
+  - bedtools=2.30.0
   - bedops=2.4.37
-  - bcftools=1.9
+  - bcftools=1.10
   - fastqc=0.11.8
   - freebayes=1.3.1
   - longshot=0.4.1
   - wtdbg=2.5
   - flye=2.8.3
   - canu=2.1.1
-  - hifiasm=0.14
+  - hifiasm=0.15.1
   - racon=1.4.10
   - lighter=1.1.2
   - bcalm=2.2.2
@@ -55,15 +55,15 @@ dependencies:
   - fastp=0.20.1
   - mbg=1.0.3
   - graphaligner=1.0.13
-  - vg=1.31.0
+  - vg=1.32.0
   - gfatools=0.5
   - ucsc-bedgraphtobigwig=377
   - ucsc-bigwigaverageoverbed=377
   - ucsc-bigwigcorrelate=377
   - ucsc-bigwigmerge=377
   - ucsc-bigwigcluster=377
-  - pigz=2.4
+  - pigz=2.6
   - xopen=1.1.0
   - biopython=1.78
   - pyfaidx=0.5.9.2
-  - whatshap=1.0
+  - whatshap=1.1
