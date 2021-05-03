@@ -5,6 +5,11 @@ DATA_FOLDER = '/beeond/data/hifi'
 REFERENCE_FOLDER = '/beeond/data/references'
 REFERENCE_ASSEMBLY = 'T2Tv1_T2TC_chm13'
 
+ALIGNMENT_TARGETS = [
+    'T2Tv1_T2TC_chm13',
+    'T2Tv1_38p13Y_chm13'
+]
+
 MALE_SAMPLES = [
     'HG00731',
     'HG00512',
@@ -112,7 +117,7 @@ rule build_merged_female_db:
             sample=FEMALE_SAMPLES
         )
     output:
-        kmer_db = directory('output/kmer_db/female-merged.k{kmer_size}.hpc.db')
+        kmer_db = directory('output/kmer_db/female-merged.k{kmer_size}.{hpc}.db')
     benchmark:
         'rsrc/output/kmer_db/female-merged.k{kmer_size}.{hpc}.union.rsrc'
     conda:
@@ -211,19 +216,112 @@ rule extract_ktagged_reads:
         'pigz -p {params.zip_threads} --best > {output.ktagged_reads}'
 
 
+rule count_parental_kmers:
+    input:
+        fastq = select_hifi_input
+    output:
+        dump = 'ouput/kmer_dumps/{sample}.k{kmer_size}.yak'
+    benchmark:
+        'rsrc/ouput/kmer_dumps/{sample}.k{kmer_size}.yak.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_max']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 262144 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 48 * attempt
+    params:
+        kmer_size = KMER_SIZE,
+    shell:
+        'yak count -k {params.kmer_size} -b 37 -K 4096m -o {output.dump} {input.fastq}' 
+
+
+def select_maternal_kmer_dump(wildcards):
+    path = 'ouput/kmer_dumps/{sample}.k{kmer_size}.yak'
+    mothers = {
+        'NA24385': 'NA24143'
+    }
+    mother = mothers[wildcards.sample]
+    formatter = {
+        'sample': mother,
+        'kmer_size': KMER_SIZE
+    }
+    return path.format(**formatter)
+
+
+def select_paternal_kmer_dump(wildcards):
+    path = 'ouput/kmer_dumps/{sample}.k{kmer_size}.yak'
+    fathers = {
+        'NA24385': 'NA24149'
+    }
+    father = fathers[wildcards.sample]
+    formatter = {
+        'sample': father,
+        'kmer_size': KMER_SIZE
+    }
+    return path.format(**formatter)
+
+
+rule compute_hifiasm_trio_assembly:
+    input:
+        fastq = select_hifi_input,
+        mat_yak = select_maternal_kmer_dump,
+        pat_yak = select_paternal_kmer_dump
+    output:
+        assm_dir = directory('output/assemblies/trio_binned/{sample}')
+    log:
+        'log/output/assemblies/trio_binned/{sample}.hifiasm.log',
+    benchmark:
+        'rsrc/output/assemblies/trio_binned/{sample}.hifiasm.rsrc',
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_max']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 524288 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 72 * attempt
+    shell:
+        'hifiasm -o {output.assm_dir}/{wildcards.sample} -t {threads} -1 {input.pat_yak} -2 {input.mat_yak} {input.fastq} &> {log.hifiasm}'
+
+
+rule compute_hifiasm_trio_assembly:
+    input:
+        fastq = select_hifi_input,
+    output:
+        assm_dir = directory('output/assemblies/non_trio/{sample}')
+    log:
+        'log/output/assemblies/non_trio/{sample}.hifiasm.log',
+    benchmark:
+        'rsrc/output/assemblies/non_trio/{sample}.hifiasm.rsrc',
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_max']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 524288 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 72 * attempt
+    shell:
+        'hifiasm -o {output.assm_dir}/{wildcards.sample} -t {threads} {input.fastq} &> {log.hifiasm}'
+
+
 rule master:
     input:
         expand(
             rules.dump_male_specific_kmers.output.txt,
-            kmer_size=KMER_SIZE
+            kmer_size=KMER_SIZE,
+            hpc=['is-hpc']
         ),
         expand(
             rules.dump_male_unique_kmers.output.txt,
-            kmer_size=KMER_SIZE
+            kmer_size=KMER_SIZE,
+            hpc=['is-hpc']
         ),
         expand(
             rules.extract_ktagged_reads.output.ktagged_reads,
             kmer_size=KMER_SIZE,
             hpc=['is-hpc'],
             sample=MALE_SAMPLES
+        ),
+        'output/assemblies/trio_binned/NA24385',
+        expand(
+            'output/assemblies/non_trio/{sample}',
+            sample=MALE_SAMPLES
         )
+
