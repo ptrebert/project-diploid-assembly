@@ -108,7 +108,7 @@ def buffer_node_information(gfa_path):
                 node_map.append((ln, node2))
             else:
                 raise ValueError('Unexpected line type in GFA: {} / {}'.format(line_type, line[:30]))
-    return links, node_map, nodes_lengths
+    return links, node_map, node_lengths
 
 
 def load_table(tig_table):
