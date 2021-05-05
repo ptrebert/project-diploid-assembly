@@ -2,5 +2,5 @@ Bootstrap: library
 From: library/default/alpine:3.9
 
 %post
-    apk --no-cache add wget tar cmake zlib-dev make gcc g++ libc-dev linux-headers 
-    apk del wget tar gcc g++ make cmake linux-headers libc-dev zlib-dev 
+    apk --no-cache add wget tar cmake zlib-dev make gcc g++ libc-dev build-base linux-headers 
+    apk del wget tar gcc g++ make cmake linux-headers libc-dev zlib-dev build-base
