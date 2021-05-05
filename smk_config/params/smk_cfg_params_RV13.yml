@@ -82,6 +82,7 @@ eval_align_ref:
   - T2Tv1_38p13Y_chm13
 eval_gene_model: GRCh38_GENCODEv31_basic
 use_genome_size: hg38_HGSVC2_noalt
+sseq_qc_reference: hg38_HGSVC2_noalt
 main_chromosomes:
   - chr1
   - chr2

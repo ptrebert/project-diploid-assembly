@@ -17,6 +17,14 @@ TARGET_PATHS = {
         "{hap_reads}_nhr-{nhr_assembler}.fasta"
     ),
 
+    # this target is only triggered for samples
+    # that specify "library_qc: auto" in the
+    # sample config
+    "RUN_STRANDSEQ_LIBRARY_QC": os.path.join(
+        "output", "sseq_qc",
+        "{sseq_reads}.ashleys-qc.tsv"
+    ),
+
     "BUILD_CLUSTERED_ASSEMBLY": os.path.join(
         "output", "reference_assembly", "clustered",
         "{sseq_reads}",
@@ -523,6 +531,7 @@ def define_file_targets(wildcards):
     :return:
     """
     individual = wildcards.individual
+    show_warnings = bool(config.get('show_warnings', False))
     try:
         sample_desc = config['sample_description_' + individual]
         if individual != sample_desc['individual']:
@@ -530,7 +539,7 @@ def define_file_targets(wildcards):
             raise ValueError('Sample description individual does not '
                              'match requested individual: {} vs {}'.format(individual, sample_desc['individual']))
     except KeyError as ke:
-        if bool(config.get('show_warnings', False)):
+        if show_warnings:
             sys.stderr.write('\nWARNING: no sample description for individual [sample_description_] {} in config\n'.format(individual))
         return []
 
@@ -579,7 +588,7 @@ def define_file_targets(wildcards):
                     CONFIG_TARGETS_SELECTED_KEYS,
                     CONFIG_TARGETS_SELECTED_VALUES,
                     True):
-                if bool(config.get('show_warnings', False)):
+                if show_warnings:
                     sys.stderr.write('\nWARNING: discarding target spec: {}\n'.format(target_spec))
                 continue
 
@@ -587,7 +596,7 @@ def define_file_targets(wildcards):
                 CONFIG_TARGETS_SKIPPED_KEYS,
                 CONFIG_TARGETS_SKIPPED_VALUES,
                 False):
-                if bool(config.get('show_warnings', False)):
+                if show_warnings:
                     sys.stderr.write('\nWARNING: skipping over target spec: {}\n'.format(target_spec))
                 continue
 
@@ -600,6 +609,13 @@ def define_file_targets(wildcards):
                         pass
                     else:
                         continue
+
+                if target_name == 'RUN_STRANDSEQ_LIBRARY_QC':
+                    # check if library QC is set for this SSEQ read set
+                    sseq_reads = tmp['sseq_reads']
+                    if sseq_reads not in CONSTRAINT_STRANDSEQ_LIBQC_SAMPLES:
+                        continue
+
                 if '{hap_reads}' in target_path:
                     hap_readset = tmp['hap_reads']
                     for readset, annotation in readset_annotation.items():
@@ -611,7 +627,7 @@ def define_file_targets(wildcards):
                 try:
                     complete_targets = expand(target_path, **tmp)
                 except (KeyError, WildcardError) as error:
-                    if bool(config.get('show_warnings', False)):
+                    if show_warnings:
                         sys.stderr.write('\nMissing parameter values for target {}: '
                                          '(known: {}) - {} [Skipping]\n'.format(target_name, tmp, str(error)))
                     continue

@@ -7,7 +7,7 @@ rule master_handle_data_download:
         rules.master_link_data_sources.output,
 
 
-def create_request_files_from_json(json_dumps, request_path, blacklist, logfile):
+def create_request_files_from_json(json_dumps, request_path, blocklist, logfile):
     """
     Process output of scan_remote_path scraping script
     :param json_dumps:
@@ -63,8 +63,8 @@ def create_request_files_from_json(json_dumps, request_path, blacklist, logfile)
         except KeyError:
             md5 = 'no_md5'
 
-        if blacklist and any([hint in file_infos['remote_path'] for hint in blacklist]):
-            _ = logfile.write('File blacklisted: {}\n'.format(file_infos['local_path']))
+        if blocklist and any([hint in file_infos['remote_path'] for hint in blocklist]):
+            _ = logfile.write('--- EXCLUDE: file on input block list: {}\n'.format(file_infos['local_path']))
             try:
                 os.remove(req_file_path)
             except (OSError, IOError) as err:
@@ -189,7 +189,7 @@ def create_request_files_from_tsv(tsv_files, request_path, blacklist, logfile):
     return requests_created
 
 
-def find_blacklist_file(given_path):
+def find_blocklist_file(given_path):
 
     absolute_path = None
     search_paths = [
@@ -205,21 +205,57 @@ def find_blacklist_file(given_path):
         searched_paths.append(sp)
 
     if absolute_path is None:
-        raise RuntimeError('Cannot locate blacklist file ({})'.format(searched_paths))
+        raise RuntimeError('Cannot locate blocklist file ({})'.format(searched_paths))
 
     return absolute_path
+
+
+def check_sseq_library_qc(wildcards):
+    """
+    Check if read set is Strand-seq
+    and selected for automatic QC
+    """
+    readset = wildcards.readset
+    # curious to see if that breaks at some point...
+    exclude_file = os.getcwd()
+    if readset in CONSTRAINT_STRANDSEQ_LIBQC_SAMPLES:
+        exclude_file = 'output/sseq_qc/{}.exclude.txt'.format(readset)
+    return exclude_file
+
+
+def load_input_blocklist(sseq_exclude, logfile):
+    
+    input_blocklist = set()
+    external_blocklist_file = config.get('file_input_blocklist', None)
+    if external_blocklist_file is not None:
+        logfile.write('Loading external input blocklist from path {}\n'.format(external_blocklist_file))
+        blocklist_file_path = find_blocklist_file(external_blocklist_file)
+        with open(blacklist_file_path, 'r') as blocklist:
+            this_blocklist = set(blacklist.read().strip().split())
+            logfile.write('Loaded {} input blocking hints\n'.format(len(this_blocklist)))
+            input_blocklist = input_blocklist.union(this_blocklist)
+    
+    if os.path.isfile(sseq_exclude):
+        logfile.write('Loading Strand-seq QC exclude list from path {}\n'.format(sseq_exclude))
+        with open(sseq_exclude, 'r') as blocklist:
+            this_blocklist = set(blocklist.read().strip().split())
+            logfile.write('Loaded {} Strand-seq library excluding hints\n'.format(len(this_blocklist)))
+            input_blocklist = input_blocklist.union(this_blocklist)
+
+    logfile.write('Input blocklist contains {} hints\n'.format(len(input_blocklist)))
+
+    return input_blocklist
 
 
 checkpoint create_input_data_download_requests:
     input:
         json_dump = rules.master_scrape_data_sources.input,
-        tsv_metadata = rules.master_query_repo_sources.input
+        tsv_metadata = rules.master_query_repo_sources.input,
+        sseq_exclude = check_sseq_library_qc
     output:
         directory('input/{subfolder}/{readset}/requests')
     log:
         'log/input/{subfolder}/{readset}.requests.log'
-    params:
-        blacklist = lambda wildcards: None if 'file_download_blacklist' not in config else config['file_download_blacklist']
     wildcard_constraints:
         subfolder = '(fastq|bam)'
     run:
@@ -236,18 +272,12 @@ checkpoint create_input_data_download_requests:
             tsv_metadata_files = []
 
         with open(log[0], 'w') as logfile:
-            if params.blacklist is None:
-                blacklisted_files = set()
-            else:
-                blacklist_file_path = find_blacklist_file(params.blacklist)
-                with open(blacklist_file_path, 'r') as blacklist:
-                    blacklisted_files = set(blacklist.read().strip().split())
-                _ = logfile.write('Loaded {} files from blacklist annotation\n'.format(len(blacklisted_files)))
+            input_blocklist = load_input_blocklist(input.sseq_exclude, logfile)
             _ = logfile.write('Processing {} JSON dumps\n'.format(len(json_dump_files)))
             json_triggered = create_request_files_from_json(
                                 json_dump_files,
                                 output[0],
-                                blacklisted_files,
+                                input_blocklist,
                                 logfile
                             )
             _ = logfile.write('JSON dump matched request: {}\n'.format(json_triggered))
@@ -256,7 +286,7 @@ checkpoint create_input_data_download_requests:
             tsv_triggered = create_request_files_from_tsv(
                                 tsv_metadata_files,
                                 output[0],
-                                blacklisted_files,
+                                input_blocklist,
                                 logfile
                             )
             _ = logfile.write('TSV file matched request: {}\n'.format(tsv_triggered))

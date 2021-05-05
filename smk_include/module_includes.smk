@@ -9,6 +9,7 @@ include: 'query_data_repos.smk'
 include: 'handle_reference_download.smk'
 
 # input preparation stage, one or two dependencies to above modules
+include: 'strandseq_qc.smk'
 include: 'handle_data_download.smk'
 include: 'preprocess_input.smk'
 include: 'preprocess_references.smk'
