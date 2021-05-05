@@ -109,3 +109,6 @@ venv.bak/
 # Cached data
 cache*
 .cache*
+
+# VS code
+.vscode/
