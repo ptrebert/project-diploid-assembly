@@ -1,5 +1,5 @@
 
-cores: 4
+cores: 8
 latency-wait: 5
 keep-going: True
 rerun-incomplete: True
