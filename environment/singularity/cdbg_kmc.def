@@ -1,0 +1,22 @@
+Bootstrap: library
+From: library/default/alpine:3.9
+
+%post
+    apk --no-cache add git tar wget openssh cmake make pkgconfig zlib-dev build-base libc-dev linux-headers
+    mkdir sources
+    cd sources
+    wget https://github.com/pmelsted/bifrost/archive/refs/tags/v1.0.5.tar.gz
+    tar xzf v1.0.5.tar.gz
+    cd bifrost-1.0.5
+    mkdir build
+    cd build
+    cmake -DCOMPILATION_ARCH=OFF ..
+    make -j 4
+    make install
+    cd /sources
+    git clone https://github.com/tobiasmarschall/theupsetkmer.git
+    cd theupsetkmer
+    g++ -fexceptions -O3 -std=c++11 -march=native -Wno-c++98-compat -c venn_diagram.cpp -o venn_diagram.o
+    g++ -o venn_diagram venn_diagram.o -s -O3 -lbifrost -pthread -lz
+    cp venn_diagram /usr/local/bin/
+    apk del git tar wget openssh make cmake gcc g++ linux-headers
