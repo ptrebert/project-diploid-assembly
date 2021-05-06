@@ -220,9 +220,9 @@ rule count_parental_kmers:
     input:
         fastq = select_hifi_input
     output:
-        dump = 'ouput/kmer_dumps/{sample}.k{kmer_size}.yak'
+        dump = 'output/kmer_dumps/{sample}.k{kmer_size}.yak'
     benchmark:
-        'rsrc/ouput/kmer_dumps/{sample}.k{kmer_size}.yak.rsrc'
+        'rsrc/output/kmer_dumps/{sample}.k{kmer_size}.yak.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
@@ -236,7 +236,7 @@ rule count_parental_kmers:
 
 
 def select_maternal_kmer_dump(wildcards):
-    path = 'ouput/kmer_dumps/{sample}.k{kmer_size}.yak'
+    path = 'output/kmer_dumps/{sample}.k{kmer_size}.yak'
     mothers = {
         'NA24385': 'NA24143'
     }
@@ -249,7 +249,7 @@ def select_maternal_kmer_dump(wildcards):
 
 
 def select_paternal_kmer_dump(wildcards):
-    path = 'ouput/kmer_dumps/{sample}.k{kmer_size}.yak'
+    path = 'output/kmer_dumps/{sample}.k{kmer_size}.yak'
     fathers = {
         'NA24385': 'NA24149'
     }
@@ -262,43 +262,87 @@ def select_paternal_kmer_dump(wildcards):
 
 
 rule compute_hifiasm_trio_assembly:
+    """
+    v0.15.1-r328
+    """
     input:
         fastq = select_hifi_input,
         mat_yak = select_maternal_kmer_dump,
         pat_yak = select_paternal_kmer_dump
     output:
-        assm_dir = directory('output/assemblies/trio_binned/{sample}')
+        assm_out = multiext(
+            'output/assemblies/trio_binned/{sample}/{sample}.dip',
+            '.hap1.p_ctg.gfa', '.hap1.p_ctg.lowQ.bed', '.hap1.p_ctg.noseq.gfa',
+            '.hap2.p_ctg.gfa', '.hap2.p_ctg.lowQ.bed', '.hap2.p_ctg.noseq.gfa',
+            '.p_utg.gfa', '.p_utg.lowQ.bed', '.p_utg.noseq.gfa',
+            '.r_utg.gfa', '.r_utg.lowQ.bed', '.r_utg.noseq.gfa'
+        )
     log:
         'log/output/assemblies/trio_binned/{sample}.hifiasm.log',
     benchmark:
         'rsrc/output/assemblies/trio_binned/{sample}.hifiasm.rsrc',
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 524288 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 72 * attempt
+        mem_total_mb = lambda wildcards, attempt: 114688 + 114688 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 24 + 8 * attempt
     shell:
-        'hifiasm -o {output.assm_dir}/{wildcards.sample} -t {threads} -1 {input.pat_yak} -2 {input.mat_yak} {input.fastq} &> {log.hifiasm}'
+        'hifiasm -o {output.assm_dir}/{wildcards.sample} -t {threads} -1 {input.pat_yak} -2 {input.mat_yak} {input.fastq} &> {log}'
 
 
-rule compute_hifiasm_trio_assembly:
+rule compute_hifiasm_nontrio_assembly:
+    """
+    v0.15.1-r328
+    """
     input:
         fastq = select_hifi_input,
     output:
-        assm_dir = directory('output/assemblies/non_trio/{sample}')
+        assm_out = multiext(
+            'output/assemblies/non_trio/{sample}/{sample}.bp',
+            '.hap1.p_ctg.gfa', '.hap1.p_ctg.lowQ.bed', '.hap1.p_ctg.noseq.gfa',
+            '.hap2.p_ctg.gfa', '.hap2.p_ctg.lowQ.bed', '.hap2.p_ctg.noseq.gfa',
+            '.p_ctg.gfa', '.p_ctg.lowQ.bed', '.p_ctg.noseq.gfa',
+            '.p_utg.gfa', '.p_utg.lowQ.bed', '.p_utg.noseq.gfa',
+            '.r_utg.gfa', '.r_utg.lowQ.bed', '.r_utg.noseq.gfa'
+        )
     log:
         'log/output/assemblies/non_trio/{sample}.hifiasm.log',
     benchmark:
         'rsrc/output/assemblies/non_trio/{sample}.hifiasm.rsrc',
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 524288 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 72 * attempt
+        mem_total_mb = lambda wildcards, attempt: 73728 + 49152 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 24 + 8 * attempt
+    params:
+        prefix = lambda wildcards: os.path.join(
+            'output/assemblies/non_trio', wildcards.sample, wildcards.sample)
     shell:
-        'hifiasm -o {output.assm_dir}/{wildcards.sample} -t {threads} {input.fastq} &> {log.hifiasm}'
+        'hifiasm -o {params.prefix} -t {threads} {input.fastq} &> {log}'
+
+
+rule align_male_reference_reads:
+    input:
+        reads = 'references/reads/{male_reads}.reads.fasta',
+        graph = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.p_ctg.gfa'
+    output:
+        gaf = 'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.gaf'
+    log:
+        'log/output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.ga.log'
+    benchmark:
+        'rsrc/output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.ga.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_max']  # change to high on HILBERT
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 65536 + 65536 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 + 6 * attempt
+    shell:
+        'GraphAligner --verbose -x vg -t {threads} '
+        '--multimap-score-fraction 0.99 --min-alignment-score 1000 '
+        '-g {input.graph} -f {input.reads} -a {output.gaf} &> {log}'
 
 
 rule master:
@@ -323,5 +367,16 @@ rule master:
         expand(
             'output/assemblies/non_trio/{sample}',
             sample=MALE_SAMPLES
+        ),
+        expand(
+            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_trio_binned.dip.{hap}.p_ctg.gaf',
+            male_reads=['GRCh38_chrY', 'HG02982_A0'],
+            sample=['NA24385'],
+            hap=['hap1', 'hap2']
+        ),
+        expand(
+            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_non_trio.bp.{hap}.p_ctg.gaf',
+            male_reads=['GRCh38_chrY', 'HG02982_A0'],
+            sample=MALE_SAMPLES,
+            hap=['hap1', 'hap2']
         )
-
