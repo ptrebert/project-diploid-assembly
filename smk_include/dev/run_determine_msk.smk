@@ -333,6 +333,8 @@ rule align_male_reference_reads:
         'log/output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.ga.log'
     benchmark:
         'rsrc/output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.ga.rsrc'
+    wildcard_constraints:
+        sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']  # change to high on HILBERT
@@ -369,13 +371,15 @@ rule master:
             sample=MALE_SAMPLES
         ),
         expand(
-            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_trio_binned.dip.{hap}.p_ctg.gaf',
+            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.dip.{hap}.p_ctg.gaf',
+            assm_mode=['trio_binned'],
             male_reads=['GRCh38_chrY', 'HG02982_A0'],
             sample=['NA24385'],
             hap=['hap1', 'hap2']
         ),
         expand(
-            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_non_trio.bp.{hap}.p_ctg.gaf',
+            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.bp.{hap}.p_ctg.gaf',
+            assm=['non_trio']
             male_reads=['GRCh38_chrY', 'HG02982_A0'],
             sample=MALE_SAMPLES,
             hap=['hap1', 'hap2']
