@@ -40,6 +40,8 @@ MAIN_CHROMOSOMES = ['chr' + str(i) for i in range(1,23)] + ['chrX', 'chrY']
 if SAMPLE == 'HG00733':
 
     # ===== DEBUG
+    # MBG k-mer size < 1000 leads to memory explosion
+    # for sample HG00733, but works fine for HG002 - unclear reason
     MBG_KMER_SIZE = [k for k in MBG_KMER_SIZE if int(k) > 1000]
     MBG_WINDOW_SIZE = [w for w in MBG_WINDOW_SIZE if int(w) > 500]
     # ===== DEBUG
@@ -103,6 +105,9 @@ def find_script_path(script_name, subfolder=''):
 
 
 rule clean_hpg_ont:
+    """
+    TODO: if LINKS scaffolder works, drop "-l 120" from seqtk call
+    """
     input:
         fastq = '{}/{{filename}}.fastq.gz'.format(ONT_RAW_FOLDER)
     output:
@@ -830,7 +835,7 @@ else:
     bifrost_cpu = config['num_cpu_high']
 
 
-rule build_colored_dbg_allref:
+rule build_colored_dbg:
     input:
         fofn = 'output/fofn/{sample}_all_reads.fofn'
     output:
@@ -905,7 +910,11 @@ PIPELINE_OUTPUT = [
             reference=REFERENCE_ASSEMBLIES,
             size_fraction=[100000, 500000]
         ),
-        expand(rules.build_colored_dbg.output.gfa, sample=SAMPLE),
+        expand(
+            rules.build_colored_dbg.output.gfa,
+            sample=SAMPLE,
+            strategy=['all-ref', 'all-seq']
+        ),
         expand(
             rules.hifiasm_ontec_only_assembly.output.raw_unitigs,
             size_fraction=[0, 100000]
@@ -932,10 +941,10 @@ if RUN_SYSTEM == 'hilbert':
 
 if RUN_SYSTEM == 'valet':
     PIPELINE_OUTPUT.append(
-        'output/cdbg_kcount/{sample}.all-ref.kmc.txt'.format(SAMPLE)
+        'output/cdbg_kcount/{}.all-ref.kmc.txt'.format(SAMPLE)
     )
     PIPELINE_OUTPUT.append(
-        'output/cdbg_kcount/{sample}.all-seq.kmc.txt'.format(SAMPLE)
+        'output/cdbg_kcount/{}.all-seq.kmc.txt'.format(SAMPLE)
     )
 
 
