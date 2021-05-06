@@ -139,7 +139,7 @@ CONSTRAINT_STRANDSEQ_LIBQC_SAMPLES = build_input_data_wildcard_constraint(
     input_type='strandseq',
     readset_selectors={
         'library_fractions': ['one'],
-        'library_qc': ['auto']
+        'library_qc': ['auto', 'yes', True, 1]
     }
 )
 

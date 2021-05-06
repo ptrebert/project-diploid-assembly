@@ -249,54 +249,82 @@ rule exclude_low_quality_libraries:
     output:
         table = 'output/sseq_qc/{sseq_reads}.ashleys-qc.tsv',
         listing = 'output/sseq_qc/{sseq_reads}.exclude.txt'
+    log:
+        'log/output/sseq_qc/{sseq_reads}.ashleys-qc.log'
+    params:
+        t_conf_low = 0.3,  # follows hard-coded values in ASHLEYS
+        t_conf_high = 0.7,
+        error_lowq = 0.33
     run:
         import collections as col
         import pandas as pd
 
-        qc_labels = pd.read_csv(
-            input.quality_labels,
-            sep='\t',
-            header=0,
-            # library here: PGAS-internal ID
-            names=['library_id', 'label', 'probability'],
-            index_col='library_id'
-        )
+        with open(log[0], 'w') as logfile:
 
-        qc_features = pd.read_csv(
-            input.library_features,
-            sep='\t',
-            header=0,
-            index_col='sample_name'
-        )
+            _ = logfile.write('Processing sample: {}\n'.format(wildcards.sseq_reads))
 
-        qc_info = pd.concat([qc_labels, qc_features], axis=1, ignore_index=False)
-        qc_info['label_confidence'] = 'high_confidence'
-        selector = (qc_info['probability'] > 0.3) & (qc_info['probability'] < 0.7)
-        qc_info.loc[selector, 'label_confidence'] = 'low_confidence'
+            qc_labels = pd.read_csv(
+                input.quality_labels,
+                sep='\t',
+                header=0,
+                # library here: PGAS-internal ID
+                names=['library_id', 'label', 'probability'],
+                index_col='library_id'
+            )
+            _ = logfile.write('QC labels loaded: {}\n'.format(qc_labels.shape))
 
-        qc_info.sort_index(inplace=True)
-        new_index_names = clean_table_index(qc_info.index.tolist())
-        qc_info.index = pd.Index(new_index_names, name='library_id')
+            qc_features = pd.read_csv(
+                input.library_features,
+                sep='\t',
+                header=0,
+                index_col='sample_name'
+            )
+            _ = logfile.write('QC features loaded: {}\n'.format(qc_features.shape))
 
-        # add info of original library name
-        source_ids = find_source_library_ids(input.data_source, new_index_names)
-        qc_info = pd.concat([qc_info, source_ids], axis=1, ignore_index=False)
+            qc_info = pd.concat([qc_labels, qc_features], axis=1, ignore_index=False)
+            qc_info['label_confidence'] = 'high'
+            selector = (qc_info['probability'] > params.t_conf_low) & (qc_info['probability'] < params.t_conf_high)
+            qc_info.loc[selector, 'label_confidence'] = 'low'
 
-        column_sort_order = ['library_source', 'label', 'probability', 'label_confidence'] + qc_features.columns.tolist()
-        qc_info = qc_info[column_sort_order]
+            _ = logfile.write('Labeling low confidence bracket: P({} < X < {})\n'.format(params.t_conf_low, params.t_conf_high))
+            num_low_conf = (qc_info['label_confidence'] == 'low').sum()
+            _ = logfile.write('Assigned low class label confidence to {} libraries\n'.format(num_low_conf))
 
-        qc_info.to_csv(
-            output.table,
-            sep='\t',
-            header=True,
-            index=True,
-            index_label='library_id'
-        )
-        
-        qc_info.loc[qc_info['label'] == 0, 'library_source'].to_csv(
-            output.listing,
-            sep='\t',
-            header=False,
-            index=False
-        )
+            qc_info.sort_index(inplace=True)
+            new_index_names = clean_table_index(qc_info.index.tolist())
+            qc_info.index = pd.Index(new_index_names, name='library_id')
+            _ = logfile.write('Reset index to base (internal) library name\n')
 
+            # add info of original library name
+            source_ids = find_source_library_ids(input.data_source, new_index_names)
+            qc_info = pd.concat([qc_info, source_ids], axis=1, ignore_index=False)
+            _ = logfile.write('Added library source information\n')
+
+            column_sort_order = ['library_source', 'label', 'probability', 'label_confidence'] + qc_features.columns.tolist()
+            qc_info = qc_info[column_sort_order]
+
+            total_libraries = qc_info.shape[0]
+            lowq_libraries = (qc_info['label'] == 0).sum()
+            _ = logfile.write('Libraries total: {} ({} low quality)\n'.format(total_libraries, lowq_libraries))
+            if round(lowq_libraries / total_libraries, 2) > params.error_lowq:
+                _ = logfile.write('ERROR: fraction of low-quality libraries too high (> {}) - aborting\n'.format(params.error_lowq))
+                raise ValueError('Too many low-quality Strand-seq libraries for sample: {}'.format(wildcards.sseq_reads))
+
+            qc_info.to_csv(
+                output.table,
+                sep='\t',
+                header=True,
+                index=True,
+                index_label='library_id'
+            )
+            _ = logfile.write('Output file "{}" saved to disk.\n'.format(output.table))
+            
+            qc_info.loc[qc_info['label'] == 0, 'library_source'].to_csv(
+                output.listing,
+                sep='\t',
+                header=False,
+                index=False
+            )
+            _ = logfile.write('Output file "{}" saved to disk.\n'.format(output.listing))
+            _ = logfile.write('Operation finished.\n')
+    # END OF RUN BLOCK
