@@ -410,11 +410,11 @@ rule hifiasm_hifi_ontec_assembly:
             minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE) * len(ONT_ALL_FILES)
         )
     output:
-        primary_unitigs = 'output/assembly/layout/{}_hifi-ontec_{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.p_utg.gfa'.format(SAMPLE, SAMPLE),
-        primary_contigs = 'output/assembly/layout/{}_hifi-ontec_{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.p_ctg.gfa'.format(SAMPLE, SAMPLE),
-        raw_unitigs = 'output/assembly/layout/{}_hifi-ontec_{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.r_utg.gfa'.format(SAMPLE, SAMPLE),
+        primary_unitigs = 'output/assembly/layout/{}_hifi-ontec_geq{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.p_utg.gfa'.format(SAMPLE, SAMPLE),
+        primary_contigs = 'output/assembly/layout/{}_hifi-ontec_geq{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.p_ctg.gfa'.format(SAMPLE, SAMPLE),
+        raw_unitigs = 'output/assembly/layout/{}_hifi-ontec_geq{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.r_utg.gfa'.format(SAMPLE, SAMPLE),
         discard = multiext(
-            'output/assembly/layout/{}_hifi-ontec_{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}'.format(SAMPLE, SAMPLE),
+            'output/assembly/layout/{}_hifi-ontec_geq{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}'.format(SAMPLE, SAMPLE),
             '.a_ctg.gfa', '.a_ctg.noseq.gfa',
             '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
             '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
@@ -439,13 +439,18 @@ rule hifiasm_hifi_ontec_assembly:
 
 
 rule count_reference_kmers:
+    """
+    k-mer sizes according to winnowmap github:
+    15: read-to-ref mapping
+    19: assm-to-ref mapping
+    """
     input:
         fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
     output:
-        kmer_db = directory(os.path.join(REFERENCE_FOLDER, '{reference}.k15.db/')),
-        rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k15.rep-grt09998.txt')
+        kmer_db = directory(os.path.join(REFERENCE_FOLDER, '{reference}.k{kmer_size}.db/')),
+        rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k{kmer_size}.rep-grt09998.txt')
     benchmark:
-        'rsrc/output/kmer/{reference}.k15.count-dump.rsrc'
+        'rsrc/output/kmer/{reference}.k{kmer_size}.count-dump.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
@@ -453,10 +458,8 @@ rule count_reference_kmers:
         mem_per_cpu_mb = lambda wildcards, attempt: int(32768 * attempt / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
         mem_total_gb = lambda wildcards, attempt: 32 * attempt
-    params:
-        kmer_size = 15
     shell:
-        'meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.fasta} && '
+        'meryl count k={wildcards.kmer_size} threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.fasta} && '
         'meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}'
 
 
@@ -779,11 +782,11 @@ rule hifiasm_ontec_only_assembly:
             minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE) * len(ONT_ALL_FILES)
         )
     output:
-        primary_unitigs = 'output/assembly/layout/{}_ontec-only_{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.p_utg.gfa'.format(SAMPLE, SAMPLE),
-        primary_contigs = 'output/assembly/layout/{}_ontec-only_{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.p_ctg.gfa'.format(SAMPLE, SAMPLE),
-        raw_unitigs = 'output/assembly/layout/{}_ontec-only_{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.r_utg.gfa'.format(SAMPLE, SAMPLE),
+        primary_unitigs = 'output/assembly/layout/{}_ontec-only_geq{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.p_utg.gfa'.format(SAMPLE, SAMPLE),
+        primary_contigs = 'output/assembly/layout/{}_ontec-only_geq{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.p_ctg.gfa'.format(SAMPLE, SAMPLE),
+        raw_unitigs = 'output/assembly/layout/{}_ontec-only_geq{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}.r_utg.gfa'.format(SAMPLE, SAMPLE),
         discard = multiext(
-            'output/assembly/layout/{}_ontec-only_{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}'.format(SAMPLE, SAMPLE),
+            'output/assembly/layout/{}_ontec-only_geq{{size_fraction}}/{}_ontec-only_geq{{size_fraction}}'.format(SAMPLE, SAMPLE),
             '.a_ctg.gfa', '.a_ctg.noseq.gfa',
             '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
             '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
@@ -885,6 +888,105 @@ rule count_cdbg_kmers:
             '{input.gfa} {input.colors} {params.kmer_size} {threads} {output} &> {log}'
 
 
+rule dump_unitgs_to_fasta:
+    input:
+        gfa = 'output/assembly/layout/{assembly_graph}/{assembly_graph}.{tigs}.gfa'
+    output:
+        fasta = 'output/graph_sequences/{assembly_graph}.{tigs}.fasta',
+        stats = 'output/stats/{assembly_graph}.{tigs}.contig.stats',
+        mapping = 'output/stats/{assembly_graph}.{tigs}.read-contig.map'
+    log:
+        'log/output/sequences/{assembly_graph}.{tigs}.dump.log'
+    benchmark:
+        'rsrc/output/sequences/{assembly_graph}.{tigs}.dump.rsrc'
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 16384 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
+    shell:
+        '{params.script_exec} --gfa {input.gfa} --n-cpus {threads} '
+        '--out-fasta {output.fasta} --out-map {output.mapping} '
+        '--out-stats {output.stats} &> {log}'
+
+
+rule align_tig_sequences_to_reference:
+    input:
+        reference = os.path.join(REFERENCES_FOLDER, '{reference}.fasta'),
+        rep_kmer = os.path.join(REFERENCES_FOLDER, '{reference}.k19.rep-grt09998.txt'),
+        tig_seq = 'output/graph_sequences/{assembly_graph}.{tigs}.fasta',
+    output:
+        bam = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.bam'
+    benchmark:
+        'rsrc/output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.rsrc'
+    log:
+        'log/output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.log'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 36864 + 36864 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    params:
+        sample = lambda wildcards: wildcards.assembly_graph.split('_')[0],
+        sort_threads = 4,
+        align_threads = int(config['num_cpu_high'] - 4)
+    shell:
+        'winnowmap -W {input.rep_kmer} -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.reference} {input.tig_seq} | '
+        'samtools sort -m 4096M --threads {params.sort_threads} --output-fmt BAM -l 9 > {output.bam}'
+
+
+rule dump_tig_alignments_to_bed:
+    input:
+        bam = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.wmap.bam'
+    output:
+        bed = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.bed.gz'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    params:
+        compress_threads = int(config['num_cpu_low'] - 1)
+    shell:
+        'bedtools bamtobed -splitD -i {input.bam} | pigz -p {params.compress_threads} > {output.bed}'
+
+
+rule tig_alignments_in_roi:
+    input:
+        bed_aln = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.bed.gz',
+        bed_regions = os.path.join(REFERENCES_FOLDER, 'T2Tv1_38p13Y_chm13.{subset}.bed')
+    output:
+        'output/tig_intersect/tig_in_roi/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.{subset}.tsv'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'bedtools intersect -wo -a {input.bed_aln} -b {input.bed_regions} > {output}'
+
+
+rule subset_assembly_graph:
+    input:
+        table = 'output/tig_intersect/tig_in_roi/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.{subset}.tsv',
+        graph = 'output/assembly/layout/{assembly_graph}/{assembly_graph}.{tigs}.gfa'
+    output:
+        graph = 'output/subset_graphs/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.{subset}.gfa',
+        table = 'output/subset_graphs/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.{subset}.csv',
+    log:
+        'log/output/subset_graphs/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.{subset}.subset.log',
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_subset.py')
+    shell:
+        '{params.script_exec} --debug --input-gfa {input.graph} --input-table {input.table} '
+        '--output-gfa {output.graph} --output-table {output.table} &> {log}'
+
+
 PIPELINE_OUTPUT = [
         expand(
             rules.strip_sequences_from_graph.output.gfa,
@@ -931,13 +1033,24 @@ PIPELINE_OUTPUT = [
 if RUN_SYSTEM == 'hilbert':
     # not enough memory on VALET system to run
     # hifiasm assemblies with ONTEC reads
+    # 2021-05-07: HiFi plus ONTec size fraction geq > 0
+    # segfaults with hifiasm v0.14.2 (at ~2.4 TB memory)
+    # size fraction geq > 100 kbp succeeds (~1.7 TB memory)
     PIPELINE_OUTPUT.append(
         expand(
             rules.hifiasm_hifi_ontec_assembly.output.raw_unitigs,
-            size_fraction=[0, 100000]
+            size_fraction=[100000]
         )
     )
-
+    PIPELINE_OUTPUT.append(
+        expand(
+            rules.subset_assembly_graph.output.graph,
+            assembly_graph=['HG00733_ontec-only_geq0', 'HG00733_hifi-ontec_geq100000'],
+            tigs=['r_utg'],
+            reference=['T2Tv1_38p13Y_chm13'],
+            subset=['h2a']
+        )
+    )
 
 if RUN_SYSTEM == 'valet':
     PIPELINE_OUTPUT.append(
