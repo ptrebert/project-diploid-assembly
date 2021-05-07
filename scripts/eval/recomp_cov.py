@@ -68,13 +68,30 @@ import multiprocessing as mp
 # individual contigs
 ###
 
+inv_comp_t2t = False
+
 input_bed = '/home/local/work/data/hgsvc/contig_aln_bed/unfiltered/*.bed'
 
+if inv_comp_t2t:
+    # single analysis for T2T hap. assm. alignments
+    input_bed = '/home/local/work/data/hgsvc/contig_aln_bed_t2t/*.bed'
+
+# below: version for submission, MHC/HLA and 3q29
 #input_regions = '/home/local/work/data/hgsvc/roi/roi_HLA_3q29.bed'
-input_regions = '/home/local/work/data/hgsvc/roi/roi_HLA_3q29_HLAn.bed'
+# below: version for revision, includes HLAn
+#input_regions = '/home/local/work/data/hgsvc/roi/roi_HLA_3q29_HLAn.bed'
+# below: version post publication, for inversion companion, includes 1p36.13
+input_regions = '/home/local/work/data/hgsvc/roi/roi_HLA_3q29_HLAn_1p3613.bed'
+
+if inv_comp_t2t:
+    input_regions = '/home/local/work/data/hgsvc/roi/roi-t2t_1p3613.bed'
 
 #output = '/home/local/work/data/hgsvc/roi/MAPQ-ALL_roi_assm_overlaps.tsv'
-output = '/home/local/work/data/hgsvc/roi/MAPQ-ALL_roi_HLAn_assm_overlaps.tsv'
+#output = '/home/local/work/data/hgsvc/roi/MAPQ-ALL_roi_HLAn_assm_overlaps.tsv'
+output = '/home/local/work/data/hgsvc/roi/MAPQ-ALL_roi_HLAn_1p3613_assm_overlaps.tsv'
+
+if inv_comp_t2t:
+    output = '/home/local/work/data/hgsvc/roi/MAPQ-ALL_roi-t2t_1p3613_assm_overlaps.tsv'
 
 shell_cmd = 'bedtools intersect -filenames -wao -a {} -b {} > {}'.format(input_regions, input_bed, output)
 
