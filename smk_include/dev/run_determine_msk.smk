@@ -216,6 +216,28 @@ rule extract_ktagged_reads:
         'pigz -p {params.zip_threads} --best > {output.ktagged_reads}'
 
 
+rule determine_ktagged_overlapping_reads:
+    input:
+        fastq = select_hifi_input,
+        ktagged = 'output/ktagged_reads/{sample}.k{kmer_size}.{hpc}.ktagged-reads.fastq.gz',
+    output:
+        read_ovl = 'output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.paf',
+    log:
+        'log/output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.log'
+    benchmark:
+        'rsrc/output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = '(' + '|'.join(MALE_SAMPLES) + ')'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt
+    shell:
+        'minimap2 -H -x ava-pb -X -o {output.read_ovl} -t {threads} {input.fastq} {input.ktagged}'
+
+
 rule count_parental_kmers:
     input:
         fastq = select_hifi_input
@@ -383,4 +405,10 @@ rule master:
             male_reads=['GRCh38_chrY', 'HG02982_A0'],
             sample=MALE_SAMPLES,
             hap=['hap1', 'hap2']
+        ),
+        expand(
+            'output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.paf',
+            kmer_size=[KMER_SIZE],
+            sample=MALE_SAMPLES,
+            hpc=['is-hpc']
         )
