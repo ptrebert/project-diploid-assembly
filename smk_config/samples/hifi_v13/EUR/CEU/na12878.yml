@@ -12,13 +12,14 @@ sample_description_NA12878:
         technology: pacbio
         data_type: fastq
         load_type: parts
-        source_type: ena
-        bioproject: PRJNA540705
+        comment: PRJNA540705
+        data_source_folder: /gpfs/project/projects/medbioinf/data/giab_hifi/NA12878_HG001/
     - strandseq:
         readset: &sseq_reads NA12878_eriba_il25k-100pe_sseq
-        source_type: ena
-        bioproject: PRJEB14185
+        comment: PRJEB14185
         library_fractions: one
+        library_qc: yes
+        data_source_folder: /gpfs/project/projects/medbioinf/data/eriba_strandseq/NA12878/
     - short_reads:
         readset: NA12878_ptg_il2k-100pe_short
         source_type: ena

@@ -25,6 +25,7 @@ sample_description_NA24385:
         readset: &sseq_reads NA24385_hpg_ilnxs-80pe_sseq
         library_fractions: one
         data_source_folder: /gpfs/project/projects/medbioinf/data/hprc_plus/strandseq/HG002_NA24385/selected/
+        library_qc: no
         comment: "github.com/human-pangenomics/HG002_Data_Freeze_v1.0#strand-seq"
     - short_reads:
         readset: NA24385_giab_il25k-150pe_short
