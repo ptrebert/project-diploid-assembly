@@ -518,7 +518,7 @@ rule align_ontec_output_reads:
         sort_threads = 4,
         align_threads = int(config['num_cpu_high'] - 4)
     shell:
-        'winnowmap -W {input.rep_kmer} -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.fasta} {input.reads} | '
+        'winnowmap -W {input.rep_kmer} -k 15 -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.fasta} {input.reads} | '
         'samtools sort -m 4096M --threads {params.sort_threads} | samtools view -F 4 -b > {output}'
 
 
@@ -914,17 +914,50 @@ rule dump_unitgs_to_fasta:
         '--out-stats {output.stats} &> {log}'
 
 
+# rule align_tig_sequences_to_reference:
+#     """
+#     winnowmap tends to segfaults for unknown reasons
+#     on certain tig datasets - switch to minimap
+#     """
+#     input:
+#         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+#         rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k19.rep-grt09998.txt'),
+#         tig_seq = 'output/graph_sequences/{assembly_graph}.{tigs}.fasta',
+#     output:
+#         bam = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.bam'
+#     benchmark:
+#         'rsrc/output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.rsrc'
+#     log:
+#         'log/output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.log'
+#     conda:
+#         '../../environment/conda/conda_biotools.yml'
+#     threads: config['num_cpu_high']
+#     resources:
+#         mem_total_mb = lambda wildcards, attempt: 36864 + 36864 * attempt,
+#         runtime_hrs = lambda wildcards, attempt: 23 * attempt
+#     params:
+#         sample = lambda wildcards: wildcards.assembly_graph.split('_')[0],
+#         sort_threads = 4,
+#         align_threads = int(config['num_cpu_high'] - 4)
+#     shell:
+#         'winnowmap -W {input.rep_kmer} -k 19 -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.reference} {input.tig_seq} | '
+#         'samtools sort -m 4096M --threads {params.sort_threads} --output-fmt BAM -l 9 > {output.bam}'
+
+
 rule align_tig_sequences_to_reference:
+    """
+    winnowmap tends to segfaults for unknown reasons
+    on certain tig datasets - switch to minimap
+    """
     input:
-        reference = os.path.join(REFERENCES_FOLDER, '{reference}.fasta'),
-        rep_kmer = os.path.join(REFERENCES_FOLDER, '{reference}.k19.rep-grt09998.txt'),
+        reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
         tig_seq = 'output/graph_sequences/{assembly_graph}.{tigs}.fasta',
     output:
-        bam = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.bam'
+        bam = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.mmap.bam'
     benchmark:
-        'rsrc/output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.rsrc'
+        'rsrc/output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.mmap.rsrc'
     log:
-        'log/output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.wmap.log'
+        'log/output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k19.mmap.log'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -936,13 +969,14 @@ rule align_tig_sequences_to_reference:
         sort_threads = 4,
         align_threads = int(config['num_cpu_high'] - 4)
     shell:
-        'winnowmap -W {input.rep_kmer} -t {params.align_threads} -ax map-pb -R "@RG\\tID:1\\tSM:{params.sample}" {input.reference} {input.tig_seq} | '
+        'minimap2 --secondary=no --eqx -Y -ax asm20 '
+        '-t {threads} -R "@RG\\tID:1\\tSM:{params.sample}" {input.reference} {input.tig_seq} | '
         'samtools sort -m 4096M --threads {params.sort_threads} --output-fmt BAM -l 9 > {output.bam}'
 
 
 rule dump_tig_alignments_to_bed:
     input:
-        bam = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.wmap.bam'
+        bam = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.mmap.bam'
     output:
         bed = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.bed.gz'
     conda:
@@ -960,7 +994,7 @@ rule dump_tig_alignments_to_bed:
 rule tig_alignments_in_roi:
     input:
         bed_aln = 'output/alignments/tig_to_ref/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.bed.gz',
-        bed_regions = os.path.join(REFERENCES_FOLDER, 'T2Tv1_38p13Y_chm13.{subset}.bed')
+        bed_regions = os.path.join(REFERENCE_FOLDER, 'T2Tv1_38p13Y_chm13.{subset}.bed')
     output:
         'output/tig_intersect/tig_in_roi/{assembly_graph}.{tigs}_MAP-TO_{reference}.k{kmer}.{subset}.tsv'
     conda:
@@ -1019,7 +1053,7 @@ PIPELINE_OUTPUT = [
         ),
         expand(
             rules.hifiasm_ontec_only_assembly.output.raw_unitigs,
-            size_fraction=[0, 100000]
+            size_fraction=[0]
         ),
         expand(
             rules.merge_binned_coverage.output.table,
