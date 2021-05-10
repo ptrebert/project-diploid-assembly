@@ -401,7 +401,7 @@ rule master:
         ),
         expand(
             'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.bp.{hap}.p_ctg.gaf',
-            assm=['non_trio']
+            assm_mode=['non_trio'],
             male_reads=['GRCh38_chrY', 'HG02982_A0'],
             sample=MALE_SAMPLES,
             hap=['hap1', 'hap2']
