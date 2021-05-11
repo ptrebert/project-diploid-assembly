@@ -371,7 +371,6 @@ rule compute_hifiasm_nonhapres_assembly:
     Memory consumption is fairly low and stable
     """
     input:
-        container = 'hifiasm-v0142r315.sif',
         fastq = 'input/fastq/{sample}.fastq.gz',
     output:
         primary_unitigs = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_utg.gfa',
@@ -380,17 +379,22 @@ rule compute_hifiasm_nonhapres_assembly:
         discard = multiext(
                 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}',
                 '.a_ctg.gfa', '.a_ctg.noseq.gfa',
-                '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
                 '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
                 '.r_utg.noseq.gfa'
-            )
+            ),
+        ec_reads = temp('output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.ec.fa'),
+        reads_ava = temp('output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.ovlp.paf')
+        # exclude the all-vs-all overlap information from output
+        # => won't be deleted by snakemake in case of errors;
+        # should save time if assembly job is restarted
+        # '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
     log:
         hifiasm = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.log',
     benchmark:
         os.path.join('run/output/reference_assembly/non-hap-res',
                      '{sample}_nhr-hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
-#    conda:
-#        '../environment/conda/conda_biotools.yml'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((188416 * attempt) / config['num_cpu_high']),
@@ -398,15 +402,50 @@ rule compute_hifiasm_nonhapres_assembly:
         runtime_hrs = lambda wildcards, attempt: 36 * attempt
     params:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
-        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
-        '{params.singularity} singularity exec {input.container} '
-        'hifiasm -o {params.prefix} -t {threads} {input.fastq} &> {log.hifiasm}'
+        'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.fastq} &> {log.hifiasm}'
+
+
+rule compress_hifiasm_ec_reads:
+    input:
+        'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.ec.fa',
+    output:
+        'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}.ec-reads.fasta.gz',
+    conda:
+        '../environment/conda/conda_shelltools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int(1024 * attempt / config['num_cpu_low']),
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        'pigz -c --best -p {threads} {input} > {output}'
+
+
+rule compress_hifiasm_reads_overlaps:
+    input:
+        'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.ovlp.paf',
+    output:
+        'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}.ava-reads.paf.gz',
+    conda:
+        '../environment/conda/conda_shelltools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int(1024 * attempt / config['num_cpu_low']),
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        'pigz -c --best -p {threads} {input} > {output}'
 
 
 rule convert_nonhapres_gfa_to_fasta:
+    """
+    input includes gzipped error-corrected reads and read self-overlaps just to force creation
+    """
     input:
-        'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
+        gfa = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}/{sample}.p_ctg.gfa',
+        paf_gz = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}.ava-reads.paf.gz',
+        fasta_gz = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}.ec-reads.fasta.gz',
     output:
         fasta = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.fasta',
         rc_map = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.read-contig.map',
@@ -869,7 +908,6 @@ rule compute_hifiasm_haploid_split_assembly:
     Memory consumption is fairly low and stable
     """
     input:
-        container = 'hifiasm-v0142r315.sif',
         fastq_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h1.{sequence}.fastq.gz',
         fastq_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.h2.{sequence}.fastq.gz',
         fastq_un = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{hap_reads}.un.{sequence}.fastq.gz',
@@ -881,17 +919,18 @@ rule compute_hifiasm_haploid_split_assembly:
         raw_unitigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.r_utg.gfa',
         discard = multiext(
                 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}',
-                '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
                 '.hap1.p_ctg.noseq.gfa', '.hap2.p_ctg.noseq.gfa',
                 '.dip.r_utg.noseq.gfa'
             )
+        # as above: exclude read self overlaps from output
+        # '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
     log:
         hifiasm = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}.hifiasm.log',
     benchmark:
         os.path.join('run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/',
                      '{hap_reads}.{sequence}.hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
-#    conda:
-#        '../environment/conda/conda_biotools.yml'
+    conda:
+        '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((12288 + 12288 * attempt) / config['num_cpu_high']),
@@ -899,9 +938,7 @@ rule compute_hifiasm_haploid_split_assembly:
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         prefix = lambda wildcards, output: output.hap1_contigs.rsplit('.', 3)[0],
-        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
-        '{params.singularity} singularity exec {input.container} '
         'hifiasm -o {params.prefix} -t {threads} -3 {input.tags_h1} -4 {input.tags_h2} '
             '{input.fastq_h1} {input.fastq_h2} {input.fastq_un} &> {log.hifiasm}'
 
