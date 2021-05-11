@@ -38,6 +38,41 @@ def select_hifi_input(wildcards):
         return os.path.join(DATA_FOLDER, '{}_hgsvc_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample))
 
 
+def find_script_path(script_name, subfolder=''):
+    """
+    Find full path to script to be executed. Function exists
+    to avoid config parameter "script_dir"
+
+    :param script_name:
+    :param subfolder:
+    :return:
+    """
+    import os
+
+    current_root = workflow.basedir
+    last_root = ''
+
+    script_path = None
+
+    for _ in range(workflow.basedir.count('/')):
+        if last_root.endswith('project-diploid-assembly'):
+            raise RuntimeError('Leaving project directory tree (next: {}). '
+                               'Cannot find script {} (subfolder: {}).'.format(current_root, script_name, subfolder))
+        check_path = os.path.join(current_root, 'scripts', subfolder).rstrip('/')  # if subfolder is empty string
+        if os.path.isdir(check_path):
+            check_script = os.path.join(check_path, script_name)
+            if os.path.isfile(check_script):
+                script_path = check_script
+                break
+        last_root = current_root
+        current_root = os.path.split(current_root)[0]
+
+    if script_path is None:
+        raise RuntimeError('Could not find script {} (subfolder {}). '
+                           'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
+    return script_path
+
+
 rule count_reference_kmers:
     input:
         fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
@@ -359,7 +394,7 @@ rule align_male_reference_reads:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_max']  # change to high on HILBERT
+    threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 65536 + 65536 * attempt,
         runtime_hrs = lambda wildcards, attempt: 6 + 6 * attempt
@@ -367,6 +402,75 @@ rule align_male_reference_reads:
         'GraphAligner --verbose -x vg -t {threads} '
         '--multimap-score-fraction 0.99 --min-alignment-score 1000 '
         '-g {input.graph} -f {input.reads} -a {output.gaf} &> {log}'
+
+
+rule convert_nonhapres_gfa_to_fasta:
+    input:
+        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.p_ctg.gfa',
+    output:
+        fasta = 'output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
+        rc_map = 'output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.read-contig.map',
+        stats = 'output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.contig.stats',
+    log:
+        'log/output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert.log'
+    benchmark:
+        'run/output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+    conda:
+        '../environment/conda/conda_pyscript.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
+    shell:
+        '{params.script_exec} --gfa {input[0]} --n-cpus {threads} '
+        '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
+
+
+rule unimap_contig_to_known_reference_alignment:
+    input:
+        contigs = 'output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
+        ref_fa = os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
+    output:
+        'output/alignments/pctg_to_reference/{sample}_{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt < 2 else attempt * 4,
+        mem_sort_mb = 8192
+    params:
+        individual = lambda wildcards: wildcards.sample,
+        readgroup_id = lambda wildcards: '{}_{}_{}'.format(wildcards.sample, wildcards.assm_mode, wildcards.hap)
+        tempdir = lambda wildcards: os.path.join(
+                                        'temp', 'unimap', wildcards.folder_path,
+                                        wildcards.file_name, wildcards.aln_reference)
+    shell:
+        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
+        'unimap -t {threads} '
+            '--secondary=no --eqx -Y -ax asm5 '
+            '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
+            '{input.ref_fa} {input.contigs} | '
+            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output}'
+
+
+rule dump_contig_to_reference_alignment_to_bed:
+    input:
+        'output/alignments/pctg_to_reference/{sample}_{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
+    output:
+        'output/alignments/pctg_to_reference/{sample}_{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.bed'
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt,
+        mem_total_mb = 2048,
+        mem_per_cpu_mb = 2048
+    shell:
+        'bedtools bamtobed -i {input} > {output}'
 
 
 rule master:
