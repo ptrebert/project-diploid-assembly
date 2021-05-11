@@ -453,6 +453,8 @@ rule pbmm2_arrow_polish_alignment_pass1:
 # BELOW: alignments for haploid contig to known reference / needed for SaaRclust
 #################################################################################
 
+ruleorder: unimap_contig_to_known_reference_alignment > minimap_contig_to_known_reference_alignment
+
 rule minimap_contig_to_known_reference_alignment:
     input:
         contigs = 'output/{folder_path}/{file_name}.fasta',
@@ -477,7 +479,7 @@ rule minimap_contig_to_known_reference_alignment:
     params:
         individual = lambda wildcards: wildcards.file_name.split('_')[0],
         readgroup_id = lambda wildcards: wildcards.file_name.replace('.', '_'),
-        discard_flag = config['minimap_contigref_aln_discard'],
+        discard_flag = config['contigref_aln_discard'],
         tempdir = lambda wildcards: os.path.join(
                                         'temp', 'minimap', wildcards.folder_path,
                                         wildcards.file_name, wildcards.aln_reference)
@@ -487,6 +489,43 @@ rule minimap_contig_to_known_reference_alignment:
             '--secondary=no --eqx -Y -ax asm20 -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
             '{input.reference} {input.contigs} 2> {log.minimap} | '
+            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
+            'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
+
+
+rule unimap_contig_to_known_reference_alignment:
+    input:
+        contigs = 'output/{folder_path}/{file_name}.fasta',
+        ref_idx = 'references/assemblies/{aln_reference}.umi'
+    output:
+        'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.psort.sam.bam'
+    log:
+        unimap = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.unimap.log',
+        st_sort = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-sort.log',
+        st_view = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-view.log',
+    benchmark:
+        '.'.join(['run/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt < 2 else attempt * 4,
+        mem_sort_mb = 8192
+    params:
+        individual = lambda wildcards: wildcards.file_name.split('_')[0],
+        readgroup_id = lambda wildcards: wildcards.file_name.replace('.', '_'),
+        discard_flag = config['contigref_aln_discard'],
+        tempdir = lambda wildcards: os.path.join(
+                                        'temp', 'unimap', wildcards.folder_path,
+                                        wildcards.file_name, wildcards.aln_reference)
+    shell:
+        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
+        'unimap -t {threads} '
+            '--secondary=no --eqx -Y -ax asm5 '
+            '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
+            '{input.ref_idx} {input.contigs} 2> {log.unimap} | '
             'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
             'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
 

@@ -1,5 +1,5 @@
 
-localrules: make_chromosome_size_file
+localrules: make_chromosome_size_file, mock_index_reads
 
 
 rule make_chromosome_size_file:
@@ -10,6 +10,44 @@ rule make_chromosome_size_file:
     shell:
         "cut -f 1,2 {input} > {output}"
 
+
+rule mock_index_reads:
+    """
+    Rule exists to create mock input for unimap
+    index creation
+    """
+    input:
+        'references/assemblies/{ref_genome}.fasta'
+    output:
+        temp('references/assemblies/mock_idx/{ref_genome}.index_read.fasta')
+    run:
+        with open(output[0], 'w') as fasta:
+            _ = fasta.write('>index_read\n')
+            _ = fasta.write('ACGTACGT\n')
+
+
+rule create_unimap_index:
+    """
+    NB: index compatibility (k-mer size default: 21)
+    """
+    input:
+        ref = 'references/assemblies/{ref_genome}.fasta',
+        reads = 'references/assemblies/mock_idx/{ref_genome}.index_read.fasta'
+    output:
+        umi = 'references/assemblies/{ref_genome}.umi',
+    log:
+        'log/references/assemblies/{ref_genome}.umi.log',
+    benchmark:
+        'run/references/assemblies/{ref_genome}.umi.rsrc',
+    conda:
+        '../environment/conda/conda_biotools.yml'
+    threads: 2
+    resources:
+        runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1),
+        mem_total_mb = lambda wildcards, attempt: 16384 + 16384 * attempt
+    shell:
+        'unimap -d {output} -x asm20 -t {threads} -o /dev/null {input.ref} {input.reads} &> {log}'
+    
 
 rule compute_md5_checksum:
     input:
