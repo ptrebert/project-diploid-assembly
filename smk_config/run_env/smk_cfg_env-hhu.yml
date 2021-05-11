@@ -2,7 +2,8 @@
 notify: False
 notify_email: ebertp@hhu.de
 
-show_debug_messages: True
+show_debug_messages: False
+show_warnings: True
 
 env_module_singularity: Singularity
 
