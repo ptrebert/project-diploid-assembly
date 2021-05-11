@@ -39,6 +39,6 @@ sample_targets_HG02818:
         - h1-un
         - h2-un
   - target:
-      nhr_assembler: pereg
-      hap_assembler: pereg
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
       var_caller: deepvar

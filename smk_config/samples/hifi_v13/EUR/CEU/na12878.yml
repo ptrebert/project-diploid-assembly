@@ -40,13 +40,11 @@ sample_targets_NA12878:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
       sseq_reads: *sseq_reads
-      pol_reads: *ccs_reads
-      pol_pass: racon-p2
       hap_assm_mode: split
       hap:
         - h1-un
         - h2-un
   - target:
-      nhr_assembler: pereg
-      hap_assembler: pereg
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
       var_caller: deepvar
