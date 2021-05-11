@@ -408,15 +408,17 @@ rule convert_nonhapres_gfa_to_fasta:
     input:
         gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.p_ctg.gfa',
     output:
-        fasta = 'output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
-        rc_map = 'output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.read-contig.map',
-        stats = 'output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.contig.stats',
+        fasta = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
+        rc_map = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.read-contig.map',
+        stats = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.contig.stats',
     log:
-        'log/output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert.log'
+        'log/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert.log'
     benchmark:
-        'run/output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+        'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
         '../environment/conda/conda_pyscript.yml'
+    wildcard_constraints:
+        sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
@@ -431,12 +433,14 @@ rule convert_nonhapres_gfa_to_fasta:
 
 rule unimap_contig_to_known_reference_alignment:
     input:
-        contigs = 'output/assemblies/{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
+        contigs = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
         ref_fa = os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
     output:
-        'output/alignments/pctg_to_reference/{sample}_{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
+        'output/alignments/pctg_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
     conda:
         '../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
@@ -445,7 +449,7 @@ rule unimap_contig_to_known_reference_alignment:
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.sample,
-        readgroup_id = lambda wildcards: '{}_{}_{}'.format(wildcards.sample, wildcards.assm_mode, wildcards.hap)
+        readgroup_id = lambda wildcards: '{}_{}_{}'.format(wildcards.sample, wildcards.assm_mode, wildcards.hap),
         tempdir = lambda wildcards: os.path.join(
                                         'temp', 'unimap', wildcards.folder_path,
                                         wildcards.file_name, wildcards.aln_reference)
@@ -460,9 +464,9 @@ rule unimap_contig_to_known_reference_alignment:
 
 rule dump_contig_to_reference_alignment_to_bed:
     input:
-        'output/alignments/pctg_to_reference/{sample}_{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
+        'output/alignments/pctg_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
     output:
-        'output/alignments/pctg_to_reference/{sample}_{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.bed'
+        'output/alignments/pctg_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.bed'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
