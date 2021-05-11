@@ -139,10 +139,10 @@ rule reduce_reference_to_main_chromosomes:
 
 rule build_male_t2t_assembly:
     input:
-        t2t = 'references/downloads/T2Tv1_T2TC_chm13.fa.gz',
+        t2t = 'references/downloads/{t2t_version}_T2TC_chm13.fa.gz',
         hg38 = 'references/assemblies/hg38_GCA_p13.fasta',
     output:
-        'references/assemblies/T2Tv1_38p13Y_chm13.fasta'
+        'references/assemblies/{t2t_version}_38p13Y_chm13.fasta'
     resources:
         mem_total_mb = 8192,
         mem_per_cpu_mb = 8192
