@@ -180,6 +180,43 @@ rule clean_mbg_graph:
         'vg view -Fv {input} | vg mod -n -U 100 - 2> {log} | vg view - > {output}'
 
 
+rule extract_roi_sequences:
+    input:
+        ref_fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+        bed = os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.bed'),
+    output:
+        fasta = os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.fasta'),
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt
+    shell:
+        'bedtools getfasta -nameOnly -fo {output.fasta} -fi {input.ref_fasta} -bed {input.bed}'
+
+
+rule align_roi_sequences_to_mbg:
+    input:
+        gfa = 'output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.gfa',
+        reads = os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.fasta'),
+    output:
+        gaf = 'output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.mbg-k{kmer}-w{window}.gaf',
+    log:
+        'log/output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.mbg-k{kmer}-w{window}.ga.log',
+    benchmark:
+        'rsrc/output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.mbg-k{kmer}-w{window}.ga.rsrc',
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 65536 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+    shell:
+        'GraphAligner -t {threads} -g {input.graph} -f {input.reads} '
+            '-x dbg --min-alignment-score 500 --multimap-score-fraction 0.95 '
+            '-a {output.gaf} &> {log}'
+
+
 rule strip_sequences_from_graph:
     input:
         gfa = 'output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
@@ -887,6 +924,35 @@ rule count_cdbg_kmers:
         '{params.singularity} singularity exec {input.container} venn_diagram '
             '{input.gfa} {input.colors} {params.kmer_size} {threads} {output} &> {log}'
 
+    output:
+        'output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
+
+
+# rule dump_mbg_tigs_to_fasta:
+#     input:
+#         gfa = 'output/mbg_hifi_clean/{sample}_HiFi.mbg-k{kmer}-w{window}.clean.gfa'
+#     output:
+#         fasta = 'output/graph_sequences/{sample}_HiFi_MBG.k{kmer}-w{window}.fasta',
+#         stats = 'output/stats/{sample}_HiFi_MBG.k{kmer}-w{window}.contig.stats',
+#         mapping = 'output/stats/{sample}_HiFi_MBG.k{kmer}-w{window}.read-contig.map'
+#     log:
+#         'log/output/sequences/{sample}_HiFi_MBG.k{kmer}-w{window}.dump.log'
+#     benchmark:
+#         'rsrc/output/sequences/{sample}_HiFi_MBG.k{kmer}-w{window}.dump.rsrc'
+#     conda:
+#         '../../environment/conda/conda_pyscript.yml'
+#     threads: config['num_cpu_low']
+#     resources:
+#         mem_per_cpu_mb = lambda wildcards, attempt: 24768 * attempt,
+#         mem_total_mb = lambda wildcards, attempt: 24768 * attempt,
+#         runtime_hrs = lambda wildcards, attempt: attempt * attempt
+#     params:
+#         script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
+#     shell:
+#         '{params.script_exec} --gfa {input.gfa} --n-cpus {threads} '
+#         '--out-fasta {output.fasta} --out-map {output.mapping} '
+#         '--out-stats {output.stats} &> {log}'
+
 
 rule dump_unitgs_to_fasta:
     input:
@@ -901,6 +967,8 @@ rule dump_unitgs_to_fasta:
         'rsrc/output/sequences/{assembly_graph}.{tigs}.dump.rsrc'
     conda:
         '../../environment/conda/conda_pyscript.yml'
+    wildcard_constraints:
+        tigs = '(r_utg|p_ctg|p_utg)'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 16384 * attempt,
@@ -1061,6 +1129,14 @@ PIPELINE_OUTPUT = [
             reference=REFERENCE_ASSEMBLIES,
             kmer=[15],
             binsize=[100000]
+        ),
+        expand(
+            rules.align_roi_sequences_to_mbg.output.gaf,
+            reference=REFERENCE_ASSEMBLIES,
+            sample=SAMPLE,
+            subset=['h2a'],
+            kmer=MBG_KMER_SIZE,
+            window=MBG_WINDOW_SIZE
         )
 ]
 
