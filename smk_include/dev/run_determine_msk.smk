@@ -444,17 +444,45 @@ rule align_male_reference_reads:
         '-g {input.graph} -f {input.reads} -a {output.gaf} &> {log}'
 
 
-rule convert_nonhapres_gfa_to_fasta:
+rule convert_primary_contigs_gfa_to_fasta:
     input:
-        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{assembly}.gfa',
+        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.p_ctg.gfa',
     output:
-        fasta = 'output/assemblies/{sample}.{assembly}.fasta',
-        rc_map = 'output/assemblies/{sample}.{assembly}.read-contig.map',
-        stats = 'output/assemblies/{sample}.{assembly}.contig.stats',
+        fasta = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
+        rc_map = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.read-contig.map',
+        stats = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.contig.stats',
     log:
-        'log/output/assemblies/{sample}.{assembly}.gfa-convert.log'
+        'log/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert.log'
     benchmark:
-        'run/output/assemblies/{sample}.{assembly}.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+        'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    wildcard_constraints:
+        sample = '(' + '|'.join(MALE_SAMPLES) + ')',
+        hap = '(hap1|hap2)'
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
+    shell:
+        '{params.script_exec} --gfa {input.gfa} --n-cpus {threads} '
+        '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
+
+
+rule convert_raw_unitigs_gfa_to_fasta:
+    input:
+        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.r_utg.gfa',
+    output:
+        fasta = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.fasta',
+        rc_map = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.read-contig.map',
+        stats = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.contig.stats',
+    log:
+        'log/output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.gfa-convert.log'
+    benchmark:
+        'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
         '../../environment/conda/conda_pyscript.yml'
     wildcard_constraints:
