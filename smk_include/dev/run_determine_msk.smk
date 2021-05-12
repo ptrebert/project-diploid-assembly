@@ -1,9 +1,12 @@
+include: '../constraints.smk'
+include: '../aux_utilities.smk'
+
 localrules: master
 
 DATA_FOLDER = '/beeond/data/hifi'
 
 REFERENCE_FOLDER = '/beeond/data/references'
-REFERENCE_ASSEMBLY = 'T2Tv1_T2TC_chm13'
+REFERENCE_ASSEMBLY = 'T2Tv11_T2TC_chm13'
 
 ALIGNMENT_TARGETS = [
     'T2Tv1_T2TC_chm13',
@@ -29,6 +32,7 @@ FEMALE_SAMPLES = [
 ]
 
 WMAP_KMER_LONG_READS = 15
+# deprecated: use unimap for contig-to-reference mapping
 WMAP_KMER_ASSM_CTG = 19
 
 # k-mer size for male-specific k-mer search
@@ -258,49 +262,33 @@ rule extract_ktagged_reads:
 
 rule align_ktagged_reads_to_reference:
     input:
-        reads = 'output/ktagged_reads/{{sample}}.k{}.{{hpc}}.ktagged-reads.fastq.gz'.format(KMER_SIZE),
+        reads = 'output/ktagged_reads/{sample}.k{msk_kmer}.{hpc}.ktagged-reads.fastq.gz',
         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
-        ref_repkmer = 'output/kmer_db_sample/{{reference}}.k{}.no-hpc.rep-grt09998.txt'.format(WMAP_KMER_LONG_READS),
+        ref_repkmer = 'output/kmer_db_sample/{reference}.k{wmap_kmer}.no-hpc.rep-grt09998.txt',
     output:
-        paf = 'output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.paf'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+        bam = 'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.psort.raw.bam'
     log:
-        'log/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.log'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+        'log/output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.log'
     benchmark:
-        'rsrc/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.rsrc'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+        'rsrc/output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_sort_mb = 4096,
+        align_threads = config['num_cpu_medium'] - 4,
+        sort_threads = 4
     params:
-        kmer_size = WMAP_KMER_LONG_READS,
+        individual = lambda wildcards: wildcards.sample,
+        readgroup_id = lambda wildcards: '{}_k{}_{}'.format(wildcards.sample, wildcards.msk_kmer, wildcards.hpc.replace('-', '')),
     shell:
-        'winnowmap -W {input.ref_repkmer} -k {params.kmer_size} -t {threads} -c -x map-pb --secondary=no --paf-no-hit '
-        '{input.reference} {input.reads} > {output.paf} 2> {log}'
-
-
-rule convert_ktagged_ref_paf_to_bed:
-    input:
-        paf = 'output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.paf'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
-    output:
-        bed = 'output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.bed'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
-    log:
-        'log/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.log'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
-    benchmark:
-        'rsrc/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.rsrc'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    wildcard_constraints:
-        sample = '(' + '|'.join(MALE_SAMPLES) + ')'
-    threads: config['num_cpu_medium']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
-    params:
-        kmer_size = WMAP_KMER_LONG_READS,
-    shell:
-        'paftools.js splice2bed {input.paf} > {output.bed} 2> {log}'
+        'winnowmap -W {input.ref_repkmer} -k {wildcards.wmap_kmer} -t {params.align_threads} -a -x map-pb  '
+        '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
+        '{input.reference} {input.reads} | '
+        'samtools sort -m {resources.mem_sort_mb}M -@ {params.sort_threads} -O BAM > {output.bam}'
 
 
 rule determine_ktagged_overlapping_reads:
@@ -458,15 +446,15 @@ rule align_male_reference_reads:
 
 rule convert_nonhapres_gfa_to_fasta:
     input:
-        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.p_ctg.gfa',
+        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.{tigs}.gfa',
     output:
-        fasta = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
-        rc_map = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.read-contig.map',
-        stats = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.contig.stats',
+        fasta = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.fasta',
+        rc_map = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.read-contig.map',
+        stats = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.contig.stats',
     log:
-        'log/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert.log'
+        'log/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.gfa-convert.log'
     benchmark:
-        'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+        'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
         '../../environment/conda/conda_pyscript.yml'
     wildcard_constraints:
@@ -479,16 +467,18 @@ rule convert_nonhapres_gfa_to_fasta:
     params:
         script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
     shell:
-        '{params.script_exec} --gfa {input[0]} --n-cpus {threads} '
+        '{params.script_exec} --gfa {input.gfa} --n-cpus {threads} '
         '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
 
 
 rule unimap_contig_to_known_reference_alignment:
     input:
-        contigs = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
-        ref_fa = os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
+        contigs = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.fasta',
+        ref_fa = os.path.join(REFERENCE_FOLDER, '{reference}.umi')
     output:
-        'output/alignments/pctg_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
+        'output/alignments/tigs_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}_MAP-TO_{reference}.psort.raw.bam'
+    benchmark:
+        'rsrc/output/alignments/tigs_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}_MAP-TO_{reference}.umap.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -497,17 +487,18 @@ rule unimap_contig_to_known_reference_alignment:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt,
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.sample,
-        readgroup_id = lambda wildcards: '{}_{}_{}'.format(wildcards.sample, wildcards.assm_mode, wildcards.hap),
+        readgroup_id = lambda wildcards: '{}_{}_{}_{}'.format(wildcards.sample, wildcards.assm_mode, wildcards.hap, wildcards.tigs),
         tempdir = lambda wildcards: os.path.join(
-                                        'temp', 'unimap', wildcards.sample,
-                                        wildcards.assm_mode, wildcards.hap)
+            'temp', 'unimap', wildcards.sample,
+            wildcards.assm_mode, wildcards.hap, wildcards.tigs
+        )
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
-        'unimap -t {threads} '
+        'unimap -t {threads} -2 '
             '--secondary=no --eqx -Y -ax asm5 '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
             '{input.ref_fa} {input.contigs} | '
@@ -516,17 +507,23 @@ rule unimap_contig_to_known_reference_alignment:
 
 rule dump_contig_to_reference_alignment_to_bed:
     input:
-        'output/alignments/pctg_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
+        'output/alignments/{aln_path}/{aln_file}.psort.raw.bam'
     output:
-        'output/alignments/pctg_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.bed'
+        'output/alignments/{aln_path}/{aln_file}.filt.bed'
+    benchmark:
+        'rsrc/output/alignments/{aln_path}/{aln_file}.bed-filter.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt,
-        mem_total_mb = 2048,
-        mem_per_cpu_mb = 2048
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+        mem_total_mb = 2048 * attempt,
+        mem_per_cpu_mb = 2048 * attempt
+    params:
+        # not (QC fail | dup | unmapped | secondary)
+        discard_flag = 1796  # includes supp. alignments
     shell:
-        'bedtools bamtobed -i {input} > {output}'
+        'samtools view -u -q 1 -F {params.discard_flag} -@ {threads} | bedtools bamtobed -i /dev/stdin > {output}'
 
 
 rule master:
@@ -573,8 +570,26 @@ rule master:
             hpc=['is-hpc']
         ),
         expand(
-            rules.convert_ktagged_ref_paf_to_bed.output.bed,
+            'output/alignments/tigs_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}_MAP-TO_{reference}.filt.bed',
             sample=MALE_SAMPLES,
-            reference=['T2Tv1_38p13Y_chm13'],
+            assm_mode=['non_trio'],
+            mode_id=['bp'],
+            tigs=['r_utg', 'p_ctg'],
+            reference=['T2Tv11_38p13Y_chm13'],
             hpc=['is-hpc']
-        )
+        ),
+        expand(
+            'output/alignments/tigs_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}_MAP-TO_{reference}.filt.bed',
+            sample=['NA24385'],
+            assm_mode=['trio_binned'],
+            mode_id=['dip'],
+            tigs=['r_utg', 'p_ctg'],
+            reference=['T2Tv11_38p13Y_chm13'],
+            hpc=['is-hpc']
+        ),
+        expand(
+            'output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.filt.bed'.format(KMER_SIZE, WMAP_KMER_LONG_READS),
+            sample=MALE_SAMPLES,
+            reference=['T2Tv11_38p13Y_chm13'],
+            hpc=['is-hpc']
+        ),
