@@ -1,7 +1,4 @@
-include: '../constraints.smk'
-include: '../aux_utilities.smk'
-
-localrules: master
+localrules: mock_index_reads, master
 
 DATA_FOLDER = '/beeond/data/hifi'
 
@@ -79,6 +76,38 @@ def find_script_path(script_name, subfolder=''):
         raise RuntimeError('Could not find script {} (subfolder {}). '
                            'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
     return script_path
+
+
+rule mock_index_reads:
+    input:
+        os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
+    output:
+        temp(os.path.join(REFERENCE_FOLDER, 'mock_index', '{reference}.index_read.fasta'))
+    run:
+        with open(output[0], 'w') as fasta:
+            _ = fasta.write('>index_read\n')
+            _ = fasta.write('ACGTACGT\n')
+
+
+rule create_unimap_index:
+    """
+    NB: index compatibility (k-mer size default: 21)
+    """
+    input:
+        ref = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+        reads = os.path.join(REFERENCE_FOLDER, 'mock_index', '{reference}.index_read.fasta')
+    output:
+        umi = os.path.join(REFERENCE_FOLDER, '{reference}.umi'),
+    benchmark:
+        'run/references/indexing/{ref_genome}.umi.rsrc',
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: 2
+    resources:
+        runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1),
+        mem_total_mb = lambda wildcards, attempt: 16384 + 16384 * attempt
+    shell:
+        'unimap -d {output} -x asm20 -t {threads} -o /dev/null {input.ref} {input.reads} &> {log}'
 
 
 rule count_reference_kmers:
