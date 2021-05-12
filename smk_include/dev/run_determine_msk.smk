@@ -28,6 +28,9 @@ FEMALE_SAMPLES = [
     'NA24143'
 ]
 
+WMAP_KMER_LONG_READS = 15
+WMAP_KMER_ASSM_CTG = 19
+
 KMER_SIZE = 31
 
 
@@ -251,6 +254,32 @@ rule extract_ktagged_reads:
         'pigz -p {params.zip_threads} --best > {output.ktagged_reads}'
 
 
+rule align_ktagged_reads_to_reference:
+    input:
+        reads = 'output/ktagged_reads/{{sample}}.k{}.{{hpc}}.ktagged-reads.fastq.gz'.format(KMER_SIZE),
+        reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+        ref_repkmer = 'output/kmer_db_sample/{{reference}}.k{}.no-hpc.rep-grt09998.txt'.format(WMAP_KMER_LONG_READS),
+    output:
+        paf = 'output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{reference}.wmap-k{}.paf'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+    log:
+        'log/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{reference}.wmap-k{}.log'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+    benchmark:
+        'rsrc/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{reference}.wmap-k{}.rsrc'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = '(' + '|'.join(MALE_SAMPLES) + ')'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 65536 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt
+    params:
+        kmer_size = WMAP_KMER_LONG_READS,
+    shell:
+        'winnowmap -W {input.ref_repkmer} -k {params.kmer_size} -t {threads} -x map-pb --secondary=no --paf-no-hit '
+        '{input.reference} {input.reads} > {output.paf} 2> {log}'
+
+
 rule determine_ktagged_overlapping_reads:
     input:
         fastq = select_hifi_input,
@@ -416,7 +445,7 @@ rule convert_nonhapres_gfa_to_fasta:
     benchmark:
         'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
-        '../environment/conda/conda_pyscript.yml'
+        '../../environment/conda/conda_pyscript.yml'
     wildcard_constraints:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     threads: config['num_cpu_low']
@@ -438,21 +467,21 @@ rule unimap_contig_to_known_reference_alignment:
     output:
         'output/alignments/pctg_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.psort.sam.bam'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     threads: config['num_cpu_high']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 1 if attempt < 2 else attempt * 4,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.sample,
         readgroup_id = lambda wildcards: '{}_{}_{}'.format(wildcards.sample, wildcards.assm_mode, wildcards.hap),
         tempdir = lambda wildcards: os.path.join(
-                                        'temp', 'unimap', wildcards.folder_path,
-                                        wildcards.file_name, wildcards.aln_reference)
+                                        'temp', 'unimap', wildcards.sample,
+                                        wildcards.assm_mode, wildcards.hap)
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
         'unimap -t {threads} '
@@ -468,7 +497,7 @@ rule dump_contig_to_reference_alignment_to_bed:
     output:
         'output/alignments/pctg_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}_MAP-TO_{reference}.bed'
     conda:
-        '../environment/conda/conda_biotools.yml'
+        '../../environment/conda/conda_biotools.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt,
         mem_total_mb = 2048,
@@ -519,4 +548,10 @@ rule master:
             kmer_size=[KMER_SIZE],
             sample=MALE_SAMPLES,
             hpc=['is-hpc']
+        ),
+        expand(
+            rules.align_ktagged_reads_to_reference.output.paf,
+            sample=MALE_SAMPLES,
+            reference=['T2Tv1_38p13Y_chm13'],
+            hpc=['is-hpc    ']
         )
