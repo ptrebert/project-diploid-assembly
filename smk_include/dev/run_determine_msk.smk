@@ -446,15 +446,15 @@ rule align_male_reference_reads:
 
 rule convert_nonhapres_gfa_to_fasta:
     input:
-        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.{tigs}.gfa',
+        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{assembly}.gfa',
     output:
-        fasta = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.fasta',
-        rc_map = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.read-contig.map',
-        stats = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.contig.stats',
+        fasta = 'output/assemblies/{sample}.{assembly}.fasta',
+        rc_map = 'output/assemblies/{sample}.{assembly}.read-contig.map',
+        stats = 'output/assemblies/{sample}.{assembly}.contig.stats',
     log:
-        'log/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.gfa-convert.log'
+        'log/output/assemblies/{sample}.{assembly}.gfa-convert.log'
     benchmark:
-        'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+        'run/output/assemblies/{sample}.{assembly}.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
         '../../environment/conda/conda_pyscript.yml'
     wildcard_constraints:
@@ -473,12 +473,12 @@ rule convert_nonhapres_gfa_to_fasta:
 
 rule unimap_contig_to_known_reference_alignment:
     input:
-        contigs = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}.fasta',
+        contigs = 'output/assemblies/{sample}.{assembly}.fasta',
         ref_fa = os.path.join(REFERENCE_FOLDER, '{reference}.umi')
     output:
-        'output/alignments/tigs_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}_MAP-TO_{reference}.psort.raw.bam'
+        'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.psort.raw.bam'
     benchmark:
-        'rsrc/output/alignments/tigs_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}_MAP-TO_{reference}.umap.rsrc'
+        'rsrc/output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.umap.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -491,10 +491,10 @@ rule unimap_contig_to_known_reference_alignment:
         mem_sort_mb = 8192
     params:
         individual = lambda wildcards: wildcards.sample,
-        readgroup_id = lambda wildcards: '{}_{}_{}_{}'.format(wildcards.sample, wildcards.assm_mode, wildcards.hap, wildcards.tigs),
+        readgroup_id = lambda wildcards: '{}_{}'.format(wildcards.sample, wildcards.assembly),
         tempdir = lambda wildcards: os.path.join(
             'temp', 'unimap', wildcards.sample,
-            wildcards.assm_mode, wildcards.hap, wildcards.tigs
+            wildcards.assembly
         )
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
@@ -570,22 +570,24 @@ rule master:
             hpc=['is-hpc']
         ),
         expand(
-            'output/alignments/tigs_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}_MAP-TO_{reference}.filt.bed',
+            'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.filt.bed',
             sample=MALE_SAMPLES,
-            assm_mode=['non_trio'],
-            mode_id=['bp'],
-            tigs=['r_utg', 'p_ctg'],
-            reference=['T2Tv11_38p13Y_chm13'],
-            hpc=['is-hpc']
+            assembly=[
+                'non_trio.bp.hap1.p_ctg',
+                'non_trio.bp.hap2.p_ctg',
+                'non_trio.bp.r_utg',
+            ],
+            reference=['T2Tv11_38p13Y_chm13']
         ),
         expand(
-            'output/alignments/tigs_to_reference/{sample}.{assm_mode}.{mode_id}.{hap}.{tigs}_MAP-TO_{reference}.filt.bed',
+            'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.filt.bed',
             sample=['NA24385'],
-            assm_mode=['trio_binned'],
-            mode_id=['dip'],
-            tigs=['r_utg', 'p_ctg'],
+            assembly=[
+                'trio_binned.dip.hap1.p_ctg',
+                'trio_binned.dip.hap2.p_ctg',
+                'trio_binned.dip.r_utg',
+            ],
             reference=['T2Tv11_38p13Y_chm13'],
-            hpc=['is-hpc']
         ),
         expand(
             'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.filt.bed',
