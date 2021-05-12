@@ -517,8 +517,8 @@ rule dump_contig_to_reference_alignment_to_bed:
     threads: config['num_cpu_low']
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * attempt,
-        mem_total_mb = 2048 * attempt,
-        mem_per_cpu_mb = 2048 * attempt
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
     params:
         # not (QC fail | dup | unmapped | secondary)
         discard_flag = 1796  # includes supp. alignments
@@ -588,8 +588,10 @@ rule master:
             hpc=['is-hpc']
         ),
         expand(
-            'output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.filt.bed'.format(KMER_SIZE, WMAP_KMER_LONG_READS),
+            'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.filt.bed',
             sample=MALE_SAMPLES,
+            msk_kmer=[KMER_SIZE],
+            wmap_kmer=[WMAP_KMER_LONG_READS],
             reference=['T2Tv11_38p13Y_chm13'],
             hpc=['is-hpc']
         ),
