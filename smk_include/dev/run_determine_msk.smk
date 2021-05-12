@@ -87,7 +87,8 @@ rule count_reference_kmers:
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        reference = REFERENCE_ASSEMBLY
+        reference = '(' + '|'.join(ALIGNMENT_TARGETS) + ')',
+        kmer_size = '(' + '|'.join([str(WMAP_KMER_LONG_READS), str(WMAP_KMER_ASSM_CTG)]) + ')'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
@@ -260,11 +261,11 @@ rule align_ktagged_reads_to_reference:
         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
         ref_repkmer = 'output/kmer_db_sample/{{reference}}.k{}.no-hpc.rep-grt09998.txt'.format(WMAP_KMER_LONG_READS),
     output:
-        paf = 'output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{reference}.wmap-k{}.paf'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+        paf = 'output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.paf'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
     log:
-        'log/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{reference}.wmap-k{}.log'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+        'log/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.log'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
     benchmark:
-        'rsrc/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{reference}.wmap-k{}.rsrc'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
+        'rsrc/output/alignments/ktagged_to_ref/{{sample}}.k{}.{{hpc}}_MAP-TO_{{reference}}.wmap-k{}.rsrc'.format(KMER_SIZE, WMAP_KMER_LONG_READS)
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -553,5 +554,5 @@ rule master:
             rules.align_ktagged_reads_to_reference.output.paf,
             sample=MALE_SAMPLES,
             reference=['T2Tv1_38p13Y_chm13'],
-            hpc=['is-hpc    ']
+            hpc=['is-hpc']
         )
