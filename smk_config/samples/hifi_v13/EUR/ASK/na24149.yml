@@ -1,0 +1,27 @@
+
+sample_description_NA24149:
+  individual: NA24149
+  sex: male
+  super_population: EUR
+  population: ASK
+  family: 3140
+  member: parent
+  comment: "Sample alias: HG003"
+  data_sources:
+    - long_reads:
+        readset: NA24149_hpg_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        comment: "Processed in batch for SIG chrY [male sample]"
+        data_source_folder: /gpfs/project/projects/medbioinf/data/giab_hifi/NA24149_HG003
+
+sample_targets_NA24149:
+  - aliases:
+      1: &ccs_reads NA24149_hpg_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+  - target:
+      nhr_assembler: hifiasm
+      var_caller: deepvar
