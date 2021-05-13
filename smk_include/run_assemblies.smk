@@ -397,8 +397,8 @@ rule compute_hifiasm_nonhapres_assembly:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((188416 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 188416 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((180224 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 180224 * attempt,
         runtime_hrs = lambda wildcards, attempt: 36 * attempt
     params:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
@@ -417,7 +417,7 @@ rule compress_hifiasm_ec_reads:
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int(1024 * attempt / config['num_cpu_low']),
         mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: 7 * attempt
     shell:
         'pigz -c --best -p {threads} {input} > {output}'
 
