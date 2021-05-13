@@ -7,7 +7,9 @@ REFERENCE_ASSEMBLY = 'T2Tv11_T2TC_chm13'
 
 ALIGNMENT_TARGETS = [
     'T2Tv1_T2TC_chm13',
-    'T2Tv1_38p13Y_chm13'
+    'T2Tv1_38p13Y_chm13',
+    'T2Tv11_T2TC_chm13',
+    'T2Tv11_38p13Y_chm13'
 ]
 
 MALE_SAMPLES = [
@@ -99,7 +101,7 @@ rule create_unimap_index:
     output:
         umi = os.path.join(REFERENCE_FOLDER, '{reference}.umi'),
     benchmark:
-        'run/references/indexing/{ref_genome}.umi.rsrc',
+        'run/references/indexing/{reference}.umi.rsrc',
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: 2
@@ -308,11 +310,11 @@ rule align_ktagged_reads_to_reference:
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_sort_mb = 4096,
-        align_threads = config['num_cpu_medium'] - 4,
-        sort_threads = 4
     params:
         individual = lambda wildcards: wildcards.sample,
         readgroup_id = lambda wildcards: '{}_k{}_{}'.format(wildcards.sample, wildcards.msk_kmer, wildcards.hpc.replace('-', '')),
+        align_threads = config['num_cpu_medium'] - 4,
+        sort_threads = 4
     shell:
         'winnowmap -W {input.ref_repkmer} -k {wildcards.wmap_kmer} -t {params.align_threads} -a -x map-pb  '
         '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
@@ -580,7 +582,7 @@ rule dump_contig_to_reference_alignment_to_bed:
         # not (QC fail | dup | unmapped | secondary)
         discard_flag = 1796  # includes supp. alignments
     shell:
-        'samtools view -u -q 1 -F {params.discard_flag} -@ {threads} | bedtools bamtobed -i /dev/stdin > {output}'
+        'samtools view -u -q 1 -F {params.discard_flag} -@ {threads} {input} | bedtools bamtobed -i /dev/stdin > {output}'
 
 
 rule master:
