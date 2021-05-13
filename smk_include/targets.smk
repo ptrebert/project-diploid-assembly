@@ -12,6 +12,12 @@ TARGET_PATHS = {
         "{input_format}",
         "{hap_reads}.{file_ext}{ext_modifier}"
     ),
+
+    "INIT_SSEQ_READS": os.path.join(
+        "input", "fastq",
+        "{sseq_reads}.fofn"
+    ),
+
     "BUILD_NHR_ASSEMBLY": os.path.join(
         "output", "reference_assembly", "non-hap-res",
         "{hap_reads}_nhr-{nhr_assembler}.fasta"
@@ -612,7 +618,10 @@ def define_file_targets(wildcards):
 
                 if target_name == 'RUN_STRANDSEQ_LIBRARY_QC':
                     # check if library QC is set for this SSEQ read set
-                    sseq_reads = tmp['sseq_reads']
+                    try:
+                        sseq_reads = tmp['sseq_reads']
+                    except KeyError:
+                        continue
                     if sseq_reads not in CONSTRAINT_STRANDSEQ_LIBQC_SAMPLES:
                         continue
 
