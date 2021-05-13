@@ -254,7 +254,7 @@ rule exclude_low_quality_libraries:
     params:
         t_conf_low = 0.3,  # follows hard-coded values in ASHLEYS
         t_conf_high = 0.7,
-        error_lowq = 0.33
+        error_lowq = config.get('sseq_qc_lowq_threshold', 0.5)
     run:
         import collections as col
         import pandas as pd
@@ -306,6 +306,7 @@ rule exclude_low_quality_libraries:
             total_libraries = qc_info.shape[0]
             lowq_libraries = (qc_info['label'] == 0).sum()
             _ = logfile.write('Libraries total: {} ({} low quality)\n'.format(total_libraries, lowq_libraries))
+            _ = logfile.write('Low-quality threshold failure set to: {} pct. of libraries\n'.format(round(params.error_lowq * 100, 0)))
             if round(lowq_libraries / total_libraries, 2) > params.error_lowq:
                 _ = logfile.write('ERROR: fraction of low-quality libraries too high (> {}) - aborting\n'.format(params.error_lowq))
                 raise ValueError('Too many low-quality Strand-seq libraries for sample: {}'.format(wildcards.sseq_reads))

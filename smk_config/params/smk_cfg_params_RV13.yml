@@ -28,6 +28,9 @@ shasta_version: 0.5.0
 # Long read preprocessing
 check_hifi_adapter_contamination: true
 
+# for Strand-seq library QC: fail if more than X% [0...1] of libraries are low quality
+sseq_qc_lowq_threshold: 0.4
+
 # Assembler settings
 shasta_target_coverage: 60  # tech-independent recommendation: cov between 40x and 80x
 flye_target_coverage: 50  # dev recommendation: ~30x, but we have enough RAM to go a bit higher
