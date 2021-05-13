@@ -109,7 +109,7 @@ rule create_unimap_index:
         runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1),
         mem_total_mb = lambda wildcards, attempt: 16384 + 16384 * attempt
     shell:
-        'unimap -d {output} -x asm20 -t {threads} -o /dev/null {input.ref} {input.reads} &> {log}'
+        'unimap -d {output} -x asm20 -t {threads} -o /dev/null {input.ref} {input.reads}'
 
 
 rule count_reference_kmers:
