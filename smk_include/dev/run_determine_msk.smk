@@ -564,7 +564,7 @@ rule unimap_contig_to_known_reference_alignment:
             'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output}'
 
 
-rule dump_contig_to_reference_alignment_to_bed:
+rule dump_sequence_to_reference_alignment_to_bed:
     input:
         'output/alignments/{aln_path}/{aln_file}.psort.raw.bam'
     output:
@@ -583,6 +583,27 @@ rule dump_contig_to_reference_alignment_to_bed:
         discard_flag = 1796  # includes supp. alignments
     shell:
         'samtools view -u -q 1 -F {params.discard_flag} -@ {threads} {input} | bedtools bamtobed -i /dev/stdin > {output}'
+
+
+rule dump_unmapped_sequence_to_bed:
+    input:
+        'output/alignments/{aln_path}/{aln_file}.psort.raw.bam'
+    output:
+        'output/alignments/{aln_path}/{aln_file}.unmap.bed'
+    benchmark:
+        'rsrc/output/alignments/{aln_path}/{aln_file}.bed-unmap.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
+    params:
+        # not (QC fail | dup | unmapped | secondary)
+        select_flag = 4
+    shell:
+        'samtools view -u -f {params.select_flag} -@ {threads} {input} | bedtools bamtobed -i /dev/stdin > {output}'
 
 
 rule master:
@@ -629,17 +650,18 @@ rule master:
             hpc=['is-hpc']
         ),
         expand(
-            'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.filt.bed',
+            'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.{content}.bed',
             sample=MALE_SAMPLES,
             assembly=[
                 'non_trio.bp.hap1.p_ctg',
                 'non_trio.bp.hap2.p_ctg',
                 'non_trio.bp.r_utg',
             ],
-            reference=['T2Tv11_38p13Y_chm13']
+            reference=['T2Tv11_38p13Y_chm13'],
+            content=['filt', 'unmap']
         ),
         expand(
-            'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.filt.bed',
+            'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.{content}.bed',
             sample=['NA24385'],
             assembly=[
                 'trio_binned.dip.hap1.p_ctg',
@@ -647,12 +669,14 @@ rule master:
                 'trio_binned.dip.r_utg',
             ],
             reference=['T2Tv11_38p13Y_chm13'],
+            content=['filt', 'unmap']
         ),
         expand(
-            'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.filt.bed',
+            'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.{content}.bed',
             sample=MALE_SAMPLES,
             msk_kmer=[KMER_SIZE],
             wmap_kmer=[WMAP_KMER_LONG_READS],
             reference=['T2Tv11_38p13Y_chm13'],
-            hpc=['is-hpc']
+            hpc=['is-hpc'],
+            content=['filt', 'unmap']
         ),
