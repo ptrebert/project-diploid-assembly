@@ -36,3 +36,22 @@ for this pipeline. First-time users should start by reading the [tutorial](docs/
 If you encounter any problems or "strange behaviour" during pipeline execution, please check
 the [FAQ](docs/faq.md) for explanations and solutions. If this does not help, please open a
 [github issue](https://guides.github.com/features/issues).
+
+
+## Changelog
+
+### Current DEV
+
+- Because of various serious problems related to Snakemake's "checkpoints", all checkpoints in the pipeline were removed and turned into regular rules.
+This should solve a number of checkpoint-related bugs/problems (e.g., gh#55, gh#216, gh#727 and probably more) that are otherwise difficult to tackle
+(upgrading Snakemake is not possible because of gh#883 in case this would fix some issues). However, this change removes dynamic updates from the workflow,
+which interferes with dynamic inputs (= Strand-seq libraries that are excluded at runtime after library QC). It is likely that the pipeline requires
+at least one restart to fix job failures that result from the discrepancy between the Strand-seq libraries loaded from the data source, and the Strand-seq
+libraries that remain available after QC (provided that automatic QC is set for the particular sample). Effective after #ed628ae.
+- automatic Strand-seq library QC using ASHLEYS can be activated by adding `library_qc: yes` to the Strand-seq readset config
+- long-read support in the pipeline is officially limited to PacBio HiFi/CCS; using other long reads as input for assembly may or may not work
+- support for scraping remote data sources has been dropped. At the moment, setting `use_legacy_data_scraping` can be set in a config to reactivate the behavior,
+but only for code versions predating the removal of all checkpoints (in #ed628ae). Because of this incompatibility, all code related to remote data scraping / legacy data scraping
+will be removed in one of the next commits. If access to the data sources used for the HGSVC2 paper is required, tagged version `v1.0.1` must be used.
+- support for local data sources does not yet include Illumina short reads
+- in addition to `show_warnings: true`, `show_debug_messages: true` can be added to a config to print info to stderr (mostly relevant for developing)
