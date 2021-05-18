@@ -38,6 +38,33 @@ WMAP_KMER_ASSM_CTG = 19
 KMER_SIZE = 31
 
 
+RP11CENY_ONT_ACCESSIONS = [
+    'SRR5902337',
+    'SRR5902338',
+    'SRR5902339',
+    'SRR5902340',
+    'SRR5902341',
+    'SRR5902342',
+    'SRR5902343',
+    'SRR5902344',
+    'SRR5902345',
+    'SRR5902346',
+]
+
+RP11CENY_ILL_ACCESSIONS = [
+    'SRR5902347',
+    'SRR5902348',
+    'SRR5902349',
+    'SRR5902350',
+    'SRR5902351',
+    'SRR5902352',
+    'SRR5902353',
+    'SRR5902354',
+    'SRR5902355'
+]
+
+
+
 def select_hifi_input(wildcards):
     if wildcards.sample in ['NA24143', 'NA24149', 'NA24385']:
         return os.path.join(DATA_FOLDER, '{}_hpg_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample))
@@ -79,6 +106,88 @@ def find_script_path(script_name, subfolder=''):
                            'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
     return script_path
 
+
+rule load_haplogroupA_assembly:
+    """
+    ftp://ftp.ebi.ac.uk/pub/databases/ena/wgs/public/ulg/ULGL01.fasta.gz
+    """
+    output:
+        'references/downloads/HG02982A0.ULGL01.PRJEB28143.fasta.gz'
+    shell:
+        'wget --no-verbose -O {output} ftp://ftp.ebi.ac.uk/pub/databases/ena/wgs/public/ulg/ULGL01.fasta.gz'
+
+
+rule preprocess_haplogroupA_assembly:
+    input:
+        'references/downloads/HG02982A0.ULGL01.PRJEB28143.fasta.gz'
+    output:
+        fasta = 'references/assemblies/HG02982A0.fasta',
+        stats = 'references/assemblies/HG02982A0.contig.stats',
+    run:
+        import gzip
+        import collections as col
+        import operator as op
+
+        seq_buffer = col.defaultdict(str)
+
+        current_contig = None
+        with gzip.open(input[0], 'rt') as fasta:
+            for line in fasta:
+                if line.startswith('>'):
+                    current_contig = line.strip().strip('>')
+                else:
+                    seq_buffer[current_contig] += line.strip().upper()
+        
+        seq_stats = []
+        for contig, ctg_seq in seq_buffer.items():
+            seq_stats.append((len(ctg_seq), contig, col.Counter(ctg_seq)))
+        
+        with open(output.fasta, 'w') as fasta:
+            for _, contig, stats in sorted(seq_stats, reverse=True):
+                fasta_header = '>HG02982_A0_' + contig
+                _ = fasta.write('{}\n{}\n'.format(fasta_header, seq_buffer[contig]))
+        
+        get_nuc_counts = op.itemgetter(*('A', 'C', 'G', 'T'))
+        with open(output.stats, 'w') as table:
+            _ = table.write('\t'.join(['name', 'length', 'A', 'C', 'G', 'T']) + '\n')
+            for length, contig, stats in sorted(seq_stats, reverse=True):
+                a,c,g,t = get_nuc_counts(stats)
+                _ = table.write('\t'.join(list(map(str, [contig, length, a, c, g, t]))) + '\n')
+        # END OF RUN BLOCK
+
+
+rule create_ceny_url_files:
+    input:
+        'annotation/filereport_read_run_PRJNA397218_json.txt'
+    output:
+        'annotation/RP11CENY_{platform}_{accession}_{mate}.url'
+    run:
+        import json
+
+        with open(input[0], 'r') as dump:
+            metadata = json.load(dump)
+
+        for md in metadata:
+            if md['run_accession'] != wildcards.accession:
+                continue
+            remote_urls = md['fastq_ftp'].split(';')
+            check_mate_num = '_' + wildcards.mate + '.fastq.gz'
+            for r in remote_urls:
+                if not r.endwith(check_mate_num):
+                    continue
+                full_url = 'ftp://' + r
+                with open(output[0], 'w') as dump:
+                    _ = dump.write(full_url)
+
+
+rule load_rp11ceny_reads:
+    input:
+        'annotation/RP11CENY_{platform}_{accession}_{mate}.url'
+    output:
+        'output/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz'
+    shell:
+        'wget --no-verbose -O {output} -i {input}'
+    
 
 rule mock_index_reads:
     input:
@@ -164,6 +273,98 @@ rule count_sequence_kmers:
         'meryl print greater-than distinct=0.9998 {output.kmer_db} | pigz -p {params.zip_threads} --best > {output.rep_kmer}'
 
 
+def select_read_file_input(wildcards):
+
+    if wildcards.sample == 'HG02982A0':
+        seq_files =  ['references/assemblies/HG02982A0.fasta']
+    elif wildcards.sample == 'RP11CENYILL':
+        seq_files = expand(
+            'output/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz',
+            platform=['ILL'],
+            accession=RP11CENY_ILL_ACCESSIONS,
+            mate=[1, 2]
+        )
+    elif wildcards.sample == 'RP11CENYONT':
+        seq_files = expand(
+            'output/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz',
+            platform=['ONT'],
+            accession=RP11CENY_ONT_ACCESSIONS,
+            mate=[1]
+        )
+    else:
+        raise ValueError(str(wildcards))
+    return seq_files
+
+
+rule count_read_kmers:
+    input:
+        seq_files = select_read_file_input
+    output:
+        kmer_db = directory('output/kmer_db_sample/{sample}.k{kmer_size}.{hpc}.db'),
+        rep_kmer = 'output/kmer_db_sample/{sample}.k{kmer_size}.{hpc}.rep-grt09998.txt'
+    benchmark:
+        'rsrc/output/kmer_db/{sample}.k{kmer_size}.{hpc}.count-dump.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = '(RP11CENYONT|RP11CENYILL|HG02982A0)'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 262144 * attempt,
+        mem_total_gb = lambda wildcards, attempt: 256 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 48 * attempt
+    params:
+        kmer_size = KMER_SIZE,
+        zip_threads = config['num_cpu_high'],
+        use_hpc = lambda wildcards: '' if wildcards.hpc == 'no-hpc' else 'compress'
+    shell:
+        'meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} {params.use_hpc} output {output.kmer_db} {input.seq_files} && '
+        'meryl print greater-than distinct=0.9998 {output.kmer_db} | pigz -p {params.zip_threads} --best > {output.rep_kmer}'
+
+
+rule build_rp11ceny_specific_db:
+    input:
+        ont_db = 'output/kmer_db_sample/RP11CENYONT.k{kmer_size}.is-hpc.db',
+        ill_db = 'output/kmer_db_sample/RP11CENYILL.k{kmer_size}.no-hpc.db',
+        female_db = 'output/kmer_db/female-merged.k{kmer_size}.is-hpc.db',
+        ref_db = 'output/kmer_db_sample/{}.k{{kmer_size}}.no-hpc.db'.format(REFERENCE_ASSEMBLY),
+    output:
+        kmer_db = directory('output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.db')
+    benchmark:
+        'rsrc/output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.build.rsrc''
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_gb = lambda wildcards, attempt: 8 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+    shell:
+        'meryl threads={threads} memory={resources.mem_total_gb} difference [intersect-sum {input.ont_db} {input.ill_db}] '
+            ' {input.female_db} {input.ref_db} output {output.kmer_db}'
+
+
+rule build_a0_specific_db:
+    input:
+        a0_db = 'output/kmer_db_sample/HG02982A0.k{kmer_size}.is-hpc.db',
+        female_db = 'output/kmer_db/female-merged.k{kmer_size}.is-hpc.db',
+        ref_db = 'output/kmer_db_sample/{}.k{{kmer_size}}.no-hpc.db'.format(REFERENCE_ASSEMBLY),
+    output:
+        kmer_db = directory('output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.db')
+    benchmark:
+        'rsrc/output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.build.rsrc''
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_gb = lambda wildcards, attempt: 8 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+    shell:
+        'meryl threads={threads} memory={resources.mem_total_gb} difference {input.a0_db} '
+            ' {input.female_db} {input.ref_db} output {output.kmer_db}'
+
+
 rule build_shared_male_db:
     input:
         kmer_dbs = expand(
@@ -228,13 +429,37 @@ rule build_male_specific_db:
         'output {output.male_specific}'
 
 
-rule dump_male_specific_kmers:
+rule build_male_union_db:
     input:
-        kmer_db = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db'
+        male_kmers = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db',
+        a0_kmers = 'output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.db',
+        rp11_kmers = 'output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.db'
     output:
-        txt = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.txt.gz'
+        male_union = directory('output/kmer_db/male-union.k{kmer_size}.{hpc}.db')
     benchmark:
-        'rsrc/output/kmer_db/male-specific.k{kmer_size}.{hpc}.dump.rsrc'
+        'rsrc/output/kmer_db/male-union.k{kmer_size}.{hpc}.difference.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
+        mem_total_gb = lambda wildcards, attempt: 12 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        'meryl union-sum threads={threads} memory={resources.mem_total_gb} '
+        '{input.male_kmers} {input.a0_kmers} {input.rp11_kmers} '
+        'output {output.male_union}'
+
+
+rule dump_male_kmers:
+    input:
+        kmer_db = 'output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.db'
+    output:
+        txt = 'output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.txt.gz'
+    benchmark:
+        'rsrc/output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.dump.rsrc'
+    wildcard_constraints:
+        share_type = '(specific|union)'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -246,13 +471,13 @@ rule dump_male_specific_kmers:
         'meryl print {input.kmer_db} | pigz -p {threads} --best > {output.txt}'
 
 
-rule dump_male_unique_kmers:
+rule dump_unique_male_kmers:
     input:
-        kmer_db = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db'
+        kmer_db = 'output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.db'
     output:
-        txt = 'output/kmer_db/male-unique.k{kmer_size}.{hpc}.txt.gz'
+        txt = 'output/kmer_db/male-{share_type}-uniq.k{kmer_size}.{hpc}.txt.gz'
     benchmark:
-        'rsrc/output/kmer_db/male-unique.k{kmer_size}.{hpc}.dump.rsrc'
+        'rsrc/output/kmer_db/male-{share_type}-uniq.k{kmer_size}.{hpc}.dump.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -261,7 +486,7 @@ rule dump_male_unique_kmers:
         mem_total_gb = lambda wildcards, attempt: attempt,
         runtime_hrs = lambda wildcards, attempt: attempt
     params:
-        shared_uniq = len(MALE_SAMPLES)
+        shared_uniq = lambda wildcards: len(MALE_SAMPLES) if wildcards.share_type == 'specific' else len(MALE_SAMPLES) + 2
     shell:
         'meryl print [equal-to {params.shared_uniq} {input.kmer_db}] | pigz -p {threads} --best > {output.txt}'
 
