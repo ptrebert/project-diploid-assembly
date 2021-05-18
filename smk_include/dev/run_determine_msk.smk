@@ -1,4 +1,4 @@
-localrules: mock_index_reads, master
+localrules: mock_index_reads, create_ceny_url_files, master
 
 DATA_FOLDER = '/beeond/data/hifi'
 
@@ -171,9 +171,9 @@ rule create_ceny_url_files:
             if md['run_accession'] != wildcards.accession:
                 continue
             remote_urls = md['fastq_ftp'].split(';')
-            check_mate_num = '_' + wildcards.mate + '.fastq.gz'
+            check_mate_num = '_' + str(wildcards.mate) + '.fastq.gz'
             for r in remote_urls:
-                if not r.endwith(check_mate_num):
+                if not r.endswith(check_mate_num):
                     continue
                 full_url = 'ftp://' + r
                 with open(output[0], 'w') as dump:
@@ -331,7 +331,7 @@ rule build_rp11ceny_specific_db:
     output:
         kmer_db = directory('output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.db')
     benchmark:
-        'rsrc/output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.build.rsrc''
+        'rsrc/output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.build.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -352,7 +352,7 @@ rule build_a0_specific_db:
     output:
         kmer_db = directory('output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.db')
     benchmark:
-        'rsrc/output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.build.rsrc''
+        'rsrc/output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.build.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -834,14 +834,16 @@ rule dump_unmapped_sequence_to_bed:
 rule master:
     input:
         expand(
-            rules.dump_male_specific_kmers.output.txt,
+            rules.dump_male_kmers.output.txt,
             kmer_size=KMER_SIZE,
-            hpc=['is-hpc']
+            hpc=['is-hpc'],
+            share_type=['specific', 'union']
         ),
         expand(
-            rules.dump_male_unique_kmers.output.txt,
+            rules.dump_unique_male_kmers.output.txt,
             kmer_size=KMER_SIZE,
-            hpc=['is-hpc']
+            hpc=['is-hpc'],
+            share_type=['specific', 'union']
         ),
         expand(
             rules.extract_ktagged_reads.output.ktagged_reads,
