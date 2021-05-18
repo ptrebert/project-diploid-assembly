@@ -502,8 +502,14 @@ def get_strandseq_library_info(sseq_reads):
     if debug:
         sys.stderr.write('Returning {} selected libraries for readset {}\n'.format(len(sseq_libs), sseq_reads))
 
-    assert len(sseq_libs) == len(sseq_lib_ids), \
-        'Mismatch library names ({}) and IDs ({}) - name extract failed?'.format(len(sseq_libs), len(sseq_lib_ids))
+    if sseq_reads in CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES:
+        assert len(sseq_libs) == len(sseq_lib_ids), \
+            'Mismatch library names ({}) and IDs ({}) - name extract failed?'.format(len(sseq_libs), len(sseq_lib_ids))
+    else:
+        # for dual-fraction samples, there are 2 pairs of read files
+        # that together make one library in the context of PGAS
+        assert len(sseq_libs) == (len(sseq_lib_ids) * 2), \
+            'Mismatch library names ({}) and IDs ({}) - name extract failed?'.format(len(sseq_libs), len(sseq_lib_ids))
 
     return sseq_libs, sseq_lib_ids
 
