@@ -1,3 +1,54 @@
+def build_sample_name_wildcard_constraint():
+    """
+    Convenience function to error-check sample
+    names extracted from wildcard values for existence
+    return: ALL, MALE, FEMALE
+    """
+    import sys
+    import re
+
+    check_naming = re.compile('[A-Z0-9]+')
+
+    show_warnings = bool(config.get('show_warnings', False))
+
+    samples = set()
+    male_samples = set()
+    female_samples = set()
+    for config_key, settings in config.items():
+        if not config_key.startswith('sample_description'):
+            continue
+        sample_name = config_key.split('_')[-1]  # last component = sample name
+        if check_naming.match(sample_name) is None:
+            raise ValueError('Sample name contains invalid characters (allowed: A-Z, 0-9): {}'.format(sample_name))
+        samples.add(sample_name)
+        try:
+            sample_sex = settings['sex']
+            if sample_sex in ['male', 'm']:
+                male_samples.add(sample_name)
+            elif sample_sex in ['female', 'f']:
+                female_samples.add(sample_name)
+            else:
+                raise ValueError('Value for sample sex not recognized: {} / {}'.format(sample_name, sample_sex))
+        except KeyError:
+            if show_warnings:
+                sys.stderr.write('No sample sex specified for {}'.format(sample_name))
+            continue
+    
+    all_constraint = '^$'
+    male_constraint = '^$'
+    female_constraint = '^$'
+
+    if not samples and show_warnings:
+        sys.stderr.write('No sample configurations detected\n')
+    else:
+        all_constraint = '(' + '|'.join(sorted(samples)) + ')'
+        if male_samples:
+            male_constraint = '(' + '|'.join(sorted(male_samples)) + ')'
+        if female_samples:
+            female_constraint = '(' + '|'.join(sorted(female_samples)) + ')'
+
+    return all_constraint, male_constraint, female_constraint
+
 
 def build_input_data_wildcard_constraint(input_type, readset_selectors, add_sampling_numbers=False):
     """
@@ -9,13 +60,15 @@ def build_input_data_wildcard_constraint(input_type, readset_selectors, add_samp
     import sys
     selected_readsets = []
 
+    show_warnings = bool(config.get('show_warnings', False))
+
     for config_key, settings in config.items():
         if not config_key.startswith('sample_description'):
             continue
         try:
             sources = settings['data_sources']
         except KeyError:
-            if bool(config.get('show_warnings', False)):
+            if show_warnings:
                 sys.stderr.write('\nWARNING: no data sources configured for sample: {}\n'.format(settings['individual']))
             continue
         for source in sources:
@@ -23,7 +76,7 @@ def build_input_data_wildcard_constraint(input_type, readset_selectors, add_samp
                 continue
             source_spec = source[input_type]
             if 'readset' not in source_spec:
-                if bool(config.get('show_warnings', False)):
+                if show_warnings:
                     sys.stderr.write('\nWARNING: no key "readset" found in data '
                                      'source specification: {} / {} / {}\n'.format(settings['individual'], input_type, readset_selectors))
                 continue
@@ -45,7 +98,7 @@ def build_input_data_wildcard_constraint(input_type, readset_selectors, add_samp
                 selected_readsets.append(source_spec['readset'])
 
     if not selected_readsets:
-        if bool(config.get('show_warnings', False)):
+        if show_warnings:
             sys.stderr.write('\nWARNING: no wildcard constraint created '
                              'for readset selectors: {} / {}\n'.format(input_type, readset_selectors))
         wildcard_regexp = '^$'
@@ -55,6 +108,9 @@ def build_input_data_wildcard_constraint(input_type, readset_selectors, add_samp
             wildcard_regexp += '_[0-9]+'
 
     return wildcard_regexp
+
+
+CONSTRAINT_ALL_SAMPLE_NAMES, CONSTRAINT_MALE_SAMPLE_NAMES, CONSTRAINT_FEMALE_SAMPLE_NAMES = build_sample_name_wildcard_constraint()
 
 
 CONSTRAINT_PACBIO_SAMPLES = build_input_data_wildcard_constraint(

@@ -253,7 +253,11 @@ def load_input_blocklist(sseq_exclude, logfile):
     return input_blocklist
 
 
-checkpoint create_input_data_download_requests:
+rule create_input_data_download_requests:
+    """
+    Converted from checkpoint to regular rule to get rid of
+    checkpoint-related problems.
+    """
     input:
         json_dump = 'input/data_sources/{readset}.json',  # rules.master_scrape_data_sources.input,
         tsv_metadata = [],  # rules.master_query_repo_sources.input,
@@ -318,7 +322,8 @@ checkpoint create_input_data_download_requests:
 
 rule handle_strandseq_download_requests:
     input:
-        'input/fastq/{sseq_reads}/requests/{req_file}.request'
+        'input/fastq/{sseq_reads}/requests',
+        #'input/fastq/{sseq_reads}/requests/{req_file}.request'
     output:
         'input/fastq/{sseq_reads}/{req_file}.fastq.gz'
     log:
@@ -332,16 +337,18 @@ rule handle_strandseq_download_requests:
     threads: 2
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
-        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else ''
+        force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
+        req_file_path = lambda wildcards, input: os.path.join(input[0], wildcards.req_file + '.request')
     shell:
         '{params.script_exec} --debug {params.force_copy} '
-        '--request-file {input} --output {output} '
+        '--request-file {params.req_file_path} --output {output} '
         '--parallel-conn 1 &> {log}'
 
 
 rule handle_partial_fastq_download_request:
     input:
-        'input/fastq/{readset}/requests/{readset}.{partnum}.request'
+        'input/fastq/{readset}/requests'
+        #'input/fastq/{readset}/requests/{readset}.{partnum}.request'
     output:
         'input/fastq/{readset}/{readset}.{partnum}.fastq.gz'
     log:
@@ -349,7 +356,8 @@ rule handle_partial_fastq_download_request:
     benchmark:
         'run/input/fastq/{readset}/{readset}.{partnum}.download.rsrc'
     wildcard_constraints:
-        readset = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
+        readset = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES,
+        partnum = 'part[0-9]+'
     conda:
          '../environment/conda/conda_shelltools.yml'
     threads: config['num_cpu_low']
@@ -358,10 +366,11 @@ rule handle_partial_fastq_download_request:
     params:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
-        parallel_conn = max(1, config['num_cpu_low'])
+        parallel_conn = max(1, config['num_cpu_low']),
+        req_file_path = lambda wildcards, input: os.path.join(input[0], '{}.{}.request'.format(wildcards.readset, wildcards.partnum))
     shell:
          '{params.script_exec} --debug {params.force_copy}  '
-         '--request-file {input} --output {output} '
+         '--request-file {params.req_file_path} --output {output} '
          '--parallel-conn {params.parallel_conn} &> {log}'
 
 
@@ -403,6 +412,8 @@ def complete_fastq_samples_mock_merger(wildcards):
     subfolder = 'fastq'
     readset = wildcards.readset
 
+    raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
     requested_input = checkpoints.create_input_data_download_requests.get(subfolder=subfolder, readset=readset).output[0]
 
     req_file_path = os.path.join(requested_input, readset + '_1000.request')
@@ -411,9 +422,13 @@ def complete_fastq_samples_mock_merger(wildcards):
 
 
 rule handle_single_fastq_download_request:
+    """
+    After removing checkpoints from pipeline,
+    no need to call input function here
+    """
     input:
-        complete_fastq_samples_mock_merger
-        #'input/fastq/{readset}/requests/{readset}.request'
+        'input/fastq/{readset}/requests/{readset}.request'
+        #complete_fastq_samples_mock_merger
     output:
         'input/fastq/{readset}_1000.fastq.gz'
     wildcard_constraints:
@@ -441,6 +456,10 @@ def select_short_read_request_file(wildcards):
     import os
     subfolder = 'fastq'
     readset = wildcards.readset
+
+
+    # TODO: short reads have not yet been implemented as local data source...
+    raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
 
     assert wildcards.readset.startswith(wildcards.lib_prefix),\
         'ERROR: sample/readset mismatch for short reads: {} / {}'.format(wildcards.readset, wildcards.lib_prefix)

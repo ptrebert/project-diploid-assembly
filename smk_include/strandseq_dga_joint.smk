@@ -16,7 +16,7 @@ rule master_strandseq_dga_joint:
     input:
         []
 
-def collect_haploid_split_reads(wildcards, glob_collect, file_ext):
+def collect_haploid_split_reads(wildcards, file_ext, glob_collect, caller):
     """
     :param wildcards:
     :param glob_collect:
@@ -29,7 +29,6 @@ def collect_haploid_split_reads(wildcards, glob_collect, file_ext):
         'fastq.gz': 'fastq',
         'pbn.bam': 'bam'
     }
-
     source_path = os.path.join('output',
                                PATH_STRANDSEQ_DGA_SPLIT,
                                'draft/haploid_' + read_format[file_ext],
@@ -52,6 +51,15 @@ def collect_haploid_split_reads(wildcards, glob_collect, file_ext):
             hap_files = glob.glob(pattern)
 
             if not hap_files:
+                if caller == 'snakemake':
+                    sample_name = wildcards.sseq_reads.split('_')[0]
+                    num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+                    tmp = dict(wildcards)
+                    hap_files = []
+                    for i in range(1, num_clusters + 1):
+                        tmp['sequence'] = 'cluster' + str(i)
+                        hap_files.append(source_path.format(**tmp))
+            else:
                 raise RuntimeError('{}: collect_haploid_split_reads: no files collected with pattern {}'.format(h, pattern))
             hap_read_splits.extend(hap_files)
 
@@ -76,16 +84,16 @@ def collect_haploid_split_reads(wildcards, glob_collect, file_ext):
     return hap_read_splits
 
 
-def collect_haploid_split_reads_any(wildcards, glob_collect=False):
+def collect_haploid_split_reads_any(wildcards, glob_collect=True, caller='snakemake'):
     """
     :param wildcards:
     :param glob_collect:
     :return:
     """
     if wildcards.subfolder == 'bam':
-        collected_files = collect_haploid_split_reads(wildcards, glob_collect, 'pbn.bam')
+        collected_files = collect_haploid_split_reads(wildcards, 'pbn.bam', glob_collect, caller)
     elif wildcards.subfolder == 'fastq':
-        collected_files = collect_haploid_split_reads(wildcards, glob_collect, 'fastq.gz')
+        collected_files = collect_haploid_split_reads(wildcards, 'fastq.gz', glob_collect, caller)
     else:
         raise ValueError('collect_haploid_split_reads_any: cannot process wildcards: {}'.format(wildcards))
     return sorted(collected_files)
@@ -98,20 +106,24 @@ rule write_haploid_split_reads_fofn:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_{subfolder}/{hap_reads}.{hap}.fofn',
     run:
         import os
-        try:
-            validate_checkpoint_output(input.read_splits)
-            split_files = input.read_splits
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            split_files = collect_haploid_split_reads_any(wildcards, glob_collect=True)
 
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(split_files):
-                if not os.path.isfile(file_path):
-                    import sys
-                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-                _ = dump.write(file_path + '\n')
+        # Sanity check: there must be one FASTQ/PBN.BAM file per cluster
+        sample_name = wildcards.sseq_reads.split('_')[0]
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+
+        num_reads = len(input.read_splits)
+
+        if num_reads == 0:
+            raise RuntimeError('write_haploid_split_reads_fofn >> zero read split files: {}'.format(wildcards))
+        elif num_reads != num_clusters:
+            raise RuntimeError('write_haploid_split_reads_fofn >> mismatch between expected ({}) and received ({}) read split files: {}'.format(num_clusters, num_reads, wildcards))
+        else:
+            with open(output.fofn, 'w') as dump:
+                for file_path in sorted(input.read_splits):
+                    if not os.path.isfile(file_path):
+                        import sys
+                        sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+                    _ = dump.write(file_path + '\n')
 
 
 rule concat_haploid_fastq:

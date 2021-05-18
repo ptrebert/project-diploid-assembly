@@ -273,7 +273,7 @@ rule collect_contig_to_ref_aln_statistics:
         '--min-mapq {params.mapq} --contig-groups --group-id-position 0 --output {output}'
 
 
-def collect_tag_lists(wildcards, glob_collect=False):
+def collect_tag_lists(wildcards, glob_collect=True, caller='snakemake'):
     """
     :param wildcards:
     :return:
@@ -291,9 +291,20 @@ def collect_tag_lists(wildcards, glob_collect=False):
         seq_files = glob.glob(pattern)
 
         if not seq_files:
-            raise RuntimeError('collect_tag_lists: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                sample_name = wildcards.sseq_reads.split('_')[0]
+                num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+                tmp = dict(wildcards)
+                seq_files = []
+                for i in range(1, num_clusters + 1):
+                    tmp['sequence'] = 'cluster' + str(i)
+                    seq_files.append(source_path.format(**tmp))
+            else:
+                raise RuntimeError('collect_tag_lists: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
@@ -309,6 +320,8 @@ def collect_tag_lists(wildcards, glob_collect=False):
                            hap_reads=wildcards.hap_reads,
                            sequence=checkpoint_wildcards.sequence,
                            tag_type=wildcards.tag_type)
+
+    assert seq_files, 'collect_tag_lists >> returned empty output'
     return seq_files
 
 
@@ -321,16 +334,21 @@ rule summarize_tagging_splitting_statistics:
         'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.rsrc'
     priority: 200
     run:
-        try:
-            validate_checkpoint_output(input.tags)
-            tag_files = input.tags
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            tag_files = collect_tag_lists(wildcards, glob_collect=True)
-
         import os
         import collections as col
+
+        # Sanity check: there must be one tag list per cluster
+        sample_name = wildcards.sseq_reads.split('_')[0]
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+
+        num_tags = len(input.tags)
+
+        if num_tags == 0:
+            raise RuntimeError('summarize_tagging_splitting_statistics >> zero haplo-tag files: {}'.format(wildcards))
+        elif num_tags != num_clusters:
+            raise RuntimeError('summarize_tagging_splitting_statistics >> mismatch between expected ({}) and received ({}) haplotag files: {}'.format(num_clusters, num_tags, wildcards))
+        else:
+            pass
 
         hapcount = col.Counter()
         line_num = 0

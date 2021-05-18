@@ -251,26 +251,62 @@ rule bcftools_index_bgzipped_file:
         'bcftools index --tbi {input}'
 
 
-checkpoint create_assembly_sequence_files:
+rule create_assembly_sequence_files:
+    """
+    Converted from checkpoint to regular rule to get rid of
+    checkpoint-related problems.
+    Risk: FASTA and FASTA index may have a disconnect
+    (e.g., after a --touch run) for clustered assemblies
+    b/c SaaRclust-ering does not produce a fix number of clusters.
+    Go extra mile here in case the requested sequence
+    entry is not part of the FASTA index (make debugging easier)
+    """
     input:
-        '{folder_path}/{reference}.fasta.fai'
+        fasta = '{folder_path}/{reference}.fasta',
+        fai = '{folder_path}/{reference}.fasta.fai'
     output:
-        directory('{folder_path}/{reference}/sequences')
+        '{folder_path}/{reference}/sequences/{sequence}.seq'
     run:
         import os
-        output_dir = output[0]
-        os.makedirs(output_dir, exist_ok=True)
-        with open(input[0], 'r') as fai:
-            for line in fai:
-                seq_name = line.split('\t')[0]
-                output_path = os.path.join(output_dir, seq_name + '.seq')
-                if os.path.isfile(output_path):
-                    with open(output_path, 'r') as seq_file:
-                        seq_entry = seq_file.read().strip()
-                        if seq_entry == line.strip():
-                            continue
-                with open(output_path, 'w') as dump:
-                    _ = dump.write(line)
+        import sys
+
+        index_sequences = set()
+        dump_sequence_entry = None
+        with open(input.fai, 'r') as fasta_index:
+            for line in fasta_index:
+                sequence = line.split()[0]
+                index_sequences.add(sequence)
+                if sequence == wildcards.sequence:
+                    dump_sequence_entry = line
+
+        if dump_sequence_entry is None:
+            sequence_records = '\n'.join(sorted(index_sequences))
+            sys.stderr.write(
+                'Requested sequence entry {} is not part of index file: {}\n'.format(wildcards.sequence, input.fai)
+            )
+            sys.stderr.write('FASTA index contains the following records:\n{}\n'.format(sequence_records))
+
+            # now check if the FASTA contains the record
+            fasta_sequences = set()
+            with open(input.fasta, 'r') as fasta:
+                for line in fasta:
+                    if not line.startswith('>'):
+                        continue
+                    fasta_sequences.add(line.strip().strip('>'))
+            if wildcards.sequence in fasta_sequences:
+                sys.stderr.write('FASTA file contains requested sequence entry.\n')
+                sys.stderr.write('Need to stop the pipeline and manually remove FASTA index file: {}\n'.format(input.fai))
+            else:
+                sys.stderr.write('FASTA file does not contain requested sequence entry.\n')
+                sys.stderr.write('Potential fix: stop the pipeline and manually remove FASTA and FASTA index file: {} / {}\n'.format(input.fasta, input.fai))
+            sequence_records = '\n'.join(sorted(fasta_sequences))
+            sys.stderr.write('Found the following sequence records in FASTA file: {}\n'.format(input.fasta))
+            sys.stderr.write('===\n{}\n'.format(sequence_records))
+            raise ValueError('Missing sequence record: {} not in {}'.format(wildcards.sequence, input.fai))
+        
+        with open(output[0], 'w') as dump:
+            _ = dump.write(dump_sequence_entry)
+    # END OF RUN BLOCK
 
 
 rule generate_bwa_index:
@@ -316,7 +352,44 @@ rule singularity_pull_container:
             '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
 
 
-def collect_strandseq_alignments(wildcards, glob_collect=False, caller='snakemake'):
+def estimate_number_of_saarclusters(sample_name, sseq_reads):
+    """
+    Function introduced to drop all checkpoints w/ subsequent dynamic aggregation of output files.
+    If number of clusters happens to match what is being produced by SaaRclust, should allow
+    pipeline to run from start to end w/o interruption.
+    """
+    import os
+    import glob
+
+    num_clusters = 0
+
+    formatter = {'sseq_reads': sseq_reads, 'sample': sample_name}
+    cluster_fofn_path = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{sample}*_nhr-*.clusters.fofn'.format(**formatter)
+    cluster_fofn_matches = glob.glob(cluster_fofn_path)
+    if len(cluster_fofn_matches) == 1:
+        cluster_fofn = cluster_fofn_matches[0]
+    else:
+        cluster_fofn = None
+
+    if cluster_fofn is not None and os.path.isfile(cluster_fofn):
+        # best case: cluster fofn has already been created
+        with open(cluster_fofn, 'r') as fofn:
+            for line in fofn:
+                if line.strip():
+                    num_clusters += 1
+    elif sample_name in CONSTRAINT_MALE_SAMPLE_NAMES:
+        num_clusters = config.get('desired_clusters_male', config.get('desired_clusters', 0))
+    elif sample_name in CONSTRAINT_FEMALE_SAMPLE_NAMES:
+        num_clusters = config.get('desired_clusters_female', config.get('desired_clusters', 0))
+    else:
+        num_clusters = config.get('desired_clusters', 0)
+    if num_clusters == 0:
+        # reasonable best guess
+        num_clusters = 24
+    return num_clusters
+
+
+def collect_strandseq_alignments(wildcards, glob_collect=True, caller='snakemake'):
     """
     """
     import os
@@ -325,7 +398,6 @@ def collect_strandseq_alignments(wildcards, glob_collect=False, caller='snakemak
     debug = bool(config.get('show_debug_messages', False))
     warn = bool(config.get('show_warnings', False))
     func_name = '\nCALL::{}\nchk::agg::collect_strandseq_alignments: {{}}\n'.format(caller)
-
     if debug:
         sys.stderr.write(func_name.format('wildcards ' + str(wildcards)))
 
@@ -345,21 +417,35 @@ def collect_strandseq_alignments(wildcards, glob_collect=False, caller='snakemak
         if debug:
             sys.stderr.write(func_name.format('called w/ glob collect'))
         import glob
-        source_path = source_path.replace('{ext}', '*')
-        source_path = source_path.replace('{lib_id}', '*')
-        pattern = source_path.format(**{'reference': wildcards.reference,
-                                        'sseq_reads': wildcards.sseq_reads,
-                                        'individual': individual,
-                                        'project': project,
-                                        'platform': platform,
-                                        'spec': spec})
+        glob_path = source_path.replace('{ext}', '*')
+        glob_path = glob_path.replace('{lib_id}', '*')
+        reduced_wildcards = dict(wildcards)
+        reduced_wildcards['individual'] = individual
+        reduced_wildcards['project'] = project
+        reduced_wildcards['platform'] = platform
+        reduced_wildcards['spec'] = spec
+
+        pattern = glob_path.format(**reduced_wildcards)
+
         bam_files = glob.glob(pattern)
         if not bam_files:
             if debug:
                 sys.stderr.write(func_name.format('glob collect failed'))
-            raise RuntimeError('collect_strandseq_alignments: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                sseq_libs, sseq_lib_ids = get_strandseq_library_info(wildcards.sseq_reads)
+                bam_files = []
+                for lib_id in sseq_lib_ids:
+                    reduced_wildcards['lib_id'] = lib_id
+                    reduced_wildcards['ext'] = ''
+                    bam_files.append(source_path.format(**reduced_wildcards))
+                    reduced_wildcards['ext'] = '.bai'
+                    bam_files.append(source_path.format(**reduced_wildcards))
+            else:
+                raise RuntimeError('collect_strandseq_alignments: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         if debug:
             sys.stderr.write(func_name.format('called w/ chk::get'))
         from snakemake.exceptions import IncompleteCheckpointException as ICE
@@ -405,6 +491,7 @@ def collect_strandseq_alignments(wildcards, glob_collect=False, caller='snakemak
             if debug:
                 sys.stderr.write(func_name.format('chk::get did not raise ICE - checkpoint passed'))
 
+    assert bam_files, 'collect_strandseq_alignments >> returned empty output: {}'.format(wildcards)
     return sorted(bam_files)
 
 

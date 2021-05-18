@@ -194,36 +194,34 @@ rule run_strandphaser:
 
 rule write_strandphaser_split_vcf_fofn:
     input:
-        rules.run_strandphaser.output.vcf_dir
+        vcf_dir = rules.run_strandphaser.output.vcf_dir
     output:
         fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn'
     resources:
         mem_total_mb = 2048,
         mem_per_cpu_mb = 2048,
     run:
-        # Note that this rule does not call an aggregate function because
-        # run_strandphaser is not a checkpoint... I *think* the problem
-        # was the downstream call "run_integrative_phasing", where direct
-        # access to an individual VCF in /VCFfiles/{sequence}.vcf did not work
-        # See comment below for rule "run_integrative_phasing"
-
         import os
 
-        input_dir = input[0]
+        # Sanity check: there must be one VCF file per cluster
+        sample_name = wildcards.sseq_reads.split('_')[0]
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+
+        input_dir = input.vcf_dir
         input_vcfs = sorted([f for f in os.listdir(input_dir) if f.endswith('.vcf')])
-        if len(input_vcfs) == 0:
+        num_vcf = len(input_vcfs)
+        if num_vcf == 0:
             raise RuntimeError('No StrandPhaseR-phased VCFs in /VCFfiles output dir. '
                                'Cannot create fofn file: {}'.format(output.fofn))
 
-        with open(output.fofn, 'w') as fofn:
-            for file_name in input_vcfs:
-                file_path = os.path.join(input_dir, file_name)
-                if not os.path.isfile(file_path):
-                    if os.path.isdir(file_path):
-                        # definitely wrong...
-                        raise RuntimeError('Found directory, but expected VCF file: {} '
-                                           '(write fofn file: {}'.format(file_path, output.fofn))
-                _ = fofn.write(file_path + '\n')
+        elif num_vcf != num_clusters:
+            raise RuntimeError('Mismatch between StrandPhaseR output VCF and number of SaaRclusters: {} vs {}'.format(num_vcf, num_clusters))
+
+        else:
+            with open(output.fofn, 'w') as fofn:
+                for file_name in input_vcfs:
+                    file_path = os.path.join(input_dir, file_name)
+                    _ = fofn.write(file_path + '\n')
 
 
 rule merge_strandphaser_output:
@@ -272,9 +270,11 @@ rule run_integrative_phasing:
             ' | egrep "^(#|{wildcards.sequence}\s)" > {output}'
 
 
-def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=False):
+def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=True, caller='snakemake'):
     """
     """
+    import os
+
     source_path = os.path.join('output/integrative_phasing/processing/whatshap',
                                PATH_INTEGRATIVE_PHASING,
                                '{hap_reads}.{sequence}.phased.vcf')
@@ -286,9 +286,20 @@ def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=False):
         vcf_files = glob.glob(pattern)
 
         if not vcf_files:
-            raise RuntimeError('intphase_collect_phased_vcf_split_files: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                sample_name = wildcards.sseq_reads.split('_')[0]
+                num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+                tmp = dict(wildcards)
+                vcf_files = []
+                for i in range(1, num_clusters + 1):
+                    tmp['sequence'] = 'cluster' + str(i)
+                    vcf_files.append(source_path.format(**tmp))
+            else:
+                raise RuntimeError('intphase_collect_phased_vcf_split_files: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         folder_path = 'output/reference_assembly/clustered/' + wildcards.sseq_reads
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=folder_path, reference=wildcards.reference).output[0]
 
@@ -307,6 +318,8 @@ def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=False):
             hap_reads=wildcards.hap_reads,
             sequence=checkpoint_wildcards.sequence
             )
+
+    assert vcf_files, 'intphase_collect_phased_vcf_split_files >> no VCF files returned: {}'.format(wildcards)
     return sorted(vcf_files)
 
 
@@ -316,24 +329,25 @@ rule write_phased_vcf_splits_fofn:
     output:
         fofn = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.fofn'
     run:
-        # follow same example as merge strand-seq BAMs in module prepare_custom_references
-        try:
-            validate_checkpoint_output(input.vcf_splits)
-            vcf_splits = input.vcf_splits
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            vcf_splits = intphase_collect_phased_vcf_split_files(wildcards, glob_collect=True)
+        import os
 
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(vcf_splits):
-                if not os.path.isfile(file_path):
-                    if os.path.isdir(file_path):
-                        # this is definitely wrong
-                        raise AssertionError('Expected file path for INTPHASE VCF split merge, but received directory: {}'.format(file_path))
-                    import sys
-                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-                _ = dump.write(file_path + '\n')
+        # Sanity check: there must be one VCF file per cluster
+        sample_name = wildcards.sseq_reads.split('_')[0]
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+
+        num_vcf = len(input.vcf_splits)
+
+        if num_vcf == 0:
+            raise RuntimeError('write_phased_vcf_splits_fofn >> zero phased VCF split files: {}'.format(wildcards))
+        elif num_vcf != num_clusters:
+            raise RuntimeError('write_phased_vcf_splits_fofn >> mismatch between expected ({}) and received ({}) phased VCF split files: {}'.format(num_clusters, num_vcf, wildcards))
+        else:
+            with open(output.fofn, 'w') as dump:
+                for file_path in sorted(input.vcf_splits):
+                    if not os.path.isfile(file_path):
+                        import sys
+                        sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+                    _ = dump.write(file_path + '\n')
 
 
 rule strandseq_dga_merge_sequence_phased_vcf_files:

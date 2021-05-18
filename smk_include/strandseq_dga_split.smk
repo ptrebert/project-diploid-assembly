@@ -174,7 +174,7 @@ rule strandseq_dga_split_merge_tag_groups:
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        threads = lambda wildcards: config['num_cpo_low'] // 2
+        threads = lambda wildcards: config['num_cpu_low'] // 2
     shell:
         'pigz -p {params.threads} -d -c {input.hap} {input.un} | pigz -p {params.threads} > {output}'
 
@@ -211,11 +211,10 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
 # the assembled sequence as single FASTA file into the evaluation part
 # of the pipeline (e.g., QUAST-LG)
 
-def collect_assembled_sequence_files(wildcards, glob_collect=False):
+def collect_assembled_sequence_files(wildcards, glob_collect=True, caller='snakemake'):
     """
     """
     import os
-
     source_path = os.path.join('output',
                                PATH_STRANDSEQ_DGA_SPLIT,
                                'draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta')
@@ -227,9 +226,20 @@ def collect_assembled_sequence_files(wildcards, glob_collect=False):
         fasta_files = glob.glob(pattern)
 
         if not fasta_files:
-            raise RuntimeError('collect_assembled_sequence_files: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                sample_name = wildcards.sseq_reads.split('_')[0]
+                num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+                tmp = dict(wildcards)
+                fasta_files = []
+                for i in range(1, num_clusters + 1):
+                    tmp['sequence'] = 'cluster' + str(i)
+                    fasta_files.append(source_path.format(**tmp))
+            else:
+                raise RuntimeError('collect_assembled_sequence_files: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
@@ -248,6 +258,7 @@ def collect_assembled_sequence_files(wildcards, glob_collect=False):
             hap=wildcards.hap,
             sequence=checkpoint_wildcards.sequence
         )
+    assert fasta_files, 'collect_assembled_sequence_files >> no FASTA files returned: {}'.format(wildcards)
     return fasta_files
 
 
@@ -258,20 +269,24 @@ rule write_assembled_fasta_clusters_fofn:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fofn',
     run:
         import os
-        try:
-            validate_checkpoint_output(input.cluster_fastas)
-            fasta_files = input.cluster_fastas
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            fasta_files = collect_assembled_sequence_files(wildcards, glob_collect=True)
+        
+        # Sanity check: there must be one assembly FASTA file per cluster
+        sample_name = wildcards.sseq_reads.split('_')[0]
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
 
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(fasta_files):
-                if not os.path.isfile(file_path):
-                    import sys
-                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-                _ = dump.write(file_path + '\n')
+        num_fastas = len(input.cluster_fastas)
+
+        if num_fastas == 0:
+            raise RuntimeError('write_assembled_fasta_clusters_fofn >> zero assembly FASTA files: {}'.format(wildcards))
+        elif num_fastas != num_clusters:
+            raise RuntimeError('write_assembled_fasta_clusters_fofn >> mismatch between expected ({}) and received ({}) assembly FASTA files: {}'.format(num_clusters, num_fastas, wildcards))
+        else:
+            with open(output.fofn, 'w') as dump:
+                for file_path in sorted(input.cluster_fastas):
+                    if not os.path.isfile(file_path):
+                        import sys
+                        sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+                    _ = dump.write(file_path + '\n')
 
 
 rule strandseq_dga_split_merge_assembled_cluster_fastas:
@@ -283,6 +298,7 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
          'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fasta'
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
+    priority: 1000
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
@@ -332,16 +348,23 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
             if os.path.isfile(output[0]):
                 # note: deleting output leads to failed job
                 os.unlink(output[0])
+    # END OF RUN BLOCK
 
 
-def collect_polished_contigs(wildcards, glob_collect=False):
+#######################################
+### BELOW
+### Assembly polishing jobs
+### NOT executed by default for HiFi
+#######################################
+
+
+def collect_polished_contigs(wildcards, glob_collect=True, caller='snakemake'):
     """
     :param wildcards:
     :param glob_collect:
     :return:
     """
     import os
-
     source_path = os.path.join('output',
                                PATH_STRANDSEQ_DGA_SPLIT,
                                'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.{pol_pass}.fasta')
@@ -353,9 +376,20 @@ def collect_polished_contigs(wildcards, glob_collect=False):
         fasta_files = glob.glob(pattern)
 
         if not fasta_files:
-            raise RuntimeError('collect_polished_contigs: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                sample_name = wildcards.sseq_reads.split('_')[0]
+                num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+                tmp = dict(wildcards)
+                fasta_files = []
+                for i in range(1, num_clusters + 1):
+                    tmp['sequence'] = 'cluster' + str(i)
+                    fasta_files.append(source_path.format(**tmp))
+            else:
+                raise RuntimeError('collect_polished_contigs: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
@@ -380,6 +414,7 @@ def collect_polished_contigs(wildcards, glob_collect=False):
             pol_pass=wildcards.pol_pass
         )
 
+    assert fasta_files, 'collect_polished_contigs >> returned no FASTA files: {}'.format(wildcards)
     return fasta_files
 
 
@@ -390,21 +425,24 @@ rule write_polished_contigs_fofn:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
     run:
         import os
+        
+        # Sanity check: there must be one assembly FASTA file per cluster
+        sample_name = wildcards.sseq_reads.split('_')[0]
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
 
-        try:
-            validate_checkpoint_output(input.contigs)
-            fasta_files = input.contigs
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{]\n'.format(str(error)))
-            fasta_files = collect_polished_contigs(wildcards, glob_collect=True)
+        num_fastas = len(input.contigs)
 
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(fasta_files):
-                if not os.path.isfile(file_path):
-                    import sys
-                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-                _ = dump.write(file_path + '\n')
+        if num_fastas == 0:
+            raise RuntimeError('write_assembled_fasta_clusters_fofn >> zero assembly FASTA files: {}'.format(wildcards))
+        elif num_fastas != num_clusters:
+            raise RuntimeError('write_assembled_fasta_clusters_fofn >> mismatch between expected ({}) and received ({}) assembly FASTA files: {}'.format(num_clusters, num_fastas, wildcards))
+        else:
+            with open(output.fofn, 'w') as dump:
+                for file_path in sorted(input.contigs):
+                    if not os.path.isfile(file_path):
+                        import sys
+                        sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+                    _ = dump.write(file_path + '\n')
 
 
 rule merge_polished_contigs:

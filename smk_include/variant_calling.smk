@@ -371,12 +371,10 @@ rule intersect_original_retyped_variant_calls:
         'bcftools isec -p {params.outdir} {input.original_vcf} {input.retyped_vcf} &> {log}'
 
 
-def collect_final_vcf_splits(wildcards, glob_collect=False):
+def collect_final_vcf_splits(wildcards, glob_collect=True, caller='snakemake'):
     """
     """
-
     source_path = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf'
-
     if glob_collect:
         import glob
         pattern = source_path.replace('.{sequence}/', '.*/')
@@ -384,9 +382,23 @@ def collect_final_vcf_splits(wildcards, glob_collect=False):
         vcf_files = glob.glob(pattern)
 
         if not vcf_files:
-            raise RuntimeError('collect_final_vcf_splits: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                # this should be the input function call during DAG evaluation, i.e. before the rule is being
+                # executed, to determine the input files needed for the run. Add best guess here...
+                sample_name = wildcards.sseq_reads.split('_')[0]
+                estimate_num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+                tmp = dict(wildcards)
+                vcf_files = []
+                for i in range(1, estimate_num_clusters + 1):
+                    tmp['sequence'] = 'cluster' + str(i)
+                    vcf_file = source_path.format(**tmp)
+                    vcf_files.append(vcf_file)
+            else:
+                raise RuntimeError('collect_final_vcf_splits: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
                                                                         reference=wildcards.reference).output[0]
@@ -409,29 +421,66 @@ def collect_final_vcf_splits(wildcards, glob_collect=False):
     return vcf_files
 
 
+# DEPRECATED
+# rule write_final_vcf_splits:
+#     input:
+#         vcf_splits = collect_final_vcf_splits
+#     output:
+#         fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
+#     run:
+#         import os
+
+#         try:
+#             validate_checkpoint_output(input.vcf_splits)
+#             vcf_splits = input.vcf_splits
+#         except (RuntimeError, ValueError) as error:
+#             import sys
+#             sys.stderr.write('\n{}\n'.format(str(error)))
+#             vcf_splits = collect_final_vcf_splits(wildcards, glob_collect=True)
+
+
+#         with open(output.fofn, 'w') as dump:
+#             for file_path in sorted(vcf_splits):
+#                 if not os.path.isfile(file_path):
+#                     import sys
+#                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+#                 _ = dump.write(file_path + '\n')
+
+
 rule write_final_vcf_splits:
     input:
         vcf_splits = collect_final_vcf_splits
     output:
         fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
+    log:
+        'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.write-fofn.log'
     run:
         import os
+        import sys
 
-        try:
-            validate_checkpoint_output(input.vcf_splits)
-            vcf_splits = input.vcf_splits
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            vcf_splits = collect_final_vcf_splits(wildcards, glob_collect=True)
+        with open(log[0], 'w') as logfile:
+            _ = logfile.write('write_final_vcf_splits: {}\n'.format(str(wildcards)))
+            num_vcf_splits = len(input.vcf_splits)
+            assert num_vcf_splits > 0, 'write_final_vcf_splits: no VCF split files as input'
+            sample_name = wildcards.sseq_reads.split('_')[0]
+            num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+            _ = logfile.write('Number of input VCF splits: {}\n'.format(num_vcf_splits))
+            _ = logfile.write('Number of expected VCF splits (clusters): {}\n'.format(num_clusters))
+            _ = logfile.write('Received following VCF split input:\n{}\n'.format('\n'.join(sorted(input.vcf_splits))))
+            if num_clusters != num_vcf_splits:
+                _ = logfile.write('Potential error situation: unexpected number of VCF split files as input\n')
+                _ = logfile.write('Checking for available VCF split files...\n')
+                vcf_splits = collect_final_vcf_splits(wildcards, caller='runblock')
+                if len(vcf_splits) != num_clusters:
+                    _ = logfile.write('Cannot handle error: unexpected number ({} vs {}) of VCF split files\n'.format(len(vcf_splits), num_clusters))
+                    _ = logfile.write('===\n{}\n'.format('\n'.join(vcf_splits)))
+                    raise RuntimeError('')
+            else:
+                vcf_splits = input.vcf_splits
 
-
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(vcf_splits):
-                if not os.path.isfile(file_path):
-                    import sys
-                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-                _ = dump.write(file_path + '\n')
+        with open(output.fofn, 'w') as fofn:
+            _ = fofn.write('\n'.join(sorted(vcf_splits)))
+    # END OF RUN BLOCK
 
 
 rule merge_final_vcf_splits:
@@ -466,7 +515,7 @@ rule compute_final_vcf_stats:
 
 # Same again for convenience on intermediate set of SNPs
 
-def collect_intermediate_vcf_splits(wildcards, glob_collect=False):
+def collect_intermediate_vcf_splits(wildcards, glob_collect=True, caller='snakemake'):
     """
     """
     source_path = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
@@ -478,9 +527,22 @@ def collect_intermediate_vcf_splits(wildcards, glob_collect=False):
         vcf_files = glob.glob(pattern)
 
         if not vcf_files:
-            raise RuntimeError('collect_intermediate_vcf_splits: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                # this should be the input function call during DAG evaluation, i.e. before the rule is being
+                # executed, to determine the input files needed for the run. Add best guess here...
+                sample_name = wildcards.sseq_reads.split('_')[0]
+                estimate_num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+                vcf_files = []
+                for i in range(1, estimate_num_clusters + 1):
+                    tmp = dict(wildcards)
+                    tmp['sequence'] = 'cluster' + str(i)
+                    vcf_file = source_path.format(**tmp)
+                    vcf_files.append(vcf_file)
+            else:
+                raise RuntimeError('collect_intermediate_vcf_splits: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
 
         reference_folder = os.path.join('output/reference_assembly/clustered', wildcards.sseq_reads)
         seq_output_dir = checkpoints.create_assembly_sequence_files.get(folder_path=reference_folder,
@@ -503,28 +565,66 @@ def collect_intermediate_vcf_splits(wildcards, glob_collect=False):
     return vcf_files
 
 
+# DEPRECATED
+# rule write_intermediate_vcf_splits:
+#     input:
+#         vcf_splits = collect_intermediate_vcf_splits
+#     output:
+#         fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
+#     run:
+#         import os
+
+#         try:
+#             validate_checkpoint_output(input.vcf_splits)
+#             vcf_splits = input.vcf_splits
+#         except (RuntimeError, ValueError) as error:
+#             import sys
+#             sys.stderr.write('\n{}\n'.format(str(error)))
+#             vcf_splits = collect_intermediate_vcf_splits(wildcards, glob_collect=True)
+
+#         with open(output.fofn, 'w') as dump:
+#             for file_path in sorted(vcf_splits):
+#                 if not os.path.isfile(file_path):
+#                     import sys
+#                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+#                 _ = dump.write(file_path + '\n')
+
+
 rule write_intermediate_vcf_splits:
     input:
         vcf_splits = collect_intermediate_vcf_splits
     output:
         fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
+    log:
+        'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.write-fofn.log'
     run:
         import os
+        import sys
 
-        try:
-            validate_checkpoint_output(input.vcf_splits)
-            vcf_splits = input.vcf_splits
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            vcf_splits = collect_intermediate_vcf_splits(wildcards, glob_collect=True)
+        with open(log[0], 'w') as logfile:
+            _ = logfile.write('write_intermediate_vcf_splits: {}\n'.format(str(wildcards)))
+            num_vcf_splits = len(input.vcf_splits)
+            assert num_vcf_splits > 0, 'write_intermediate_vcf_splits: no VCF split files as input'
+            sample_name = wildcards.sseq_reads.split('_')[0]
+            num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+            
+            _ = logfile.write('Number of input VCF splits: {}\n'.format(num_vcf_splits))
+            _ = logfile.write('Number of expected VCF splits (clusters): {}\n'.format(num_clusters))
+            _ = logfile.write('Received following VCF split input:\n{}\n'.format('\n'.join(sorted(input.vcf_splits))))
+            if num_clusters != num_vcf_splits:
+                _ = logfile.write('Potential error situation: unexpected number of VCF split files as input\n')
+                _ = logfile.write('Checking for available VCF split files...\n')
+                vcf_splits = collect_intermediate_vcf_splits(wildcards, caller='runblock')
+                if len(vcf_splits) != num_clusters:
+                    _ = logfile.write('Cannot handle error: unexpected number ({} vs {}) of VCF split files\n'.format(len(vcf_splits), num_clusters))
+                    _ = logfile.write('===\n{}\n'.format('\n'.join(vcf_splits)))
+                    raise RuntimeError('')
+            else:
+                vcf_splits = input.vcf_splits
 
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(vcf_splits):
-                if not os.path.isfile(file_path):
-                    import sys
-                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-                _ = dump.write(file_path + '\n')
+        with open(output.fofn, 'w') as fofn:
+            _ = fofn.write('\n'.join(sorted(vcf_splits)))
+    # END OF RUN BLOCK
 
 
 rule merge_intermediate_vcf_splits:

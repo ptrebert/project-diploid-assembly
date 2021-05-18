@@ -225,7 +225,7 @@ def group_by_two_iterator(file_list, readset_name, sort_folder, pgas_ext):
     import hashlib
 
     if len(file_list) % 2 != 0:
-        raise ValueError('Number of data files cannot be grouped by {} ({})'.format(grouping, len(file_list)))
+        raise ValueError('Number of data files cannot be grouped by {} ({})'.format(2, len(file_list)))
 
     readset_prefix = readset_name.rsplit('_', 1)[0]
 
@@ -265,7 +265,7 @@ def group_by_four_iterator(file_list, readset_name, sort_folder, pgas_ext):
     import hashlib
 
     if len(file_list) % 4 != 0:
-        raise ValueError('Number of data files cannot be grouped by {} ({})'.format(grouping, len(file_list)))
+        raise ValueError('Number of data files cannot be grouped by {} ({})'.format(4, len(file_list)))
 
     # - This is different from "grouping by two" because we need to account
     # here for the two different sequencing fraction per library
@@ -412,10 +412,119 @@ if USE_LEGACY_DATA_SCRAPING:
 
     DATA_SOURCE_TO_CALL = dict((os.path.basename(source).rsplit('.', 1)[0], call) for source, call in zip(DATA_SOURCE_OUTPUTS, DATA_SOURCE_CALLS))
 
+    FORMATTED_DATA_SOURCES = None
+
 else:
-    DATA_SOURCE_FILES = sorted(list(read_local_data_sources().keys()))
+    FORMATTED_DATA_SOURCES = read_local_data_sources()
+    DATA_SOURCE_FILES = sorted(list(FORMATTED_DATA_SOURCES.keys()))
     DATA_SOURCE_OUTPUTS = ['input/data_sources/{}.json'.format(fn) for fn in DATA_SOURCE_FILES]
     DATA_SOURCE_TO_CALL = dict()
+
+
+def get_strandseq_library_info(sseq_reads):
+    """
+    Helper function to extract needed information about Strand-seq
+    libraries - used in collect strand-seq merge files and
+    collect strand-seq alignments
+    """
+    import os
+    import sys
+
+    debug = bool(config.get('show_debug_messages', False))
+
+    if debug:
+        sys.stderr.write('Collecting Strand-seq library info for: {}\n'.format(sseq_reads))
+
+    if FORMATTED_DATA_SOURCES is None:
+        raise RuntimeError('No data sources formatted - is legacy data scraping set?')
+    try:
+        sseq_source_info = FORMATTED_DATA_SOURCES[sseq_reads]
+    except KeyError:
+        raise KeyError('No data sources for SSEQ readset found: {}'.format(sseq_reads))
+
+    if sseq_reads in CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES:
+        lib_id_pos = -2
+        if debug:
+            sys.stderr.write('Strand-seq readset is a mono-fraction sample\n'.format(sseq_reads))
+    else:
+        lib_id_pos = -3
+        if debug:
+            sys.stderr.write('Strand-seq readset is a dual-fraction sample\n'.format(sseq_reads))
+
+    sseq_lib_infos = set()
+    for sseq_lib, sseq_lib_source in sseq_source_info.items():
+        # e.g.: HG00733_1kg_il25k-frac1_ab50c4c67063fdb907a4f49512a34f0e_c52ee9c925d8c7d8d7e534411e21495b_2
+        lib_pair_name = os.path.basename(sseq_lib)
+        # e.g.: HG00733_1kg_il25k-frac1_ab50c4c67063fdb907a4f49512a34f0e_c52ee9c925d8c7d8d7e534411e21495b
+        lib_name = lib_pair_name.rsplit('_', 1)[0]
+        # e.g.: ab50c4c67063fdb907a4f49512a34f0e
+        lib_id = lib_pair_name.split('_')[lib_id_pos]
+        # e.g.: ERR1295562_2.fastq.gz
+        remote_source = os.path.basename(sseq_lib_source['remote_path'])
+        
+        sseq_lib_infos.add(
+            (
+                lib_name,
+                lib_id,  # only needed for merging step for dual-fraction SSEQ samples
+                remote_source  # this will be removed before returning
+            )
+        )
+    
+    if debug:
+        sys.stderr.write('Collected info for {} libraries ({} files)\n'.format(len(sseq_lib_infos) // 2, len(sseq_lib_infos)))
+
+    # if automatic library QC is set to yes for this sample,
+    # need to subtract all excluded libraries if QC is complete
+    # to avoid pipeline failures after restart
+    exclude_libs = []
+    if sseq_reads in CONSTRAINT_STRANDSEQ_LIBQC_SAMPLES:
+        # check if exclude list already exists
+        exclude_file = 'output/sseq_qc/{}.exclude.txt'.format(sseq_reads)
+        if os.path.isfile(exclude_file):
+            with open(exclude_file, 'r') as listing:
+                exclude_libs.extend(listing.read().strip().split())
+            if debug:
+                sys.stderr.write('Loaded {} SSEQ library exclude hints from file: {}\n'.format(len(exclude_libs), exclude_file))
+        else:
+            if debug:
+                sys.stderr.write('SSEQ exclude file does not exist yet - may cause job failures: {}\n'.format(exclude_file))
+
+    sseq_libs = set()
+    sseq_lib_ids = set()
+    for lib_name, lib_id, remote_source in sorted(sseq_lib_infos):
+        if any(x in remote_source for x in exclude_libs):
+            if debug:
+                sys.stderr.write('Excluding library {} for SSEQ readset {}\n'.format(lib_name, sseq_reads))
+            continue
+        sseq_libs.add(lib_name)
+        sseq_lib_ids.add(lib_id)        
+    
+    if debug:
+        sys.stderr.write('Returning {} selected libraries for readset {}\n'.format(len(sseq_libs), sseq_reads))
+
+    assert len(sseq_libs) == len(sseq_lib_ids), \
+        'Mismatch library names ({}) and IDs ({}) - name extract failed?'.format(len(sseq_libs), len(sseq_lib_ids))
+
+    return sseq_libs, sseq_lib_ids
+
+
+def count_number_of_input_parts(readset):
+    """
+    Helper function to get number of parts for
+    (usually) long read input reads
+    """
+    if FORMATTED_DATA_SOURCES is None:
+        raise RuntimeError('No data sources formatted - is legacy data scraping set?')
+    try:
+        read_source_info = FORMATTED_DATA_SOURCES[readset]
+    except KeyError:
+        raise KeyError('No data sources for readset found: {}'.format(readset))
+
+    assert readset in CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES, 'This is not a PARTS/FASTQ input sample: {}'.format(readset)
+
+    return len(read_source_info.values())
+
+
 
 rule master_scrape_data_sources:
     input:
@@ -457,7 +566,7 @@ else:
         run:
             import json
 
-            local_data_sources = read_local_data_sources()
+            local_data_sources = FORMATTED_DATA_SOURCES
 
             if not local_data_sources:
                 raise ValueError('\nERROR: no local data sources could be configured. Check your sample configuration.\n')

@@ -91,7 +91,7 @@ rule select_clean_hifi_reads:
         'seqtk seq -C {input.fastq_part} | paste - - - - | grep -v -F -f {input.blocklist} | tr "\t" "\n" | gzip > {output}'
 
 
-def collect_fastq_input_parts(wildcards, glob_collect=False):
+def collect_fastq_input_parts(wildcards, glob_collect=True, caller='snakemake'):
     """
     :param wildcards:
     :param glob_collect:
@@ -118,9 +118,17 @@ def collect_fastq_input_parts(wildcards, glob_collect=False):
         fastq_parts = glob.glob(pattern)
 
         if not fastq_parts:
-            raise RuntimeError('collect_fastq_input_parts: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                fastq_parts = []
+                path = pattern.replace('*', '{}')
+                # easy case: get number of input parts
+                num_parts = count_number_of_input_parts(wildcards.mrg_sample)
+                fastq_parts = [path.format(i) for i in range(1, num_parts + 1)]
+            else:
+                raise RuntimeError('collect_fastq_input_parts: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
 
         request_path = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=sample).output[0]
 
@@ -133,6 +141,7 @@ def collect_fastq_input_parts(wildcards, glob_collect=False):
             part_num=checkpoint_wildcards.part_num
         )
 
+    assert fastq_parts, 'collect_fastq_input_parts >> returned empty output: {}'.format(wildcards)
     return fastq_parts
 
 
@@ -145,16 +154,8 @@ rule write_fastq_input_parts_fofn:
     wildcard_constraints:
         mrg_sample = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     run:
-        try:
-            validate_checkpoint_output(input.fastq_parts)
-            fastq_files = input.fastq_parts
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            fastq_files = collect_fastq_input_parts(wildcards, glob_collect=True)
-
         with open(output.fofn, 'w') as dump:
-            for file_path in sorted(fastq_files):
+            for file_path in sorted(input.fastq_parts):
                 _ = dump.write(file_path + '\n')
 
 
@@ -185,7 +186,7 @@ rule merge_fastq_input_parts:
         'pigz -p {params.threads} -d -c {params.fastq_parts} | pigz -p {params.threads} > {output} 2> {log}'
 
 
-def collect_pacbio_bam_input_parts(wildcards, glob_collect=False):
+def collect_pacbio_bam_input_parts(wildcards, glob_collect=True):
     """
     :param wildcards:
     :return:
@@ -203,6 +204,8 @@ def collect_pacbio_bam_input_parts(wildcards, glob_collect=False):
             raise RuntimeError('collect_pacbio_bam_input_parts: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         request_path = checkpoints.create_input_data_download_requests.get(subfolder='bam', readset=readset).output[0]
         data_path = os.path.split(request_path)[0]
 
@@ -286,7 +289,7 @@ rule chs_child_filter_to_100x:
         'bamtools filter -length ">=30000" -in {input} -out {output} &> {log}'
 
 
-def collect_strandseq_libraries(wildcards, glob_collect=False):
+def collect_strandseq_libraries(wildcards, glob_collect=True, caller='snakemake'):
     """
     :param wildcards:
     :param glob_collect:
@@ -302,9 +305,21 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
         sseq_fastq = glob.glob(pattern)
 
         if not sseq_fastq:
-            raise RuntimeError('collect_strandseq_libraries: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                tmp = dict(wildcards)
+                sseq_fastq = []
+                sseq_libs, sseq_lib_ids = get_strandseq_library_info(wildcards.sseq_reads)
+                for sseq_lib in sseq_libs:
+                    tmp['lib_id'] = sseq_lib + '_1'
+                    sseq_fastq.append(source_path.format(**tmp))
+                    tmp['lib_id'] = sseq_lib + '_2'
+                    sseq_fastq.append(source_path.format(**tmp))
+            else:
+                raise RuntimeError('collect_strandseq_libraries: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         checkpoint_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
 
         glob_pattern = os.path.join(checkpoint_dir, '{lib_id}.request')
@@ -316,7 +331,7 @@ def collect_strandseq_libraries(wildcards, glob_collect=False):
             sseq_reads=wildcards.sseq_reads,
             lib_id=checkpoint_wildcards.lib_id
             )
-
+    assert sseq_fastq, 'collect_strandseq_libraries >> returned empty output: {}'.format(wildcards)
     return sseq_fastq
 
 
@@ -333,19 +348,11 @@ rule merge_strandseq_libraries:
     wildcard_constraints:
         sseq_reads = CONSTRAINT_STRANDSEQ_SAMPLES
     run:
-        try:
-            validate_checkpoint_output(input.sseq_libs)
-            sseq_fastq = input.sseq_libs
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            sseq_fastq = collect_strandseq_libraries(wildcards, glob_collect=True)
-
         with open(output[0], 'w') as dump:
-            _ = dump.write('\n'.join(sorted(sseq_fastq)))
+            _ = dump.write('\n'.join(sorted(input.sseq_libs)))
 
 
-def collect_short_read_input_parts(wildcards, glob_collect=False):
+def collect_short_read_input_parts(wildcards, glob_collect=True):
     import os
     source_path = 'input/fastq/{readset}/{lib_prefix}_{lib_id}_{mate}.fastq.gz'
 
@@ -366,6 +373,8 @@ def collect_short_read_input_parts(wildcards, glob_collect=False):
             raise RuntimeError('collect_short_read_input_parts: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         checkpoint_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.readset).output[0]
 
         fix_mate_pattern = '_'.join([lib_prefix, '{lib_id}', wildcards.mate])

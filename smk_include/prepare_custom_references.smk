@@ -1,7 +1,6 @@
 
 localrules: master_prepare_custom_references,
             write_saarclust_config_file,
-            write_reference_fasta_clusters_fofn,
 
 
 rule master_prepare_custom_references:
@@ -9,8 +8,12 @@ rule master_prepare_custom_references:
         []
 
 
-def collect_strandseq_merge_files(wildcards, glob_collect=False):
+def collect_strandseq_merge_files(wildcards, glob_collect=True, caller='snakemake'):
     """
+    Replacing checkpoints with regular rules creates inherent problems for Strand-seq
+    data because the potential library QC selection makes it impossible to know
+    which libraries will eventually be used. However, this should not be a problem here
+    because the dual fraction Strand-seq samples are never channeled through automatic QC.
     """
 
     source_path = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/aln/{individual}_{project}_{platform}-{spec}_{lib_id}_{run_id}.filt.sam.bam'
@@ -31,9 +34,25 @@ def collect_strandseq_merge_files(wildcards, glob_collect=False):
         bam_files = glob.glob(pattern)
 
         if not bam_files:
-            raise RuntimeError('collect_strandseq_merge_files: no files collected with pattern {}'.format(pattern))
+            if caller == 'snakemake':
+                import fnmatch
+                # use info from module "scrape_data_sources" to determine rule input
+                sseq_libs, sseq_lib_ids = get_strandseq_library_info(wildcards.sseq_reads)
+                selected_libs = fnmatch.filter(sseq_libs, '*{}*'.format(wildcards.lib_id))
+                if len(selected_libs) != 2:
+                    raise RuntimeError('Cannot identify Strand-seq libs for merge: {} / {}'.format(wildcards, selected_libs))
+                new_source_path = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/aln/{sseq_lib}.filt.sam.bam'
+                bam_files = []
+                for lib in selected_libs:
+                    tmp = dict(wildcards)
+                    tmp['sseq_lib'] = lib
+                    bam_files.append(new_source_path.format(**tmp))
+            else:
+                raise RuntimeError('collect_strandseq_merge_files: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+
         requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
         search_pattern = '_'.join([individual, project, platform + '-{spec}', lib_id, '{run_id}', '1'])
 
@@ -53,57 +72,58 @@ def collect_strandseq_merge_files(wildcards, glob_collect=False):
             lib_id=[lib_id, lib_id],
             run_id=checkpoint_wildcards.run_id)
 
+    assert len(bam_files) == 2, 'Unexpected number of BAM files for merge: {}'.format(bam_files)
     return bam_files
 
 
-rule write_strandseq_merge_fofn:
-    """
-    2020-02-05
-    Since this has to be executed once per merge pair,
-    I don't want to make this a local rule executed on the submit node
-    (presumably fixing github issue #216). However, the validate_checkpoint_output
-    function indeed fails; apparently, issue #55 is still unfixed in 5.10.0
-    So, implement the checkpoint functionality manually for this one... awesome
-    """
-    input:
-        bams = collect_strandseq_merge_files
-    output:
-        fofn = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.fofn'
-    wildcard_constraints:
-        sseq_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES,
-        #lib_id = 'P[A-Z0-9]+'
-    run:
-        import os
-        pattern = '[empty]'
-        try:
-            validate_checkpoint_output(input.bams)
-            bam_files = input.bams
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            bam_files = collect_strandseq_merge_files(wildcards, glob_collect=True)
+# rule write_strandseq_merge_fofn:
+#     """
+#     2020-02-05
+#     Since this has to be executed once per merge pair,
+#     I don't want to make this a local rule executed on the submit node
+#     (presumably fixing github issue #216). However, the validate_checkpoint_output
+#     function indeed fails; apparently, issue #55 is still unfixed in 5.10.0
+#     So, implement the checkpoint functionality manually for this one... awesome
+#     """
+#     input:
+#         bams = collect_strandseq_merge_files
+#     output:
+#         fofn = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.fofn'
+#     wildcard_constraints:
+#         sseq_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES,
+#         #lib_id = 'P[A-Z0-9]+'
+#     run:
+#         import os
+#         pattern = '[empty]'
+#         try:
+#             validate_checkpoint_output(input.bams)
+#             bam_files = input.bams
+#         except (RuntimeError, ValueError) as error:
+#             import sys
+#             sys.stderr.write('\n{}\n'.format(str(error)))
+#             bam_files = collect_strandseq_merge_files(wildcards, glob_collect=True)
 
-        if len(bam_files) != 2:
-            raise RuntimeError('Missing merge partner for strand-seq BAM files {} / {}: '
-                               '{}'.format(output.fofn, pattern, bam_files))
+#         if len(bam_files) != 2:
+#             raise RuntimeError('Missing merge partner for strand-seq BAM files {} / {}: '
+#                                '{}'.format(output.fofn, pattern, bam_files))
 
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(bam_files):
-                if not os.path.isfile(file_path):
-                    import sys
-                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-                _ = dump.write(file_path + '\n')
+#         with open(output.fofn, 'w') as dump:
+#             for file_path in sorted(bam_files):
+#                 if not os.path.isfile(file_path):
+#                     import sys
+#                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+#                 _ = dump.write(file_path + '\n')
 
 
 rule merge_mono_dinucleotide_fraction:
     """
-    This rule is likely quite specific
-    for the strand-seq data used in this
-    pipeline - point of 'failure' for
-    different input data
+    In the process of removing all checkpoints from the pipeline,
+    move the input collection directly into this rule
+    Previous input:
+        fofn = rules.write_strandseq_merge_fofn.output.fofn
     """
     input:
-        fofn = rules.write_strandseq_merge_fofn.output.fofn
+        bams = collect_strandseq_merge_files
     output:
         temp('output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.sam.bam')
     log:
@@ -115,10 +135,8 @@ rule merge_mono_dinucleotide_fraction:
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
-    params:
-        merge_files = lambda wildcards, input: load_fofn_file(input)
     shell:
-        'samtools merge -@ {threads} -O BAM {output} {params.merge_files} &> {log}'
+        'samtools merge -@ {threads} -O BAM {output} {input.bams} &> {log}'
 
 
 rule link_strandseq_monofraction_samples:
@@ -202,14 +220,6 @@ rule write_saarclust_config_file:
     run:
         import os
 
-        try:
-            validate_checkpoint_output(input.bam)
-            bam_files = input.bam
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True, caller='write_saarclust_config_file')
-
         outfolder = os.path.dirname(bam_files[0])
 
         with open(output.cfg, 'w') as dump:
@@ -219,7 +229,13 @@ rule write_saarclust_config_file:
             _ = dump.write(outfolder + '\n')
 
 
-checkpoint run_saarclust_assembly_clustering:
+rule run_saarclust_assembly_clustering:
+    """
+    Converted from checkpoint to regular rule to get rid of
+    checkpoint-related problems.
+    This one is quite problematic b/c SaaRclust does not produce
+    a fix number of clusters.
+    """
     input:
         cfg = rules.write_saarclust_config_file.output.cfg,
         fofn = rules.write_saarclust_config_file.output.input_dir
@@ -250,6 +266,7 @@ checkpoint run_saarclust_assembly_clustering:
 def collect_clustered_fasta_sequences(wildcards, glob_collect=False, caller='snakemake'):
     """
     """
+    raise RuntimeError('collect_clustered_fasta_sequences: function is deprecated')
     import sys
     debug = bool(config.get('show_debug_messages', False))
     warn = bool(config.get('show_warnings', False))
@@ -274,6 +291,7 @@ def collect_clustered_fasta_sequences(wildcards, glob_collect=False, caller='sna
             raise RuntimeError('collect_clustered_fasta_sequences: no files collected with pattern {}'.format(pattern))
 
     else:
+        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used.')
         if debug:
             sys.stderr.write(func_name.format('called w/ chk::get'))
         from snakemake.exceptions import IncompleteCheckpointException as ICE
@@ -311,29 +329,67 @@ def collect_clustered_fasta_sequences(wildcards, glob_collect=False, caller='sna
     return sorted(fasta_files)
 
 
+# DEPRECATED
+# rule write_reference_fasta_clusters_fofn:
+#     """
+#     Local rule with minimal overhead - properly collect checkpoint output
+#     """
+#     input:
+#         fasta = collect_clustered_fasta_sequences
+#     output:
+#         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
+#     run:
+#         try:
+#             validate_checkpoint_output(input.fasta)
+#             fasta_files = input.fasta
+#         except (RuntimeError, ValueError) as error:
+#             import sys
+#             sys.stderr.write('\n{}\n'.format(str(error)))
+#             fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True, caller='write_reference_fasta_clusters_fofn')
+
+#         with open(output.fofn, 'w') as dump:
+#             for file_path in sorted(fasta_files):
+#                 if not os.path.isfile(file_path):
+#                     import sys
+#                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
+#                 _ = dump.write(file_path + '\n')
+
+
 rule write_reference_fasta_clusters_fofn:
     """
-    Local rule with minimal overhead - properly collect checkpoint output
+    Collect output of SaaRclust-ering
+    NB: reference here is "nhr" assembly
     """
     input:
-        fasta = collect_clustered_fasta_sequences
+        fasta_dir = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly',
+        fasta_ref = 'output/reference_assembly/non-hap-res/{reference}.fasta',
     output:
         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
     run:
-        try:
-            validate_checkpoint_output(input.fasta)
-            fasta_files = input.fasta
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True, caller='write_reference_fasta_clusters_fofn')
+        import os
+        import sys
 
-        with open(output.fofn, 'w') as dump:
-            for file_path in sorted(fasta_files):
-                if not os.path.isfile(file_path):
-                    import sys
-                    sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-                _ = dump.write(file_path + '\n')
+        show_warnings = bool(config.get('show_warnings', False))
+
+        if not os.path.isdir(input.fasta_dir):
+            raise RuntimeError('SaaRclust output folder does not exist: {}'.format(input.fasta_dir))
+
+        cluster_files = []
+        for file_name in os.listdir(input.fasta_dir):
+            if not file_name.endswith('.fasta'):
+                continue
+            if 'cluster99' in file_name:
+                if show_warnings:
+                    sys.stderr.write('SaaRclust / cluster99 detected for sample {} / {}\n'.format(wildcards.reference, wildcards.sseq_reads))
+                continue
+            file_path = os.path.join(input.fasta_dir, file_name)
+            cluster_files.append(file_path)
+        
+        if not cluster_files:
+            raise RuntimeError('No FASTA cluster files detected in SaaRclust output directory: {}'.format(input.fasta_dir))
+        
+        with open(output,fofn, 'w') as fofn:
+            _ = fofn.write('\n'.join(sorted(cluster_files)))
 
 
 rule check_max_cluster_size:
