@@ -35,15 +35,8 @@ rule write_breakpointr_config_file:
     run:
         import os
 
-        try:
-            validate_checkpoint_output(input.bam)
-            bam_files = input.bam
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True, caller='write_breakpointr_config_file')
-
-        outfolder = os.path.dirname(bam_files[0])
+        outfolder = os.path.dirname(list(input.bam)[0])
+        assert os.path.isdir(outfolder), 'write_breakpointr_config_file: alignment output folder does not exist: {}'.format(outfolder)
 
         config_rows = [
             '[General]',
@@ -124,15 +117,8 @@ rule write_strandphaser_config_file:
     run:
         import os
 
-        try:
-            validate_checkpoint_output(input.bam)
-            bam_files = input.bam
-        except (RuntimeError, ValueError) as error:
-            import sys
-            sys.stderr.write('\n{}\n'.format(str(error)))
-            bam_files = collect_strandseq_alignments(wildcards, glob_collect=True, caller='write_strandphaser_config_file')
-
-        outfolder = os.path.dirname(bam_files[0])
+        outfolder = os.path.dirname(list(input.bam)[0])
+        assert os.path.isdir(outfolder), 'write_strandphaser_config_file: alignment output folder does not exist: {}'.format(outfolder)
 
         config_rows = [
             '[General]',

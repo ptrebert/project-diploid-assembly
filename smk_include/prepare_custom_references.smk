@@ -220,7 +220,8 @@ rule write_saarclust_config_file:
     run:
         import os
 
-        outfolder = os.path.dirname(bam_files[0])
+        outfolder = os.path.dirname(list(input.bam)[0])
+        assert os.path.isdir(outfolder), 'write_saarclust_config_file: alignment output folder does not exist: {}'.format(outfolder)
 
         with open(output.cfg, 'w') as dump:
             _ = dump.write(params.saarclust)
