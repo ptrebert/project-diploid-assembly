@@ -389,7 +389,7 @@ rule write_reference_fasta_clusters_fofn:
         if not cluster_files:
             raise RuntimeError('No FASTA cluster files detected in SaaRclust output directory: {}'.format(input.fasta_dir))
         
-        with open(output,fofn, 'w') as fofn:
+        with open(output.fofn, 'w') as fofn:
             _ = fofn.write('\n'.join(sorted(cluster_files)))
 
 
