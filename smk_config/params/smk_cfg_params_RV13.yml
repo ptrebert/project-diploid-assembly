@@ -74,7 +74,9 @@ minimap_racon_aln_min_qual: 10
 # is not met, could indicate a large missing piece (misassembly)
 # Note that acrocentric chromosomes are not treated in any particular
 # way, so setting this too high will always result in failure.
-min_chromosome_coverage: 60
+min_chromosome_coverage:
+  hg38_HGSVC2_noalt: 60
+  T2Tv11_38p13Y_chm13: 70
 
 # main chromosomes to be used
 # for known references for main
