@@ -44,12 +44,11 @@ rule quast_analysis_assembly:
          '../environment/conda/conda_rtools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((49152 + attempt * 49152) / config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 49152 + attempt * 49152,
-        runtime_hrs = lambda wildcards, attempt: 16 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int((24768 + attempt * 24768) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 24768 + attempt * 24768,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
     params:
         output_dir = lambda wildcards, output: os.path.dirname(output.pdf_report)
-    priority: 100
     shell:
         'quast-lg.py --threads {threads} -r {input.known_ref}'
             ' --features gene:{input.genes} --conserved-genes-finding'

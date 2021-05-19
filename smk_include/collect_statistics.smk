@@ -265,7 +265,7 @@ rule collect_contig_to_ref_aln_statistics:
     params:
         script_exec = lambda wildcards: find_script_path('collect_contig_aln_stats.py'),
         mapq = lambda wildcards: int(wildcards.mapq),
-        chrom_cov = int(config['min_chromosome_coverage'])
+        chrom_cov = lambda wildcards: int(config['min_chromosome_coverage'][wildcards.aln_reference])
     shell:
         '{params.script_exec} --contig-alignments {input.ctg_ref_aln} '
         '--reference-chromosomes {input.ref_chroms} --contig-names {input.assm_chroms} '

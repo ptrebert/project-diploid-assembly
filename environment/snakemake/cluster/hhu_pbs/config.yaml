@@ -7,7 +7,7 @@ cluster: >-
   -N {cluster.name} -o {cluster.output} -e {cluster.error}
 cluster-config: environment/snakemake/cluster/hhu_pbs/hilbert_cluster.json
 local-cores: 1
-jobs: 50
+jobs: 100
 latency-wait: 300
 keep-going: True
 keep-incomplete: False
