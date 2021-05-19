@@ -144,15 +144,21 @@ rule preprocess_haplogroupA_assembly:
         
         with open(output.fasta, 'w') as fasta:
             for _, contig, stats in sorted(seq_stats, reverse=True):
-                fasta_header = '>HG02982_A0_' + contig
+                simple_contig = contig.split()[-1]
+                simple_contig = simple_contig.split('_')[0]
+                assert simple_contig.startswith('tig00'), 'Renaming failed: {}'.format(simple_contig)
+                fasta_header = '>HG02982_A0_' + simple_contig
                 _ = fasta.write('{}\n{}\n'.format(fasta_header, seq_buffer[contig]))
         
         get_nuc_counts = op.itemgetter(*('A', 'C', 'G', 'T'))
         with open(output.stats, 'w') as table:
             _ = table.write('\t'.join(['name', 'length', 'A', 'C', 'G', 'T']) + '\n')
             for length, contig, stats in sorted(seq_stats, reverse=True):
+                simple_contig = contig.split()[-1]
+                simple_contig = simple_contig.split('_')[0]
+                assert simple_contig.startswith('tig00'), 'Renaming failed: {}'.format(simple_contig)
                 a,c,g,t = get_nuc_counts(stats)
-                _ = table.write('\t'.join(list(map(str, [contig, length, a, c, g, t]))) + '\n')
+                _ = table.write('\t'.join(list(map(str, [simple_contig, length, a, c, g, t]))) + '\n')
         # END OF RUN BLOCK
 
 
@@ -188,6 +194,21 @@ rule load_rp11ceny_reads:
     shell:
         'wget --no-verbose -O {output} -i {input}'
     
+
+rule merge_rp11ceny_ont_reads:
+    input:
+        expand(
+            'output/reads/RP11CENY_ONT_{accession}_1.fastq.gz',
+            accession=RP11CENY_ONT_ACCESSIONS
+        )
+    output:
+        'references/reads/RP11CENY_ONT.reads.fasta'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    shell:
+        'pigz -d -c -p {threads} {input} | seqtk seq -C -A > {output}'
+
 
 rule mock_index_reads:
     input:
@@ -310,9 +331,9 @@ rule count_read_kmers:
         sample = '(RP11CENYONT|RP11CENYILL|HG02982A0)'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 262144 * attempt,
-        mem_total_gb = lambda wildcards, attempt: 256 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 48 * attempt
+        mem_total_mb = lambda wildcards, attempt: 2048 if attempt < 2 else 73728,
+        mem_total_gb = lambda wildcards, attempt: 2 if attempt < 2 else 72,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         kmer_size = KMER_SIZE,
         zip_threads = config['num_cpu_high'],
@@ -374,7 +395,7 @@ rule build_shared_male_db:
     output:
         kmer_db = directory('output/kmer_db/male-shared.k{kmer_size}.{hpc}.db')
     benchmark:
-        'rsrc/output/kmer_db/male-shared.k{kmer_size}.{hpc}.intersect.rsrc'
+        'rsrc/output/kmer_db/male-shared.k{kmer_size}.{hpc}.build.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -395,7 +416,7 @@ rule build_merged_female_db:
     output:
         kmer_db = directory('output/kmer_db/female-merged.k{kmer_size}.{hpc}.db')
     benchmark:
-        'rsrc/output/kmer_db/female-merged.k{kmer_size}.{hpc}.union.rsrc'
+        'rsrc/output/kmer_db/female-merged.k{kmer_size}.{hpc}.build.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -415,7 +436,7 @@ rule build_male_specific_db:
     output:
         male_specific = directory('output/kmer_db/male-specific.k{kmer_size}.{hpc}.db')
     benchmark:
-        'rsrc/output/kmer_db/male-specific.k{kmer_size}.{hpc}.difference.rsrc'
+        'rsrc/output/kmer_db/male-specific.k{kmer_size}.{hpc}.build.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -429,6 +450,32 @@ rule build_male_specific_db:
         'output {output.male_specific}'
 
 
+rule build_male_specific_uniq_db:
+    """
+    k-mers occurring once in all male HiFi data sets, but never
+    in female HiFi reads or in the T2T reference
+    """
+    input:
+        male_kmers = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db',
+    output:
+        male_specific_uniq = directory('output/kmer_db/male-specific-uniq.k{kmer_size}.{hpc}.db')
+    benchmark:
+        'rsrc/output/kmer_db/male-specific-uniq.k{kmer_size}.{hpc}.build.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
+        mem_total_gb = lambda wildcards, attempt: 12 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        male_uniq = len(MALE_SAMPLES),
+    shell:
+        'meryl threads={threads} memory={resources.mem_total_gb} '
+        'equal-to {params.male_uniq} {input.male_kmers} '
+        'output {output.male_specific_uniq}'
+
+
 rule build_male_union_db:
     input:
         male_kmers = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db',
@@ -437,7 +484,7 @@ rule build_male_union_db:
     output:
         male_union = directory('output/kmer_db/male-union.k{kmer_size}.{hpc}.db')
     benchmark:
-        'rsrc/output/kmer_db/male-union.k{kmer_size}.{hpc}.difference.rsrc'
+        'rsrc/output/kmer_db/male-union.k{kmer_size}.{hpc}.build.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -451,15 +498,47 @@ rule build_male_union_db:
         'output {output.male_union}'
 
 
+rule build_male_union_uniq_db:
+    """
+    Because of the bias introduced by RP11-CENY k-mers, this should
+    predominantly contain k-mers corresponding to centromere sequence
+    """
+    input:
+        male_kmers = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db',
+        a0_kmers = 'output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.db',
+        rp11_kmers = 'output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.db'
+    output:
+        male_union_uniq = directory('output/kmer_db/male-union-uniq.k{kmer_size}.{hpc}.db')
+    benchmark:
+        'rsrc/output/kmer_db/male-union.k{kmer_size}.{hpc}.build.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
+        mem_total_gb = lambda wildcards, attempt: 12 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        male_uniq = len(MALE_SAMPLES),
+        union_uniq = len(MALE_SAMPLES) + 2
+    shell:
+        'meryl threads={threads} memory={resources.mem_total_gb} '
+        'intersect-sum '
+        '[equal-to {params.male_uniq} {input.male_kmers}] '
+        '[equal-to 1 {input.a0_kmers}]'
+        '[equal-to 1 {input.rp11_kmers}]'
+        'output {output.male_union_uniq}'
+
+
 rule dump_male_kmers:
     input:
         kmer_db = 'output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.db'
     output:
         txt = 'output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.txt.gz'
     benchmark:
-        'rsrc/output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.dump.rsrc'
+        'rsrc/output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.dump-txt.rsrc'
     wildcard_constraints:
-        share_type = '(specific|union)'
+        share_type = '(specific|union|specific-uniq|union-uniq)'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -471,34 +550,14 @@ rule dump_male_kmers:
         'meryl print {input.kmer_db} | pigz -p {threads} --best > {output.txt}'
 
 
-rule dump_unique_male_kmers:
-    input:
-        kmer_db = 'output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.db'
-    output:
-        txt = 'output/kmer_db/male-{share_type}-uniq.k{kmer_size}.{hpc}.txt.gz'
-    benchmark:
-        'rsrc/output/kmer_db/male-{share_type}-uniq.k{kmer_size}.{hpc}.dump.rsrc'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_low']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
-        mem_total_gb = lambda wildcards, attempt: attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt
-    params:
-        shared_uniq = lambda wildcards: len(MALE_SAMPLES) if wildcards.share_type == 'specific' else len(MALE_SAMPLES) + 2
-    shell:
-        'meryl print [equal-to {params.shared_uniq} {input.kmer_db}] | pigz -p {threads} --best > {output.txt}'
-
-
 rule extract_ktagged_reads:
     input:
         fastq = select_hifi_input,
-        kmer_db = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db'
+        kmer_db = 'output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.db'
     output:
-        ktagged_reads = 'output/ktagged_reads/{sample}.k{kmer_size}.{hpc}.ktagged-reads.fastq.gz',
+        ktagged_reads = 'output/ktagged_reads/{sample}.k{kmer_size}.{hpc}.ktg-{share_type}.fastq.gz',
     benchmark:
-        'rsrc/output/ktagged_reads/{sample}.k{kmer_size}.{hpc}.ktagged-reads.rsrc'
+        'rsrc/output/ktagged_reads/{sample}.k{kmer_size}.{hpc}.ktg-{share_type}.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -518,15 +577,15 @@ rule extract_ktagged_reads:
 
 rule align_ktagged_reads_to_reference:
     input:
-        reads = 'output/ktagged_reads/{sample}.k{msk_kmer}.{hpc}.ktagged-reads.fastq.gz',
+        reads = 'output/ktagged_reads/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}.fastq.gz',
         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
         ref_repkmer = 'output/kmer_db_sample/{reference}.k{wmap_kmer}.no-hpc.rep-grt09998.txt',
     output:
-        bam = 'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.psort.raw.bam'
+        bam = 'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}_MAP-TO_{reference}.wmap-k{wmap_kmer}.psort.raw.bam'
     log:
-        'log/output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.log'
+        'log/output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}_MAP-TO_{reference}.wmap-k{wmap_kmer}.log'
     benchmark:
-        'rsrc/output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.rsrc'
+        'rsrc/output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}_MAP-TO_{reference}.wmap-k{wmap_kmer}.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -537,7 +596,12 @@ rule align_ktagged_reads_to_reference:
         mem_sort_mb = 4096,
     params:
         individual = lambda wildcards: wildcards.sample,
-        readgroup_id = lambda wildcards: '{}_k{}_{}'.format(wildcards.sample, wildcards.msk_kmer, wildcards.hpc.replace('-', '')),
+        readgroup_id = lambda wildcards: '{}_k{}_{}_{}'.format(
+            wildcards.sample,
+            wildcards.msk_kmer,
+            wildcards.hpc.replace('-', ''),
+            wildcards.share_type.replace('-', '')
+        ),
         align_threads = config['num_cpu_medium'] - 4,
         sort_threads = 4
     shell:
@@ -696,7 +760,7 @@ rule align_male_reference_reads:
         runtime_hrs = lambda wildcards, attempt: 6 + 6 * attempt
     shell:
         'GraphAligner --verbose -x vg -t {threads} '
-        '--multimap-score-fraction 0.99 --min-alignment-score 1000 '
+        '--multimap-score-fraction 1 --min-alignment-score 1000 '
         '-g {input.graph} -f {input.reads} -a {output.gaf} &> {log}'
 
 
@@ -837,19 +901,14 @@ rule master:
             rules.dump_male_kmers.output.txt,
             kmer_size=KMER_SIZE,
             hpc=['is-hpc'],
-            share_type=['specific', 'union']
-        ),
-        expand(
-            rules.dump_unique_male_kmers.output.txt,
-            kmer_size=KMER_SIZE,
-            hpc=['is-hpc'],
-            share_type=['specific', 'union']
+            share_type=['specific', 'union', 'specific-uniq', 'union-uniq']
         ),
         expand(
             rules.extract_ktagged_reads.output.ktagged_reads,
             kmer_size=KMER_SIZE,
             hpc=['is-hpc'],
-            sample=MALE_SAMPLES
+            sample=MALE_SAMPLES,
+            share_type=['specific', 'union', 'specific-uniq', 'union-uniq']
         ),
         'output/assemblies/trio_binned/NA24385',
         expand(
@@ -859,23 +918,23 @@ rule master:
         expand(
             'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.dip.{hap}.p_ctg.gaf',
             assm_mode=['trio_binned'],
-            male_reads=['GRCh38_chrY', 'HG02982_A0'],
+            male_reads=['GRCh38_chrY', 'HG02982_A0', 'RP11CENY_ONT'],
             sample=['NA24385'],
             hap=['hap1', 'hap2']
         ),
         expand(
             'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.bp.{hap}.p_ctg.gaf',
             assm_mode=['non_trio'],
-            male_reads=['GRCh38_chrY', 'HG02982_A0'],
+            male_reads=['GRCh38_chrY', 'HG02982_A0', 'RP11CENY_ONT'],
             sample=MALE_SAMPLES,
             hap=['hap1', 'hap2']
         ),
-        expand(
-            'output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.paf',
-            kmer_size=[KMER_SIZE],
-            sample=MALE_SAMPLES,
-            hpc=['is-hpc']
-        ),
+        # expand(
+        #     'output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.paf',
+        #     kmer_size=[KMER_SIZE],
+        #     sample=MALE_SAMPLES,
+        #     hpc=['is-hpc']
+        # ),
         expand(
             'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.{content}.bed',
             sample=MALE_SAMPLES,
@@ -899,11 +958,12 @@ rule master:
             content=['filt', 'unmap']
         ),
         expand(
-            'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}_MAP-TO_{reference}.wmap-k{wmap_kmer}.{content}.bed',
+            'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}_MAP-TO_{reference}.wmap-k{wmap_kmer}.{content}.bed',
             sample=MALE_SAMPLES,
             msk_kmer=[KMER_SIZE],
             wmap_kmer=[WMAP_KMER_LONG_READS],
             reference=['T2Tv11_38p13Y_chm13'],
             hpc=['is-hpc'],
-            content=['filt', 'unmap']
+            content=['filt', 'unmap'],
+            share_type=['specific', 'union', 'specific-uniq', 'union-uniq']
         ),
