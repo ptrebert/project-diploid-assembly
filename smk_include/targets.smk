@@ -264,6 +264,18 @@ TARGET_PATHS = {
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq60.stats"
     ),
 
+    "STATS_CONTIG_STATS_NHR_ASSEMBLY": os.path.join(
+        "output", "statistics", "assembly_summary",
+        "reference_assembly", "non-hap-res",
+        "{hap_reads}_nhr-{nhr_assembler}.stats.tsv"
+    ),
+
+    "STATS_CONTIG_STATS_CLUSTERED_ASSEMBLY": os.path.join(
+        "output", "statistics", "assembly_summary",
+        "reference_assembly", "clustered",
+        "{sseq_reads}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}.stats.tsv"
+    ),
 
     # added contig coverage summary stats for draft haploid assembly
     # to check for large missing pieces (misassemblies) before polishing starts.
@@ -292,6 +304,18 @@ TARGET_PATHS = {
         "{sseq_reads}",
         "draft", "haploid_assembly",
         "{hap_reads}-{hap_assembler}.{hap}_map-to_{eval_align_ref}.mapq60.stats"
+    ),
+
+    "STATS_CONTIG_STATS_HAPLOID_DRAFT_ASSEMBLY": os.path.join(
+        "output", "statistics", "assembly_summary",
+        "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}.stats.tsv"
     ),
 
     "STATS_CONTIG_REF_ALN_HAPLOID_ASSEMBLY_MQ00": os.path.join(

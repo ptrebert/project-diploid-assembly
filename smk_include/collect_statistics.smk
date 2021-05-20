@@ -273,6 +273,21 @@ rule collect_contig_to_ref_aln_statistics:
         '--min-mapq {params.mapq} --contig-groups --group-id-position 0 --output {output}'
 
 
+rule compute_assembly_contig_summary:
+    input:
+        assm = 'output/{folder_path}/{assembly}.fasta.fai',
+        ref = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai',
+    output:
+        'output/statistics/assembly_summary/{folder_path}/{assembly}.stats.tsv'
+    priority: 200
+    conda:
+        '../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('collect_contig_stats.py'),
+    shell:
+        '{params.script_exec} --assembly-fai {input.assm} --ref-fai {input.ref} --output {output} '
+
+
 def collect_tag_lists(wildcards, glob_collect=True, caller='snakemake'):
     """
     :param wildcards:
