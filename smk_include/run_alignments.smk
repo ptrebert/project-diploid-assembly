@@ -181,19 +181,19 @@ rule pbmm2_reads_to_reference_alignment_pacbio_fastq:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbmm2.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_high'])
+        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_medium'])
     conda:
         '../environment/conda/conda_pbtools.yml'
     wildcard_constraints:
         sample = CONSTRAINT_PACBIO_SAMPLES
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((110592 if attempt <= 1 else 188416) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 110592 if attempt <= 1 else 188416,
-        runtime_hrs = lambda wildcards, attempt: 8 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 16384 * attempt) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 16384 + 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt + 1
     params:
-        align_threads = config['num_cpu_high'] - 2,
-        sort_threads = 2,
+        align_threads = config['num_cpu_medium'] - 4,
+        sort_threads = 4,
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.sample.split('_')[0],
         tempdir = lambda wildcards: os.path.join(
@@ -461,7 +461,10 @@ rule minimap_contig_to_known_reference_alignment:
         #preset = 'input/fastq/{sample}.preset.minimap',
         reference = 'references/assemblies/{aln_reference}.fasta'
     output:
-        'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.psort.sam.bam'
+        bam = 'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.psort.sam.bam',
+        temp_dir = temp(
+            directory('temp/minimap/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}')
+        )
     log:
         minimap = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.minimap.log',
         st_sort = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-sort.log',
@@ -470,27 +473,26 @@ rule minimap_contig_to_known_reference_alignment:
         '.'.join(['run/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
     conda:
         '../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_high']
+    threads: (config['num_cpu_medium'] + config['num_cpu_low'])
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 1 if attempt < 2 else attempt * 4,
-        mem_sort_mb = 8192
+        mem_per_cpu_mb = lambda wildcards, attempt: int((36864 + 36864 * attempt) / (config['num_cpu_high'] + config['num_cpu_low'])),
+        mem_total_mb = lambda wildcards, attempt: 36864 + 36864 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt,
+        mem_sort_mb = 4096
     params:
+        align_threads = config['num_cpu_medium'],
+        sort_threads = config['num_cpu_low'],
         individual = lambda wildcards: wildcards.file_name.split('_')[0],
         readgroup_id = lambda wildcards: wildcards.file_name.replace('.', '_'),
-        discard_flag = config['contigref_aln_discard'],
-        tempdir = lambda wildcards: os.path.join(
-                                        'temp', 'minimap', wildcards.folder_path,
-                                        wildcards.file_name, wildcards.aln_reference)
+        discard_flag = config['contigref_aln_discard']
     shell:
-        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
-        'minimap2 -t {threads} '
+        'mkdir -p {output.temp_dir} && '
+        'minimap2 -t {params.align_threads} '
             '--secondary=no --eqx -Y -ax asm20 -m 10000 -z 10000,50 -r 50000 --end-bonus=100 -O 5,56 -E 4,1 -B 5 '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
             '{input.reference} {input.contigs} 2> {log.minimap} | '
-            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
-            'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
+        'samtools view -u -F {params.discard_flag} /dev/stdin 2> {log.st_view} | '
+        'samtools sort -@ {params.sort_threads} -m {resources.mem_sort_mb}M -T {output.temp_dir}/tmp_part -O BAM -l 7 /dev/stdin > {output.bam} 2> {log.st_sort}'           
 
 
 rule unimap_contig_to_known_reference_alignment:
@@ -498,36 +500,42 @@ rule unimap_contig_to_known_reference_alignment:
         contigs = 'output/{folder_path}/{file_name}.fasta',
         ref_idx = 'references/assemblies/{aln_reference}.umi'
     output:
-        'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.psort.sam.bam'
+        bam = 'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.psort.sam.bam',
+        temp_dir = temp(
+            directory('temp/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}')
+        )
     log:
         unimap = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.unimap.log',
         st_sort = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-sort.log',
         st_view = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-view.log',
     benchmark:
-        '.'.join(['run/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
+        '.'.join([
+            'run/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}',
+            't{}'.format((config['num_cpu_high'] + config['num_cpu_low'])),
+            'rsrc']
+        )
     conda:
         '../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_high']
+    threads: (config['num_cpu_medium'] + config['num_cpu_low'])
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 8 * attempt,
-        mem_sort_mb = 8192
+        mem_per_cpu_mb = lambda wildcards, attempt: int((36864 + 36864 * attempt) / (config['num_cpu_high'] + config['num_cpu_low'])),
+        mem_total_mb = lambda wildcards, attempt: 36864 + 36864 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt,
+        mem_sort_mb = 4096
     params:
+        align_threads = config['num_cpu_medium'],
+        sort_threads = config['num_cpu_low'],
         individual = lambda wildcards: wildcards.file_name.split('_')[0],
         readgroup_id = lambda wildcards: wildcards.file_name.replace('.', '_'),
-        discard_flag = config['contigref_aln_discard'],
-        tempdir = lambda wildcards: os.path.join(
-                                        'temp', 'unimap', wildcards.folder_path,
-                                        wildcards.file_name, wildcards.aln_reference)
+        discard_flag = config['contigref_aln_discard']
     shell:
-        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
-        'unimap -t {threads} '
+        'mkdir -p {output.temp_dir} && '
+        'unimap -t {params.align_threads} '
             '--secondary=no --eqx -Y -ax asm5 '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
             '{input.ref_idx} {input.contigs} 2> {log.unimap} | '
-            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} 2> {log.st_sort} | '
-            'samtools view -b -F {params.discard_flag} /dev/stdin > {output} 2> {log.st_view}'
+        'samtools view -u -F {params.discard_flag} /dev/stdin 2> {log.st_view} | '
+        'samtools sort -@ {params.sort_threads} -m {resources.mem_sort_mb}M -T {output.temp_dir}/tmp_part -O BAM -l 7 /dev/stdin > {output} 2> {log.st_sort} '
 
 
 rule dump_contig_to_reference_alignment_to_bed:

@@ -234,14 +234,14 @@ rule call_variants_deepvariant:
     benchmark:
         os.path.join('run/output/variant_calls/deepvar',
                      '{reference}/{sseq_reads}/processing/10-norm/splits',
-                     '{vc_reads}.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_high']))
+                     '{vc_reads}.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_medium']))
     envmodules:
         config['env_module_singularity']
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_medium']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((24576 + 16384 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 24576 + 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 1 if attempt < 2 else 12 * attempt
+        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + (max(attempt - 1, 0) * 16384)) / config['num_cpu_medium']),
+        mem_total_mb = lambda wildcards, attempt: 16384 + (max(attempt - 1, 0) * 16384),
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
     params:
         bind_folder = lambda wildcards: os.getcwd(),
         temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sseq_reads, wildcards.vc_reads, wildcards.sequence),
