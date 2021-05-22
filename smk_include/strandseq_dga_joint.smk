@@ -100,7 +100,13 @@ def collect_haploid_split_reads_any(wildcards, glob_collect=True, caller='snakem
 
 
 rule write_haploid_split_reads_fofn:
+    """
+    2021-05-22 see rule
+    integrative_phasing::write_strandphaser_split_vcf_fofn
+    for details about fofn input
+    """
     input:
+        fofn = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.fofn',
         read_splits = collect_haploid_split_reads_any
     output:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_{subfolder}/{hap_reads}.{hap}.fofn',
@@ -111,18 +117,20 @@ rule write_haploid_split_reads_fofn:
         sample_name = wildcards.sseq_reads.split('_')[0]
         num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
 
+        num_wh_vcf = 0
+        with open(input.fofn, 'r') as fofn:
+            num_wh_vcf = len([line for line in fofn if line.strip()])
+        assert num_wh_vcf > 0, 'write_haploid_split_reads_fofn >> number of WhatsHap VCF splits read from fofn is zero: {}'.format(input.fofn)
+
         num_reads = len(input.read_splits)
 
         if num_reads == 0:
             raise RuntimeError('write_haploid_split_reads_fofn >> zero read split files: {}'.format(wildcards))
-        elif num_reads != num_clusters:
+        elif num_reads != num_clusters and num_reads != num_wh_vcf:
             raise RuntimeError('write_haploid_split_reads_fofn >> mismatch between expected ({}) and received ({}) read split files: {}'.format(num_clusters, num_reads, wildcards))
         else:
             with open(output.fofn, 'w') as dump:
                 for file_path in sorted(input.read_splits):
-                    if not os.path.isfile(file_path):
-                        import sys
-                        sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                     _ = dump.write(file_path + '\n')
 
 

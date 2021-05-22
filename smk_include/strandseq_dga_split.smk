@@ -263,7 +263,13 @@ def collect_assembled_sequence_files(wildcards, glob_collect=True, caller='snake
 
 
 rule write_assembled_fasta_clusters_fofn:
+    """
+    2021-05-22 see rule
+    integrative_phasing::write_strandphaser_split_vcf_fofn
+    for details about fofn input
+    """
     input:
+        fofn = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.fofn',
         cluster_fastas = collect_assembled_sequence_files
     output:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fofn',
@@ -276,16 +282,18 @@ rule write_assembled_fasta_clusters_fofn:
 
         num_fastas = len(input.cluster_fastas)
 
+        num_wh_vcf = 0
+        with open(input.fofn, 'r') as fofn:
+            num_wh_vcf = len([line for line in fofn if line.strip()])
+        assert num_wh_vcf > 0, 'write_assembled_fasta_clusters_fofn >> number of WhatsHap VCF splits read from fofn is zero: {}'.format(input.fofn)
+
         if num_fastas == 0:
             raise RuntimeError('write_assembled_fasta_clusters_fofn >> zero assembly FASTA files: {}'.format(wildcards))
-        elif num_fastas != num_clusters:
+        elif num_fastas != num_clusters and num_fastas != num_wh_vcf:
             raise RuntimeError('write_assembled_fasta_clusters_fofn >> mismatch between expected ({}) and received ({}) assembly FASTA files: {}'.format(num_clusters, num_fastas, wildcards))
         else:
             with open(output.fofn, 'w') as dump:
                 for file_path in sorted(input.cluster_fastas):
-                    if not os.path.isfile(file_path):
-                        import sys
-                        sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                     _ = dump.write(file_path + '\n')
 
 
@@ -419,7 +427,13 @@ def collect_polished_contigs(wildcards, glob_collect=True, caller='snakemake'):
 
 
 rule write_polished_contigs_fofn:
+    """
+    2021-05-22 see rule
+    integrative_phasing::write_strandphaser_split_vcf_fofn
+    for details about fofn input
+    """
     input:
+        fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fofn',
         contigs = collect_polished_contigs
     output:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{pol_pass}.fofn'
@@ -430,11 +444,16 @@ rule write_polished_contigs_fofn:
         sample_name = wildcards.sseq_reads.split('_')[0]
         num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
 
+        num_assm_clusters = 0
+        with open(input.fofn, 'r') as fofn:
+            num_assm_clusters = len([line for line in fofn if line.strip()])
+        assert num_assm_clusters > 0, 'write_polished_contigs_fofn >> number of assembled cluster sequences read from fofn is zero: {}'.format(input.fofn)
+
         num_fastas = len(input.contigs)
 
         if num_fastas == 0:
             raise RuntimeError('write_assembled_fasta_clusters_fofn >> zero assembly FASTA files: {}'.format(wildcards))
-        elif num_fastas != num_clusters:
+        elif num_fastas != num_clusters and num_fasta != num_assm_clusters:
             raise RuntimeError('write_assembled_fasta_clusters_fofn >> mismatch between expected ({}) and received ({}) assembly FASTA files: {}'.format(num_clusters, num_fastas, wildcards))
         else:
             with open(output.fofn, 'w') as dump:

@@ -179,35 +179,75 @@ rule run_strandphaser:
 
 
 rule write_strandphaser_split_vcf_fofn:
+    """
+    2021-05-22 - PGAS v13 (needs to be checked if Strand-seq R tools are updated):
+    w/o checkpoints, this rule is critical for revealing potential problems for a sample.
+    If breakpointR does not identify WC regions for a (sequence) cluster, StrandPhaseR
+    won't produce a phased VCF for the respective cluster. This will raise an exception
+    in this rule (as intended), and requires the additional check that the "missing" VCF
+    is a result of the breakpointR output, and not indicative of an error further upstream in PGAS.
+
+    NB: "reference" here refers to a custom (assembled) reference (clustered squashed assembly)
+    """
     input:
+        wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/{reference}.WCregions.txt',
         vcf_dir = rules.run_strandphaser.output.vcf_dir
     output:
         fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn'
-    resources:
-        mem_total_mb = 2048,
-        mem_per_cpu_mb = 2048,
+    log:
+        'log/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.write-fofn.log'
     run:
         import os
+        import sys
 
-        # Sanity check: there must be one VCF file per cluster
-        sample_name = wildcards.sseq_reads.split('_')[0]
-        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+        with open(log[0], 'w') as logfile:
+            _ = logfile.write('write_strandphaser_split_vcf_fofn >> processing {}\n'.format(input.vcf_dir))
+            # Sanity check: there must be one VCF file per cluster
+            sample_name = wildcards.sseq_reads.split('_')[0]
+            num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+            _ = logfile.write('Estimated number of sequence clusters: {}\n'.format(num_clusters))
 
-        input_dir = input.vcf_dir
-        input_vcfs = sorted([f for f in os.listdir(input_dir) if f.endswith('.vcf')])
-        num_vcf = len(input_vcfs)
-        if num_vcf == 0:
-            raise RuntimeError('No StrandPhaseR-phased VCFs in /VCFfiles output dir. '
-                               'Cannot create fofn file: {}'.format(output.fofn))
+            input_dir = input.vcf_dir
+            assert os.path.isdir(input_dir), 'write_strandphaser_split_vcf_fofn >> no VCF input folder: {}\n'.format(input_dir)
+            input_vcfs = sorted([f for f in os.listdir(input_dir) if f.endswith('.vcf')])
+            num_vcf = len(input_vcfs)
+            _ = logfile.write('Collected N StrandPhaseR output VCF files: {}\n'.format(num_vcf))
+            if num_vcf == 0:
+                raise RuntimeError('No StrandPhaseR-phased VCFs in /VCFfiles output dir. '
+                                'Cannot create fofn file: {}'.format(output.fofn))
 
-        elif num_vcf != num_clusters:
-            raise RuntimeError('Mismatch between StrandPhaseR output VCF and number of SaaRclusters: {} vs {}'.format(num_vcf, num_clusters))
-
-        else:
+            elif num_vcf != num_clusters:
+                _ = logfile.write('Potential error - checking breakpointR output\n')
+                brkp_clusters = set()
+                with open(input.wc_regions, 'r') as table:
+                    for line in table:
+                        if not line.strip():
+                            continue
+                        brkp_clusters.add(line.split()[0])
+                _ = logfile.write('breakpointR called W/C-only for N sequence clusters: {}\n'.format(len(brkp_clusters)))
+                if len(brkp_clusters) == num_vcf:
+                    missing_clusters = set()
+                    for i in range(1, num_clusters + 1):
+                        cluster_id = 'cluster' + str(i)
+                        if cluster_id not in brkp_clusters:
+                            missing_clusters.add(cluster_id)
+                    missing_clusters = sorted(missing_clusters)
+                    if WARN:
+                        _ = sys.stderr.write('WARNING: sequence cluster(s) [{}] w/o W/C-only regions for sample: '
+                                            '{} / {}\n'.format(', '.join(missing_clusters), wildcards.reference, wildcards.sseq_reads))
+                    _ = logfile.write('Sequence cluster(s) w/o W/C-only regions as per breakpointR output: {}\n'.format(', '.join(missing_clusters)))
+                else:
+                    raise RuntimeError('Mismatch between StrandPhaseR output VCF and number of SaaRclusters: '
+                                        '{} VCF files vs {} sequence clusters'.format(num_vcf, num_clusters))
+            else:
+                pass
+            
             with open(output.fofn, 'w') as fofn:
                 for file_name in input_vcfs:
                     file_path = os.path.join(input_dir, file_name)
                     _ = fofn.write(file_path + '\n')
+            
+            _ = logfile.write('Output fofn produced\n')
 
 
 rule merge_strandphaser_output:
@@ -310,7 +350,13 @@ def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=True, caller
 
 
 rule write_phased_vcf_splits_fofn:
+    """
+    2021-05-22 / same as above for StrandPhaseR phased VCF output
+    However, here can simplify things assuming that the check above would catch
+    any error / prevent pipeline from proceeding.
+    """
     input:
+        fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn',
         vcf_splits = intphase_collect_phased_vcf_split_files
     output:
         fofn = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.fofn'
@@ -323,16 +369,18 @@ rule write_phased_vcf_splits_fofn:
 
         num_vcf = len(input.vcf_splits)
 
+        num_spr_vcf = 0
+        with open(input.fofn, 'r') as fofn:
+            num_spr_vcf = len([line for line in fofn if line.strip()])
+        assert num_spr_vcf > 0, 'write_phased_vcf_splits_fofn >> number of StrandPhaseR VCF splits read from fofn is zero: {}'.format(input.fofn)
+
         if num_vcf == 0:
             raise RuntimeError('write_phased_vcf_splits_fofn >> zero phased VCF split files: {}'.format(wildcards))
-        elif num_vcf != num_clusters:
+        elif num_vcf != num_clusters and num_vcf != num_spr_vcf:
             raise RuntimeError('write_phased_vcf_splits_fofn >> mismatch between expected ({}) and received ({}) phased VCF split files: {}'.format(num_clusters, num_vcf, wildcards))
         else:
             with open(output.fofn, 'w') as dump:
                 for file_path in sorted(input.vcf_splits):
-                    if not os.path.isfile(file_path):
-                        import sys
-                        sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
                     _ = dump.write(file_path + '\n')
 
 

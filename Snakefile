@@ -1,4 +1,7 @@
 
+DEBUG = bool(config.get('show_debug_messages', False))
+WARN = bool(config.get('show_warnings', False))
+
 include: 'smk_include/module_includes.smk'
 
 include: 'smk_include/results/run_afr_trios.smk'

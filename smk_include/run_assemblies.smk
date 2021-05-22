@@ -914,13 +914,15 @@ rule compute_hifiasm_haploid_split_assembly:
         tags_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.h1.{sequence}.tags.list',
         tags_h2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{hap_reads}.h2.{sequence}.tags.list',
     output:
-        hap1_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap1.p_ctg.gfa',
-        hap2_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap2.p_ctg.gfa',
+        hap1_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.hap1.p_ctg.gfa',
+        hap2_contigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.hap2.p_ctg.gfa',
         raw_unitigs = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.r_utg.gfa',
         discard = multiext(
-                'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}',
+                'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip',
                 '.hap1.p_ctg.noseq.gfa', '.hap2.p_ctg.noseq.gfa',
-                '.dip.r_utg.noseq.gfa'
+                '.hap1.p_ctg.lowQ.bed', '.hap2.p_ctg.lowQ.bed',
+                '.p_utg.gfa', '.p_utg.lowQ.bed', '.p_utg.noseq.gfa', 
+                '.r_utg.noseq.gfa', '.r_utg.lowQ.bed'
             )
         # as above: exclude read self overlaps from output
         # '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
@@ -945,8 +947,8 @@ rule compute_hifiasm_haploid_split_assembly:
 
 rule convert_cluster_gfa_to_fasta:
     input:
-        hap1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap1.p_ctg.gfa',
-        hap2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.hap2.p_ctg.gfa',
+        hap1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.hap1.p_ctg.gfa',
+        hap2 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}/{hap_reads}.{sequence}.dip.hap2.p_ctg.gfa',
     output:
         fasta_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.h1-un.{sequence}.fasta',
         map_h1 = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.h1-un.{sequence}.read-contig.map',

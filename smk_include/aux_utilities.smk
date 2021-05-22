@@ -359,33 +359,55 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads):
     pipeline to run from start to end w/o interruption.
     """
     import os
+    import sys
     import glob
+
+    debug = bool(config.get('show_debug_messages', False))
+
+    if debug:
+        sys.stderr.write('Estimating number of SaaRclusters for: {} / {}\n'.format(sample_name, sseq_reads))
 
     num_clusters = 0
 
     formatter = {'sseq_reads': sseq_reads, 'sample': sample_name}
     cluster_fofn_path = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{sample}*_nhr-*.clusters.fofn'.format(**formatter)
+    if debug:
+        sys.stderr.write('Checking cluster fofn path: {}\n'.format(cluster_fofn_path))
     cluster_fofn_matches = glob.glob(cluster_fofn_path)
     if len(cluster_fofn_matches) == 1:
         cluster_fofn = cluster_fofn_matches[0]
+        if debug:
+            sys.stderr.write('... glob succeeded\n')
     else:
         cluster_fofn = None
 
     if cluster_fofn is not None and os.path.isfile(cluster_fofn):
+        if debug:
+            sys.stderr.write('Loading number of clusters from fofn: {}\n'.format(cluster_fofn))
         # best case: cluster fofn has already been created
         with open(cluster_fofn, 'r') as fofn:
             for line in fofn:
                 if line.strip():
                     num_clusters += 1
+        if debug:
+            sys.stderr.write('Loaded number of cluster from fofn: {}\n'.format(num_clusters))
     elif sample_name in CONSTRAINT_MALE_SAMPLE_NAMES:
         num_clusters = config.get('desired_clusters_male', config.get('desired_clusters', 0))
+        if debug:
+            sys.stderr.write('Male sample - cluster estimate (config): {}\n'.format(num_clusters))
     elif sample_name in CONSTRAINT_FEMALE_SAMPLE_NAMES:
         num_clusters = config.get('desired_clusters_female', config.get('desired_clusters', 0))
+        if debug:
+            sys.stderr.write('Female sample - cluster estimate (config): {}\n'.format(num_clusters))
     else:
         num_clusters = config.get('desired_clusters', 0)
+        if debug:
+            sys.stderr.write('Generic sample - cluster estimate (config): {}\n'.format(num_clusters))
     if num_clusters == 0:
         # reasonable best guess
         num_clusters = 24
+        if debug:
+            sys.stderr.write('Cluster estimate is zero - returning best guess: {}\n'.format(num_clusters))
     return num_clusters
 
 

@@ -535,12 +535,13 @@ rule unimap_contig_to_known_reference_alignment:
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
             '{input.ref_idx} {input.contigs} 2> {log.unimap} | '
         'samtools view -u -F {params.discard_flag} /dev/stdin 2> {log.st_view} | '
-        'samtools sort -@ {params.sort_threads} -m {resources.mem_sort_mb}M -T {output.temp_dir}/tmp_part -O BAM -l 7 /dev/stdin > {output} 2> {log.st_sort} '
+        'samtools sort -@ {params.sort_threads} -m {resources.mem_sort_mb}M -T {output.temp_dir}/tmp_part -O BAM -l 7 /dev/stdin > {output.bam} 2> {log.st_sort} '
 
 
 rule dump_contig_to_reference_alignment_to_bed:
     """
     Needed to create SaaRclust diagnostic plots - see create_plots module
+    Adapt runtime - unimap seems to result in giant BAM files...
     """
     input:
         'output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.psort.sam.bam'
@@ -553,7 +554,7 @@ rule dump_contig_to_reference_alignment_to_bed:
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt,
         mem_total_mb = 2048,
         mem_per_cpu_mb = 2048
     shell:
@@ -701,8 +702,8 @@ rule pbmm2_hapreads_to_known_reference_alignment_pacbio_fastq:
         mem_total_mb = lambda wildcards, attempt: 24768 + 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        align_threads = config['num_cpu_medium'] - 2,
-        sort_threads = 2,
+        align_threads = config['num_cpu_medium'] - 4,
+        sort_threads = 4,
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.hap_reads.split('_')[0],
         tempdir = lambda wildcards: os.path.join(

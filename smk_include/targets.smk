@@ -561,7 +561,6 @@ def define_file_targets(wildcards):
     :return:
     """
     individual = wildcards.individual
-    show_warnings = bool(config.get('show_warnings', False))
     try:
         sample_desc = config['sample_description_' + individual]
         if individual != sample_desc['individual']:
@@ -569,7 +568,7 @@ def define_file_targets(wildcards):
             raise ValueError('Sample description individual does not '
                              'match requested individual: {} vs {}'.format(individual, sample_desc['individual']))
     except KeyError as ke:
-        if show_warnings:
+        if WARN:
             sys.stderr.write('\nWARNING: no sample description for individual [sample_description_] {} in config\n'.format(individual))
         return []
 
@@ -618,7 +617,7 @@ def define_file_targets(wildcards):
                     CONFIG_TARGETS_SELECTED_KEYS,
                     CONFIG_TARGETS_SELECTED_VALUES,
                     True):
-                if show_warnings:
+                if WARN:
                     sys.stderr.write('\nWARNING: discarding target spec: {}\n'.format(target_spec))
                 continue
 
@@ -626,7 +625,7 @@ def define_file_targets(wildcards):
                 CONFIG_TARGETS_SKIPPED_KEYS,
                 CONFIG_TARGETS_SKIPPED_VALUES,
                 False):
-                if show_warnings:
+                if WARN:
                     sys.stderr.write('\nWARNING: skipping over target spec: {}\n'.format(target_spec))
                 continue
 
@@ -660,7 +659,7 @@ def define_file_targets(wildcards):
                 try:
                     complete_targets = expand(target_path, **tmp)
                 except (KeyError, WildcardError) as error:
-                    if show_warnings:
+                    if WARN:
                         sys.stderr.write('\nMissing parameter values for target {}: '
                                          '(known: {}) - {} [Skipping]\n'.format(target_name, tmp, str(error)))
                     continue
