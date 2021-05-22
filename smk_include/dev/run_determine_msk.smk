@@ -525,8 +525,8 @@ rule build_male_union_uniq_db:
         'meryl threads={threads} memory={resources.mem_total_gb} '
         'intersect-sum '
         '[equal-to {params.male_uniq} {input.male_kmers}] '
-        '[equal-to 1 {input.a0_kmers}]'
-        '[equal-to 1 {input.rp11_kmers}]'
+        '[equal-to 1 {input.a0_kmers}] '
+        '[equal-to 1 {input.rp11_kmers}] '
         'output {output.male_union_uniq}'
 
 
