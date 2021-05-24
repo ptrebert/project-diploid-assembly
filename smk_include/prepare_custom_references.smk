@@ -15,6 +15,8 @@ def collect_strandseq_merge_files(wildcards, glob_collect=True, caller='snakemak
     which libraries will eventually be used. However, this should not be a problem here
     because the dual fraction Strand-seq samples are never channeled through automatic QC.
     """
+    import glob
+    import fnmatch
 
     source_path = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/aln/{individual}_{project}_{platform}-{spec}_{lib_id}_{run_id}.filt.sam.bam'
 
@@ -26,93 +28,27 @@ def collect_strandseq_merge_files(wildcards, glob_collect=True, caller='snakemak
     assert individual in wildcards.reference and individual in wildcards.sseq_reads, \
         'Wrong reference / sseq_reads match: {} / {}'.format(wildcards.reference, wildcards.sseq_reads)
 
-    if glob_collect:
-        import glob
-        pattern = source_path.replace('{run_id}', '*')
-        pattern = pattern.replace('{spec}', '*')
-        pattern = pattern.format(**dict(wildcards))
-        bam_files = glob.glob(pattern)
+    pattern = source_path.replace('{run_id}', '*')
+    pattern = pattern.replace('{spec}', '*')
+    pattern = pattern.format(**dict(wildcards))
+    bam_files = glob.glob(pattern)
 
-        if not bam_files:
-            if caller == 'snakemake':
-                import fnmatch
-                # use info from module "scrape_data_sources" to determine rule input
-                sseq_libs, sseq_lib_ids = get_strandseq_library_info(wildcards.sseq_reads)
-                selected_libs = fnmatch.filter(sseq_libs, '*{}*'.format(wildcards.lib_id))
-                if len(selected_libs) != 2:
-                    raise RuntimeError('Cannot identify Strand-seq libs for merge: {} / {}'.format(wildcards, selected_libs))
-                new_source_path = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/aln/{sseq_lib}.filt.sam.bam'
-                bam_files = []
-                for lib in selected_libs:
-                    tmp = dict(wildcards)
-                    tmp['sseq_lib'] = lib
-                    bam_files.append(new_source_path.format(**tmp))
-            else:
-                raise RuntimeError('collect_strandseq_merge_files: no files collected with pattern {}'.format(pattern))
-
-    else:
-        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
-
-        requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
-        search_pattern = '_'.join([individual, project, platform + '-{spec}', lib_id, '{run_id}', '1'])
-
-        search_path = os.path.join(requests_dir, search_pattern + '.request')
-
-        checkpoint_wildcards = glob_wildcards(search_path)
-
-        bam_files = expand(
-            source_path,
-            zip,
-            reference=[wildcards.reference, wildcards.reference],
-            individual=[individual, individual],
-            sseq_reads=[wildcards.sseq_reads, wildcards.sseq_reads],
-            project=[project, project],
-            platform=[platform, platform],
-            spec=checkpoint_wildcards.spec,
-            lib_id=[lib_id, lib_id],
-            run_id=checkpoint_wildcards.run_id)
+    if not bam_files or len(bam_files) != 2:  # note here: no BAM index files considered
+        # use info from module "scrape_data_sources" to determine rule input
+        sseq_libs, sseq_lib_ids = get_strandseq_library_info(wildcards.sseq_reads)
+        selected_libs = fnmatch.filter(sseq_libs, '*{}*'.format(wildcards.lib_id))
+        if len(selected_libs) != 2:
+            raise RuntimeError('Cannot identify Strand-seq libs for merge: {} / {}'.format(wildcards, selected_libs))
+        new_source_path = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/aln/{sseq_lib}.filt.sam.bam'
+        bam_files = []
+        for lib in selected_libs:
+            tmp = dict(wildcards)
+            tmp['sseq_lib'] = lib
+            bam_files.append(new_source_path.format(**tmp))
 
     assert len(bam_files) == 2, 'Unexpected number of BAM files for merge: {}'.format(bam_files)
-    return bam_files
 
-
-# rule write_strandseq_merge_fofn:
-#     """
-#     2020-02-05
-#     Since this has to be executed once per merge pair,
-#     I don't want to make this a local rule executed on the submit node
-#     (presumably fixing github issue #216). However, the validate_checkpoint_output
-#     function indeed fails; apparently, issue #55 is still unfixed in 5.10.0
-#     So, implement the checkpoint functionality manually for this one... awesome
-#     """
-#     input:
-#         bams = collect_strandseq_merge_files
-#     output:
-#         fofn = 'output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.fofn'
-#     wildcard_constraints:
-#         sseq_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES,
-#         #lib_id = 'P[A-Z0-9]+'
-#     run:
-#         import os
-#         pattern = '[empty]'
-#         try:
-#             validate_checkpoint_output(input.bams)
-#             bam_files = input.bams
-#         except (RuntimeError, ValueError) as error:
-#             import sys
-#             sys.stderr.write('\n{}\n'.format(str(error)))
-#             bam_files = collect_strandseq_merge_files(wildcards, glob_collect=True)
-
-#         if len(bam_files) != 2:
-#             raise RuntimeError('Missing merge partner for strand-seq BAM files {} / {}: '
-#                                '{}'.format(output.fofn, pattern, bam_files))
-
-#         with open(output.fofn, 'w') as dump:
-#             for file_path in sorted(bam_files):
-#                 if not os.path.isfile(file_path):
-#                     import sys
-#                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-#                 _ = dump.write(file_path + '\n')
+    return sorted(bam_files)
 
 
 rule merge_mono_dinucleotide_fraction:

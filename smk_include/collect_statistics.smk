@@ -341,7 +341,13 @@ def collect_tag_lists(wildcards, glob_collect=True, caller='snakemake'):
 
 
 rule summarize_tagging_splitting_statistics:
+    """
+    2021-05-22 see rule
+    integrative_phasing::write_strandphaser_split_vcf_fofn
+    for details about fofn input
+    """
     input:
+        fofn = 'output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.wh-phased.fofn',
         tags = collect_tag_lists
     output:
         'output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.tsv'
@@ -358,9 +364,14 @@ rule summarize_tagging_splitting_statistics:
 
         num_tags = len(input.tags)
 
+        num_wh_vcf = 0
+        with open(input.fofn, 'r') as fofn:
+            num_wh_vcf = len([line for line in fofn if line.strip()])
+        assert num_wh_vcf > 0, 'write_assembled_fasta_clusters_fofn >> number of WhatsHap VCF splits read from fofn is zero: {}'.format(input.fofn)
+
         if num_tags == 0:
             raise RuntimeError('summarize_tagging_splitting_statistics >> zero haplo-tag files: {}'.format(wildcards))
-        elif num_tags != num_clusters:
+        elif num_tags != num_clusters and num_tags != num_wh_vcf:
             raise RuntimeError('summarize_tagging_splitting_statistics >> mismatch between expected ({}) and received ({}) haplotag files: {}'.format(num_clusters, num_tags, wildcards))
         else:
             pass

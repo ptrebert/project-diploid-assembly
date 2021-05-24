@@ -59,8 +59,8 @@ def collect_haploid_split_reads(wildcards, file_ext, glob_collect, caller):
                     for i in range(1, num_clusters + 1):
                         tmp['sequence'] = 'cluster' + str(i)
                         hap_files.append(source_path.format(**tmp))
-            else:
-                raise RuntimeError('{}: collect_haploid_split_reads: no files collected with pattern {}'.format(h, pattern))
+                else:
+                    raise RuntimeError('{}: collect_haploid_split_reads: no files collected with pattern {}'.format(h, pattern))
             hap_read_splits.extend(hap_files)
 
     else:

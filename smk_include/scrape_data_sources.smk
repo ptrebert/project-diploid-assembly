@@ -375,8 +375,6 @@ def read_local_data_sources():
         'short_reads': handle_short_read_data_source,
     }
 
-    show_warnings = bool(config.get('show_warnings', False))
-
     formatted_data_sources = dict()
 
     for key, values in config.items():
@@ -388,11 +386,11 @@ def read_local_data_sources():
             for readset_type, readset_spec in ds.items():
                 readset_name = readset_spec['readset']
                 if 'data_source_folder' not in readset_spec:
-                    if show_warnings:
+                    if WARN:
                         sys.stderr.write('\nWarning: no data source folder for readset {} - skipping\n'.format(readset_name))
                     continue
                 if not os.path.isdir(readset_spec['data_source_folder']):
-                    if show_warnings:
+                    if WARN:
                         sys.stderr.write('\nWarning: skipping over non-existing data source folder: {}\n'.format(readset_spec['data_source_folder']))
                     continue
                 if readset_name in formatted_data_sources:
@@ -430,9 +428,7 @@ def get_strandseq_library_info(sseq_reads):
     import os
     import sys
 
-    debug = bool(config.get('show_debug_messages', False))
-
-    if debug:
+    if DEBUG:
         sys.stderr.write('Collecting Strand-seq library info for: {}\n'.format(sseq_reads))
 
     if FORMATTED_DATA_SOURCES is None:
@@ -444,11 +440,11 @@ def get_strandseq_library_info(sseq_reads):
 
     if sseq_reads in CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES:
         lib_id_pos = -2
-        if debug:
+        if DEBUG:
             sys.stderr.write('Strand-seq readset is a mono-fraction sample\n'.format(sseq_reads))
     else:
         lib_id_pos = -3
-        if debug:
+        if DEBUG:
             sys.stderr.write('Strand-seq readset is a dual-fraction sample\n'.format(sseq_reads))
 
     sseq_lib_infos = set()
@@ -470,7 +466,7 @@ def get_strandseq_library_info(sseq_reads):
             )
         )
     
-    if debug:
+    if DEBUG:
         sys.stderr.write('Collected info for {} libraries ({} files)\n'.format(len(sseq_lib_infos) // 2, len(sseq_lib_infos)))
 
     # if automatic library QC is set to yes for this sample,
@@ -483,23 +479,23 @@ def get_strandseq_library_info(sseq_reads):
         if os.path.isfile(exclude_file):
             with open(exclude_file, 'r') as listing:
                 exclude_libs.extend(listing.read().strip().split())
-            if debug:
+            if DEBUG:
                 sys.stderr.write('Loaded {} SSEQ library exclude hints from file: {}\n'.format(len(exclude_libs), exclude_file))
         else:
-            if debug:
+            if DEBUG:
                 sys.stderr.write('SSEQ exclude file does not exist yet - may cause job failures: {}\n'.format(exclude_file))
 
     sseq_libs = set()
     sseq_lib_ids = set()
     for lib_name, lib_id, remote_source in sorted(sseq_lib_infos):
         if any(x in remote_source for x in exclude_libs):
-            if debug:
+            if DEBUG:
                 sys.stderr.write('Excluding library {} for SSEQ readset {}\n'.format(lib_name, sseq_reads))
             continue
         sseq_libs.add(lib_name)
         sseq_lib_ids.add(lib_id)        
     
-    if debug:
+    if DEBUG:
         sys.stderr.write('Returning {} selected libraries for readset {}\n'.format(len(sseq_libs), sseq_reads))
 
     if sseq_reads in CONSTRAINT_STRANDSEQ_MONOFRACTION_SAMPLES:

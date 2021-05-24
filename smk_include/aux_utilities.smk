@@ -362,51 +362,51 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads):
     import sys
     import glob
 
-    debug = bool(config.get('show_debug_messages', False))
-
-    if debug:
+    if DEBUG:
         sys.stderr.write('Estimating number of SaaRclusters for: {} / {}\n'.format(sample_name, sseq_reads))
 
     num_clusters = 0
 
     formatter = {'sseq_reads': sseq_reads, 'sample': sample_name}
     cluster_fofn_path = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{sample}*_nhr-*.clusters.fofn'.format(**formatter)
-    if debug:
+    if DEBUG:
         sys.stderr.write('Checking cluster fofn path: {}\n'.format(cluster_fofn_path))
     cluster_fofn_matches = glob.glob(cluster_fofn_path)
     if len(cluster_fofn_matches) == 1:
         cluster_fofn = cluster_fofn_matches[0]
-        if debug:
+        if DEBUG:
             sys.stderr.write('... glob succeeded\n')
     else:
+        if len(cluster_fofn_matches) > 1:
+            if WARN:
+                sys.stderr.write('WARNING: ambiguous match for sequence cluster fofn file: {}\n'.format(', '.join(cluster_fofn_matches)))
         cluster_fofn = None
 
     if cluster_fofn is not None and os.path.isfile(cluster_fofn):
-        if debug:
+        if DEBUG:
             sys.stderr.write('Loading number of clusters from fofn: {}\n'.format(cluster_fofn))
         # best case: cluster fofn has already been created
         with open(cluster_fofn, 'r') as fofn:
-            for line in fofn:
-                if line.strip():
-                    num_clusters += 1
-        if debug:
+            num_clusters = len([line for line in fofn if line.strip()])
+
+        if DEBUG:
             sys.stderr.write('Loaded number of cluster from fofn: {}\n'.format(num_clusters))
     elif sample_name in CONSTRAINT_MALE_SAMPLE_NAMES:
         num_clusters = config.get('desired_clusters_male', config.get('desired_clusters', 0))
-        if debug:
+        if DEBUG:
             sys.stderr.write('Male sample - cluster estimate (config): {}\n'.format(num_clusters))
     elif sample_name in CONSTRAINT_FEMALE_SAMPLE_NAMES:
         num_clusters = config.get('desired_clusters_female', config.get('desired_clusters', 0))
-        if debug:
+        if DEBUG:
             sys.stderr.write('Female sample - cluster estimate (config): {}\n'.format(num_clusters))
     else:
         num_clusters = config.get('desired_clusters', 0)
-        if debug:
+        if DEBUG:
             sys.stderr.write('Generic sample - cluster estimate (config): {}\n'.format(num_clusters))
     if num_clusters == 0:
         # reasonable best guess
         num_clusters = 24
-        if debug:
+        if DEBUG:
             sys.stderr.write('Cluster estimate is zero - returning best guess: {}\n'.format(num_clusters))
     return num_clusters
 
@@ -416,12 +416,12 @@ def collect_strandseq_alignments(wildcards, glob_collect=True, caller='snakemake
     """
     import os
     import sys
+    import glob
 
-    debug = bool(config.get('show_debug_messages', False))
-    warn = bool(config.get('show_warnings', False))
-    func_name = '\nCALL::{}\nchk::agg::collect_strandseq_alignments: {{}}\n'.format(caller)
-    if debug:
-        sys.stderr.write(func_name.format('wildcards ' + str(wildcards)))
+    func_name = '\nAGG::aux_utilities::collect_strandseq_alignments >> {}\n'
+
+    if DEBUG:
+        sys.stderr.write(func_name.format('wildcards ' + ' --- '.join('({}: {})'.format(k, v) for k, v in dict(wildcards).items())))
 
     source_path = os.path.join(
         'output',
@@ -435,85 +435,44 @@ def collect_strandseq_alignments(wildcards, glob_collect=True, caller='snakemake
     individual, project, platform_spec = wildcards.sseq_reads.split('_')[:3]
     platform, spec = platform_spec.split('-')
 
-    if glob_collect:
-        if debug:
-            sys.stderr.write(func_name.format('called w/ glob collect'))
-        import glob
-        glob_path = source_path.replace('{ext}', '*')
-        glob_path = glob_path.replace('{lib_id}', '*')
-        reduced_wildcards = dict(wildcards)
-        reduced_wildcards['individual'] = individual
-        reduced_wildcards['project'] = project
-        reduced_wildcards['platform'] = platform
-        reduced_wildcards['spec'] = spec
+    glob_path = source_path.replace('{ext}', '*')
+    glob_path = glob_path.replace('{lib_id}', '*')
+    reduced_wildcards = dict(wildcards)
+    reduced_wildcards['individual'] = individual
+    reduced_wildcards['project'] = project
+    reduced_wildcards['platform'] = platform
+    reduced_wildcards['spec'] = spec
 
-        pattern = glob_path.format(**reduced_wildcards)
+    pattern = glob_path.format(**reduced_wildcards)
 
-        bam_files = glob.glob(pattern)
-        if not bam_files:
-            if debug:
-                sys.stderr.write(func_name.format('glob collect failed'))
-            if caller == 'snakemake':
-                sseq_libs, sseq_lib_ids = get_strandseq_library_info(wildcards.sseq_reads)
-                bam_files = []
-                for lib_id in sseq_lib_ids:
-                    reduced_wildcards['lib_id'] = lib_id
-                    reduced_wildcards['ext'] = ''
-                    bam_files.append(source_path.format(**reduced_wildcards))
-                    reduced_wildcards['ext'] = '.bai'
-                    bam_files.append(source_path.format(**reduced_wildcards))
-            else:
-                raise RuntimeError('collect_strandseq_alignments: no files collected with pattern {}'.format(pattern))
+    if DEBUG:
+        sys.stderr.write(func_name.format('Glob collect w/ pattern: {}'.format(pattern)))
+    
+    sseq_libs, sseq_lib_ids = get_strandseq_library_info(wildcards.sseq_reads)
 
-    else:
-        raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
+    if DEBUG:
+        sys.stderr.write(func_name.format('Expecting N Strand-seq libraries: {}'.format(len(sseq_lib_ids))))
 
-        if debug:
-            sys.stderr.write(func_name.format('called w/ chk::get'))
-        from snakemake.exceptions import IncompleteCheckpointException as ICE
+    bam_files = glob.glob(pattern)
 
-        try:
-            requests_dir = checkpoints.create_input_data_download_requests.get(subfolder='fastq', readset=wildcards.sseq_reads).output[0]
+    if len(bam_files) != len(sseq_lib_ids) * 2:  # factor 2: BAM plus BAM index
+        if DEBUG:
+            sys.stderr.write(func_name.format('Glob collect returned: {}'.format(len(bam_files))))
+        
+        bam_files = set(bam_files)
 
-            # this is a bit tricky given that there are different varieties of Strand-seq libraries
-            glob_pattern = '_'.join([individual, project, platform + '-{spec,[0-9a-z]+}', '{lib_id}'])
-
-            if wildcards.sseq_reads in CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES:
-                glob_pattern += '_{run_id,[a-zA-Z0-9]+}_1.request'
-            else:
-                glob_pattern += '_1.request'
-            search_path = os.path.join(requests_dir, glob_pattern)
-
-            checkpoint_wildcards = glob_wildcards(search_path)
-
-            bam_files = expand(
-                source_path,
-                reference=wildcards.reference,
-                individual=individual,
-                sseq_reads=wildcards.sseq_reads,
-                project=project,
-                platform=platform,
-                spec=spec,
-                lib_id=checkpoint_wildcards.lib_id,
-                ext=['', '.bai'])
-
-        except ICE as ice:
-            if debug:
-                sys.stderr.write(func_name.format('chk::get raised SMK::ICE'))
-            try:
-                bam_files = collect_strandseq_alignments(wildcards, glob_collect=True, caller='debug-internal')
-            except RuntimeError:
-                if debug:
-                    sys.stderr.write(func_name.format('glob collect failed - re-raising SMK::ICE'))
-                raise ice
-            else:
-                if debug or warn:
-                    sys.stderr.write(func_name.format('Snakemake error: glob collect success, but SMK::ICE raised (#216)'))
-        else:
-            if debug:
-                sys.stderr.write(func_name.format('chk::get did not raise ICE - checkpoint passed'))
+        for lib_id in sseq_lib_ids:
+            reduced_wildcards['lib_id'] = lib_id
+            reduced_wildcards['ext'] = ''
+            bam_files.add(source_path.format(**reduced_wildcards))
+            reduced_wildcards['ext'] = '.bai'
+            bam_files.add(source_path.format(**reduced_wildcards))
 
     assert bam_files, 'collect_strandseq_alignments >> returned empty output: {}'.format(wildcards)
+
+    if DEBUG:
+        sys.stderr.write(func_name.format('Returning N BAM/BAM index files: {}'.format(len(bam_files))))
+
     return sorted(bam_files)
 
 
