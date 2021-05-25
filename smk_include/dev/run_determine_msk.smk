@@ -593,7 +593,7 @@ rule align_ktagged_reads_to_reference:
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt ** 5
+        runtime_hrs = lambda wildcards, attempt: attempt ** 5,
         mem_sort_mb = 4096,
     params:
         individual = lambda wildcards: wildcards.sample,
@@ -894,6 +894,69 @@ rule dump_unmapped_sequence_to_bed:
         select_flag = 4
     shell:
         'samtools view -u -f {params.select_flag} -@ {threads} {input} | bedtools bamtobed -i /dev/stdin > {output}'
+
+
+def _read_mapped_ktag_dump(file_path):
+    import pandas as pd
+
+    df = pd.read_csv(
+        file_path,
+        sep='\t',
+        header=None,
+        names=['chrom', 'start', 'end', 'read_name', 'mapq', 'orientation']
+    )
+    df = df.loc[df['chrom'].isin(['chrX', 'chrY']), ['chrom', 'read_name']].copy()
+    return df
+
+
+def _read_unmapped_ktag_dump(file_path):
+
+    with open(file_path, 'r') as table:
+        for line in table:
+            if line.strip():
+                raise ValueError('non-empty unmapped dump')
+    return []
+
+
+rule select_gonosomal_reads:
+    input:
+        bed_files = expand(
+            'output/alignments/ktagged_to_ref/{{sample}}.k{{msk_kmer}}.{{hpc}}.{ktag_set}_MAP-TO_T2Tv11_38p13Y_chm13.wmap-k15.{aln_type}.bed',
+            ktag_set=['ktg-specific', 'ktg-specific-uniq', 'ktg-union'],
+            aln_type=['filt', 'unmap']
+        )
+    output:
+        reads_table = 'output/ktagged_reads/gonosomal/{sample}.k{msk_kmer}.{hpc}.tsv',
+    run:
+        import pandas as pd
+        import collections as col
+        import operator as op
+
+        read_buffer = col.defaultdict(col.Counter)
+
+        for bed_file in input.bed_files:
+            ktag_set = bed_file.split('_MAP-TO_')[0].split('.')[-1]
+            ktag_set = ktag_set.split('-', 1)[1].replace('-', '_')
+            if bed_file.endswith('.filt.bed'):
+                read_info = _read_mapped_ktag_dump(bed_file)
+                for chrom, read_name in read_info.itertuples(index=False):
+                    read_buffer[read_name][ktag_set] += 1
+                    read_buffer[read_name][chrom] += 1
+            elif bed_file.endswith('.unmap.bed'):
+                read_info = _read_unmapped_ktag_dum(bed_file)
+                for r in read_info:
+                    read_buffer[r][ktag_set] += 1
+                    read_buffer[r]['chrUn'] += 1
+            else:
+                raise ValueError
+
+        info_columns = ('chrY', 'chrX', 'chrUn', 'specific', 'specific_uniq', 'union')
+        get_read_info = op.itemgetter(*info_columns)
+        line_template = '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
+        with open(output.reads_table, 'w') as table:
+            _ = table.write('#' + line_template.format('read', *info_columns))
+            for read, read_infos in read_buffer.items():
+                _ = table.write(line_template.format(read, get_read_info(read_infos)))
 
 
 rule master:
