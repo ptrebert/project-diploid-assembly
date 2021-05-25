@@ -905,7 +905,8 @@ def _read_mapped_ktag_dump(file_path):
         header=None,
         names=['chrom', 'start', 'end', 'read_name', 'mapq', 'orientation']
     )
-    df = df.loc[df['chrom'].isin(['chrX', 'chrY']), ['chrom', 'read_name']].copy()
+    df['length'] = (df['end'] - df['start']).astype(int)
+    df = df.loc[df['chrom'].isin(['chrX', 'chrY']), ['chrom', 'read_name', 'length']].copy()
     return df
 
 
@@ -939,11 +940,11 @@ rule select_gonosomal_reads:
             ktag_set = ktag_set.split('-', 1)[1].replace('-', '_')
             if bed_file.endswith('.filt.bed'):
                 read_info = _read_mapped_ktag_dump(bed_file)
-                for chrom, read_name in read_info.itertuples(index=False):
+                for chrom, read_name, aln_length in read_info.itertuples(index=False):
                     read_buffer[read_name][ktag_set] += 1
-                    read_buffer[read_name][chrom] += 1
+                    read_buffer[read_name][chrom] += aln_length
             elif bed_file.endswith('.unmap.bed'):
-                read_info = _read_unmapped_ktag_dum(bed_file)
+                read_info = _read_unmapped_ktag_dump(bed_file)
                 for r in read_info:
                     read_buffer[r][ktag_set] += 1
                     read_buffer[r]['chrUn'] += 1
@@ -954,9 +955,50 @@ rule select_gonosomal_reads:
         get_read_info = op.itemgetter(*info_columns)
         line_template = '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
         with open(output.reads_table, 'w') as table:
-            _ = table.write('#' + line_template.format('read', *info_columns))
+            _ = table.write(line_template.format('read', *info_columns))
             for read, read_infos in read_buffer.items():
-                _ = table.write(line_template.format(read, get_read_info(read_infos)))
+                _ = table.write(line_template.format(read, *get_read_info(read_infos)))
+
+
+rule build_gonosome_gfa_subset_table:
+    input:
+        reads_table = 'output/ktagged_reads/gonosomal/{sample}.k{msk_kmer}.{hpc}.tsv',
+        read_tig_map = 'output/assemblies/{sample}.{assembly}.read-contig.map'
+    output:
+        'output/ktagged_reads/gonosomal/{sample}.k{msk_kmer}.{hpc}.subset-table.tsv',
+    run:
+        import pandas as pd
+        import numpy as np
+
+        read_table = pd.read_csv(input.reads_table, sep='\t', header=0)
+        tig_map = pd.read_csv(input.read_tig_map, sep='\t', header=0)
+
+        select_x = np.logical_and(read_table['chrX'] > 0, read_table['chrY'] == 0)
+        select_y = np.logical_and(read_table['chrX'] == 0, read_table['chrY'] > 0)
+        select_xy = np.logical_and(read_table['chrX'] > 0, read_table['chrY'] > 0)
+        # ignore unmapped for now
+
+        subset_labels = ['X', 'Y', 'XY']
+        subset_colors = ['pink', 'blue', 'black']
+        subset_selectors = [
+            select_x,
+            select_y,
+            select_xy
+        ]
+
+        subsets = []
+
+        for selector, label, color in zip(subset_selectors, subset_labels, subset_colors):
+            subset = tig_map.loc[tig['read'].isin(read_table.loc[selector, 'read']), :].copy()
+            subset['label'] = label
+            subset['color'] = color
+            subset['overlap'] = 1
+            subset = subset[['contig', 'label', 'color']]
+            subsets.append(subset)
+        
+        subsets = pd.concat(subsets, axis=0)
+        with open(output[0], 'w') as table:
+            subsets.to_csv(table, sep='\t', header=False)
 
 
 rule master:
