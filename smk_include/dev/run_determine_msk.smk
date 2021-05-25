@@ -63,6 +63,8 @@ RP11CENY_ILL_ACCESSIONS = [
     'SRR5902355'
 ]
 
+wildcard_constraints:
+    hpc = '(is\-hpc|no\-hpc)'
 
 
 def select_hifi_input(wildcards):
@@ -279,7 +281,8 @@ rule count_sequence_kmers:
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        sample = '(' + '|'.join(MALE_SAMPLES + FEMALE_SAMPLES) + ')'
+        sample = '(' + '|'.join(MALE_SAMPLES + FEMALE_SAMPLES) + ')',
+        hpc = '(is\-hpc|no\-hpc)'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 262144 * attempt,
@@ -989,16 +992,40 @@ rule build_gonosome_gfa_subset_table:
         subsets = []
 
         for selector, label, color in zip(subset_selectors, subset_labels, subset_colors):
-            subset = tig_map.loc[tig['read'].isin(read_table.loc[selector, 'read']), :].copy()
+            subset = tig_map.loc[tig_map['read'].isin(read_table.loc[selector, 'read']), :].copy()
             subset['label'] = label
             subset['color'] = color
             subset['overlap'] = 1
-            subset = subset[['contig', 'label', 'color']]
+            subset = subset[['contig', 'label', 'color', 'overlap']]
             subsets.append(subset)
         
         subsets = pd.concat(subsets, axis=0)
+        subsets.drop_duplicates(keep='first', inplace=True)
         with open(output[0], 'w') as table:
-            subsets.to_csv(table, sep='\t', header=False)
+            subsets.to_csv(table, sep='\t', header=False, index=False)
+
+
+rule subset_gfa_trio_binned:
+    input:
+        table = 'output/ktagged_reads/gonosomal/NA24385.k{msk_kmer}.{hpc}.trio_binned.dip.{graph}.subset-table.tsv',
+        gfa = 'output/assemblies/trio_binned/NA24385/NA24385.dip.{graph}.gfa'
+    output:
+        graph = 'output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.gfa',
+        table = 'output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.csv',
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_subset.py')
+    shell:
+        '{params.script_exec} --input-gfa {input.graph} --input-table {input.table} --simple-table '
+        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 0'
+
+
+#rule subset_gfa_non_trio:
+#    input:
+#        table = 'output/ktagged_reads/gonosomal/{sample}.k{msk_kmer}.{hpc}.non_trio.bp.{graph}.subset-table.tsv',
+#        gfa = 'output/assemblies/non_trio/{sample}/{sample}.bp.{graph}.gfa'
+#    output:
 
 
 rule master:

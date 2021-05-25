@@ -45,6 +45,12 @@ def parse_command_line():
         help="Full path to tig subset table."
     )
     parser.add_argument(
+        '--simple-table',
+        action='store_true',
+        default=False,
+        dest='simple_table'
+    )
+    parser.add_argument(
         "--output-gfa",
         "-og",
         type=str,
@@ -111,7 +117,7 @@ def buffer_node_information(gfa_path):
     return links, node_map, node_lengths
 
 
-def load_table(tig_table):
+def load_table(tig_table, simple_table):
     """
     """
     header = [
@@ -128,6 +134,15 @@ def load_table(tig_table):
         'reg_color',
         'overlap_bp'
     ]
+
+    if simple_table:
+        header = [
+            'tig_name',
+            'reg_label',
+            'reg_color',
+            'overlap_bp'
+        ]
+
     df = pd.read_csv(
         tig_table,
         sep='\t',
@@ -191,7 +206,7 @@ def main(logger, cargs):
     logger.debug('Loading GFA file: {}'.format(cargs.input_gfa))
     edges, node_map, node_lengths = buffer_node_information(cargs.input_gfa)
     logger.debug('GFA loading complete: {} nodes / {} edges'.format(len(node_map), len(edges)))
-    select_tigs, annotations = load_table(cargs.input_table)
+    select_tigs, annotations = load_table(cargs.input_table, cargs.simple_table)
     logger.debug('{} tigs selected as GFA subset'.format(len(select_tigs)))
 
     connected_tigs = determine_connected_tigs(
