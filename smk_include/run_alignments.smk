@@ -554,7 +554,7 @@ rule dump_contig_to_reference_alignment_to_bed:
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt < 2 else min(47, attempt ** 5),
         mem_total_mb = 2048,
         mem_per_cpu_mb = 2048
     shell:

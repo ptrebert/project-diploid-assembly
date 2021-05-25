@@ -285,7 +285,7 @@ rule compute_assembly_contig_summary:
     params:
         script_exec = lambda wildcards: find_script_path('collect_contig_stats.py'),
     shell:
-        '{params.script_exec} --assembly-fai {input.assm} --ref-fai {input.ref} --output {output} '
+        '{params.script_exec} --assembly-fai {input.assm} --reference-fai {input.ref} --output {output} '
 
 
 def collect_tag_lists(wildcards, glob_collect=True, caller='snakemake'):
@@ -379,7 +379,7 @@ rule summarize_tagging_splitting_statistics:
         hapcount = col.Counter()
         line_num = 0
 
-        for tsv in sorted(tag_files):
+        for tsv in sorted(input.tags):
             with open(tsv, 'r') as table:
                 for line in table:
                     if line.startswith('#'):
