@@ -1012,13 +1012,15 @@ rule subset_gfa_trio_binned:
     output:
         graph = 'output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.gfa',
         table = 'output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.csv',
+    log:
+        'log/output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.subset.log',
     conda:
         '../../environment/conda/conda_pyscript.yml'
     params:
         script_exec = lambda wildcards: find_script_path('gfa_subset.py')
     shell:
-        '{params.script_exec} --input-gfa {input.graph} --input-table {input.table} --simple-table '
-        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 0'
+        '{params.script_exec} --debug --input-gfa {input.graph} --input-table {input.table} --simple-table '
+        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 20 &> {log}'
 
 
 rule subset_gfa_non_trio:
@@ -1028,13 +1030,15 @@ rule subset_gfa_non_trio:
     output:
         graph = 'output/graphs/ktagged_subset/{sample}.k{msk_kmer}.{hpc}.nontrio.{graph}.gfa',
         table = 'output/graphs/ktagged_subset/{sample}.k{msk_kmer}.{hpc}.nontrio.{graph}.csv',
+    log:
+        'log/output/graphs/ktagged_subset/{sample}.k{msk_kmer}.{hpc}.nontrio.{graph}.subset.log',
     conda:
         '../../environment/conda/conda_pyscript.yml'
     params:
         script_exec = lambda wildcards: find_script_path('gfa_subset.py')
     shell:
-        '{params.script_exec} --input-gfa {input.graph} --input-table {input.table} --simple-table '
-        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 0'
+        '{params.script_exec} --debug --input-gfa {input.graph} --input-table {input.table} --simple-table '
+        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 20 &> {log}'
 
 
 rule strip_sequence_from_graph:
@@ -1046,6 +1050,19 @@ rule strip_sequence_from_graph:
         '../../environment/conda/conda_biotools.yml'
     shell:
         'gfatools view -S {input} > {output}'
+
+
+rule subset_gfa:
+    input:
+        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.nontrio.r_utg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.nontrio.hap1.p_ctg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.nontrio.hap2.p_ctg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.triobin.hap1.p_ctg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.triobin.hap2.p_ctg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.triobin.r_utg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA19239.k31.is-hpc.nontrio.r_utg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA19239.k31.is-hpc.nontrio.hap1.p_ctg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA10239.k31.is-hpc.nontrio.hap2.p_ctg.noseq.gfa',
 
 
 rule master:
