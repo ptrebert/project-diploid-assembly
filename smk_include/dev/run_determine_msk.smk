@@ -592,7 +592,8 @@ rule align_ktagged_reads_to_reference:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt ** 5
         mem_sort_mb = 4096,
     params:
         individual = lambda wildcards: wildcards.sample,
@@ -754,10 +755,10 @@ rule align_male_reference_reads:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 65536 + 65536 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 6 + 6 * attempt
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt if 'ONT' in wildcards.male_reads else 6 + 6 * attempt
     shell:
         'GraphAligner --verbose -x vg -t {threads} '
         '--multimap-score-fraction 1 --min-alignment-score 500 '
@@ -965,5 +966,5 @@ rule master:
             reference=['T2Tv11_38p13Y_chm13'],
             hpc=['is-hpc'],
             content=['filt', 'unmap'],
-            share_type=['specific', 'union', 'specific-uniq', 'union-uniq']
+            share_type=['specific', 'union']  # 'specific-uniq', 'union-uniq': "unique" k-mer sets hardly contain any info (indeed empty for union-uniq)
         ),
