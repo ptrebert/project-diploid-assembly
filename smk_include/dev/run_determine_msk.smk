@@ -1021,11 +1021,20 @@ rule subset_gfa_trio_binned:
         '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 0'
 
 
-#rule subset_gfa_non_trio:
-#    input:
-#        table = 'output/ktagged_reads/gonosomal/{sample}.k{msk_kmer}.{hpc}.non_trio.bp.{graph}.subset-table.tsv',
-#        graph = 'output/assemblies/non_trio/{sample}/{sample}.bp.{graph}.gfa'
-#    output:
+rule subset_gfa_non_trio:
+    input:
+       table = 'output/ktagged_reads/gonosomal/{sample}.k{msk_kmer}.{hpc}.non_trio.bp.{graph}.subset-table.tsv',
+       graph = 'output/assemblies/non_trio/{sample}/{sample}.bp.{graph}.gfa'
+    output:
+        graph = 'output/graphs/ktagged_subset/{sample}.k{msk_kmer}.{hpc}.nontrio.{graph}.gfa',
+        table = 'output/graphs/ktagged_subset/{sample}.k{msk_kmer}.{hpc}.nontrio.{graph}.csv',
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_subset.py')
+    shell:
+        '{params.script_exec} --input-gfa {input.graph} --input-table {input.table} --simple-table '
+        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 0'
 
 
 rule strip_sequence_from_graph:
