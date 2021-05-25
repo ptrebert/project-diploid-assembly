@@ -1008,7 +1008,7 @@ rule build_gonosome_gfa_subset_table:
 rule subset_gfa_trio_binned:
     input:
         table = 'output/ktagged_reads/gonosomal/NA24385.k{msk_kmer}.{hpc}.trio_binned.dip.{graph}.subset-table.tsv',
-        gfa = 'output/assemblies/trio_binned/NA24385/NA24385.dip.{graph}.gfa'
+        graph = 'output/assemblies/trio_binned/NA24385/NA24385.dip.{graph}.gfa'
     output:
         graph = 'output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.gfa',
         table = 'output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.csv',
@@ -1024,8 +1024,19 @@ rule subset_gfa_trio_binned:
 #rule subset_gfa_non_trio:
 #    input:
 #        table = 'output/ktagged_reads/gonosomal/{sample}.k{msk_kmer}.{hpc}.non_trio.bp.{graph}.subset-table.tsv',
-#        gfa = 'output/assemblies/non_trio/{sample}/{sample}.bp.{graph}.gfa'
+#        graph = 'output/assemblies/non_trio/{sample}/{sample}.bp.{graph}.gfa'
 #    output:
+
+
+rule strip_sequence_from_graph:
+    input:
+        '{file_path}/{file_name}.gfa'
+    output:
+        '{file_path}/{file_name}.noseq.gfa'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'gfatools view -S {input} > {output}'
 
 
 rule master:
