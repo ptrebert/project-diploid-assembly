@@ -939,7 +939,7 @@ rule compute_hifiasm_haploid_split_assembly:
         mem_total_mb = lambda wildcards, attempt: 12288 + 12288 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        prefix = lambda wildcards, output: output.hap1_contigs.rsplit('.', 3)[0],
+        prefix = lambda wildcards, output: output.hap1_contigs.rsplit('.', 4)[0],
     shell:
         'hifiasm -o {params.prefix} -t {threads} -3 {input.tags_h1} -4 {input.tags_h2} '
             '{input.fastq_h1} {input.fastq_h2} {input.fastq_un} &> {log.hifiasm}'
