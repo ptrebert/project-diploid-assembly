@@ -3,15 +3,15 @@ REFERENCE_FOLDER = '/beeond/data/references'
 
 MIN_CONTIG_SIZE = 20000
 MIN_GAP_SIZE = 1000
-MAX_GAP_SIZE = 200000
+MAX_GAP_SIZE = 500000
 
 
 rule master:
     input:
         'output/assemblies/T2Tv11_randsplit.fasta.fai',
         'output/assemblies/T2Tv11_sdsplit.fasta.fai',
-        'output/kmer_db/T2Tv11_randsplit.k15.no-hpc.rep-grt09998.txt.gz',
-        'output/kmer_db/T2Tv11_sdsplit.k15.no-hpc.rep-grt09998.txt.gz'
+        'output/alignments/ont_to_assm/chm13_ONTrel7_MAP-TO_T2Tv11_randsplit.wmap-k15.paf.gz',
+        'output/alignments/ont_to_assm/chm13_ONTrel7_MAP-TO_T2Tv11_sdsplit.wmap-k15.paf.gz',
 
 
 def rand_split_sequence(seq_name, sequence, min_gap, max_gap, min_contig):
@@ -19,15 +19,21 @@ def rand_split_sequence(seq_name, sequence, min_gap, max_gap, min_contig):
     import io
     import random as rand
 
+    if seq_name in ['chrM', 'chrY']:
+        return io.StringIO()
+
     sequence_length = len(sequence)
 
-    max_contig = sequence_length // 3
+    max_contig = sequence_length // 4
     split_buffer = io.StringIO()
 
     last_end = 0
     order_number = 0
     while 1:
-        start = last_end + rand.randint(min_gap, max_gap)
+        if last_end != 0:
+            start = last_end + rand.randint(min_gap, max_gap)
+        else:
+            start = last_end
         if start > sequence_length:
             break
         contig_size = rand.randint(min_contig, max_contig)
@@ -100,6 +106,9 @@ def segdup_split_sequence(seq_name, sequence, segdups, min_contig_size):
     import io as io
     import random as rand
 
+    if seq_name in ['chrM', 'chrY']:
+        return io.StringIO()
+
     assert not segdups.empty, 'No segdups for chromosome: {}'.format(seg_name)
 
     sequence_length = len(sequence)
@@ -114,7 +123,7 @@ def segdup_split_sequence(seq_name, sequence, segdups, min_contig_size):
     merge_sd['sd_num'] = (merge_sd['chromStart'] > merge_sd['chromEnd'].shift().cummax()).cumsum()
     merge_sd = merge_sd.groupby("sd_num").agg({"chromStart":"min", "chromEnd": "max", "fracMatch": "mean"})
 
-    for sd_num, sd_start, sd_end, sd_id in merge_sd.itertuples(index=False):
+    for sd_start, sd_end, sd_id in merge_sd.itertuples(index=False):
         if sd_id < 0.98:
             if rand.random() < 0.5:
                 continue
@@ -181,7 +190,7 @@ rule create_sdplit_mock_assembly:
                         continue
                 else:
                     chrom_seq += line.strip()
-        seq_splits = rand_split_sequence(
+        seq_splits = segdup_split_sequence(
             chrom_name,
             chrom_seq,
             sd.loc[sd['#chrom'] == chrom_name, :],
@@ -197,7 +206,7 @@ rule count_assembly_kmers:
         fasta = 'output/assemblies/{assembly}.fasta'
     output:
         kmer_db = directory('output/kmer_db/{assembly}.k15.no-hpc.db'),
-        rep_kmer = 'output/kmer_db/{assembly}.k15.no-hpc.rep-grt09998.txt.gz'
+        rep_kmer = 'output/kmer_db/{assembly}.k15.no-hpc.rep-grt09998.txt'
     benchmark:
         'rsrc/output/kmer_db/{assembly}.k15.no-hpc.count-dump.rsrc'
     conda:
@@ -209,7 +218,7 @@ rule count_assembly_kmers:
         runtime_hrs = lambda wildcards, attempt: attempt
     shell:
         'meryl count k=15 threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.fasta} && '
-        'meryl print greater-than distinct=0.9998 {output.kmer_db} | pigz -p {threads} --best > {output.rep_kmer}'
+        'meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}'
 
 
 rule compute_fasta_index:
@@ -221,3 +230,30 @@ rule compute_fasta_index:
         '../../environment/conda/conda_biotools.yml'
     shell:
         'samtools faidx {input}'
+
+
+rule align_ont_reads_to_assembly:
+    input:
+        reads = '/beeond/data/ont/chm13/rel7.fastq.gz',
+        reference = 'output/assemblies/{assembly}.fasta',
+        ref_repkmer = 'output/kmer_db/{assembly}.k15.no-hpc.rep-grt09998.txt',
+    output:
+        paf = 'output/alignments/ont_to_assm/chm13_ONTrel7_MAP-TO_{assembly}.wmap-k15.paf.gz'
+    log:
+        'log/output/alignments/ont_to_assm/chm13_ONTrel7_MAP-TO_{assembly}.wmap-k15.log'
+    benchmark:
+        'rsrc/output/alignments/ont_to_assm/chm13_ONTrel7_MAP-TO_{assembly}.wmap-k15.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 131072 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt,
+    params:
+        align_threads = config['num_cpu_medium'],
+        zip_threads = config['num_cpu_low']
+    shell:
+        'winnowmap -W {input.ref_repkmer} -k 15 -t {params.align_threads} -x map-ont '
+        '--secondary=no {input.reference} {input.reads} 2> {log} '
+        '|'
+        ' pigz -p {params.zip_threads} --best > {output.paf}'
