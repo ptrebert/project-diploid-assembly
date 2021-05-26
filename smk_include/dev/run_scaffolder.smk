@@ -23,7 +23,6 @@ def rand_split_sequence(seq_name, sequence, min_gap, max_gap, min_contig):
 
     max_contig = sequence_length // 3
     split_buffer = io.StringIO()
-    split_lengths = []
 
     last_end = 0
     order_number = 0
@@ -43,23 +42,22 @@ def rand_split_sequence(seq_name, sequence, min_gap, max_gap, min_contig):
         split_seq = sequence[start:end]
 
         _ = split_buffer.write('{}\n{}\n'.format(split_name, split_seq))
-        split_lengths.append((split_name.strip('>'), end - start))
 
         order_number += 1
         last_end = end
     assert order_number > 0, 'No split sequences generated: {}'.format(seq_name)
-    return split_buffer, split_lengths
+    return split_buffer
 
 
 rule create_random_mock_assembly:
     input:
         ref_fasta = os.path.join(REFERENCE_FOLDER, 'T2Tv11_T2TC_chm13.fasta')
     output:
-        'output/assemblies/T2Tv11_randsplit.fasta'
+        fasta = 'output/assemblies/T2Tv11_randsplit.fasta'
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     run:
-        with open(output[0], 'w') as fasta:
+        with open(output.fasta, 'w') as fasta:
             pass
 
         chrom_name = None
@@ -78,7 +76,7 @@ rule create_random_mock_assembly:
                             MAX_GAP_SIZE,
                             MIN_CONTIG_SIZE
                         )
-                        with open(output[0], 'a') as fasta:
+                        with open(output.fasta, 'a') as fasta:
                             _ = fasta.write(seq_splits.getvalue())
                 else:
                     chrom_seq += line.strip()
@@ -89,7 +87,7 @@ rule create_random_mock_assembly:
             MAX_GAP_SIZE,
             MIN_CONTIG_SIZE
             )
-        with open(output[0], 'a') as fasta:
+        with open(output.fasta, 'a') as fasta:
             _ = fasta.write(seq_splits.getvalue())
     # END OF RUN BLOCK
 
@@ -107,7 +105,6 @@ def segdup_split_sequence(seq_name, sequence, segdups, min_contig_size):
     order_number = 0
 
     split_buffer = io.StringIO()
-    split_lengths = []
 
     # merge overlapping SDs to avoid potentially generating too many small splits
     merge_sd = segdups[['chromStart', 'chromEnd', 'fracMatch']].copy()
@@ -131,14 +128,13 @@ def segdup_split_sequence(seq_name, sequence, segdups, min_contig_size):
         split_seq = sequence[start:end]
 
         _ = split_buffer.write('{}\n{}\n'.format(split_name, split_seq))
-        split_lengths.append((split_name.strip('>'), end - start))
 
         order_number += 1
         last_end = sd_end - offset
         if last_end + min_contig_size > sequence_length:
             break
     assert order_number > 0, 'No split sequences generated: {}'.format(seq_name)
-    return split_buffer, split_lengths
+    return split_buffer
 
 
 rule create_sdplit_mock_assembly:
@@ -152,7 +148,7 @@ rule create_sdplit_mock_assembly:
     run:
         import pandas as pd
 
-        with open(output[0], 'w') as fasta:
+        with open(output.fasta, 'w') as fasta:
             pass
 
         sd = pd.read_csv(input.segdups, sep='\t', header=0)
@@ -167,23 +163,23 @@ rule create_sdplit_mock_assembly:
                         chrom_name = line.strip().strip('>')
                         continue
                     else:
-                        seq_splits, split_lengths = segdup_split_sequence(
+                        seq_splits = segdup_split_sequence(
                             chrom_name,
                             chrom_seq,
                             sd.loc[sd['#chrom'] == chrom_name, :],
                             MIN_CONTIG_SIZE
                         )
-                        with open(output[0], 'a') as fasta:
+                        with open(output.fasta, 'a') as fasta:
                             _ = fasta.write(seq_splits.getvalue())
                 else:
                     chrom_seq += line.strip()
-        seq_splits, split_lengths = rand_split_sequence(
+        seq_splits = rand_split_sequence(
             chrom_name,
             chrom_seq,
             sd.loc[sd['#chrom'] == chrom_name, :],
             MIN_CONTIG_SIZE
         )
-        with open(output[0], 'a') as fasta:
+        with open(output.fasta, 'a') as fasta:
             _ = fasta.write(seq_splits.getvalue())
     # END OF RUN BLOCK
 
