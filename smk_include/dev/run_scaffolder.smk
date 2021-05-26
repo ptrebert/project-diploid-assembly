@@ -78,6 +78,9 @@ rule create_random_mock_assembly:
                         )
                         with open(output.fasta, 'a') as fasta:
                             _ = fasta.write(seq_splits.getvalue())
+                        chrom_name = line.strip().strip('>')
+                        chrom_seq = ''
+                        continue
                 else:
                     chrom_seq += line.strip()
         seq_splits = rand_split_sequence(
@@ -156,6 +159,8 @@ rule create_sdplit_mock_assembly:
         sd = sd.loc[sd['fracMatch'].round(2) > 0.95, :].copy()
         sd.sort_values(['#chrom', 'chromStart'], inplace=True, ascending=True)
 
+        chrom_name = None
+        chrom_seq = ''
         with open(input.ref_fasta, 'r') as fasta:
             for line in fasta:
                 if line.startswith('>'):
@@ -171,6 +176,9 @@ rule create_sdplit_mock_assembly:
                         )
                         with open(output.fasta, 'a') as fasta:
                             _ = fasta.write(seq_splits.getvalue())
+                        chrom_name = line.strip().strip('>')
+                        chrom_seq = ''
+                        continue
                 else:
                     chrom_seq += line.strip()
         seq_splits = rand_split_sequence(
