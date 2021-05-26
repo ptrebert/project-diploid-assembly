@@ -1062,7 +1062,7 @@ rule subset_gfa:
         'output/graphs/ktagged_subset/NA24385.k31.is-hpc.triobin.r_utg.noseq.gfa',
         'output/graphs/ktagged_subset/NA19239.k31.is-hpc.nontrio.r_utg.noseq.gfa',
         'output/graphs/ktagged_subset/NA19239.k31.is-hpc.nontrio.hap1.p_ctg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA10239.k31.is-hpc.nontrio.hap2.p_ctg.noseq.gfa',
+        'output/graphs/ktagged_subset/NA19239.k31.is-hpc.nontrio.hap2.p_ctg.noseq.gfa',
 
 
 rule master:
