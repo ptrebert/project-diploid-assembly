@@ -8,8 +8,8 @@ MAX_GAP_SIZE = 200000
 
 rule master:
     input:
-        'output/assemblies/T2Tv11_randsplit.fasta',
-        'output/assemblies/T2Tv11_sdsplit.fasta',
+        'output/assemblies/T2Tv11_randsplit.fasta.fai',
+        'output/assemblies/T2Tv11_sdsplit.fasta.fai',
         'output/kmer_db/T2Tv11_randsplit.k15.no-hpc.rep-grt09998.txt.gz',
         'output/kmer_db/T2Tv11_sdsplit.k15.no-hpc.rep-grt09998.txt.gz'
 
@@ -48,7 +48,7 @@ def rand_split_sequence(seq_name, sequence, min_gap, max_gap, min_contig):
         order_number += 1
         last_end = end
     assert order_number > 0, 'No split sequences generated: {}'.format(seq_name)
-    return split_buffer
+    return split_buffer, split_lengths
 
 
 rule create_random_mock_assembly:
@@ -138,7 +138,7 @@ def segdup_split_sequence(seq_name, sequence, segdups, min_contig_size):
         if last_end + min_contig_size > sequence_length:
             break
     assert order_number > 0, 'No split sequences generated: {}'.format(seq_name)
-    return split_buffer
+    return split_buffer, split_lengths
 
 
 rule create_sdplit_mock_assembly:
@@ -146,7 +146,7 @@ rule create_sdplit_mock_assembly:
         ref_fasta = os.path.join(REFERENCE_FOLDER, 'T2Tv11_T2TC_chm13.fasta'),
         segdups = os.path.join(REFERENCE_FOLDER, 't2t_segdups.tsv.gz')
     output:
-        'output/assemblies/T2Tv11_sdsplit.fasta'
+        fasta = 'output/assemblies/T2Tv11_sdsplit.fasta'
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     run:
@@ -167,7 +167,7 @@ rule create_sdplit_mock_assembly:
                         chrom_name = line.strip().strip('>')
                         continue
                     else:
-                        seq_splits = segdup_split_sequence(
+                        seq_splits, split_lengths = segdup_split_sequence(
                             chrom_name,
                             chrom_seq,
                             sd.loc[sd['#chrom'] == chrom_name, :],
@@ -177,7 +177,7 @@ rule create_sdplit_mock_assembly:
                             _ = fasta.write(seq_splits.getvalue())
                 else:
                     chrom_seq += line.strip()
-        seq_splits = rand_split_sequence(
+        seq_splits, split_lengths = rand_split_sequence(
             chrom_name,
             chrom_seq,
             sd.loc[sd['#chrom'] == chrom_name, :],
@@ -206,3 +206,14 @@ rule count_assembly_kmers:
     shell:
         'meryl count k=15 threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.fasta} && '
         'meryl print greater-than distinct=0.9998 {output.kmer_db} | pigz -p {threads} --best > {output.rep_kmer}'
+
+
+rule compute_fasta_index:
+    input:
+        '{folder}/{filename}.fasta'
+    output:
+        '{folder}/{filename}.fasta.fai'
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'samtools faidx {input}'
