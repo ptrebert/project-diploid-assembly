@@ -28,6 +28,10 @@ shasta_version: 0.5.0
 # Long read preprocessing
 check_hifi_adapter_contamination: true
 
+# this is a temp fix to push samples HG00731 and NA19240
+# through the pipeline for the PanGenie revision
+ignore_cluster_size_error: true
+
 # for Strand-seq library QC: fail if more than X% [0...1] of libraries are low quality
 sseq_qc_lowq_threshold: 0.4
 

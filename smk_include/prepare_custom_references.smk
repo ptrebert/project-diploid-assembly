@@ -342,19 +342,27 @@ rule check_max_cluster_size:
         'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.size.ok'
     run:
         max_seq_len = 268435456
+        cache = dict()
+        ignore_size = bool(config.get('ignore_cluster_size_error', False))
         with open(input[0], 'r') as fasta_list:
             for fasta_file in fasta_list:
                 seq_len = 0
+                cluster_name = ''
                 with open(fasta_file.strip(), 'r') as fasta:
                     for line in fasta:
                         if line.startswith('>'):
+                            cluster_name = line.strip().strip('>')
                             continue
                         seq_len += len(line.strip())
-                if seq_len > max_seq_len:
+                if seq_len > max_seq_len and not ignore_size:
                     raise ValueError('Squashed assembly cluster too large ({} / max {}): {}'.format(seq_len, max_seq_len, fasta_file))
+                cache[cluster_name] = seq_len
 
         with open(output[0], 'w') as check_ok:
-            pass
+            for c in sorted(cache.keys()):
+                cluster_size = cache(c)
+                ratio = round(cluster_size / max_seq_len * 100, 2)
+                _ = check_ok.write('{}\t{}\t{}\n'.format(c, cluster_size, ratio))
 
 
 rule merge_reference_fasta_clusters:
