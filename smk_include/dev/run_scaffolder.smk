@@ -245,13 +245,13 @@ rule align_ont_reads_to_assembly:
         'rsrc/output/alignments/ont_to_assm/chm13_ONTrel7_MAP-TO_{assembly}.wmap-k15.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
         mem_total_mb = lambda wildcards, attempt: 131072 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 36 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 167 * attempt,
     params:
-        align_threads = config['num_cpu_medium'],
-        zip_threads = config['num_cpu_low']
+        align_threads = config['num_cpu_max'] - 2,
+        zip_threads = 2
     shell:
         'winnowmap -W {input.ref_repkmer} -k 15 -t {params.align_threads} -x map-ont '
         '--secondary=no {input.reference} {input.reads} 2> {log} '
