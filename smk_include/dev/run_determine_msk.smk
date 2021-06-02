@@ -99,7 +99,7 @@ def _select_hifi_input(wildcards):
     input_folder = 'input/hifi_reads_filtered'
     if wildcards.sample in ['NA24143', 'NA24149', 'NA24385']:
         readset = '{}_hpg_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample)
-    elif wildcards.sample in ['NA18278']:
+    elif wildcards.sample in ['NA12878']:
         readset = '{}_giab_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample)
     else:
         readset = '{}_hgsvc_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample)
@@ -206,7 +206,7 @@ rule run_all:
             msk_kmer=[KMER_SIZE],
             wmap_kmer=[WMAP_KMER_LONG_READS],
             reference=['T2Tv11_38p13Ycen_chm13'],
-            hpc=['is-hpc'],
+            hpc=['ishpc'],
             content=['filt', 'unmap'],
             share_type=['specific']  # 'specific-uniq', 'union-uniq': "unique" k-mer sets hardly contain any info (indeed empty for union-uniq)
         ),
@@ -633,7 +633,7 @@ rule extract_ktagged_reads:
         'pigz -p {params.zip_threads} --best > {output.ktagged_reads}'
 
 
-rule align_ktagged_reads_to_reference:
+rule ktagged_reads_to_linear_reference_alignment:
     input:
         reads = 'output/ktagged_reads/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}.fastq.gz',
         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
@@ -653,6 +653,8 @@ rule align_ktagged_reads_to_reference:
         mem_total_mb = lambda wildcards, attempt: 24576 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt ** 5,
         mem_sort_mb = 4096,
+        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
+        sort_threads = config['num_cpu_low'],
     params:
         individual = lambda wildcards: wildcards.sample,
         readgroup_id = lambda wildcards: '{}_k{}_{}_{}'.format(
@@ -661,8 +663,6 @@ rule align_ktagged_reads_to_reference:
             wildcards.hpc,
             wildcards.share_type.replace('-', '')
         ),
-        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
-        sort_threads = config['num_cpu_low'],
         tempdir = lambda wildcards: os.path.join(
             'temp', 'winnowmap', 'ktagref',
             wildcards.reference,
@@ -674,14 +674,14 @@ rule align_ktagged_reads_to_reference:
         )
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
-        'winnowmap -W {input.ref_repkmer} -k {wildcards.wmap_kmer} -t {params.align_threads} -a -x map-pb  '
+        'winnowmap -W {input.ref_repkmer} -k {wildcards.wmap_kmer} -t {resources.align_threads} -a -x map-pb  '
         '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
         '{input.reference} {input.reads} | '
-        'samtools sort -m {resources.mem_sort_mb}M -@ {params.sort_threads} -T {params.tempdir} -O BAM > {output.bam} ; '
+        'samtools sort -m {resources.mem_sort_mb}M -@ {resources.sort_threads} -T {params.tempdir} -O BAM > {output.bam} ; '
         'rm -rfd {params.tempdir}'
 
 
-rule align_male_reference_reads:
+rule graph_align_male_reference_reads:
     input:
         reads = 'references/reads/{male_reads}.reads.fasta',
         graph = select_assembly_input
@@ -732,18 +732,18 @@ rule convert_tigs_gfa_to_fasta:
         '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
 
 
-rule contig_to_known_reference_alignment:
+rule contig_to_linear_reference_alignment:
     """
     Important that this rule relies on the unimap backports
-    for better contig-to-ref alignment available in minimap2 >2.20
+    for better contig-to-ref alignment available in minimap2 2.20+
     """
     input:
-        contigs = 'output/assemblies/{sample}.{assembly}.fasta',
+        contigs = 'output/assemblies/{sample}.{tigs}.fasta',
         ref_fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
     output:
-        'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.psort.raw.bam'
+        'output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.psort.raw.bam'
     benchmark:
-        'rsrc/output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.mmap.rsrc'
+        'rsrc/output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.mmap.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -758,20 +758,20 @@ rule contig_to_known_reference_alignment:
         sort_threads = config['num_cpu_low']
     params:
         individual = lambda wildcards: wildcards.sample,
-        readgroup_id = lambda wildcards: '{}_{}'.format(wildcards.sample, wildcards.assembly),
+        readgroup_id = lambda wildcards: '{}_{}'.format(wildcards.sample, wildcards.tigs),
         tempdir = lambda wildcards: os.path.join(
             'temp', 'minimap', 'ctgref',
             wildcards.reference,
             wildcards.sample,
-            wildcards.assembly
-        )
+            wildcards.tigs
+        ),
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
-        'minimap2 -t {params.align_threads} '
+        'minimap2 -t {resources.align_threads} '
             '--secondary=no --eqx -Y -ax asm5 '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
-            '{input.ref_fa} {input.contigs} | '
-            'samtools sort -@ {params.sort_threads} -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output} ; '
+            '{input.ref_fasta} {input.contigs} | '
+            'samtools sort -@ {resources.sort_threads} -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output} ; '
         'rm -rfd {params.tempdir}'
 
 
@@ -922,42 +922,6 @@ rule build_gonosome_gfa_subset_table:
         subsets.drop_duplicates(keep='first', inplace=True)
         with open(output[0], 'w') as table:
             subsets.to_csv(table, sep='\t', header=False, index=False)
-
-
-rule subset_gfa_trio_binned:
-    input:
-        table = 'output/ktagged_reads/gonosomal/NA24385.k{msk_kmer}.{hpc}.trio_binned.dip.{graph}.subset-table.tsv',
-        graph = 'output/assemblies/trio_binned/NA24385/NA24385.dip.{graph}.gfa'
-    output:
-        graph = 'output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.gfa',
-        table = 'output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.csv',
-    log:
-        'log/output/graphs/ktagged_subset/NA24385.k{msk_kmer}.{hpc}.triobin.{graph}.subset.log',
-    conda:
-        '../../environment/conda/conda_pyscript.yml'
-    params:
-        script_exec = lambda wildcards: find_script_path('gfa_subset.py')
-    shell:
-        '{params.script_exec} --debug --input-gfa {input.graph} --input-table {input.table} --simple-table '
-        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 20 &> {log}'
-
-
-rule subset_gfa_non_trio:
-    input:
-       table = 'output/ktagged_reads/gonosomal/{sample}.k{msk_kmer}.{hpc}.non_trio.bp.{graph}.subset-table.tsv',
-       graph = 'output/assemblies/non_trio/{sample}/{sample}.bp.{graph}.gfa'
-    output:
-        graph = 'output/graphs/ktagged_subset/{sample}.k{msk_kmer}.{hpc}.nontrio.{graph}.gfa',
-        table = 'output/graphs/ktagged_subset/{sample}.k{msk_kmer}.{hpc}.nontrio.{graph}.csv',
-    log:
-        'log/output/graphs/ktagged_subset/{sample}.k{msk_kmer}.{hpc}.nontrio.{graph}.subset.log',
-    conda:
-        '../../environment/conda/conda_pyscript.yml'
-    params:
-        script_exec = lambda wildcards: find_script_path('gfa_subset.py')
-    shell:
-        '{params.script_exec} --debug --input-gfa {input.graph} --input-table {input.table} --simple-table '
-        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage 20 &> {log}'
 
 
 rule strip_sequence_from_graph:
