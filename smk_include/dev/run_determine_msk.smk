@@ -1,15 +1,14 @@
-localrules: mock_index_reads, create_ceny_url_files, master
+localrules: create_ceny_url_files, master
 
-DATA_FOLDER = '/beeond/data/hifi'
-
-REFERENCE_FOLDER = '/beeond/data/references'
+REFERENCE_FOLDER = '/gpfs/project/projects/medbioinf/data/references'
 REFERENCE_ASSEMBLY = 'T2Tv11_T2TC_chm13'
 
+ASSEMBLY_INPUT = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/assemblies/freeze_v1/graphs'
+
 ALIGNMENT_TARGETS = [
-    'T2Tv1_T2TC_chm13',
-    'T2Tv1_38p13Y_chm13',
     'T2Tv11_T2TC_chm13',
-    'T2Tv11_38p13Y_chm13'
+    'T2Tv11_38p13Y_chm13',
+    'T2Tv11_38p13Ycen_chm13'
 ]
 
 MALE_SAMPLES = [
@@ -27,11 +26,17 @@ FEMALE_SAMPLES = [
     'HG00514',
     'NA19238',
     'NA19240',
-    'NA24143'
+    'NA24143',
+    'HG03125',
+    'HG02818',
+    'HG03486',
+    'NA12878'
 ]
 
+HIFI_SAMPLES = MALE_SAMPLES + FEMALE_SAMPLES
+
 WMAP_KMER_LONG_READS = 15
-# deprecated: use unimap for contig-to-reference mapping
+# deprecated: use minimap2 (v2.20) for contig-to-reference mapping
 WMAP_KMER_ASSM_CTG = 19
 
 # k-mer size for male-specific k-mer search
@@ -64,14 +69,81 @@ RP11CENY_ILL_ACCESSIONS = [
 ]
 
 wildcard_constraints:
-    hpc = '(is\-hpc|no\-hpc)'
+    hpc = '(ishpc|nohpc)'
 
 
-def select_hifi_input(wildcards):
+def select_assembly_input(wildcards):
+
+    infix = _select_hifi_input(wildcards)
+    infix = os.path.basename(infix).rsplit('.', 2)[0]
+
+    tig_map = {
+        'rutg': 'r_utg',
+        'pctg': 'p_ctg',
+        'actg': 'a_ctg'
+    }
+    tigs = tig_map.get(wildcards.tigs, None)
+    if tigs is None:
+        raise ValueError('Cannot process tig value: {}'.format(str(wildcards)))
+
+    assembly_graph = os.path.join(
+        ASSEMBLY_INPUT,
+        infix,
+        infix + '.{}.gfa'.format(tigs)
+    )
+    return assembly_graph
+
+
+def _select_hifi_input(wildcards):
+
+    input_folder = 'input/hifi_reads_filtered'
     if wildcards.sample in ['NA24143', 'NA24149', 'NA24385']:
-        return os.path.join(DATA_FOLDER, '{}_hpg_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample))
+        readset = '{}_hpg_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample)
+    elif wildcards.sample in ['NA18278']:
+        readset = '{}_giab_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample)
     else:
-        return os.path.join(DATA_FOLDER, '{}_hgsvc_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample))
+        readset = '{}_hgsvc_pbsq2-ccs_1000.fastq.gz'.format(wildcards.sample)
+    return os.path.join(input_folder, readset)
+
+
+def _select_reference_input(wildcards):
+
+    if not wildcards.sample in ALIGNMENT_TARGETS:
+        raise ValueError('Presumably invalid reference: {}'.format(wildcards.sample))
+    return os.path.join(REFERENCE_FOLDER, wildcards.sample + '.fasta')
+
+
+def _select_read_input(wildcards):
+
+    if wildcards.sample == 'HG02982A0':
+        seq_files =  ['references/assemblies/HG02982A0.fasta']
+    elif wildcards.sample == 'RP11CENYILL':
+        seq_files = expand(
+            'references/downloads/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz',
+            platform=['ILL'],
+            accession=RP11CENY_ILL_ACCESSIONS,
+            mate=[1, 2]
+        )
+    elif wildcards.sample == 'RP11CENYONT':
+        seq_files = expand(
+            'references/downloads/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz',
+            platform=['ONT'],
+            accession=RP11CENY_ONT_ACCESSIONS,
+            mate=[1]
+        )
+    else:
+        raise ValueError(str(wildcards))
+    return seq_files
+
+
+def select_sequence_input(wildcards):
+
+    if 'T2T' in wildcards.sample:
+        return _select_reference_input(wildcards)
+    elif wildcards.sample in ['HG02982A0', 'RP11CENYILL', 'RP11CENYONT']:
+        return _select_read_input(wilkdcards)
+    else:
+        return _select_hifi_input(wildcards)
 
 
 def find_script_path(script_name, subfolder=''):
@@ -107,6 +179,37 @@ def find_script_path(script_name, subfolder=''):
         raise RuntimeError('Could not find script {} (subfolder {}). '
                            'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
     return script_path
+
+
+rule run_all:
+    input:
+        # align male reference reads/sequences to sample assembly graphs
+        # (if alignable, prefer raw unitg graph)
+        expand(
+            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}.{tigs}.gaf',
+            male_reads=['GRCh38_chrY', 'HG02982_A0', 'RP11CENY_ONT'],
+            sample=MALE_SAMPLES,
+            tigs=['rutg', 'pctg']
+        ),
+        # dump sample assembly graph tigs to BED and align tigs as reads to reference
+        expand(
+            'output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.{content}.bed',
+            sample=MALE_SAMPLES,
+            tigs=['rutg'],
+            reference=['T2Tv11_38p13Ycen_chm13'],
+            content=['filt', 'unmap']
+        ),
+        # identify male-specific long reads and align to reference
+        expand(
+            'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}_MAP-TO_{reference}.wmap-k{wmap_kmer}.{content}.bed',
+            sample=MALE_SAMPLES,
+            msk_kmer=[KMER_SIZE],
+            wmap_kmer=[WMAP_KMER_LONG_READS],
+            reference=['T2Tv11_38p13Ycen_chm13'],
+            hpc=['is-hpc'],
+            content=['filt', 'unmap'],
+            share_type=['specific']  # 'specific-uniq', 'union-uniq': "unique" k-mer sets hardly contain any info (indeed empty for union-uniq)
+        ),
 
 
 rule load_haplogroupA_assembly:
@@ -192,7 +295,7 @@ rule load_rp11ceny_reads:
     input:
         'annotation/RP11CENY_{platform}_{accession}_{mate}.url'
     output:
-        'output/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz'
+        'references/downloads/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz'
     shell:
         'wget --no-verbose -O {output} -i {input}'
     
@@ -200,7 +303,7 @@ rule load_rp11ceny_reads:
 rule merge_rp11ceny_ont_reads:
     input:
         expand(
-            'output/reads/RP11CENY_ONT_{accession}_1.fastq.gz',
+            'references/downloads/reads/RP11CENY_ONT_{accession}_1.fastq.gz',
             accession=RP11CENY_ONT_ACCESSIONS
         )
     output:
@@ -212,138 +315,90 @@ rule merge_rp11ceny_ont_reads:
         'pigz -d -c -p {threads} {input} | seqtk seq -C -A > {output}'
 
 
-rule mock_index_reads:
-    input:
-        os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
+rule load_ceny_assembly:
     output:
-        temp(os.path.join(REFERENCE_FOLDER, 'mock_index', '{reference}.index_read.fasta'))
-    run:
-        with open(output[0], 'w') as fasta:
-            _ = fasta.write('>index_read\n')
-            _ = fasta.write('ACGTACGT\n')
-
-
-rule create_unimap_index:
-    """
-    NB: index compatibility (k-mer size default: 21)
-    """
-    input:
-        ref = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
-        reads = os.path.join(REFERENCE_FOLDER, 'mock_index', '{reference}.index_read.fasta')
-    output:
-        umi = os.path.join(REFERENCE_FOLDER, '{reference}.umi'),
-    benchmark:
-        'run/references/indexing/{reference}.umi.rsrc',
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    threads: 2
-    resources:
-        runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1),
-        mem_total_mb = lambda wildcards, attempt: 16384 + 16384 * attempt
+        'references/downloads/Jain2018_MF741337.fasta'
     shell:
-        'unimap -d {output} -x asm20 -t {threads} -o /dev/null {input.ref} {input.reads}'
+        'wget --no-verbose -O {output} "https://www.ebi.ac.uk/ena/browser/api/fasta/MF741337.1?download=true" '
 
 
-rule count_reference_kmers:
+rule preprocess_rp11ceny_assembly:
     input:
-        fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
+        fasta = 'references/downloads/Jain2018_MF741337.fasta'
     output:
-        kmer_db = directory('output/kmer_db_sample/{reference}.k{kmer_size}.no-hpc.db'),
-        rep_kmer = 'output/kmer_db_sample/{reference}.k{kmer_size}.no-hpc.rep-grt09998.txt'
+        fasta = 'references/assemblies/MF741337.fasta'
+    run:
+        import io
+        out_buffer = io.StringIO()
+        with open(input.fasta, 'r') as fasta:
+            for line in fasta:
+                if line.startswith('>'):
+                    out_buffer.write('>chrYCEN\n')
+                else:
+                    out_buffer.write(line.strip())
+        
+        with open(output.fasta, 'w') as dump:
+            _ = dump.write(out_buffer.getvalue())
+
+
+rule extend_male_t2t_assembly:
+    input:
+        cen = 'references/assemblies/MF741337.fasta',
+        ref = os.path.join(REFERENCE_FOLDER, 'T2Tv11_38p13Y_chm13.fasta')
+    output:
+        fasta = os.path.join(REFERENCE_FOLDER, 'T2Tv11_38p13Ycen_chm13.fasta')
+    shell:
+        'cat {input.ref} {input.cen} > {output.fasta}'
+
+
+def count_kmer_runtime(wildcards, attempt):
+
+    if wildcards.sample in HIFI_SAMPLES:
+        return 24 * attempt
+    elif 'ONT' in wildcards.sample:
+        return attempt * attempt * attempt
+    else:
+        return attempt * attempt
+
+
+def count_kmer_memory(wildcards, attempt, unit='mb'):
+
+    if wildcards.sample in HIFI_SAMPLES:
+        mem = 262144
+    elif 'ONT' in wildcards.sample:
+        mem = 73728
+    elif 'T2T' in wildcards.sample:
+        mem = 32768
+    else:
+        mem = 4096
+    if unit == 'gb':
+        mem = int(mem / 1024)
+    return mem * attempt
+
+
+rule count_kmers:
+    input:
+        sequence = select_sequence_input
+    output:
+        kmer_db = directory('output/kmer_db_sample/{sample}.k{kmer_size}.{hpc}.db'),
+        rep_kmer = 'output/kmer_db_sample/{sample}.k{kmer_size}.{hpc}.rep-grt09998.txt'
     benchmark:
-        'rsrc/output/kmer_db/{reference}.k{kmer_size}.no-hpc.count-dump.rsrc'
+        'rsrc/output/kmer_db/{sample}.k{kmer_size}.{hpc}.count-dump.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        reference = '(' + '|'.join(ALIGNMENT_TARGETS) + ')',
         kmer_size = '(' + '|'.join([str(WMAP_KMER_LONG_READS), str(WMAP_KMER_ASSM_CTG), str(KMER_SIZE)]) + ')'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
-        mem_total_gb = lambda wildcards, attempt: 32 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt
+        mem_total_mb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt),
+        mem_total_gb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt, 'gb'),
+        runtime_hrs = lambda wildcards, attempt: count_kmer_runtime(wildcards, attempt)
     params:
         kmer_size = KMER_SIZE,
-        zip_threads = config['num_cpu_high']
+        use_hpc = lambda wildcards: '' if wildcards.hpc == 'nohpc' else 'compress'
     shell:
-        'meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.fasta} && '
-        'meryl print greater-than distinct=0.9998 {output.kmer_db} | pigz -p {params.zip_threads} --best > {output.rep_kmer}'
-
-
-rule count_sequence_kmers:
-    input:
-        fastq = select_hifi_input
-    output:
-        kmer_db = directory('output/kmer_db_sample/{sample}.k{kmer_size}.{hpc}.db'),
-        rep_kmer = 'output/kmer_db_sample/{sample}.k{kmer_size}.{hpc}.rep-grt09998.txt'
-    benchmark:
-        'rsrc/output/kmer_db/{sample}.k{kmer_size}.{hpc}.count-dump.rsrc'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    wildcard_constraints:
-        sample = '(' + '|'.join(MALE_SAMPLES + FEMALE_SAMPLES) + ')',
-        hpc = '(is\-hpc|no\-hpc)'
-    threads: config['num_cpu_high']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 262144 * attempt,
-        mem_total_gb = lambda wildcards, attempt: 256 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 48 * attempt
-    params:
-        kmer_size = KMER_SIZE,
-        zip_threads = config['num_cpu_high'],
-        use_hpc = lambda wildcards: '' if wildcards.hpc == 'no-hpc' else 'compress'
-    shell:
-        'meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} {params.use_hpc} output {output.kmer_db} {input.fastq} && '
-        'meryl print greater-than distinct=0.9998 {output.kmer_db} | pigz -p {params.zip_threads} --best > {output.rep_kmer}'
-
-
-def select_read_file_input(wildcards):
-
-    if wildcards.sample == 'HG02982A0':
-        seq_files =  ['references/assemblies/HG02982A0.fasta']
-    elif wildcards.sample == 'RP11CENYILL':
-        seq_files = expand(
-            'output/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz',
-            platform=['ILL'],
-            accession=RP11CENY_ILL_ACCESSIONS,
-            mate=[1, 2]
-        )
-    elif wildcards.sample == 'RP11CENYONT':
-        seq_files = expand(
-            'output/reads/RP11CENY_{platform}_{accession}_{mate}.fastq.gz',
-            platform=['ONT'],
-            accession=RP11CENY_ONT_ACCESSIONS,
-            mate=[1]
-        )
-    else:
-        raise ValueError(str(wildcards))
-    return seq_files
-
-
-rule count_read_kmers:
-    input:
-        seq_files = select_read_file_input
-    output:
-        kmer_db = directory('output/kmer_db_sample/{sample}.k{kmer_size}.{hpc}.db'),
-        rep_kmer = 'output/kmer_db_sample/{sample}.k{kmer_size}.{hpc}.rep-grt09998.txt'
-    benchmark:
-        'rsrc/output/kmer_db/{sample}.k{kmer_size}.{hpc}.count-dump.rsrc'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    wildcard_constraints:
-        sample = '(RP11CENYONT|RP11CENYILL|HG02982A0)'
-    threads: config['num_cpu_high']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 2048 if attempt < 2 else 73728,
-        mem_total_gb = lambda wildcards, attempt: 2 if attempt < 2 else 72,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
-    params:
-        kmer_size = KMER_SIZE,
-        zip_threads = config['num_cpu_high'],
-        use_hpc = lambda wildcards: '' if wildcards.hpc == 'no-hpc' else 'compress'
-    shell:
-        'meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} {params.use_hpc} output {output.kmer_db} {input.seq_files} && '
-        'meryl print greater-than distinct=0.9998 {output.kmer_db} | pigz -p {params.zip_threads} --best > {output.rep_kmer}'
+        'meryl count k={threads} threads={threads} memory={resources.mem_total_gb} {params.use_hpc} output {output.kmer_db} {input.sequence} && '
+        'meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}'
 
 
 rule build_rp11ceny_specific_db:
@@ -351,7 +406,7 @@ rule build_rp11ceny_specific_db:
         ont_db = 'output/kmer_db_sample/RP11CENYONT.k{kmer_size}.is-hpc.db',
         ill_db = 'output/kmer_db_sample/RP11CENYILL.k{kmer_size}.no-hpc.db',
         female_db = 'output/kmer_db/female-merged.k{kmer_size}.is-hpc.db',
-        ref_db = 'output/kmer_db_sample/{}.k{{kmer_size}}.no-hpc.db'.format(REFERENCE_ASSEMBLY),
+        ref_db = 'output/kmer_db_sample/{}.k{{kmer_size}}.is-hpc.db'.format(REFERENCE_ASSEMBLY),
     output:
         kmer_db = directory('output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.db')
     benchmark:
@@ -370,13 +425,13 @@ rule build_rp11ceny_specific_db:
 
 rule build_a0_specific_db:
     input:
-        a0_db = 'output/kmer_db_sample/HG02982A0.k{kmer_size}.is-hpc.db',
-        female_db = 'output/kmer_db/female-merged.k{kmer_size}.is-hpc.db',
-        ref_db = 'output/kmer_db_sample/{}.k{{kmer_size}}.no-hpc.db'.format(REFERENCE_ASSEMBLY),
+        a0_db = 'output/kmer_db_sample/HG02982A0.k{kmer_size}.{hpc}.db',
+        female_db = 'output/kmer_db/female-merged.k{kmer_size}.{hpc}.db',
+        ref_db = 'output/kmer_db_sample/{}.k{{kmer_size}}.{{hpc}}.db'.format(REFERENCE_ASSEMBLY),
     output:
-        kmer_db = directory('output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.db')
+        kmer_db = directory('output/kmer_db/HG02982A0-specific.k{kmer_size}.{hpc}.db')
     benchmark:
-        'rsrc/output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.build.rsrc'
+        'rsrc/output/kmer_db/HG02982A0-specific.k{kmer_size}.{hpc}.build.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -435,7 +490,7 @@ rule build_male_specific_db:
     input:
         male_kmers = 'output/kmer_db/male-shared.k{kmer_size}.{hpc}.db',
         female_kmers = 'output/kmer_db/female-merged.k{kmer_size}.{hpc}.db',
-        reference_kmers = 'output/kmer_db_sample/{}.k{{kmer_size}}.no-hpc.db'.format(REFERENCE_ASSEMBLY),
+        reference_kmers = 'output/kmer_db_sample/{}.k{{kmer_size}}.{{hpc}}.db'.format(REFERENCE_ASSEMBLY),
     output:
         male_specific = directory('output/kmer_db/male-specific.k{kmer_size}.{hpc}.db')
     benchmark:
@@ -482,8 +537,8 @@ rule build_male_specific_uniq_db:
 rule build_male_union_db:
     input:
         male_kmers = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db',
-        a0_kmers = 'output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.db',
-        rp11_kmers = 'output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.db'
+        a0_kmers = 'output/kmer_db/HG02982A0-specific.k{kmer_size}.{hpc}.db',
+        rp11_kmers = 'output/kmer_db/RP11CENY-specific.k{kmer_size}.{hpc}.db'
     output:
         male_union = directory('output/kmer_db/male-union.k{kmer_size}.{hpc}.db')
     benchmark:
@@ -508,8 +563,8 @@ rule build_male_union_uniq_db:
     """
     input:
         male_kmers = 'output/kmer_db/male-specific.k{kmer_size}.{hpc}.db',
-        a0_kmers = 'output/kmer_db/HG02982A0-specific.k{kmer_size}.is-hpc.db',
-        rp11_kmers = 'output/kmer_db/RP11CENY-specific.k{kmer_size}.is-hpc.db'
+        a0_kmers = 'output/kmer_db/HG02982A0-specific.k{kmer_size}.{hpc}.db',
+        rp11_kmers = 'output/kmer_db/RP11CENY-specific.k{kmer_size}.{hpc}.db'
     output:
         male_union_uniq = directory('output/kmer_db/male-union-uniq.k{kmer_size}.{hpc}.db')
     benchmark:
@@ -555,7 +610,7 @@ rule dump_male_kmers:
 
 rule extract_ktagged_reads:
     input:
-        fastq = select_hifi_input,
+        fastq = select_sequence_input,
         kmer_db = 'output/kmer_db/male-{share_type}.k{kmer_size}.{hpc}.db'
     output:
         ktagged_reads = 'output/ktagged_reads/{sample}.k{kmer_size}.{hpc}.ktg-{share_type}.fastq.gz',
@@ -582,7 +637,7 @@ rule align_ktagged_reads_to_reference:
     input:
         reads = 'output/ktagged_reads/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}.fastq.gz',
         reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
-        ref_repkmer = 'output/kmer_db_sample/{reference}.k{wmap_kmer}.no-hpc.rep-grt09998.txt',
+        ref_repkmer = 'output/kmer_db_sample/{reference}.k{wmap_kmer}.{hpc}.rep-grt09998.txt',
     output:
         bam = 'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}_MAP-TO_{reference}.wmap-k{wmap_kmer}.psort.raw.bam'
     log:
@@ -593,9 +648,9 @@ rule align_ktagged_reads_to_reference:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 24576 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt ** 5,
         mem_sort_mb = 4096,
     params:
@@ -603,157 +658,39 @@ rule align_ktagged_reads_to_reference:
         readgroup_id = lambda wildcards: '{}_k{}_{}_{}'.format(
             wildcards.sample,
             wildcards.msk_kmer,
-            wildcards.hpc.replace('-', ''),
+            wildcards.hpc,
             wildcards.share_type.replace('-', '')
         ),
-        align_threads = config['num_cpu_medium'] - 4,
-        sort_threads = 4
+        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
+        sort_threads = config['num_cpu_low'],
+        tempdir = lambda wildcards: os.path.join(
+            'temp', 'winnowmap', 'ktagref',
+            wildcards.reference,
+            wildcards.sample,
+            wildcards.hpc,
+            wildcards.share_type,
+            'MSK' + str(wildcards.msk_kmer),
+            'WMAP' + str(wildcards.wmap_kmer)
+        )
     shell:
+        'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
         'winnowmap -W {input.ref_repkmer} -k {wildcards.wmap_kmer} -t {params.align_threads} -a -x map-pb  '
         '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
         '{input.reference} {input.reads} | '
-        'samtools sort -m {resources.mem_sort_mb}M -@ {params.sort_threads} -O BAM > {output.bam}'
-
-
-rule determine_ktagged_overlapping_reads:
-    input:
-        fastq = select_hifi_input,
-        ktagged = 'output/ktagged_reads/{sample}.k{kmer_size}.{hpc}.ktagged-reads.fastq.gz',
-    output:
-        read_ovl = 'output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.paf',
-    log:
-        'log/output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.log'
-    benchmark:
-        'rsrc/output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.rsrc'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    wildcard_constraints:
-        sample = '(' + '|'.join(MALE_SAMPLES) + ')'
-    threads: config['num_cpu_high']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 36 * attempt
-    shell:
-        'minimap2 -H -x ava-pb -X -o {output.read_ovl} -t {threads} {input.fastq} {input.ktagged}'
-
-
-rule count_parental_kmers:
-    input:
-        fastq = select_hifi_input
-    output:
-        dump = 'output/kmer_dumps/{sample}.k{kmer_size}.yak'
-    benchmark:
-        'rsrc/output/kmer_dumps/{sample}.k{kmer_size}.yak.rsrc'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_max']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 262144 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 48 * attempt
-    params:
-        kmer_size = KMER_SIZE,
-    shell:
-        'yak count -k {params.kmer_size} -b 37 -K 4096m -o {output.dump} {input.fastq}' 
-
-
-def select_maternal_kmer_dump(wildcards):
-    path = 'output/kmer_dumps/{sample}.k{kmer_size}.yak'
-    mothers = {
-        'NA24385': 'NA24143'
-    }
-    mother = mothers[wildcards.sample]
-    formatter = {
-        'sample': mother,
-        'kmer_size': KMER_SIZE
-    }
-    return path.format(**formatter)
-
-
-def select_paternal_kmer_dump(wildcards):
-    path = 'output/kmer_dumps/{sample}.k{kmer_size}.yak'
-    fathers = {
-        'NA24385': 'NA24149'
-    }
-    father = fathers[wildcards.sample]
-    formatter = {
-        'sample': father,
-        'kmer_size': KMER_SIZE
-    }
-    return path.format(**formatter)
-
-
-rule compute_hifiasm_trio_assembly:
-    """
-    v0.15.1-r328
-    """
-    input:
-        fastq = select_hifi_input,
-        mat_yak = select_maternal_kmer_dump,
-        pat_yak = select_paternal_kmer_dump
-    output:
-        assm_out = multiext(
-            'output/assemblies/trio_binned/{sample}/{sample}.dip',
-            '.hap1.p_ctg.gfa', '.hap1.p_ctg.lowQ.bed', '.hap1.p_ctg.noseq.gfa',
-            '.hap2.p_ctg.gfa', '.hap2.p_ctg.lowQ.bed', '.hap2.p_ctg.noseq.gfa',
-            '.p_utg.gfa', '.p_utg.lowQ.bed', '.p_utg.noseq.gfa',
-            '.r_utg.gfa', '.r_utg.lowQ.bed', '.r_utg.noseq.gfa'
-        )
-    log:
-        'log/output/assemblies/trio_binned/{sample}.hifiasm.log',
-    benchmark:
-        'rsrc/output/assemblies/trio_binned/{sample}.hifiasm.rsrc',
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_max']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 114688 + 114688 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 24 + 8 * attempt
-    shell:
-        'hifiasm -o {output.assm_dir}/{wildcards.sample} -t {threads} -1 {input.pat_yak} -2 {input.mat_yak} {input.fastq} &> {log}'
-
-
-rule compute_hifiasm_nontrio_assembly:
-    """
-    v0.15.1-r328
-    """
-    input:
-        fastq = select_hifi_input,
-    output:
-        assm_out = multiext(
-            'output/assemblies/non_trio/{sample}/{sample}.bp',
-            '.hap1.p_ctg.gfa', '.hap1.p_ctg.lowQ.bed', '.hap1.p_ctg.noseq.gfa',
-            '.hap2.p_ctg.gfa', '.hap2.p_ctg.lowQ.bed', '.hap2.p_ctg.noseq.gfa',
-            '.p_ctg.gfa', '.p_ctg.lowQ.bed', '.p_ctg.noseq.gfa',
-            '.p_utg.gfa', '.p_utg.lowQ.bed', '.p_utg.noseq.gfa',
-            '.r_utg.gfa', '.r_utg.lowQ.bed', '.r_utg.noseq.gfa'
-        )
-    log:
-        'log/output/assemblies/non_trio/{sample}.hifiasm.log',
-    benchmark:
-        'rsrc/output/assemblies/non_trio/{sample}.hifiasm.rsrc',
-    conda:
-        '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_max']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 73728 + 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 24 + 8 * attempt
-    params:
-        prefix = lambda wildcards: os.path.join(
-            'output/assemblies/non_trio', wildcards.sample, wildcards.sample)
-    shell:
-        'hifiasm -o {params.prefix} -t {threads} {input.fastq} &> {log}'
+        'samtools sort -m {resources.mem_sort_mb}M -@ {params.sort_threads} -T {params.tempdir} -O BAM > {output.bam} ; '
+        'rm -rfd {params.tempdir}'
 
 
 rule align_male_reference_reads:
     input:
         reads = 'references/reads/{male_reads}.reads.fasta',
-        graph = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.p_ctg.gfa'
+        graph = select_assembly_input
     output:
-        gaf = 'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.gaf'
+        gaf = 'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}.{tigs}.gaf'
     log:
-        'log/output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.ga.log'
+        'log/output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}.{tigs}.ga.log'
     benchmark:
-        'rsrc/output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.{mode_id}.{hap}.p_ctg.ga.rsrc'
+        'rsrc/output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}.{tigs}.ga.rsrc'
     wildcard_constraints:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     conda:
@@ -768,22 +705,21 @@ rule align_male_reference_reads:
         '-g {input.graph} -f {input.reads} -a {output.gaf} &> {log}'
 
 
-rule convert_primary_contigs_gfa_to_fasta:
+rule convert_tigs_gfa_to_fasta:
     input:
-        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.{hap}.p_ctg.gfa',
+        gfa = select_assembly_input
     output:
-        fasta = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.fasta',
-        rc_map = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.read-contig.map',
-        stats = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.contig.stats',
+        fasta = 'output/assemblies/{sample}.{tigs}.fasta',
+        rc_map = 'output/assemblies/{sample}.{tigs}.read-contig.map',
+        stats = 'output/assemblies/{sample}.{tigs}.contig.stats',
     log:
-        'log/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert.log'
+        'log/output/assemblies/{sample}.{tigs}.gfa-convert.log'
     benchmark:
-        'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.{hap}.p_ctg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+        'run/output/assemblies/{sample}.{tigs}.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
         '../../environment/conda/conda_pyscript.yml'
     wildcard_constraints:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')',
-        hap = '(hap1|hap2)'
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
@@ -796,41 +732,18 @@ rule convert_primary_contigs_gfa_to_fasta:
         '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
 
 
-rule convert_raw_unitigs_gfa_to_fasta:
-    input:
-        gfa = 'output/assemblies/{assm_mode}/{sample}/{sample}.{mode_id}.r_utg.gfa',
-    output:
-        fasta = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.fasta',
-        rc_map = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.read-contig.map',
-        stats = 'output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.contig.stats',
-    log:
-        'log/output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.gfa-convert.log'
-    benchmark:
-        'run/output/assemblies/{sample}.{assm_mode}.{mode_id}.r_utg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
-    conda:
-        '../../environment/conda/conda_pyscript.yml'
-    wildcard_constraints:
-        sample = '(' + '|'.join(MALE_SAMPLES) + ')'
-    threads: config['num_cpu_low']
-    resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
-    params:
-        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
-    shell:
-        '{params.script_exec} --gfa {input.gfa} --n-cpus {threads} '
-        '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
-
-
-rule unimap_contig_to_known_reference_alignment:
+rule contig_to_known_reference_alignment:
+    """
+    Important that this rule relies on the unimap backports
+    for better contig-to-ref alignment available in minimap2 >2.20
+    """
     input:
         contigs = 'output/assemblies/{sample}.{assembly}.fasta',
-        ref_fa = os.path.join(REFERENCE_FOLDER, '{reference}.umi')
+        ref_fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
     output:
         'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.psort.raw.bam'
     benchmark:
-        'rsrc/output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.umap.rsrc'
+        'rsrc/output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.mmap.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -840,21 +753,26 @@ rule unimap_contig_to_known_reference_alignment:
         mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
         mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
         runtime_hrs = lambda wildcards, attempt: 36 * attempt,
-        mem_sort_mb = 8192
+        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
+        mem_sort_mb = 4096,
+        sort_threads = config['num_cpu_low']
     params:
         individual = lambda wildcards: wildcards.sample,
         readgroup_id = lambda wildcards: '{}_{}'.format(wildcards.sample, wildcards.assembly),
         tempdir = lambda wildcards: os.path.join(
-            'temp', 'unimap', wildcards.sample,
+            'temp', 'minimap', 'ctgref',
+            wildcards.reference,
+            wildcards.sample,
             wildcards.assembly
         )
     shell:
         'rm -rfd {params.tempdir} ; mkdir -p {params.tempdir} && '
-        'unimap -t {threads} -2 '
+        'minimap2 -t {params.align_threads} '
             '--secondary=no --eqx -Y -ax asm5 '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
             '{input.ref_fa} {input.contigs} | '
-            'samtools sort -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output}'
+            'samtools sort -@ {params.sort_threads} -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output} ; '
+        'rm -rfd {params.tempdir}'
 
 
 rule dump_sequence_to_reference_alignment_to_bed:
@@ -909,7 +827,7 @@ def _read_mapped_ktag_dump(file_path):
         names=['chrom', 'start', 'end', 'read_name', 'mapq', 'orientation']
     )
     df['length'] = (df['end'] - df['start']).astype(int)
-    df = df.loc[df['chrom'].isin(['chrX', 'chrY']), ['chrom', 'read_name', 'length']].copy()
+    df = df.loc[df['chrom'].isin(['chrX', 'chrY', 'chrYCEN']), ['chrom', 'read_name', 'length']].copy()
     return df
 
 
@@ -925,8 +843,9 @@ def _read_unmapped_ktag_dump(file_path):
 rule select_gonosomal_reads:
     input:
         bed_files = expand(
-            'output/alignments/ktagged_to_ref/{{sample}}.k{{msk_kmer}}.{{hpc}}.{ktag_set}_MAP-TO_T2Tv11_38p13Y_chm13.wmap-k15.{aln_type}.bed',
+            'output/alignments/ktagged_to_ref/{{sample}}.k{{msk_kmer}}.{{hpc}}.{ktag_set}_MAP-TO_{reference}.wmap-k15.{aln_type}.bed',
             ktag_set=['ktg-specific', 'ktg-specific-uniq', 'ktg-union'],
+            reference=['T2Tv11_38p13Ycen_chm13'],
             aln_type=['filt', 'unmap']
         )
     output:
@@ -954,7 +873,7 @@ rule select_gonosomal_reads:
             else:
                 raise ValueError
 
-        info_columns = ('chrY', 'chrX', 'chrUn', 'specific', 'specific_uniq', 'union')
+        info_columns = ('chrY', 'chrYCEN', 'chrX', 'chrUn', 'specific', 'specific_uniq', 'union')
         get_read_info = op.itemgetter(*info_columns)
         line_template = '{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
         with open(output.reads_table, 'w') as table:
@@ -1050,90 +969,3 @@ rule strip_sequence_from_graph:
         '../../environment/conda/conda_biotools.yml'
     shell:
         'gfatools view -S {input} > {output}'
-
-
-rule subset_gfa:
-    input:
-        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.nontrio.r_utg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.nontrio.hap1.p_ctg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.nontrio.hap2.p_ctg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.triobin.hap1.p_ctg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.triobin.hap2.p_ctg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA24385.k31.is-hpc.triobin.r_utg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA19239.k31.is-hpc.nontrio.r_utg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA19239.k31.is-hpc.nontrio.hap1.p_ctg.noseq.gfa',
-        'output/graphs/ktagged_subset/NA19239.k31.is-hpc.nontrio.hap2.p_ctg.noseq.gfa',
-
-
-rule master:
-    input:
-        expand(
-            rules.dump_male_kmers.output.txt,
-            kmer_size=KMER_SIZE,
-            hpc=['is-hpc'],
-            share_type=['specific', 'union', 'specific-uniq', 'union-uniq']
-        ),
-        expand(
-            rules.extract_ktagged_reads.output.ktagged_reads,
-            kmer_size=KMER_SIZE,
-            hpc=['is-hpc'],
-            sample=MALE_SAMPLES,
-            share_type=['specific', 'union', 'specific-uniq', 'union-uniq']
-        ),
-        'output/assemblies/trio_binned/NA24385',
-        expand(
-            'output/assemblies/non_trio/{sample}',
-            sample=MALE_SAMPLES
-        ),
-        expand(
-            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.dip.{hap}.p_ctg.gaf',
-            assm_mode=['trio_binned'],
-            male_reads=['GRCh38_chrY', 'HG02982_A0', 'RP11CENY_ONT'],
-            sample=['NA24385'],
-            hap=['hap1', 'hap2']
-        ),
-        expand(
-            'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}_{assm_mode}.bp.{hap}.p_ctg.gaf',
-            assm_mode=['non_trio'],
-            male_reads=['GRCh38_chrY', 'HG02982_A0', 'RP11CENY_ONT'],
-            sample=MALE_SAMPLES,
-            hap=['hap1', 'hap2']
-        ),
-        # expand(
-        #     'output/alignments/ktag_to_hifi/{sample}.k{kmer_size}.{hpc}.hifi-ovl.paf',
-        #     kmer_size=[KMER_SIZE],
-        #     sample=MALE_SAMPLES,
-        #     hpc=['is-hpc']
-        # ),
-        expand(
-            'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.{content}.bed',
-            sample=MALE_SAMPLES,
-            assembly=[
-                'non_trio.bp.hap1.p_ctg',
-                'non_trio.bp.hap2.p_ctg',
-                'non_trio.bp.r_utg',
-            ],
-            reference=['T2Tv11_38p13Y_chm13'],
-            content=['filt', 'unmap']
-        ),
-        expand(
-            'output/alignments/tigs_to_reference/{sample}.{assembly}_MAP-TO_{reference}.{content}.bed',
-            sample=['NA24385'],
-            assembly=[
-                'trio_binned.dip.hap1.p_ctg',
-                'trio_binned.dip.hap2.p_ctg',
-                'trio_binned.dip.r_utg',
-            ],
-            reference=['T2Tv11_38p13Y_chm13'],
-            content=['filt', 'unmap']
-        ),
-        expand(
-            'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}_MAP-TO_{reference}.wmap-k{wmap_kmer}.{content}.bed',
-            sample=MALE_SAMPLES,
-            msk_kmer=[KMER_SIZE],
-            wmap_kmer=[WMAP_KMER_LONG_READS],
-            reference=['T2Tv11_38p13Y_chm13'],
-            hpc=['is-hpc'],
-            content=['filt', 'unmap'],
-            share_type=['specific', 'union']  # 'specific-uniq', 'union-uniq': "unique" k-mer sets hardly contain any info (indeed empty for union-uniq)
-        ),
