@@ -1,9 +1,14 @@
+system: hilbert
+
+samples:
+  - HG00733
+  - HG002
 
 ont_hpg_files:
   HG00733:
     - HG00733_1_Guppy_4.2.2_prom
     - HG00733_2_Guppy_4.2.2_prom
-  #  - HG00733_3_Guppy_4.2.2_prom -- contains problematic read, GA segfault
+    - HG00733_3_Guppy_4.2.2_prom
   HG002:
     - HG002_giab_ULfastqs_guppy324
     - HG002_ONT_PAD64459_Guppy32
@@ -14,7 +19,7 @@ ont_raw_folder:
     hilbert: /gpfs/project/projects/medbioinf/data/hg00733_ont
   HG002:
     valet: /beeond/data/ont
-    hilbert: not_set
+    hilbert: /gpfs/project/projects/medbioinf/data/hg002_ont
 
 hifi_reads_path:
   HG00733:
@@ -22,7 +27,7 @@ hifi_reads_path:
     hilbert: /gpfs/project/projects/medbioinf/projects/hifi_v13/run_folder/input/fastq/HG00733_hgsvc_pbsq2-ccs_1000.fastq.gz
   HG002:
     valet: /beeond/projects/lansdorp/run_folder/input/fastq/NA24385_hpg_pbsq2-ccs_1000.fastq.gz
-    hilbert: not_set
+    hilbert: /gpfs/project/projects/medbioinf/projects/hifi_v13/run_folder/input/fastq/NA24385_hpg_pbsq2-ccs_1000.fastq.gz
 
 short_reads_path:
   HG00733:
@@ -30,14 +35,14 @@ short_reads_path:
     hilbert: /gpfs/project/projects/medbioinf/data/short_reads/HG00733_1kg_ilnvs-150pe_short
   HG002:
     valet: /beeond/data/short_reads/NA24385_giab_il25k-150pe_short
-    hilbert: not_set
+    hilbert: /gpfs/project/projects/medbioinf/data/short_reads/NA24385_giab_il25k-150pe_short
 
 reference_folder:
   valet: /beeond/data/references
   hilbert: /gpfs/project/projects/medbioinf/data/references
 
 reference_assemblies:
-  - T2Tv1_38p13Y_chm13
+  - T2Tv11_38p13Y_chm13
 
 
 ont_split_files:
@@ -49,9 +54,6 @@ ont_split_files:
   - HG00733_ont-ul_SRR13362359_6
 
 runtime:
-  GraphAligner:
-    valet: 32
-    hilbert: 6
   ExtractSequence:
     valet: 18
     hilbert: 8
@@ -61,12 +63,9 @@ memory:
     HG00733: 131072
     HG002: 131072
   MBG_high:
-    HG00733: 491520
+    HG00733: 786432
     HG002: 172032
-  GraphAligner:
-    HG00733: 65536
-    HG002: 65536
-  HifiAsm: 1463396
+  HifiAsm: 2969600
 
 params:
   MBG:
@@ -79,7 +78,7 @@ params:
       - 1000
       - 2000
   GraphAligner:
-    minscore: 20000
+    minscore: 10000
   SizeFractions:
     - 50000
     - 100000
