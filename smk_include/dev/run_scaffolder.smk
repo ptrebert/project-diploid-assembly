@@ -351,20 +351,20 @@ rule convert_paf_to_gfa:
         segment_line = 'S\t{name}\t*\tLN:i:{length}\n'
 
         gfa_links = io.StringIO()
-        link_line = 'L\t{seg1}\t{orient1}\t{seg2}\t{orient1}\t*\tNM:i:{mismatch}\tID:Z:{ln}\n'
+        link_line = 'L\t{seg1}\t{orient1}\t{seg2}\t{orient1}\t{overlap}M\tNM:i:{mismatch}\tID:Z:{ln}\n'
 
         segments_added = set()
 
         with open(input.paf, 'r', newline='') as paf:
             columns = paf.readline().strip().split()
-            paf_records = csv.DictReader(paf, fieldnames=columns)
+            paf_records = csv.DictReader(paf, fieldnames=columns, delimiter='\t')
             for ln, record in enumerate(paf_records, start=2):
                 read_segment = record['query_name'].replace('-', '_')  # cannot use - in names
                 if read_segment not in segments_added:
                     gfa_segments.write(segment_line.format(**{'name': read_segment, 'length': record['query_length']}))
-                    segments_added(read_segment)
+                    segments_added.add(read_segment)
                 if record['target_name'] not in segments_added:
-                    gfa_segments.write(segment_line.format(**{'name': record['target_name', 'length': record['target_length']]}))
+                    gfa_segments.write(segment_line.format(**{'name': record['target_name'], 'length': record['target_length']}))
                     segments_added.add(record['target_name'])
                 # alignments are unique
                 contig_end = determine_read_contig_order(record)
@@ -388,6 +388,7 @@ rule convert_paf_to_gfa:
                     'orient1': orient1,
                     'seg2': seg2,
                     'orient2': orient2,
+                    'overlap': record['aln_num_match'],  # Bandage does not like "*" CIGAR strings
                     'mismatch': mismatches,
                     'ln': ln
                 }))
