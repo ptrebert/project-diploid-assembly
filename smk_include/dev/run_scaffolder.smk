@@ -351,7 +351,7 @@ rule convert_paf_to_gfa:
         segment_line = 'S\t{name}\t*\tLN:i:{length}\n'
 
         gfa_links = io.StringIO()
-        link_line = 'L\t{seg1}\t{orient1}\t{seg2}\t{orient1}\t{overlap}M\tNM:i:{mismatch}\tID:Z:{ln}\n'
+        link_line = 'L\t{seg1}\t{orient1}\t{seg2}\t{orient2}\t{overlap}M\tNM:i:{mismatch}\tID:Z:{ln}\n'
 
         segments_added = set()
 
