@@ -164,12 +164,12 @@ def check_multi_alignment(alignments):
     select_indices = set()
     for (read_name, contig_name), sub_aln in alignments.groupby(['query_name', 'target_name']):
         if sub_aln.shape[0] > 1:
-            selector = sub_aln['aln_num_match'] == sub_aln['aln_num_match'].max()
-            select_index = sub_aln.index[selector]
+            selector_nmatch = sub_aln['aln_num_match'] == sub_aln['aln_num_match'].max()
+            select_index = sub_aln.index[selector_nmatch]
             if select_index.size != 1:
                 # then select shorter block length
-                selector &= sub_aln.loc[selector, 'aln_block_length'] == sub_aln.loc[selector, 'aln_block_length'].min()
-                select_index = sub_aln.index[selector]
+                selector_blen = sub_aln.loc[selector_nmatch, 'aln_block_length'] == sub_aln.loc[selector_nmatch, 'aln_block_length'].min()
+                select_index = select_index[selector_blen]
                 if select_index.size != 1:
                     err_msg = 'Several alignments with identical match score and block length: {} to {}\n'.format(read_name, contig_name)
                     err_msg += 'Max match score: {}\n'.format(sub_aln['aln_num_match'].max())
