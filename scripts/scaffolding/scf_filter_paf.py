@@ -168,7 +168,7 @@ def check_multi_alignment(alignments):
             select_index = sub_aln.index[selector]
             if select_index.size != 1:
                 # then select shorter block length
-                selector &= sub_aln['aln_block_length'] == sub_aln['aln_block_length'].min()
+                selector &= sub_aln.loc[selector, 'aln_block_length'] == sub_aln.loc[selector, 'aln_block_length'].min()
                 select_index = sub_aln.index[selector]
                 if select_index.size != 1:
                     err_msg = 'Several alignments with identical match score and block length: {} to {}\n'.format(read_name, contig_name)
