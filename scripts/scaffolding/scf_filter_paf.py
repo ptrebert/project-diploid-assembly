@@ -11,6 +11,7 @@ import io as io
 import operator as op
 
 import pandas as pd
+from pandas.io.parsers import read_csv
 
 PAF_HEADER = [
     'query_name',
@@ -170,7 +171,12 @@ def check_multi_alignment(alignments):
     for (read_name, contig_name), sub_aln in alignments.groupby(['query_name', 'target_name']):
         if sub_aln.shape[0] > 1:
             select_index = sub_aln.index[sub_aln['aln_num_match'] == sub_aln['aln_num_match'].max()]
-            assert select_index.size == 1, 'Several max aln_num_match entries: {}'.format(sub_aln)
+            if select_index.size != 1:
+                err_msg = 'Several alignments with identical match score: {} to {}\n'.format(read_name, contig_name)
+                err_msg += 'Max match score: {}\n'.format(sub_aln['aln_num_match'].max())
+                err_msg += 'Selected alignments: {}\n'.format(select_index.size)
+                err_msg += 'Total subset size: {}\n'.format(sub_aln.shape)
+                raise ValueError(err_msg)
             select_indices = select_indices.union(set(select_index))
         else:
             select_indices = select_indices.union(set(sub_aln.index))
