@@ -150,12 +150,32 @@ def check_singleton(alignments):
 
 
 def check_local_alignment(alignments):
-
+    """
+    Read has only (but several) alignments on
+    a single contig.
+    """
     discard = set()
     for query_name, subset in alignments.groupby(['query_name']):
         if subset['target_name'].nunique() == 1:
             discard.add(query_name)
     return alignments.loc[~alignments['query_name'].isin(discard), :]
+
+
+def check_multi_alignment(alignments):
+    """
+    Read has several alignments to one contig,
+    select best one in terms of res matches
+    """
+    select_indices = set()
+    for (read_name, contig_name), sub_aln in alignments.groupby(['query_name', 'target_name']):
+        if sub_aln.shape[0] > 1:
+            select_index = sub_aln.index[sub_aln['aln_num_match'] == sub_aln['aln_num_match'].max()]
+            assert select_index.size == 1, 'Several max aln_num_match entries: {}'.format(sub_aln)
+            select_indices = select_indices.union(set(select_index))
+        else:
+            select_indices = select_indices.union(set(sub_aln.index))
+    return alignments.loc[alignments.index.isin(select_indices), :]
+
 
 
 def main():
@@ -203,6 +223,11 @@ def main():
     df = check_local_alignment(df)
     discarded = last_num_records - df.shape[0]
     stats.append(('discard_local', discarded))
+    last_num_records = df.shape[0]
+
+    df = check_multi_alignment(df)
+    discarded = last_num_records - df.shape[0]
+    stats.append(('discard_multi', discarded))
 
     stats.append(('filtered_alignments', df.shape[0]))
 

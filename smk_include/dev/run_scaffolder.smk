@@ -323,7 +323,7 @@ def determine_read_contig_order(record):
     first in a Link line
     """
     contig_end = 'left'
-    # check simply to which end the alignment start is closer
+    # check simply to which end the alignment boundary is closer
     dist_left = int(record['aln_tstart'])
     dist_right = int(record['target_length']) - int(record['aln_tend'])
     if dist_right < dist_left:
