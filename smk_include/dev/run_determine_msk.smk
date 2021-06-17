@@ -183,8 +183,7 @@ def find_script_path(script_name, subfolder=''):
 
 rule selected_run_all:
     input:
-        'output/tagged_rutg/NA19239_rutg.ga_hg38_A0.ln_hg38_cen.tsv',
-        'output/tagged_rutg/NA24149_rutg.ga_hg38_A0.ln_hg38_cen.tsv'
+        'output/subset_graphs/NA24149.rutg.chrY.gfa',
 
 
 rule run_all:
@@ -984,12 +983,12 @@ def tag_linear_alignments(bed_path):
 
 rule tag_raw_unitigs_by_alignment:
     input:
-        ref_reads = 'output/alignments/reads_to_graph/GRCh38_chrY_MAP-TO_{sample}.rutg.gaf',
-        a0_reads = 'output/alignments/reads_to_graph/HG02982_A0_MAP-TO_{sample}.rutg.gaf',
-        lin_aln = 'output/alignments/tigs_to_reference/{sample}.rutg_MAP-TO_T2Tv11_38p13Ycen_chm13.filt.bed',
+        ref_reads = 'output/alignments/reads_to_graph/GRCh38_chrY_MAP-TO_{sample}.{tigs}.gaf',
+        a0_reads = 'output/alignments/reads_to_graph/HG02982_A0_MAP-TO_{sample}.{tigs}.gaf',
+        lin_aln = 'output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_T2Tv11_38p13Ycen_chm13.filt.bed',
         #cen_reads = 'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}.rutg.gaf'
     output:
-        'output/tagged_rutg/{sample}_rutg.ga_hg38_A0.ln_hg38_cen.tsv'
+        'output/tagged_{wildcards}/{sample}_{wildcards}.ga_hg38_A0.ln_hg38_cen.tsv'
     run:
         import pandas as pd
         import numpy as np
@@ -1011,7 +1010,7 @@ rule tag_raw_unitigs_by_alignment:
         num_columns = len(labels)
         df = pd.DataFrame(
             np.zeros((num_rows, num_columns), dtype=np.int8),
-            index=pd.Index(sorted(merged_tags), name='r_utg'),
+            index=pd.Index(sorted(merged_tags), name=wildcards.tigs),
             columns=labels
         )
 
@@ -1021,4 +1020,56 @@ rule tag_raw_unitigs_by_alignment:
         df.to_csv(output[0], sep='\t', index=True, header=True)
 
 
-        
+rule create_simple_table_gfasubset:
+    input:
+        'output/tagged_{tigs}/{sample}_{tigs}.ga_hg38_A0.ln_hg38_cen.tsv'
+    output:
+        'output/tagged_{tigs}/{sample}_{tigs}.ga_hg38_A0.ln_hg38_cen.simple.tsv'
+    run:
+        import pandas as pd
+
+        df = pd.read_csv(input[0], sep='\t', header=0, index_col=None)
+        df['reg_label'] = 'unset'
+        df['reg_color'] = 'unset'
+        df['overlap_bp'] = 1
+
+        select_cen = (df['ln_RP11CEN'] == 1)
+        df.loc[select_cen, 'reg_label'] = 'CEN'
+        df.loc[select_cen, 'reg_color'] = 'blue'
+
+        select_empty = df['reg_label'] == 'unset'
+        select_a0 = (df['ga_A0_tag'] == 1) | (df['ga_A0_path'] == 1)
+        select_a0 = select_a0 & select_empty
+        df.loc[select_a0, 'reg_label'] = 'A0'
+        df.loc[select_a0, 'reg_color'] = 'red'
+
+        select_empty = df['reg_label'] == 'unset'
+        df.loc[select_empty, 'reg_label'] = 'hg38'
+        df.loc[select_empty, 'reg_color'] = 'black'
+
+        assert (df['reg_label'] != 'unset').all(), 'Region missed'
+        df[[wildcards.tigs, 'reg_label', 'reg_color', 'overlap_bp']].to_csv(
+            output[0],
+            sep='\t',
+            header=False,
+            index=False
+        )
+
+
+rule subset_assembly_graph:
+    input:
+        table = 'output/tagged_{tigs}/{sample}_{tigs}.ga_hg38_A0.ln_hg38_cen.simple.tsv',
+        graph = gfa = select_assembly_input
+    output:
+        graph = 'output/subset_graphs/{sample}.{tigs}.chrY.gfa',
+        table = 'output/subset_graphs/{sample}.{tigs}.chrY.csv',
+    log:
+        'output/subset_graphs/{sample}.{tigs}.chrY.subset.log',
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_subset.py'),
+        comp_cov = 10
+    shell:
+        '{params.script_exec} --debug --input-gfa {input.graph} --simple-table --input-table {input.table} '
+        '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage {params.comp_cov} &> {log}'
