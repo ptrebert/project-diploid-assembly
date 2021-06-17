@@ -993,8 +993,8 @@ rule tag_raw_unitigs_by_alignment:
         import pandas as pd
         import numpy as np
 
-        ref_tags, ref_paths = tag_graph_alignment(input.ref_reads)
-        a0_tags, a0_paths = tag_graph_alignment(input.a0_reads)
+        ref_tags, ref_paths = tag_graph_alignments(input.ref_reads)
+        a0_tags, a0_paths = tag_graph_alignments(input.a0_reads)
         lin_tags, cen_tags = tag_linear_alignments(input.lin_aln)
 
         labels = [
