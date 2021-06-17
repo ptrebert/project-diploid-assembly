@@ -749,7 +749,8 @@ rule contig_to_linear_reference_alignment:
     output:
         'output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.psort.raw.bam'
     log:
-        'log/output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.psort.raw.log'
+        mm = 'log/output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.psort.raw.mm.log',
+        st = 'log/output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.psort.raw.st.log',
     benchmark:
         'rsrc/output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.mmap.rsrc'
     conda:
@@ -778,8 +779,8 @@ rule contig_to_linear_reference_alignment:
         'minimap2 -t {resources.align_threads} '
             '--secondary=no --eqx -Y -ax asm5 '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
-            '{input.ref_fasta} {input.contigs} 2> {log} | '
-            'samtools sort -@ {resources.sort_threads} -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output} ; '
+            '{input.ref_fasta} {input.contigs} 2> {log.mm} | '
+            'samtools sort -@ {resources.sort_threads} -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output} 2> {log.st} ; '
         'rm -rfd {params.tempdir}'
 
 
@@ -1015,7 +1016,7 @@ rule tag_raw_unitigs_by_alignment:
         )
 
         for tigs, label in zip(all_tagged, labels):
-            df[sorted(tigs), label] = 1
+            df.loc[df.index.isin(tigs), label] = 1
 
         df.to_csv(output[0], sep='\t', index=True, header=True)
 
