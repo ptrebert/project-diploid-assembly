@@ -181,15 +181,21 @@ def find_script_path(script_name, subfolder=''):
     return script_path
 
 
+rule selected_run_all:
+    input:
+        'output/tagged_rutg/NA19239_rutg.ga_hg38_A0.ln_hg38_cen.tsv',
+        'output/tagged_rutg/NA24149_rutg.ga_hg38_A0.ln_hg38_cen.tsv'
+
+
 rule run_all:
     input:
         # align male reference reads/sequences to sample assembly graphs
         # (if alignable, prefer raw unitg graph)
         expand(
             'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}.{tigs}.gaf',
-            male_reads=['GRCh38_chrY', 'HG02982_A0', 'RP11CENY_ONT'],
+            male_reads=['GRCh38_chrY', 'HG02982_A0'],  # 'RP11CENY_ONT' --- atm, seems impossible to ga these reads
             sample=MALE_SAMPLES,
-            tigs=['rutg', 'pctg']
+            tigs=['rutg', 'pctg', 'actg']
         ),
         # dump sample assembly graph tigs to BED and align tigs as reads to reference
         expand(
@@ -344,7 +350,7 @@ rule preprocess_rp11ceny_assembly:
 rule extend_male_t2t_assembly:
     input:
         cen = 'references/assemblies/MF741337.fasta',
-        ref = os.path.join(REFERENCE_FOLDER, 'T2Tv11_38p13Y_chm13.fasta')
+        ref = ancient(os.path.join(REFERENCE_FOLDER, 'T2Tv11_38p13Y_chm13.fasta'))
     output:
         fasta = os.path.join(REFERENCE_FOLDER, 'T2Tv11_38p13Ycen_chm13.fasta')
     shell:
@@ -636,7 +642,7 @@ rule extract_ktagged_reads:
 rule ktagged_reads_to_linear_reference_alignment:
     input:
         reads = 'output/ktagged_reads/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}.fastq.gz',
-        reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+        reference = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.fasta')),
         ref_repkmer = 'output/kmer_db_sample/{reference}.k{wmap_kmer}.{hpc}.rep-grt09998.txt',
     output:
         bam = 'output/alignments/ktagged_to_ref/{sample}.k{msk_kmer}.{hpc}.ktg-{share_type}_MAP-TO_{reference}.wmap-k{wmap_kmer}.psort.raw.bam'
@@ -729,7 +735,7 @@ rule convert_tigs_gfa_to_fasta:
         script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
     shell:
         '{params.script_exec} --gfa {input.gfa} --n-cpus {threads} '
-        '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats}'
+        '--out-fasta {output.fasta} --out-map {output.rc_map} --out-stats {output.stats} &> {log}'
 
 
 rule contig_to_linear_reference_alignment:
@@ -739,9 +745,11 @@ rule contig_to_linear_reference_alignment:
     """
     input:
         contigs = 'output/assemblies/{sample}.{tigs}.fasta',
-        ref_fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta')
+        ref_fasta = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.fasta'))
     output:
         'output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.psort.raw.bam'
+    log:
+        'log/output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.psort.raw.log'
     benchmark:
         'rsrc/output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_{reference}.mmap.rsrc'
     conda:
@@ -750,9 +758,9 @@ rule contig_to_linear_reference_alignment:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')'
     threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 32768 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 16384 + 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 36 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: int((32768 + 32768 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 24 * attempt,
         align_threads = config['num_cpu_high'] - config['num_cpu_low'],
         mem_sort_mb = 4096,
         sort_threads = config['num_cpu_low']
@@ -770,7 +778,7 @@ rule contig_to_linear_reference_alignment:
         'minimap2 -t {resources.align_threads} '
             '--secondary=no --eqx -Y -ax asm5 '
             '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" '
-            '{input.ref_fasta} {input.contigs} | '
+            '{input.ref_fasta} {input.contigs} 2> {log} | '
             'samtools sort -@ {resources.sort_threads} -m {resources.mem_sort_mb}M -T {params.tempdir} -O BAM > {output} ; '
         'rm -rfd {params.tempdir}'
 
@@ -933,3 +941,83 @@ rule strip_sequence_from_graph:
         '../../environment/conda/conda_biotools.yml'
     shell:
         'gfatools view -S {input} > {output}'
+
+
+def tag_graph_alignments(gaf_path):
+
+    translation_table = dict((i,i) for i in '1234567890')
+    translation_table['>'] = ' '
+    translation_table['<'] = ' '
+    translation_table = str.maketrans(translation_table)
+
+    tagged_tigs = set()
+    path_members = set()
+
+    with open(gaf_path, 'r') as gaf:
+        for line in gaf:
+            tig = line.split()[5]
+            tig = set(tig.translate(translation_table).split())
+            tagged_tigs = tagged_tigs.union(tig)
+            if len(tig) > 1:
+                path_members = path_members.union(tig)
+    return tagged_tigs, path_members
+
+    
+def tag_linear_alignments(bed_path):
+
+    tagged_tigs = set()
+    cen_tigs = set()
+    with open(bed_path, 'r') as bed:
+        for line in bed:
+            if not line.startswith('chrY'):
+                continue
+            parts = line.split()
+            chrom = parts[0]
+            tig = parts[3]
+            if chrom == 'chrYCEN':
+                cen_tigs.add(tig)
+            else:
+                tagged_tigs.add(tig)
+    return tagged_tigs, cen_tigs
+    
+
+rule tag_raw_unitigs_by_alignment:
+    input:
+        ref_reads = 'output/alignments/reads_to_graph/GRCh38_chrY_MAP-TO_{sample}.rutg.gaf',
+        a0_reads = 'output/alignments/reads_to_graph/HG02982_A0_MAP-TO_{sample}.rutg.gaf',
+        lin_aln = 'output/alignments/tigs_to_reference/{sample}.rutg_MAP-TO_T2Tv11_38p13Ycen_chm13.filt.bed',
+        #cen_reads = 'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}.rutg.gaf'
+    output:
+        'output/tagged_rutg/{sample}_rutg.ga_hg38_A0.ln_hg38_cen.tsv'
+    run:
+        import pandas as pd
+        import numpy as np
+
+        ref_tags, ref_paths = tag_graph_alignment(input.ref_reads)
+        a0_tags, a0_paths = tag_graph_alignment(input.a0_reads)
+        lin_tags, cen_tags = tag_linear_alignments(input.lin_aln)
+
+        labels = [
+            'ga_hg38_tag', 'ga_hg38_path',
+            'ga_A0_tag', 'ga_A0_path',
+            'ln_hg38', 'ln_RP11CEN'
+        ]
+
+        all_tagged = [ref_tags, ref_paths, a0_tags, a0_paths, lin_tags, cen_tags]
+
+        merged_tags = set().union(*all_tagged)
+        num_rows = len(merged_tags)
+        num_columns = len(labels)
+        df = pd.DataFrame(
+            np.zeros((num_rows, num_columns), dtype=np.int8),
+            index=pd.Index(sorted(merged_tags), name='r_utg'),
+            columns=labels
+        )
+
+        for tigs, label in zip(all_tagged, labels):
+            df[sorted(tigs), label] = 1
+
+        df.to_csv(output[0], sep='\t', index=True, header=True)
+
+
+        
