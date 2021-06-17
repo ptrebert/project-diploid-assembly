@@ -129,6 +129,10 @@ def main():
 
     fasta_buffer, rc_map, stats = convert_gfa_to_fasta(args.gfa, args.n_cpus)
 
+    abs_fasta_path = os.path.abspath(args.out_fasta)
+    abs_fasta_folder = os.path.dirname(abs_fasta_path)
+    os.makedirs(abs_fasta_folder, exist_ok=True)
+
     with open(args.out_fasta, 'w') as dump:
         _ = dump.write(fasta_buffer.getvalue())
         
