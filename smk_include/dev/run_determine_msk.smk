@@ -728,8 +728,8 @@ rule convert_tigs_gfa_to_fasta:
         sample = '(' + '|'.join(MALE_SAMPLES) + ')',
     threads: config['num_cpu_low']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py')
