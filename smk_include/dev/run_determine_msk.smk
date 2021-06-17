@@ -988,7 +988,7 @@ rule tag_raw_unitigs_by_alignment:
         lin_aln = 'output/alignments/tigs_to_reference/{sample}.{tigs}_MAP-TO_T2Tv11_38p13Ycen_chm13.filt.bed',
         #cen_reads = 'output/alignments/reads_to_graph/{male_reads}_MAP-TO_{sample}.rutg.gaf'
     output:
-        'output/tagged_{wildcards}/{sample}_{wildcards}.ga_hg38_A0.ln_hg38_cen.tsv'
+        'output/tagged_{tigs}/{sample}_{tigs}.ga_hg38_A0.ln_hg38_cen.tsv'
     run:
         import pandas as pd
         import numpy as np
@@ -1059,12 +1059,12 @@ rule create_simple_table_gfasubset:
 rule subset_assembly_graph:
     input:
         table = 'output/tagged_{tigs}/{sample}_{tigs}.ga_hg38_A0.ln_hg38_cen.simple.tsv',
-        graph = gfa = select_assembly_input
+        graph = select_assembly_input
     output:
         graph = 'output/subset_graphs/{sample}.{tigs}.chrY.gfa',
         table = 'output/subset_graphs/{sample}.{tigs}.chrY.csv',
     log:
-        'output/subset_graphs/{sample}.{tigs}.chrY.subset.log',
+        'log/output/subset_graphs/{sample}.{tigs}.chrY.subset.log',
     conda:
         '../../environment/conda/conda_pyscript.yml'
     params:
