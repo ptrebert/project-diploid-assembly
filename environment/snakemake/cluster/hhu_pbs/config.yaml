@@ -4,7 +4,7 @@ cluster: >-
   qsub
   -A {cluster.account} -l walltime={cluster.run_hrs}:{cluster.run_min}:00
   -l select=1:ncpus={cluster.cores}:mem={cluster.mem_mb}mb{cluster.arch}
-  -N {cluster.name} -o {cluster.output} -e {cluster.error} -q HiMem
+  -N {cluster.name} -o {cluster.output} -e {cluster.error}
 cluster-config: environment/snakemake/cluster/hhu_pbs/hilbert_cluster.json
 local-cores: 1
 jobs: 100

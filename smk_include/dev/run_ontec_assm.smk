@@ -536,7 +536,7 @@ rule hifiasm_hifi_ontec_assembly:
     benchmark:
         'rsrc/output/assembly/layout/{sample}_hifi-ontec_{size_fraction}.hifiasm' + '.t{}.rsrc'.format(config['num_cpu_max']) 
     conda:
-        '../environment/conda/conda_biotools.yml'       
+        '../../environment/conda/conda_biotools.yml'       
     threads: config['num_cpu_max']
     resources:
         mem_total_mb = lambda wildcards, attempt: set_hifiasm_memory(wildcards, attempt, RUN_SYSTEM),
