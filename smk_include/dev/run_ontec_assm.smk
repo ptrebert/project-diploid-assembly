@@ -153,7 +153,7 @@ def set_mbg_memory(wildcards, attempt):
     memory reqs for MBG are unpredictable...
     """
     sample = wildcards.sample
-    kmer_size = wildcards.kmer
+    kmer_size = int(wildcards.kmer)
 
     memory_req = None
     gb_512 = 524288
