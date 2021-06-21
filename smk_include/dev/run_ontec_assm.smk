@@ -1,4 +1,4 @@
-localrules: master
+localrules: run_all
 
 # config values data
 SAMPLES = config['samples']
@@ -36,6 +36,20 @@ ALL_ONT_FILES = {
         'HG00733_1_Guppy_4.2.2_prom',
         'HG00733_2_Guppy_4.2.2_prom',
         'HG00733_3_Guppy_4.2.2_prom'
+    ],
+}
+
+ALL_ONT_INFIX = {
+    'HG002': [
+        'giab_ULfastqs_guppy324',
+        'ONT_PAD64459_Guppy32',
+    ],
+
+    'HG00733': [
+        'EEE_ONT',
+        '1_Guppy_4.2.2_prom',
+        '2_Guppy_4.2.2_prom',
+        '3_Guppy_4.2.2_prom'
     ],
 }
 
@@ -78,18 +92,22 @@ rule run_all:
     input:
         expand(
             'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
-            filename=ALL_ONT_FILES['HG00733'],
+            zip,
+            filename=ALL_ONT_FILES['HG00733'] * len(MBG_KMER_SIZE),
             kmer=MBG_KMER_SIZE * 4,
             window=MBG_WINDOW_SIZE * 4,
             minscore=[GA_MIN_SCORE] * 4 * len(MBG_KMER_SIZE)
         ),
         expand(
             'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
-            filename=ALL_ONT_FILES['HG002'],
+            zip,
+            filename=ALL_ONT_FILES['HG002'] * len(MBG_KMER_SIZE),
             kmer=MBG_KMER_SIZE * 2,
             window=MBG_WINDOW_SIZE * 2,
             minscore=[GA_MIN_SCORE] * 2 * len(MBG_KMER_SIZE)
-        )
+        ),
+        'output/assembly/layout/HG002_hifi-ontec_geq50000/HG002_hifi-ontec_geq50000.p_utg.gfa',
+        'output/assembly/layout/HG00733_hifi-ontec_geq50000/HG00733_hifi-ontec_geq50000.p_utg.gfa',
 
 
 def select_raw_ont_files(wildcards):
@@ -131,11 +149,37 @@ rule clean_hpg_ont:
 
 
 def set_mbg_memory(wildcards, attempt):
+    """
+    memory reqs for MBG are unpredictable...
+    """
+    sample = wildcards.sample
+    kmer_size = wildcards.kmer
 
-    if int(wildcards.kmer) < 1000:
-        return config['memory']['MBG_high'][wildcards.sample] * attempt
+    memory_req = None
+    gb_512 = 524288
+    gb_256 = 262144
+    tb_3 = 2969600
+
+    if sample == 'HG002':
+        if kmer_size < 1000:
+            memory_req = gb_512 * attempt
+        else:
+            memory_req = gb_256 * attempt
+    elif sample == 'HG00733':
+        if kmer_size < 1000:
+            if attempt > 1:
+                raise ValueError('MBG memory explosion: {}'.format(str(wildcards)))
+            memory_req = tb_3
+        else:
+            if attempt > 1:
+                memory_req = gb_512
+            else:
+                memory_req = gb_256
     else:
-        return config['memory']['MBG_low'][wildcards.sample] * attempt
+        raise ValueError(str(wildcards))
+
+    assert memory_req is not None
+    return memory_req
 
 
 def select_hifi_input(wildcards):
@@ -193,8 +237,8 @@ rule clean_mbg_graph:
 
 rule extract_roi_sequences:
     input:
-        ref_fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
-        bed = os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.bed'),
+        ref_fasta = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.fasta')),
+        bed = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.bed')),
     output:
         fasta = os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.fasta'),
     conda:
@@ -209,7 +253,7 @@ rule extract_roi_sequences:
 rule align_roi_sequences_to_mbg:
     input:
         graph = 'output/mbg_hifi/{sample}_HiFi.mbg-k{kmer}-w{window}.gfa',
-        reads = os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.fasta'),
+        reads = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.fasta')),
     output:
         gaf = 'output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.mbg-k{kmer}-w{window}.gaf',
     log:
@@ -460,47 +504,47 @@ def set_hifiasm_memory(wildcards, attempt, run_system):
     if run_system == 'valet':
         return MEMORY_HIFIASM
     else:
-        return MEMORY_HIFIASM * 2  # ~3 TB
+        return MEMORY_HIFIASM
 
 
-# rule hifiasm_hifi_ontec_assembly:
-#     """
-#     """
-#     input:
-#         hifi_reads = select_hifi_input,
-#         ontec_reads = expand(
-#             'output/ont_ec_subsets/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.geq{{size_fraction}}.fa.gz',
-#             zip,
-#             filename=ONT_ALL_FILES * len(MBG_KMER_SIZE),
-#             kmer=MBG_KMER_SIZE * len(ONT_ALL_FILES),
-#             window=MBG_WINDOW_SIZE * len(ONT_ALL_FILES),
-#             minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE) * len(ONT_ALL_FILES)
-#         )
-#     output:
-#         primary_unitigs = 'output/assembly/layout/{}_hifi-ontec_geq{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.p_utg.gfa'.format(SAMPLE, SAMPLE),
-#         primary_contigs = 'output/assembly/layout/{}_hifi-ontec_geq{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.p_ctg.gfa'.format(SAMPLE, SAMPLE),
-#         raw_unitigs = 'output/assembly/layout/{}_hifi-ontec_geq{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}.r_utg.gfa'.format(SAMPLE, SAMPLE),
-#         discard = multiext(
-#             'output/assembly/layout/{}_hifi-ontec_geq{{size_fraction}}/{}_hifi-ontec_geq{{size_fraction}}'.format(SAMPLE, SAMPLE),
-#             '.a_ctg.gfa', '.a_ctg.noseq.gfa',
-#             '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
-#             '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
-#             '.r_utg.noseq.gfa'
-#         )
-#     log:
-#         hifiasm = 'log/output/assembly/layout/{}_hifi-ontec_{{size_fraction}}.hifiasm.log'.format(SAMPLE)
-#     benchmark:
-#         'rsrc/output/assembly/layout/{}_hifi-ontec_{{size_fraction}}.hifiasm'.format(SAMPLE) + '.t{}.rsrc'.format(config['num_cpu_max']) 
-#     conda:
-#         '../environment/conda/conda_biotools.yml'       
-#     threads: config['num_cpu_max']
-#     resources:
-#         mem_total_mb = lambda wildcards, attempt: set_hifiasm_memory(wildcards, attempt, RUN_SYSTEM),
-#         runtime_hrs = lambda wildcards, attempt: 52 + 52 * attempt
-#     params:
-#         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
-#     shell:
-#         'hifiasm -o {params.prefix} -t {threads} --primary {input.hifi_reads} {input.ontec_reads} &> {log.hifiasm}'
+rule hifiasm_hifi_ontec_assembly:
+    """
+    """
+    input:
+        hifi_reads = select_hifi_input,
+        ontec_reads = lambda wildcards: expand(
+            'output/ont_ec_subsets/{{sample}}_{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.clip-ec.geq{{size_fraction}}.fa.gz',
+            zip,
+            filename=ALL_ONT_INFIX[wildcards.sample] * len(MBG_KMER_SIZE),
+            kmer=MBG_KMER_SIZE * len(ALL_ONT_INFIX[wildcards.sample]),
+            window=MBG_WINDOW_SIZE * len(ALL_ONT_INFIX[wildcards.sample]),
+            minscore=[GA_MIN_SCORE] * len(MBG_KMER_SIZE) * len(ALL_ONT_INFIX[wildcards.sample])
+        )
+    output:
+        primary_unitigs = 'output/assembly/layout/{sample}_hifi-ontec_geq{size_fraction}/{sample}_hifi-ontec_geq{size_fraction}.p_utg.gfa',
+        primary_contigs = 'output/assembly/layout/{sample}_hifi-ontec_geq{size_fraction}/{sample}_hifi-ontec_geq{size_fraction}.p_ctg.gfa',
+        raw_unitigs = 'output/assembly/layout/{sample}_hifi-ontec_geq{size_fraction}/{sample}_hifi-ontec_geq{size_fraction}.r_utg.gfa',
+        discard = multiext(
+            'output/assembly/layout/{sample}_hifi-ontec_geq{size_fraction}/{sample}_hifi-ontec_geq{size_fraction}',
+            '.a_ctg.gfa', '.a_ctg.noseq.gfa',
+            '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
+            '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
+            '.r_utg.noseq.gfa'
+        )
+    log:
+        hifiasm = 'log/output/assembly/layout/{sample}_hifi-ontec_geq{size_fraction}.hifiasm.log'
+    benchmark:
+        'rsrc/output/assembly/layout/{sample}_hifi-ontec_{size_fraction}.hifiasm' + '.t{}.rsrc'.format(config['num_cpu_max']) 
+    conda:
+        '../environment/conda/conda_biotools.yml'       
+    threads: config['num_cpu_max']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: set_hifiasm_memory(wildcards, attempt, RUN_SYSTEM),
+        runtime_hrs = lambda wildcards, attempt: 52 + 52 * attempt
+    params:
+        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
+    shell:
+        'hifiasm -o {params.prefix} -t {threads} --primary {input.hifi_reads} {input.ontec_reads} &> {log.hifiasm}'
 
 
 rule count_reference_kmers:
@@ -510,7 +554,7 @@ rule count_reference_kmers:
     19: assm-to-ref mapping
     """
     input:
-        fasta = os.path.join(REFERENCE_FOLDER, '{reference}.fasta'),
+        fasta = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.fasta')),
     output:
         kmer_db = directory(os.path.join(REFERENCE_FOLDER, '{reference}.k{kmer_size}.db/')),
         rep_kmer = os.path.join(REFERENCE_FOLDER, '{reference}.k{kmer_size}.rep-grt09998.txt')
@@ -663,7 +707,7 @@ rule cache_positional_coverages:
 
 rule compute_binned_coverage:
     input:
-        reference = os.path.join(REFERENCE_FOLDER, '{reference}.fasta.fai'),
+        reference = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.fasta.fai')),
         cache_ok = 'output/read_align_cov/{reads}_MAP-TO_{reference}.k{kmer}.cache.chk'
     output:
         'output/binned_coverage/{reads}_MAP-TO_{reference}.k{kmer}.{binsize}.{chrom}.tsv'
