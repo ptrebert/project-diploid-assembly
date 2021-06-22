@@ -39,7 +39,7 @@ def collect_bam_only():
             continue
         bam_files = fnm.filter(files, '*.bam')
         filenames.extend([fn.rsplit('.', 1)[0] for fn in bam_files])
-        gz_fastq_files = [os.path.join(root, f.rsplit('.', 1)[0] + '.fastq.gz') for f in fastq_files]
+        gz_fastq_files = [os.path.join(root, f.rsplit('.', 1)[0] + '.fastq.gz') for f in bam_files]
         filepaths.extend(gz_fastq_files)
 
     constraint = '(' + '|'.join(filenames) + ')'
