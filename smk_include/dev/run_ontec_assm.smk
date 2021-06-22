@@ -139,7 +139,7 @@ rule clean_hpg_ont:
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt ** attempt
+        runtime_hrs = lambda wildcards, attempt: 35 * attempt if 'HG002' in wildcards.filename else attempt * attempt
     params:
         pigz_cpu = lambda wildcards: int(config['num_cpu_medium']) // 2
     shell:
@@ -195,6 +195,8 @@ rule build_hifi_read_graph:
     MBG -i {input} -o {output} -t {threads} --blunt -k {wildcards.kmer} -w {wildcards.window} &> {log}
 
     MBG v1.04+ contains fix for overlap-longer-than-nodes error
+
+    MBG v1.05+ has better mem management, should limit <100G
     """
     input:
         select_hifi_input
@@ -208,8 +210,8 @@ rule build_hifi_read_graph:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = set_mbg_memory,
-        runtime_hrs = lambda wildcards, attempt: attempt + attempt * attempt if int(wildcards.kmer) < 1000 else 47
+        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt * attempt,
+        runtime_hrs = lambda wildcards, attempt: 5 * attempt
     shell:
         'MBG -i {input} -o {output} -t {threads} -k {wildcards.kmer} -w {wildcards.window} &> {log}'
 
