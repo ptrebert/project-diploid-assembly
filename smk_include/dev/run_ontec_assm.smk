@@ -162,7 +162,9 @@ def set_mbg_memory(wildcards, attempt):
 
     if sample == 'HG002':
         if kmer_size < 1000:
-            memory_req = gb_512 * attempt
+            if attempt > 1:
+                raise ValueError('MBG memory explosion: {}'.format(str(wildcards)))
+            memory_req = tb_3
         else:
             memory_req = gb_256 * attempt
     elif sample == 'HG00733':
@@ -207,7 +209,7 @@ rule build_hifi_read_graph:
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = set_mbg_memory,
-        runtime_hrs = lambda wildcards, attempt: attempt + attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt + attempt * attempt if int(wildcards.kmer) < 1000 else 47
     shell:
         'MBG -i {input} -o {output} -t {threads} -k {wildcards.kmer} -w {wildcards.window} &> {log}'
 
@@ -327,7 +329,7 @@ rule ont_error_correction:
         'GraphAligner -g {input.graph} -f {input.reads} '
             '-x dbg -t {threads} '
             '--min-alignment-score {wildcards.minscore} --multimap-score-fraction 1 '
-            '--corrected-clipped-out {output.ec_reads_clip} --corrected-out {output.ec_reads_raw}'
+            '--corrected-clipped-out {output.ec_reads_clip} --corrected-out {output.ec_reads_raw} '
             '-a {output.gaf} &> {log}'
 
 
