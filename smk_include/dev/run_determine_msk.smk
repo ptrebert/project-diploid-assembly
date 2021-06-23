@@ -181,9 +181,10 @@ def find_script_path(script_name, subfolder=''):
     return script_path
 
 
-rule selected_run_all:
+rule run_hic_assemblies:
     input:
-        'output/subset_graphs/NA24149.rutg.chrY.gfa',
+        'output/assemblies/layout/hifi_hic/HG00731.done',
+        'output/assemblies/layout/hifi_hic/HG002.done'
 
 
 rule run_all:
@@ -1073,3 +1074,55 @@ rule subset_assembly_graph:
     shell:
         '{params.script_exec} --debug --input-gfa {input.graph} --simple-table --input-table {input.table} '
         '--output-gfa {output.graph} --output-table {output.table} --component-tag-coverage {params.comp_cov} &> {log}'
+
+
+rule hifiasm_hic_assembly_hg002:
+    """
+    """
+    input:
+        hifi_reads = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/clean_hifi_reads/NA24385_hpg_pbsq2-ccs_1000.fastq.gz',
+        hic_reads1 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/HG002/HG002_comb_R1_1.fastq.gz',
+        hic_reads2 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/HG002/HG002_comb_R2_2.fastq.gz',
+    output:
+        assm_done = 'output/assemblies/layout/hifi_hic/HG002.done'
+    log:
+        hifiasm = 'log/output/assemblies/layout/hifi_hic/HG002.hifiasm.log'
+    benchmark:
+        'rsrc/output/assemblies/layout/hifi_hic/HG002.hifiasm.t24.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'       
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 + 83968 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    params:
+        prefix = lambda wildcards, output: output.assm_done.rsplit('.', 1)[0],
+    shell:
+        'hifiasm -o {params.prefix} -t {threads} --h1 {input.hic_reads1} --h2 {input.hic_reads2} {input.hifi_reads} &> {log.hifiasm} '
+        ' && touch {output.assm_done}'
+
+
+rule hifiasm_hic_assembly_hg00731:
+    """
+    """
+    input:
+        hifi_reads = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/clean_hifi_reads/HG00731_hgsvc_pbsq2-ccs_1000.fastq.gz',
+        hic_reads1 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/HG00731/HG00731_biosamples_1-2_comb_1.fastq.gz',
+        hic_reads2 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/HG00731/HG00731_biosamples_1-2_comb_2.fastq.gz',
+    output:
+        assm_done = 'output/assemblies/layout/hifi_hic/HG00731.done'
+    log:
+        hifiasm = 'log/output/assemblies/layout/hifi_hic/HG00731.hifiasm.log'
+    benchmark:
+        'rsrc/output/assemblies/layout/hifi_hic/HG00731.hifiasm.t24.rsrc'
+    conda:
+        '../../environment/conda/conda_biotools.yml'       
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 + 83968 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    params:
+        prefix = lambda wildcards, output: output.assm_done.rsplit('.', 1)[0],
+    shell:
+        'hifiasm -o {params.prefix} -t {threads} --h1 {input.hic_reads1} --h2 {input.hic_reads2} {input.hifi_reads} &> {log.hifiasm} '
+        ' && touch {output.assm_done}'
