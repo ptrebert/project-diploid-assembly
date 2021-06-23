@@ -70,13 +70,15 @@ memory:
 params:
   MBG:
     kmer:
-      - 501
+      - 1001
       - 2001
       - 5001
+      - 8001
     window:
-      - 100
+      - 500
       - 1000
       - 2000
+      - 4000
   GraphAligner:
     minscore: 10000
   SizeFractions:

@@ -93,21 +93,21 @@ rule run_all:
         expand(
             'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
             zip,
-            filename=ALL_ONT_FILES['HG00733'] * len(MBG_KMER_SIZE),
-            kmer=MBG_KMER_SIZE * 4,
-            window=MBG_WINDOW_SIZE * 4,
-            minscore=[GA_MIN_SCORE] * 4 * len(MBG_KMER_SIZE)
-        ),
-        expand(
-            'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
-            zip,
             filename=ALL_ONT_FILES['HG002'] * len(MBG_KMER_SIZE),
             kmer=MBG_KMER_SIZE * 2,
             window=MBG_WINDOW_SIZE * 2,
             minscore=[GA_MIN_SCORE] * 2 * len(MBG_KMER_SIZE)
         ),
         'output/assembly/layout/HG002_hifi-ontec_geq50000/HG002_hifi-ontec_geq50000.p_utg.gfa',
-        'output/assembly/layout/HG00733_hifi-ontec_geq50000/HG00733_hifi-ontec_geq50000.p_utg.gfa',
+        # 'output/assembly/layout/HG00733_hifi-ontec_geq50000/HG00733_hifi-ontec_geq50000.p_utg.gfa',
+        # expand(
+        #     'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
+        #     zip,
+        #     filename=ALL_ONT_FILES['HG00733'] * len(MBG_KMER_SIZE),
+        #     kmer=MBG_KMER_SIZE * 4,
+        #     window=MBG_WINDOW_SIZE * 4,
+        #     minscore=[GA_MIN_SCORE] * 4 * len(MBG_KMER_SIZE)
+        # ),
 
 
 def select_raw_ont_files(wildcards):
@@ -138,13 +138,13 @@ rule clean_hpg_ont:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
         runtime_hrs = lambda wildcards, attempt: 35 * attempt if 'HG002' in wildcards.filename else attempt * attempt
     params:
-        pigz_cpu = lambda wildcards: int(config['num_cpu_medium']) // 2
+        pigz_cpu = lambda wildcards: int(config['num_cpu_medium']) - 2
     shell:
-        'pigz -p {params.pigz_cpu} -c -d {input.fastq} | '
-        'seqtk seq -S -A -C {input.fastq} | '
+        'pigz -p 2 -c -d {input.fastq} | '
+        'seqtk seq -S -A -C | '
         'pigz -p {params.pigz_cpu} > {output.fasta}'
 
 
@@ -210,7 +210,7 @@ rule build_hifi_read_graph:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 + 32768 * attempt * attempt,
+        mem_total_mb = lambda wildcards, attempt: 65536 + 32768 * attempt,
         runtime_hrs = lambda wildcards, attempt: 5 * attempt
     shell:
         'MBG -i {input} -o {output} -t {threads} -k {wildcards.kmer} -w {wildcards.window} &> {log}'
