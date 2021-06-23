@@ -33,14 +33,19 @@ def collect_bam_only():
     filenames = []
 
     for root, dirs, files in os.walk(HIFI_ROOT_PATH, followlinks=False):
-        fastq_files = fnm.filter(files, '*.fastq*')
-        if fastq_files:
-            # skip over dirs containing FASTQ files
-            continue
+        
         bam_files = fnm.filter(files, '*.bam')
-        filenames.extend([fn.rsplit('.', 1)[0] for fn in bam_files])
-        gz_fastq_files = [os.path.join(root, f.rsplit('.', 1)[0] + '.fastq.gz') for f in bam_files]
-        filepaths.extend(gz_fastq_files)
+        if not bam_files:
+            continue
+        # check if conversion already happened
+        fastq_files = fnm.filter(files, '*.fastq.gz')
+
+        bam_prefix = set([b.rsplit('.', 1)[0] for b in bam_files])
+        fastq_prefix = set([f.rsplit('.', 2)[0] for f in fastq_files])
+
+        bam_prefix = bam_prefix - fastq_prefix
+        filenames.extend(sorted(bam_prefix))
+        filepaths.extend(sorted(os.path.join(root, b + '.fastq.gz') for b in bam_prefix))
 
     constraint = '(' + '|'.join(filenames) + ')'
 
@@ -70,7 +75,7 @@ rule convert_bam_to_fastq:
     params:
         out_prefix = lambda wildcards, output: output.fastq.rsplit('.', 2)[0]
     resources:
-        runtime_hrs = lambda wildcards, attempt: 11 * attempt
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
     shell:
         'bam2fastq -c 6 -o {params.out_prefix} {input.bam}'
 
