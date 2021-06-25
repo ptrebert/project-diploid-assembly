@@ -47,7 +47,7 @@ dependencies:
   - wtdbg=2.5
   - flye=2.8.3
   - canu=2.1.1
-  - hifiasm=0.15.2
+  - hifiasm=0.15.4
   - yak=0.1
   - racon=1.4.10
   - lighter=1.1.2
