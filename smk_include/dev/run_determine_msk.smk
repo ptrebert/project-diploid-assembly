@@ -1095,8 +1095,8 @@ rule hifiasm_hic_assembly_hg002:
         '../../environment/conda/conda_biotools.yml'       
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 + 83968 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+        mem_total_mb = lambda wildcards, attempt: 90112 + 90112 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 35 * attempt
     params:
         prefix = lambda wildcards, output: output.assm_done.rsplit('.', 1)[0],
     shell:
@@ -1123,8 +1123,8 @@ rule hifiasm_hic_assembly:
         '../../environment/conda/conda_biotools.yml'       
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 + 83968 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+        mem_total_mb = lambda wildcards, attempt: 90112 + 90112 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 35 * attempt
     params:
         prefix = lambda wildcards, output: output.assm_done.rsplit('.', 1)[0],
     shell:
