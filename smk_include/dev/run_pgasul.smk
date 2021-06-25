@@ -11,11 +11,15 @@ rule run_all:
         'output/alignments/ont_to_mbg_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
 
 
-rule ont_error_correction:
+wildcard_constraints:
+    sample = 'NA24385'
+
+
+rule ont_to_graph_alignment:
     """
     """
     input:
-        graph = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.gfa,
+        graph = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.gfa',
         reads = 'input/ont/{sample}_{readset}.fa.gz',
     output:
         gaf = 'output/alignments/ont_to_{graph_type}_graph/{sample}_{readset}_MAP-TO_{graph}.{tigs}.gaf',
