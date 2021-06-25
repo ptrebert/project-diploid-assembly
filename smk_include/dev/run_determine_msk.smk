@@ -183,8 +183,10 @@ def find_script_path(script_name, subfolder=''):
 
 rule run_hic_assemblies:
     input:
-        'output/assemblies/layout/hifi_hic/HG00731.done',
-        'output/assemblies/layout/hifi_hic/HG002.done'
+        'output/assemblies/layout/hifi_hic/HG00731/HG00731.done',
+        'output/assemblies/layout/hifi_hic/HG00512/HG00512.done',
+        'output/assemblies/layout/hifi_hic/NA19239/NA19239.done',
+        'output/assemblies/layout/hifi_hic/HG002/HG002.done'
 
 
 rule run_all:
@@ -1084,7 +1086,7 @@ rule hifiasm_hic_assembly_hg002:
         hic_reads1 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/HG002/HG002_comb_R1_1.fastq.gz',
         hic_reads2 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/HG002/HG002_comb_R2_2.fastq.gz',
     output:
-        assm_done = 'output/assemblies/layout/hifi_hic/HG002.done'
+        assm_done = 'output/assemblies/layout/hifi_hic/HG002/HG002.done'
     log:
         hifiasm = 'log/output/assemblies/layout/hifi_hic/HG002.hifiasm.log'
     benchmark:
@@ -1098,23 +1100,25 @@ rule hifiasm_hic_assembly_hg002:
     params:
         prefix = lambda wildcards, output: output.assm_done.rsplit('.', 1)[0],
     shell:
-        'hifiasm -o {params.prefix} -t {threads} --h1 {input.hic_reads1} --h2 {input.hic_reads2} {input.hifi_reads} &> {log.hifiasm} '
+        'hifiasm -o {params.prefix} -t {threads} --l-msjoin 500000 --h1 {input.hic_reads1} --h2 {input.hic_reads2} {input.hifi_reads} &> {log.hifiasm} '
         ' && touch {output.assm_done}'
 
 
-rule hifiasm_hic_assembly_hg00731:
+rule hifiasm_hic_assembly:
     """
     """
     input:
-        hifi_reads = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/clean_hifi_reads/HG00731_hgsvc_pbsq2-ccs_1000.fastq.gz',
-        hic_reads1 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/HG00731/HG00731_biosamples_1-2_comb_1.fastq.gz',
-        hic_reads2 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/HG00731/HG00731_biosamples_1-2_comb_2.fastq.gz',
+        hifi_reads = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/clean_hifi_reads/{sample}_hgsvc_pbsq2-ccs_1000.fastq.gz',
+        hic_reads1 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/{sample}/{sample}_HiC_1.fastq.gz',
+        hic_reads2 = '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/HiC/{sample}/{sample}_HiC_2.fastq.gz',
     output:
-        assm_done = 'output/assemblies/layout/hifi_hic/HG00731.done'
+        assm_done = 'output/assemblies/layout/hifi_hic/{sample}/{sample}.done'
     log:
-        hifiasm = 'log/output/assemblies/layout/hifi_hic/HG00731.hifiasm.log'
+        hifiasm = 'log/output/assemblies/layout/hifi_hic/{sample}.hifiasm.log'
     benchmark:
-        'rsrc/output/assemblies/layout/hifi_hic/HG00731.hifiasm.t24.rsrc'
+        'rsrc/output/assemblies/layout/hifi_hic/{sample}.hifiasm.t24.rsrc'
+    wildcard_constraints:
+        sample = '(HG00512|HG00731|NA19239)'
     conda:
         '../../environment/conda/conda_biotools.yml'       
     threads: config['num_cpu_high']
@@ -1124,5 +1128,5 @@ rule hifiasm_hic_assembly_hg00731:
     params:
         prefix = lambda wildcards, output: output.assm_done.rsplit('.', 1)[0],
     shell:
-        'hifiasm -o {params.prefix} -t {threads} --h1 {input.hic_reads1} --h2 {input.hic_reads2} {input.hifi_reads} &> {log.hifiasm} '
+        'hifiasm -o {params.prefix} -t {threads} --l-msjoin 500000 --h1 {input.hic_reads1} --h2 {input.hic_reads2} {input.hifi_reads} &> {log.hifiasm} '
         ' && touch {output.assm_done}'
