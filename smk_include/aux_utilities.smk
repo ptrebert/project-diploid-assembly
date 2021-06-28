@@ -520,6 +520,7 @@ def load_saarclust_params(wildcards, input, use_case):
         'concat.fasta': None,
         'remove.always.WC': 'TRUE',
         'mask.regions': 'FALSE',
+        'max.cluster.length.mbp': '250'
     }
     if use_case == 'haploid':
         parameter_set['concat.fasta'] = 'FALSE'
@@ -577,6 +578,9 @@ def load_saarclust_params(wildcards, input, use_case):
 
     if pipeline_version < 9:
         del parameter_set['min.mapq']
+    
+    if pipeline_version < 14:
+        del parameter_set['max.cluster.length.mbp']
 
     config_rows = ['[SaaRclust]'] + ['{} = {}'.format(k, parameter_set[k]) for k in sorted(parameter_set.keys())]
 
