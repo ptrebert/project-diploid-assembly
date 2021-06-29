@@ -99,6 +99,7 @@ rule run_all:
             minscore=[GA_MIN_SCORE] * 2 * len(MBG_KMER_SIZE)
         ),
         'output/assembly/layout/HG002_hifi-ontec_geq50000/HG002_hifi-ontec_geq50000.p_utg.gfa',
+        'output/assembly/layout/HG002_hifi-ontec_geq0/HG002_hifi-ontec_geq0.p_utg.gfa',
         # 'output/assembly/layout/HG00733_hifi-ontec_geq50000/HG00733_hifi-ontec_geq50000.p_utg.gfa',
         # expand(
         #     'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
@@ -210,8 +211,8 @@ rule build_hifi_read_graph:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 65536 + 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 5 * attempt
+        mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
     shell:
         'MBG -i {input} -o {output} -t {threads} -k {wildcards.kmer} -w {wildcards.window} &> {log}'
 

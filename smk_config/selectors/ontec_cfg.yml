@@ -72,13 +72,13 @@ params:
     kmer:
       - 1001
       - 2001
+      - 3001
       - 5001
-      - 8001
     window:
       - 500
       - 1000
+      - 1500
       - 2000
-      - 4000
   GraphAligner:
     minscore: 10000
   SizeFractions:
