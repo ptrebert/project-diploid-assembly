@@ -8,9 +8,14 @@ if (is.element('StrandPhaseR', installed.packages()[,1])) {
 args = commandArgs(trailingOnly=TRUE)
 
 git.commit = args[1]
+git.repo = args[2]
+
+if (is.na(git.repo)) {
+    git.repo = "git://github.com/daewoooo/StrandPhaseR.git"
+}
 
 devtools::install_git(
-    "git://github.com/daewoooo/StrandPhaseR.git",
+    git.repo,
     ref = git.commit,
     dependencies=FALSE,
     upgrade=FALSE

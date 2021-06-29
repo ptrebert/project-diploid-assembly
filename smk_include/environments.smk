@@ -175,12 +175,13 @@ rule install_rlib_saarclust:
         '../environment/conda/conda_rscript.yml'
     params:
         script_exec = lambda wildcards: find_script_path('install_saarclust.R'),
-        version = config['git_commit_saarclust']
+        version = config['git_commit_saarclust'],
+        repo = config.get('git_repo_saarclust', '')
     resources:
         mem_total_mb = 4096,
         mem_per_cpu_mb = 4096
     shell:
-        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
+        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} {params.repo} &> {log}'
 
 
 if int(config['git_commit_version']) < 8:
@@ -207,9 +208,10 @@ rule install_rlib_breakpointr:
         mem_per_cpu_mb = 4096
     params:
         script_exec = lambda wildcards: find_script_path('install_breakpointr.R'),
-        version = BREAKPOINTR_VERSION
+        version = BREAKPOINTR_VERSION,
+        repo = config.get('git_repo_breakpointr', '')
     shell:
-        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
+        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} {params.repo} &> {log}'
 
 
 rule install_rlib_strandphaser:
@@ -226,9 +228,10 @@ rule install_rlib_strandphaser:
         mem_per_cpu_mb = 4096
     params:
         script_exec = lambda wildcards: find_script_path('install_strandphaser.R'),
-        version = config['git_commit_strandphaser']
+        version = config['git_commit_strandphaser'],
+        repo = config.get('git_repo_strandphaser', '')
     shell:
-        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} &> {log}'
+        'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} {params.repo} &> {log}'
 
 
 rule download_quast_busco_databases:

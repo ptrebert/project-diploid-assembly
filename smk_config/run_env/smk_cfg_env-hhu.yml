@@ -11,3 +11,7 @@ num_cpu_max: 72
 num_cpu_high: 24
 num_cpu_medium: 12
 num_cpu_low: 6
+
+git_repo_saarclust: "/gpfs/project/ebertp/data/repository/SaaRclust"
+git_repo_strandphaser: "/gpfs/project/ebertp/data/repository/StrandPhaseR"
+git_repo_breakpointr: "/gpfs/project/ebertp/data/repository/breakpointR"
