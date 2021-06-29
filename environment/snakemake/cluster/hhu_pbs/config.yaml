@@ -8,6 +8,7 @@ cluster: >-
 cluster-config: environment/snakemake/cluster/hhu_pbs/hilbert_cluster.json
 local-cores: 1
 jobs: 100
+scheduler: ilp
 latency-wait: 300
 keep-going: True
 keep-incomplete: False
