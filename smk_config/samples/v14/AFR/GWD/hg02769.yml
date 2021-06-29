@@ -1,6 +1,6 @@
 
-sample_description_HG02818:
-  individual: HG02818
+sample_description_HG02769:
+  individual: HG02769
   sex: female
   super_population: AFR
   population: GWD
@@ -8,28 +8,29 @@ sample_description_HG02818:
   member: parent
   data_sources:
     - long_reads:
-        readset: HG02818_hgsvc_pbsq2-ccs
+        readset: HG02769_hgsvc_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: parts
         comment: "PRJNA339722 - MGI"
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG02818/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG02769/
     - strandseq:
-        readset: &sseq_reads HG02818_hgsvc_ilnxs-80pe_sseq
+        readset: &sseq_reads HG02769_hgsvc_ilnxs-80pe_sseq
         library_fractions: one
         library_qc: yes
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG02818/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG02769/
+        data_source_filter: ".txt.gz"
     - short_reads:
-        readset: &short_reads HG02818_1kg_ilnvs-150pe_short
+        readset: &short_reads HG02769_1kg_ilnvs-150pe_short
         source_type: ena
         bioproject: PRJEB36890
         load_type: complete
         comment: "698 cohort"
 
 
-sample_targets_HG02818:
+sample_targets_HG02769:
   - aliases:
-      1: &ccs_reads HG02818_hgsvc_pbsq2-ccs_1000
+      1: &ccs_reads HG02769_hgsvc_pbsq2-ccs_1000
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
