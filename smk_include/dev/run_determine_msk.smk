@@ -723,7 +723,7 @@ rule convert_tigs_gfa_to_fasta:
     log:
         'log/output/assemblies/{sample}.{tigs}.gfa-convert.log'
     benchmark:
-        'run/output/assemblies/{sample}.{tigs}.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+        'rsrc/output/assemblies/{sample}.{tigs}.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
         '../../environment/conda/conda_pyscript.yml'
     wildcard_constraints:

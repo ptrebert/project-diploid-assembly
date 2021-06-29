@@ -38,7 +38,7 @@ rule plot_saarclust_nhr_assembly_diagnostic_output:
     log:
        'log/output/plotting/saarclust_diagnostics/reference_assembly/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.log'
     benchmark:
-        'run/output/plotting/saarclust_diagnostics/reference_assembly/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
+        'rsrc/output/plotting/saarclust_diagnostics/reference_assembly/{folder_path}/{reference}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
     priority: 200
@@ -113,7 +113,7 @@ rule plot_saarclust_haploid_assembly_diagnostic_output:
     log:
        'log/output/plotting/saarclust_diagnostics/diploid_assembly/{folder_path}/{file_name}_map-to_{aln_reference}.saarclust-diagnostics.log'
     benchmark:
-        'run/output/plotting/saarclust_diagnostics/diploid_assembly/{folder_path}/{file_name}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
+        'rsrc/output/plotting/saarclust_diagnostics/diploid_assembly/{folder_path}/{file_name}_map-to_{aln_reference}.saarclust-diagnostics.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
     priority: 200

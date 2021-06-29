@@ -347,7 +347,7 @@ checkpoint run_saarclust_haploid_assembly_clustering:
     log:
         'log/output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.log'
     benchmark:
-        'run/output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.rsrc'
+        'rsrc/output/diploid_assembly/strandseq_{hap_assm_mode}/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/polishing/{pol_reads}/clustering/{hap_reads}-{hap_assembler}.{hap}.{pol_pass}/saarclust.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
     resources:

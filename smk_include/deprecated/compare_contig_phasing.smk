@@ -9,7 +9,7 @@ rule map_racon_contigs_to_reference:
     log:
         minimap = 'log/assembly_analysis/contig_to_reference_alignment/{sample}.minimap.log',
         samtools = 'log/assembly_analysis/contig_to_reference_alignment/{sample}.samtools.log'
-    benchmark: 'run/assembly_analysis/contig_to_reference_alignment/{sample}.rsrc'
+    benchmark: 'rsrc/assembly_analysis/contig_to_reference_alignment/{sample}.rsrc'
     threads: 48
     params:
         param_preset = 'asm10'
@@ -33,7 +33,7 @@ rule map_arrow_contigs_to_reference:
     log:
         minimap = 'log/assembly_analysis/contig_to_reference_alignment/{sample}.minimap.log',
         samtools = 'log/assembly_analysis/contig_to_reference_alignment/{sample}.samtools.log'
-    benchmark: 'run/assembly_analysis/contig_to_reference_alignment/{sample}.rsrc'
+    benchmark: 'rsrc/assembly_analysis/contig_to_reference_alignment/{sample}.rsrc'
     threads: 48
     params:
         param_preset = 'asm10'
@@ -58,7 +58,7 @@ rule contig_phasing:
     output:
         'output/assembly_analysis/whatshap/contig_phasing/{sample}.vcf.gz'
     log: 'log/assembly_analysis/whatshap/contig_phasing/{sample}.log'
-    benchmark: 'run/assembly_analysis/whatshap/contig_phasing/{sample}.rsrc'
+    benchmark: 'rsrc/assembly_analysis/whatshap/contig_phasing/{sample}.rsrc'
     resources:
         mem_mb = 50 * (1024 * 1024)
     run:
@@ -80,7 +80,7 @@ rule contig_phasing_comparison:
         table = 'output/assembly_analysis/whatshap/phasing_comparison/{sample}.eval.tsv',
         switch_errors = 'output/assembly_analysis/whatshap/phasing_comparison/{sample}.switch_errors.bed'
     log: 'log/assembly_analysis/whatshap/phasing_comparison/{sample}.eval.log'
-    benchmark: 'run/assembly_analysis/whatshap/phasing_comparison/{sample}.rsrc'
+    benchmark: 'rsrc/assembly_analysis/whatshap/phasing_comparison/{sample}.rsrc'
     priority: 100
     run:
         exec = 'whatshap compare --sample HG00514 --names \"ASSEMBLY,TRIO\"'

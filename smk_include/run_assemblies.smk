@@ -225,7 +225,7 @@ rule compute_wtdbg_nonhapres_assembly_layout:
     log:
         'log/output/reference_assembly/non-hap-res/layout/wtdbg2/{sample}_nhr-wtdbg.layout.log',
     benchmark:
-        'run/output/reference_assembly/non-hap-res/layout/wtdbg2/{{sample}}_nhr-wtdbg.layout.t{}.rsrc'.format(config['num_cpu_max'])
+        'rsrc/output/reference_assembly/non-hap-res/layout/wtdbg2/{{sample}}_nhr-wtdbg.layout.t{}.rsrc'.format(config['num_cpu_max'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
@@ -250,7 +250,7 @@ rule compute_wtdbg_nonhapres_assembly_consensus:
     log:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-wtdbg.consensus.log'
     benchmark:
-        'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-wtdbg.consensus.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/reference_assembly/non-hap-res/{{sample}}_nhr-wtdbg.consensus.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -285,7 +285,7 @@ rule compute_flye_nonhapres_assembly:
     log:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-flye.layout.log',
     benchmark:
-        'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-flye.layout.t{}.rsrc'.format(config['num_cpu_max'])
+        'rsrc/output/reference_assembly/non-hap-res/{{sample}}_nhr-flye.layout.t{}.rsrc'.format(config['num_cpu_max'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
@@ -343,7 +343,7 @@ rule compute_peregrine_nonhapres_assembly:
         pereg = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.log',
         assm_copy = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-pereg.copy.log'
     benchmark:
-        os.path.join('run/output/reference_assembly/non-hap-res',
+        os.path.join('rsrc/output/reference_assembly/non-hap-res',
                      '{sample}_nhr-pereg' + '.t{}.rsrc'.format(config['num_cpu_max']))
     envmodules:
         config['env_module_singularity']
@@ -391,7 +391,7 @@ rule compute_hifiasm_nonhapres_assembly:
     log:
         hifiasm = 'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.log',
     benchmark:
-        os.path.join('run/output/reference_assembly/non-hap-res',
+        os.path.join('rsrc/output/reference_assembly/non-hap-res',
                      '{sample}_nhr-hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -453,7 +453,7 @@ rule convert_nonhapres_gfa_to_fasta:
     log:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert.log'
     benchmark:
-        'run/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+        'rsrc/output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
         '../environment/conda/conda_pyscript.yml'
     threads: config['num_cpu_low']
@@ -494,7 +494,7 @@ rule compute_shasta_nonhapres_assembly:
     log:
         'log/output/reference_assembly/non-hap-res/{sample}_nhr-shasta.layout.log',
     benchmark:
-        'run/output/reference_assembly/non-hap-res/{{sample}}_nhr-shasta.layout.t{}.rsrc'.format(config['num_cpu_max'])
+        'rsrc/output/reference_assembly/non-hap-res/{{sample}}_nhr-shasta.layout.t{}.rsrc'.format(config['num_cpu_max'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_max']
@@ -532,7 +532,7 @@ rule compute_wtdbg_haploid_assembly_layout:
     log:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.wtdbg-layout.log'
     benchmark:
-        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_max'])
+        'rsrc/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_max'])
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -558,7 +558,7 @@ rule compute_wtdbg_haploid_assembly_consensus:
     log:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}.{hap}.wtdbg-consensus.log'
     benchmark:
-        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_assembly/{{hap_reads}}.{{hap}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_assembly/{{hap_reads}}.{{hap}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -591,7 +591,7 @@ rule compute_flye_haploid_assembly:
     log:
         'log/output/diploid_assembly/{variant}/{folder_path}/draft/haploid_assembly/{hap_reads}.{hap}.flye.log'
     benchmark:
-        'run/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_assembly/{{hap_reads}}.{{hap}}.flye.t{}.rsrc'.format(config['num_cpu_max'])
+        'rsrc/output/diploid_assembly/{{variant}}/{{folder_path}}/draft/haploid_assembly/{{hap_reads}}.{{hap}}.flye.t{}.rsrc'.format(config['num_cpu_max'])
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -636,7 +636,7 @@ rule compute_shasta_haploid_assembly:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_JOINT + '/draft/haploid_assembly/{hap_reads}-shasta.{hap}.log',
     benchmark:
-        os.path.join('run/output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_assembly',
+        os.path.join('rsrc/output', PATH_STRANDSEQ_DGA_JOINT, 'draft/haploid_assembly',
                      '{hap_reads}-shasta.{hap}' + '.t{}.rsrc'.format(config['num_cpu_max']))
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -674,7 +674,7 @@ rule compute_wtdbg_haploid_split_assembly_layout:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{hap_reads}.{hap}.{sequence}.wtdbg-layout.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/wtdbg2/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-layout.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -699,7 +699,7 @@ rule compute_wtdbg_haploid_split_assembly_consensus:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}.{hap}.{sequence}.wtdbg-consensus.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.wtdbg-consensus.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -731,7 +731,7 @@ rule compute_flye_haploid_split_assembly:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}.{hap}.{sequence}.flye.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.flye.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}.{{hap}}.{{sequence}}.flye.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -777,7 +777,7 @@ rule compute_peregrine_haploid_split_assembly:
         pereg = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.log',
         assm_copy = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-pereg.{hap}.{sequence}.copy.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-pereg.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
     envmodules:
         config['env_module_singularity']
     threads: config['num_cpu_high']
@@ -823,7 +823,7 @@ rule compute_shasta_haploid_split_assembly:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-shasta.{hap}.{sequence}.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-shasta.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{{hap_reads}}-shasta.{{hap}}.{{sequence}}.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -867,7 +867,7 @@ rule compute_canu_haploid_split_assembly:
     log:
         os.path.join('log/output', PATH_STRANDSEQ_DGA_SPLIT, 'draft/haploid_assembly/{hap_reads}.{hap}.{sequence}.canu.log')
     benchmark:
-        os.path.join('run/output', PATH_STRANDSEQ_DGA_SPLIT, 'draft/haploid_assembly/',
+        os.path.join('rsrc/output', PATH_STRANDSEQ_DGA_SPLIT, 'draft/haploid_assembly/',
                      '{hap_reads}.{hap}.{sequence}.canu' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -929,7 +929,7 @@ rule compute_hifiasm_haploid_split_assembly:
     log:
         hifiasm = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/{hap_reads}.{sequence}.hifiasm.log',
     benchmark:
-        os.path.join('run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/',
+        os.path.join('rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/temp/layout/hifiasm/',
                      '{hap_reads}.{sequence}.hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -959,7 +959,7 @@ rule convert_cluster_gfa_to_fasta:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.{sequence}.gfa-convert.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_low'])
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-hifiasm.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_low'])
     conda:
         '../environment/conda/conda_pyscript.yml'
     threads: config['num_cpu_low']

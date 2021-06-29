@@ -20,7 +20,7 @@ rule whatshap_compare_variant_phasings_by_caller:
     log:
         'log/output/evaluation/variant_phasings/by_caller/{approach}/{var_caller1}_vs_{var_caller2}/setting_GQ{gq}_DP{dp}/{dataset_info}/{hap_reads}_{var_caller1}_vs_{var_caller2}.comp.log'
     benchmark:
-        'run/output/evaluation/variant_phasings/by_caller/{approach}/{var_caller1}_vs_{var_caller2}/setting_GQ{gq}_DP{dp}/{dataset_info}/{hap_reads}_{var_caller1}_vs_{var_caller2}.comp.rsrc'
+        'rsrc/output/evaluation/variant_phasings/by_caller/{approach}/{var_caller1}_vs_{var_caller2}/setting_GQ{gq}_DP{dp}/{dataset_info}/{hap_reads}_{var_caller1}_vs_{var_caller2}.comp.rsrc'
     priority: 200
     shell:
         'whatshap --debug compare --names {wildcards.var_caller1},{wildcards.var_caller2} ' \
@@ -44,7 +44,7 @@ rule whatshap_compare_variant_phasings_by_approach:
     log:
         'log/output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sseq_reads}.comp.log'
     benchmark:
-        'run/output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sseq_reads}.comp.rsrc'
+        'rsrc/output/evaluation/variant_phasings/by_approach/canonical_vs_strandseq/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}_canonical_vs_{sseq_reads}.comp.rsrc'
     priority: 200
     shell:
         'whatshap --debug compare --names {wildcards.var_caller}_canonical,{wildcards.var_caller}_strandseq ' \

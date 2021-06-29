@@ -94,7 +94,7 @@ rule compute_assembly_delta:
     log:
         'log/output/evaluation/HiFi_vs_CLR/{sample}_HiFi-{hap1}_vs_CLR-{hap2}.log'
     benchmark:
-        'run/output/evaluation/HiFi_vs_CLR/{sample}_HiFi-{hap1}_vs_CLR-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/evaluation/HiFi_vs_CLR/{sample}_HiFi-{hap1}_vs_CLR-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads:
@@ -117,7 +117,7 @@ rule compute_trio_assembly_delta_CLR:
     log:
         'log/output/evaluation/Trio_vs_CLR/{sample}_Trio-{hap1}_vs_CLR-{hap2}.log'
     benchmark:
-        'run/output/evaluation/Trio_vs_CLR/{sample}_Trio-{hap1}_vs_CLR-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/evaluation/Trio_vs_CLR/{sample}_Trio-{hap1}_vs_CLR-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads:
@@ -140,7 +140,7 @@ rule compute_trio_assembly_delta_HiFi:
     log:
         'log/output/evaluation/Trio_vs_HiFi/{sample}_Trio-{hap1}_vs_HiFi-{hap2}.log'
     benchmark:
-        'run/output/evaluation/Trio_vs_HiFi/{sample}_Trio-{hap1}_vs_HiFi-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/evaluation/Trio_vs_HiFi/{sample}_Trio-{hap1}_vs_HiFi-{hap2}' + '.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads:
@@ -162,7 +162,7 @@ rule run_delta_diff:
     log:
         'log/output/evaluation/{tech1}_vs_{tech2}/{sample}_{tech1}-{hap1}_vs_{tech2}-{hap2}.diff.log'
     benchmark:
-        'run/output/evaluation/{tech1}_vs_{tech2}/{sample}_{tech1}-{hap1}_vs_{tech2}-{hap2}.diff.rsrc'
+        'rsrc/output/evaluation/{tech1}_vs_{tech2}/{sample}_{tech1}-{hap1}_vs_{tech2}-{hap2}.diff.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     priority: 1000

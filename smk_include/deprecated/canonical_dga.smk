@@ -31,7 +31,7 @@ rule canonical_dga_phase_variants:
     log:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/split_by_seq/{hap_reads}.{sequence}.phased.log'
     benchmark:
-        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/split_by_seq/{hap_reads}.{sequence}.phased.rsrc'
+        'rsrc/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/split_by_seq/{hap_reads}.{sequence}.phased.rsrc'
     shell:
         'whatshap --debug phase --chromosome {wildcards.sequence} --reference {input.fasta} ' \
             ' {input.vcf} {input.bam} 2> {log} | egrep "^(#|{wildcards.sequence}\s)" > {output}'
@@ -85,7 +85,7 @@ rule canonical_dga_haplo_tagging:
     log:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.tagging.log',
     benchmark:
-        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.tagging.rsrc',
+        'rsrc/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.tagging.rsrc',
     shell:
         "whatshap --debug haplotag --output {output.bam} --reference {input.fasta} --output-haplotag-list {output.tags} {input.vcf} {input.bam} &> {log}"
 
@@ -106,7 +106,7 @@ rule canonical_dga_haplo_splitting:
     log:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.splitting.log',
     benchmark:
-        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.splitting.rsrc',
+        'rsrc/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/{hap_reads}.splitting.rsrc',
     shell:
         "whatshap --debug split --pigz --output-h1 {output.h1} --output-h2 {output.h2} --output-untagged {output.un} --read-lengths-histogram {output.hist} {input.fastq} {input.tags} &> {log}"
 
@@ -139,7 +139,7 @@ rule canonical_dga_assemble_haplotypes_wtdbg_layout:
     log:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/wtdbg2/{hap_reads}.{hap}.layout.log',
     benchmark:
-        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/wtdbg2/{hap_reads}.{hap}.layout.rsrc',
+        'rsrc/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/wtdbg2/{hap_reads}.{hap}.layout.rsrc',
     threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = 6144,
@@ -163,7 +163,7 @@ rule canonical_dga_assemble_haplotypes_consensus:
     log:
         'log/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-wtdbg.{hap}.log',
     benchmark:
-        'run/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-wtdbg.{hap}.rsrc',
+        'rsrc/output/diploid_assembly/canonical/{var_caller}_GQ{gq}_DP{dp}/{reference}/{vc_reads}/consensus/{hap_reads}-wtdbg.{hap}.rsrc',
     threads: config['num_cpu_max']
     resources:
         mem_per_cpu_mb = 384,

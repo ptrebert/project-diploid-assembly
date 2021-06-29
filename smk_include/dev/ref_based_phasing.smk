@@ -211,7 +211,7 @@ rule generate_bwa_index:
     log:
         'log/references/bwa_index/{reference}.log'
     benchmark:
-        'run/references/bwa_index/{reference}.rsrc'
+        'rsrc/references/bwa_index/{reference}.rsrc'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
@@ -233,7 +233,7 @@ rule pbmm2_reads_to_reference_alignment_pacbio_fastq:
     log:
         'log/output/alignments/reads_to_reference/{hifi_reads}_map-to_{reference}.pbmm2.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{{hifi_reads}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/alignments/reads_to_reference/{{hifi_reads}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../../environment/conda/conda_pbtools.yml'
     wildcard_constraints:
@@ -272,7 +272,7 @@ rule samtools_index_bam_alignment:
     output:
         bai = '{filepath}.bam.bai'
     benchmark:
-        'run/{filepath}.idx-bai.t1.rsrc'
+        'rsrc/{filepath}.idx-bai.t1.rsrc'
     resources:
         runtime_hrs = lambda wildcards, attempt: 0 if attempt <= 1 else 16 * attempt,
         runtime_min = lambda wildcards, attempt: 20  # short time limit for Strand-seq alignments
@@ -293,7 +293,7 @@ rule bwa_strandseq_to_reference_alignment:
         bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{individual}_{sample_id}.bwa.log',
         samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{individual}_{sample_id}.samtools.log',
     benchmark:
-        os.path.join('run/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}',
+        os.path.join('rsrc/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}',
                      '{individual}_{sample_id}' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda:
         '../../environment/conda/conda_biotools.yml'
@@ -341,7 +341,7 @@ rule mark_duplicate_reads_strandseq:
     log:
         'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{sseq_library}.filt.psort.mdup.log'
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{sseq_library}.filt.psort.mdup.rsrc'
+        'rsrc/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{sseq_library}.filt.psort.mdup.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -421,7 +421,7 @@ rule run_breakpointr:
     log:
         'log/output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/breakpointr.log'
     benchmark:
-        os.path.join('run/output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}',
+        os.path.join('rsrc/output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}',
                      'breakpointr.t{}.rsrc'.format(config['num_cpu_high'])
                      )
     conda:
@@ -463,7 +463,7 @@ rule unphase_reference_vcf:
     log:
         'log/references/{variant_calls}.unphased.log'
     benchmark:
-        'run/references/{variant_calls}.unphased.rsrc'
+        'rsrc/references/{variant_calls}.unphased.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -542,7 +542,7 @@ rule run_strandphaser:
     log:
         stp = 'log/output/integrative_phasing/processing/strandphaser/' + PATH_REFERENCE_PHASING + '/{variant_calls}.phased.log',
     benchmark:
-        os.path.join('run/output/integrative_phasing/processing/strandphaser',
+        os.path.join('rsrc/output/integrative_phasing/processing/strandphaser',
                      PATH_REFERENCE_PHASING + '/{variant_calls}' + '.phased.t{}.rsrc'.format(config['num_cpu_high'])
                      )
     conda:
@@ -635,7 +635,7 @@ rule run_integrative_phasing:
     log:
         'log/output/integrative_phasing/processing/whatshap/' + PATH_REFERENCE_PHASING + '/{variant_calls}.{sequence}.phased.log'
     benchmark:
-        'run/output/integrative_phasing/processing/whatshap/' + PATH_REFERENCE_PHASING + '/{variant_calls}.{sequence}.phased.rsrc'
+        'rsrc/output/integrative_phasing/processing/whatshap/' + PATH_REFERENCE_PHASING + '/{variant_calls}.{sequence}.phased.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:

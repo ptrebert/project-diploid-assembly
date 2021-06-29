@@ -15,7 +15,7 @@ rule compute_delta_assembly_reference:
     log:
         'log/output/evaluation/mummer_delta/{known_ref}/{folder_path}/{file_name}.mummer.log'
     benchmark:
-        'run/output/evaluation/mummer_delta/{{known_ref}}/{{folder_path}}/{{file_name}}.mummer.t{}.rsrc'.format(config['num_cpu_medium'])
+        'rsrc/output/evaluation/mummer_delta/{{known_ref}}/{{folder_path}}/{{file_name}}.mummer.t{}.rsrc'.format(config['num_cpu_medium'])
     conda:
          '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
@@ -39,7 +39,7 @@ rule quast_analysis_assembly:
     log:
         'log/output/evaluation/quastlg_busco/{known_ref}-{genemodel}/{folder_path}/{file_name}/quast_run.log',
     benchmark:
-        'run/output/evaluation/quastlg_busco/{{known_ref}}-{{genemodel}}/{{folder_path}}/{{file_name}}/quast_run.t{}.rsrc'.format(config['num_cpu_medium'])
+        'rsrc/output/evaluation/quastlg_busco/{{known_ref}}-{{genemodel}}/{{folder_path}}/{{file_name}}/quast_run.t{}.rsrc'.format(config['num_cpu_medium'])
     conda:
          '../environment/conda/conda_rtools.yml'
     threads: config['num_cpu_medium']

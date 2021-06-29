@@ -167,7 +167,7 @@ rule merge_haploid_coverage_tracks:
     output:
         temp('output/evaluation/hap_read_coverage/temp/{readset}_map-to_hg38_GCA_p13.{hap}-un.bedGraph')
     benchmark:
-        'run/output/evaluation/hap_read_coverage/temp/{readset}_map-to_hg38_GCA_p13.{hap}-un.merge.t12.rsrc'
+        'rsrc/output/evaluation/hap_read_coverage/temp/{readset}_map-to_hg38_GCA_p13.{hap}-un.merge.t12.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: 12
@@ -191,7 +191,7 @@ rule convert_merged_coverage_track:
     output:
         'output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.{hap}-un.bigWig'
     benchmark:
-        'run/output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.{hap}-un.convert.rsrc'
+        'rsrc/output/evaluation/hap_read_coverage/{readset}_map-to_hg38_GCA_p13.{hap}-un.convert.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:

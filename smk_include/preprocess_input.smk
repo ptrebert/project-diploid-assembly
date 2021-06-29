@@ -41,7 +41,7 @@ rule blast_hifi_reads_adapter_contamination:
     output:
         'input/fastq/{readset}/{readset}.{partnum}.blast.out',
     benchmark:
-        'run/input/fastq/{readset}/{readset}.{partnum}.blast.rsrc',
+        'rsrc/input/fastq/{readset}/{readset}.{partnum}.blast.rsrc',
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
@@ -80,7 +80,7 @@ rule select_clean_hifi_reads:
     output:
         'input/fastq/{readset}/{readset}.{partnum}.clean-reads.fastq.gz'
     benchmark:
-        'run/input/fastq/{readset}/{readset}.{partnum}.clean-reads.filter.rsrc'
+        'rsrc/input/fastq/{readset}/{readset}.{partnum}.clean-reads.filter.rsrc'
     wildcard_constraints:
         readset = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     resources:
@@ -254,7 +254,7 @@ rule merge_pacbio_native_bams:
     log:
         'log/input/bam/{mrg_sample}_1000.mrg.log'
     benchmark:
-        'run/input/bam/{mrg_sample}_1000.mrg.rsrc'
+        'rsrc/input/bam/{mrg_sample}_1000.mrg.rsrc'
     wildcard_constraints:
         mrg_sample = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     conda:
@@ -279,7 +279,7 @@ rule chs_child_filter_to_100x:
     log:
         'log/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.log'
     benchmark:
-        'run/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.rsrc'
+        'rsrc/input/bam/HG00514_hgsvc_pbsq2-clr_0526.sampling.rsrc'
     message: 'DEPRECATED: downsampling for sample HG00514 was only done for early chemistry read data'
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -422,7 +422,7 @@ rule merge_partial_short_read_input_samples:
     log:
         'log/input/fastq/{readset}_{mate}.merge.log'
     benchmark:
-        'run/input/fastq/{readset}_{mate}.merge.rsrc'
+        'rsrc/input/fastq/{readset}_{mate}.merge.rsrc'
     wildcard_constraints:
         readset = CONSTRAINT_PARTS_SHORT_READ_INPUT_SAMPLES
     threads: config['num_cpu_low']
@@ -446,7 +446,7 @@ rule relink_complete_short_read_input_samples:
     log:
         'log/input/fastq/{readset}_{mate}.merge.log'
     benchmark:
-        'run/input/fastq/{readset}_{mate}.merge.rsrc'
+        'rsrc/input/fastq/{readset}_{mate}.merge.rsrc'
     wildcard_constraints:
         readset = CONSTRAINT_COMPLETE_SHORT_READ_INPUT_SAMPLES
     params:

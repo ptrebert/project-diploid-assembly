@@ -21,7 +21,7 @@ rule compute_position_coverage:
     output:
         'output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}.pos-cov.txt.gz'
     benchmark:
-        'run/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}.pos-cov.rsrc'
+        'rsrc/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}.pos-cov.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: 2
@@ -44,7 +44,7 @@ rule compute_uniform_coverage_regions:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.rsrc'
+        'rsrc/output/alignments/reads_to_reference/{folder_path}/aux_files/{vc_reads}_map-to_{reference}/{sequence}.unicov.rsrc'
     conda:
         '../environment/conda/conda_pyscript.yml'
     resources:
@@ -80,7 +80,7 @@ rule call_variants_freebayes_parallel:
     log:
         'log/output/variant_calls/freebayes/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/freebayes/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.rsrc'
+        'rsrc/output/variant_calls/freebayes/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
@@ -111,7 +111,7 @@ rule call_variants_longshot:
     log:
         'log/output/variant_calls/longshot/{reference}/{sseq_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/longshot/{reference}/{sseq_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.rsrc'
+        'rsrc/output/variant_calls/longshot/{reference}/{sseq_reads}/processing/00-raw/splits/{vc_reads}.{sequence}.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     params:
@@ -232,7 +232,7 @@ rule call_variants_deepvariant:
     log:
         'log/output/variant_calls/deepvar/{reference}/{sseq_reads}/processing/10-norm/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        os.path.join('run/output/variant_calls/deepvar',
+        os.path.join('rsrc/output/variant_calls/deepvar',
                      '{reference}/{sseq_reads}/processing/10-norm/splits',
                      '{vc_reads}.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_medium']))
     envmodules:
@@ -294,7 +294,7 @@ rule whatshap_regenotype_variant_calls:
     log:
         'log/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.log'
     benchmark:
-        'run/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.rsrc'
+        'rsrc/output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/30-regenotype/splits/{vc_reads}.{sequence}.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:

@@ -65,7 +65,7 @@ rule merge_mono_dinucleotide_fraction:
     log:
         'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.log'
     benchmark:
-        'run/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.rsrc'
+        'rsrc/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/temp/mrg/{individual}_{project}_{platform}-{spec}_{lib_id}.mrg.rsrc'
     wildcard_constraints:
         sseq_reads = CONSTRAINT_STRANDSEQ_DIFRACTION_SAMPLES
     conda:
@@ -120,7 +120,7 @@ rule mark_duplicate_reads_strandseq:
     log:
         'log/{folder_path}/{sts_library}.mrg.psort.mdup.log'
     benchmark:
-        'run/{folder_path}/{sts_library}.mrg.psort.mdup.rsrc'
+        'rsrc/{folder_path}/{sts_library}.mrg.psort.mdup.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -184,7 +184,7 @@ rule run_saarclust_assembly_clustering:
     log:
         'log/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/saarclust.log'
     benchmark:
-        'run/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/saarclust.rsrc'
+        'rsrc/output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/saarclust.rsrc'
     conda:
         '../environment/conda/conda_rscript.yml'
     resources:

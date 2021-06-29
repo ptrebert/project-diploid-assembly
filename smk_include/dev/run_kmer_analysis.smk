@@ -251,7 +251,7 @@ rule short_read_quality_trimming:
     log:
         'log/input/fastq/{readset}.trimming.log'
     benchmark:
-        'run/input/fastq/{readset}.trimming.rsrc'
+        'rsrc/input/fastq/{readset}.trimming.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: 16
@@ -315,7 +315,7 @@ rule short_read_error_correction:
     log:
         'log/input/fastq/{readset}.corr.log'
     benchmark:
-        'run/input/fastq/{readset}.corr.rsrc'
+        'rsrc/input/fastq/{readset}.corr.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -375,7 +375,7 @@ rule build_bifrost_colored_dbg:
     log:
        'log/output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.build.log',
     benchmark:
-        os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
+        os.path.join('rsrc/output/evaluation/kmer_analysis/{known_ref}',
                      '{sample}.{readset}.{assembly}.{polisher}.build' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda: '../../environment/conda/conda_bifrost.yml'
     threads: config['num_cpu_high']
@@ -405,7 +405,7 @@ rule count_kmers_per_color:
     log:
        'log/output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.vd-count.log',
     benchmark:
-        os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
+        os.path.join('rsrc/output/evaluation/kmer_analysis/{known_ref}',
                      '{sample}.{readset}.{assembly}.{polisher}.vd-count' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda: '../../environment/conda/conda_bifrost.yml'
     threads: config['num_cpu_low']
@@ -430,7 +430,7 @@ rule query_bifrost_colored_dbg:
     log:
         'log/output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.query.log',
     benchmark:
-        os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
+        os.path.join('rsrc/output/evaluation/kmer_analysis/{known_ref}',
                      '{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.query' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda: '../../environment/conda/conda_bifrost.yml'
     threads: config['num_cpu_high']
@@ -501,7 +501,7 @@ rule postprocess_regbuild_graph_queries:
         hap2_only = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.hap2-only.bed',
         hap_both = 'output/evaluation/kmer_analysis/{known_ref}/{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.hap-both.bed',
     benchmark:
-        os.path.join('run/output/evaluation/kmer_analysis/{known_ref}',
+        os.path.join('rsrc/output/evaluation/kmer_analysis/{known_ref}',
             '{sample}.{readset}.{assembly}.{polisher}.{annotation}.{ratio}.stats.rsrc')
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
@@ -591,7 +591,7 @@ rule compute_meryl_kmer_db:
     log:
         'log/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl.log'
     benchmark:
-        'run/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl' + '.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}_{mate}.meryl' + '.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../../environment/conda/conda_merqury.yml'
     threads: config['num_cpu_high']
@@ -616,7 +616,7 @@ rule merge_meryl_kmer_dbs:
     log:
         'log/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl.log'
     benchmark:
-        'run/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl' + '.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/input/fastq/{sample}_{readset}/kmer_db/{sample}_{readset}.merge.meryl' + '.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../../environment/conda/conda_merqury.yml'
     threads: config['num_cpu_high']
@@ -646,7 +646,7 @@ rule run_merqury_analysis:
     log:
         'log/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury.log'
     benchmark:
-        'run/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury.rsrc'
+        'rsrc/output/evaluation/kmer_analysis/merqury_qv/{sample}.{readset}.{assembly}.{polisher}.merqury.rsrc'
     conda:
         '../../environment/conda/conda_merqury.yml'
     resources:

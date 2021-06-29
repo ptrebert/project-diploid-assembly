@@ -234,7 +234,7 @@ rule minimap_scaffold_to_reference_alignment:
         st_sort = 'log/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.st-sort.log',
         st_view = 'log/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}.st-view.log',
     benchmark:
-        '.'.join(['run/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
+        '.'.join(['rsrc/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.hybrid_map-to_{reference}.{chrom}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
@@ -343,7 +343,7 @@ rule minimap_unscaffolded_to_reference_alignment:
         st_sort = 'log/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.st-sort.log',
         st_view = 'log/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}.st-view.log',
     benchmark:
-        '.'.join(['run/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
+        '.'.join(['rsrc/output/alignments/scaffolds_to_reference/{assembly}/{assembly}.unsupported_map-to_{reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
     conda:
         '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']

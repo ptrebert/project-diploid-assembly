@@ -13,7 +13,7 @@ rule dump_haploid_read_coverage:
         bedtools = 'log/output/alignments/hap_reads_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.{hap}.bg.log',
         sort = 'log/output/alignments/hap_reads_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.{hap}.sort.log',
     benchmark:
-        os.path.join('run/output/alignments/hap_reads_to_reference',
+        os.path.join('rsrc/output/alignments/hap_reads_to_reference',
                      '{folder_path}',
                      '{file_name}_map-to_{aln_reference}.{hap}.bg' + '.t{}.rsrc'.format(config['num_cpu_medium']))
     conda:
@@ -39,7 +39,7 @@ rule convert_hap_read_coverage:
     log:
        'log/output/cov_tracks/hap_reads/{folder_path}/{file_name}_map-to_{aln_reference}.{hap}.log'
     benchmark:
-       'run/output/cov_tracks/hap_reads/{folder_path}/{file_name}_map-to_{aln_reference}.{hap}.rsrc'
+       'rsrc/output/cov_tracks/hap_reads/{folder_path}/{file_name}_map-to_{aln_reference}.{hap}.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:

@@ -13,7 +13,7 @@ import os
 #     log:
 #         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.log'
 #     benchmark:
-#         'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.rsrc'
+#         'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.rsrc'
 #     conda:
 #          '../environment/conda/conda_pbtools.yml'
 #     threads: config['num_cpu_medium']
@@ -38,7 +38,7 @@ rule arrow_contig_polishing_pass1:
     log:
        'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.log'
     benchmark:
-        os.path.join('run/output', PATH_STRANDSEQ_DGA_SPLIT, 'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1' + '.t{}.rsrc'.format(config['num_cpu_medium']))
+        os.path.join('rsrc/output', PATH_STRANDSEQ_DGA_SPLIT, 'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1' + '.t{}.rsrc'.format(config['num_cpu_medium']))
     conda:
          '../environment/conda/conda_pbtools.yml'
     threads: config['num_cpu_medium']
@@ -64,7 +64,7 @@ rule racon_contig_polishing_pass1:
         os.path.join('log/output', PATH_STRANDSEQ_DGA_SPLIT,
                      'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.log')
     benchmark:
-        os.path.join('run/output', PATH_STRANDSEQ_DGA_SPLIT,
+        os.path.join('rsrc/output', PATH_STRANDSEQ_DGA_SPLIT,
                      'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.' + 't{}.rsrc'.format(config['num_cpu_medium']))
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -90,7 +90,7 @@ rule racon_contig_polishing_pass2:
         os.path.join('log/output', PATH_STRANDSEQ_DGA_SPLIT,
                      'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.racon-p2.log')
     benchmark:
-        os.path.join('run/output', PATH_STRANDSEQ_DGA_SPLIT,
+        os.path.join('rsrc/output', PATH_STRANDSEQ_DGA_SPLIT,
                      'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.racon-p2.' + 't{}.rsrc'.format(config['num_cpu_medium']))
     conda:
         '../environment/conda/conda_biotools.yml'

@@ -329,7 +329,7 @@ rule handle_strandseq_download_requests:
     log:
         'log/input/fastq/{sseq_reads}/{req_file}.download.log'
     benchmark:
-        'run/input/fastq/{sseq_reads}/{req_file}.download.rsrc'
+        'rsrc/input/fastq/{sseq_reads}/{req_file}.download.rsrc'
     wildcard_constraints:
         sseq_reads = CONSTRAINT_STRANDSEQ_SAMPLES
     conda:
@@ -354,7 +354,7 @@ rule handle_partial_fastq_download_request:
     log:
         'log/input/fastq/{readset}/{readset}.{partnum}.download.log'
     benchmark:
-        'run/input/fastq/{readset}/{readset}.{partnum}.download.rsrc'
+        'rsrc/input/fastq/{readset}/{readset}.{partnum}.download.rsrc'
     wildcard_constraints:
         readset = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES,
         partnum = 'part[0-9]+'
@@ -382,7 +382,7 @@ rule handle_partial_pacbio_download_request:
     log:
         'log/input/bam/{readset}/{readset}.{partnum}.download.log'
     benchmark:
-        'run/input/bam/{readset}/{readset}.{partnum}.download.rsrc'
+        'rsrc/input/bam/{readset}/{readset}.{partnum}.download.rsrc'
     wildcard_constraints:
         readset = CONSTRAINT_PARTS_PBN_INPUT_SAMPLES
     conda:
@@ -436,7 +436,7 @@ rule handle_single_fastq_download_request:
     log:
         'log/input/fastq/{readset}.download.log'
     benchmark:
-        'run/input/fastq/{readset}.download.rsrc'
+        'rsrc/input/fastq/{readset}.download.rsrc'
     conda:
          '../environment/conda/conda_shelltools.yml'
     threads: config['num_cpu_low']
@@ -483,7 +483,7 @@ rule handle_short_read_download_request:
     log:
         'log/input/fastq/{readset}/{lib_prefix}_{lib_id}_{mate}.download.log'
     benchmark:
-        'run/input/fastq/{readset}/{lib_prefix}_{lib_id}_{mate}.download.rsrc'
+        'rsrc/input/fastq/{readset}/{lib_prefix}_{lib_id}_{mate}.download.rsrc'
     conda:
         '../environment/conda/conda_shelltools.yml'
     threads: config['num_cpu_low']

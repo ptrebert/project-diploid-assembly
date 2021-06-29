@@ -38,7 +38,7 @@ rule create_unimap_index:
     log:
         'log/references/assemblies/{ref_genome}.umi.log',
     benchmark:
-        'run/references/assemblies/{ref_genome}.umi.rsrc',
+        'rsrc/references/assemblies/{ref_genome}.umi.rsrc',
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: 2
@@ -87,7 +87,7 @@ rule samtools_index_bam_alignment:
     output:
         bai = '{filepath}.bam.bai'
     benchmark:
-        'run/{filepath}.idx-bai.t1.rsrc'
+        'rsrc/{filepath}.idx-bai.t1.rsrc'
     resources:
         runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 16 * attempt
     conda:
@@ -104,7 +104,7 @@ rule pb_bamtools_index_bam_alignment:
     log:
         'log/{filepath}.create-pbi.log'
     benchmark:
-        'run/{filepath}.create-pbi.rsrc'
+        'rsrc/{filepath}.create-pbi.rsrc'
     resources:
         runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 16 * attempt
     conda:
@@ -122,7 +122,7 @@ rule pb_bam2x_dump_fastq:
     log:
         'log/input/bam/{pbn_sample}_{sampling}.dump.log'
     benchmark:
-        'run/input/bam/{pbn_sample}_{sampling}.dump.rsrc'
+        'rsrc/input/bam/{pbn_sample}_{sampling}.dump.rsrc'
     wildcard_constraints:
         pbn_sample = CONSTRAINT_ALL_PBN_INPUT_SAMPLES,
         sampling = '[0-9x]+'
@@ -145,7 +145,7 @@ rule pb_bam2x_dump_haploid_fastq:
     log:
         'log/output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pbn_hap_reads}.{hap}.{sequence}.dump.log',
     benchmark:
-        'run/output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pbn_hap_reads}.{hap}.{sequence}.dump.rsrc',
+        'rsrc/output/diploid_assembly/{folder_path}/draft/haploid_fastq/{pbn_hap_reads}.{hap}.{sequence}.dump.rsrc',
     wildcard_constraints:
         pbn_hap_reads = CONSTRAINT_ALL_PBN_INPUT_SAMPLES + '_[0-9]+',
     resources:
@@ -172,7 +172,7 @@ rule dump_shasta_fasta:
     log:
         'log/input/fastq/{file_name}.fa-dump.log'
     benchmark:
-        'run/input/fastq/{file_name}.fa-dump.rsrc'
+        'rsrc/input/fastq/{file_name}.fa-dump.rsrc'
     message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     resources:
         runtime_hrs = lambda wildcards, attempt: 8 * attempt,
@@ -202,7 +202,7 @@ rule dump_shasta_haploid_fasta:
     log:
         'log/{file_path}/haploid_fastq/{file_name}.fa-dump.log'
     benchmark:
-        'run/{file_path}/haploid_fastq/{file_name}.fa-dump.rsrc'
+        'rsrc/{file_path}/haploid_fastq/{file_name}.fa-dump.rsrc'
     message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     resources:
         runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 2 * attempt,
@@ -321,7 +321,7 @@ rule generate_bwa_index:
     log:
         'log/{folder_path}/bwa_index/{file_name}.log'
     benchmark:
-        'run/{folder_path}/bwa_index/{file_name}.rsrc'
+        'rsrc/{folder_path}/bwa_index/{file_name}.rsrc'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,

@@ -263,7 +263,7 @@ rule add_sequences_to_bed:
     output:
         'references/annotation/{known_ref}-{annotation}.fasta'
     benchmark:
-        'run/references/annotation/{known_ref}-{annotation}.fasta.rsrc'
+        'rsrc/references/annotation/{known_ref}-{annotation}.fasta.rsrc'
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
@@ -301,7 +301,7 @@ rule convert_fasta_to_hdf:
     output:
         'references/annotation/{known_ref}-{annotation}.h5'
     benchmark:
-        'run/references/annotation/{known_ref}-{annotation}.hdf.rsrc'
+        'rsrc/references/annotation/{known_ref}-{annotation}.hdf.rsrc'
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
         mem_per_cpu_mb = lambda wildcards, attempt: 2048 * attempt
@@ -383,7 +383,7 @@ rule prep_pav_calls:
         bad = 'references/annotation/PAV_sv-insdel-dropped_v{version}.bed',
         both = 'references/annotation/PAV_sv-insdel_v{version}.h5'
     benchmark:
-        'run/references/annotation/PAV_sv-insdel_v{version}.hdf.rsrc'
+        'rsrc/references/annotation/PAV_sv-insdel_v{version}.hdf.rsrc'
     run:
         import pandas as pd
 

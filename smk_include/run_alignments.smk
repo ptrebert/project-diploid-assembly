@@ -109,7 +109,7 @@ rule minimap_reads_to_reference_alignment:
         st_sort = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.st-sort.log',
         st_view = 'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.st-view.log',
     benchmark:
-        os.path.join('run/output/alignments/reads_to_reference/{folder_path}',
+        os.path.join('rsrc/output/alignments/reads_to_reference/{folder_path}',
                      '{sample}_map-to_{reference}' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -147,7 +147,7 @@ rule pbmm2_reads_to_reference_alignment_pacbio_native:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbn.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_pbtools.yml'
     threads: config['num_cpu_high']
@@ -181,7 +181,7 @@ rule pbmm2_reads_to_reference_alignment_pacbio_fastq:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbmm2.log'
     benchmark:
-        'run/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_medium'])
+        'rsrc/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_medium'])
     conda:
         '../environment/conda/conda_pbtools.yml'
     wildcard_constraints:
@@ -245,7 +245,7 @@ rule bwa_strandseq_to_reference_alignment:
         bwa = 'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{individual}_{sample_id}.bwa.log',
         samtools = 'log/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}/{individual}_{sample_id}.samtools.log',
     benchmark:
-        os.path.join('run/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}',
+        os.path.join('rsrc/output/alignments/strandseq_to_reference/{reference}/{sseq_reads}',
                      '{individual}_{sample_id}' + '.t{}.rsrc'.format(config['num_cpu_low']))
     conda:
         '../environment/conda/conda_biotools.yml'
@@ -332,7 +332,7 @@ rule minimap_racon_polish_alignment_pass1:
         st_sort = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1.st-sort.log',
     benchmark:
         os.path.join(
-            'run/output', PATH_STRANDSEQ_DGA_SPLIT,
+            'rsrc/output', PATH_STRANDSEQ_DGA_SPLIT,
             'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p1' + '.t{}.rsrc'.format(config['num_cpu_high'])
         )
     conda:
@@ -377,7 +377,7 @@ rule minimap_racon_polish_alignment_pass2:
         st_sort = 'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p2.st-sort.log',
     benchmark:
         os.path.join(
-            'run/output', PATH_STRANDSEQ_DGA_SPLIT,
+            'rsrc/output', PATH_STRANDSEQ_DGA_SPLIT,
             'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.racon-p2.' + 't{}.rsrc'.format(config['num_cpu_high'])
         )
     conda:
@@ -422,7 +422,7 @@ rule pbmm2_arrow_polish_alignment_pass1:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort.log',
     benchmark:
         os.path.join(
-            'run/output', PATH_STRANDSEQ_DGA_SPLIT,
+            'rsrc/output', PATH_STRANDSEQ_DGA_SPLIT,
             'polishing/alignments/{pol_reads}_map-to_{hap_reads}-{assembler}.{hap}.{sequence}.arrow-p1.psort' + '.t{}.rsrc'.format(config['num_cpu_high'])
         )
     conda:
@@ -468,7 +468,7 @@ rule minimap_contig_to_known_reference_alignment:
         st_sort = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-sort.log',
         st_view = 'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.st-view.log',
     benchmark:
-        '.'.join(['run/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
+        '.'.join(['rsrc/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}', 't{}'.format(config['num_cpu_high']), 'rsrc'])
     conda:
         '../environment/conda/conda_biotools.yml'
     threads: (config['num_cpu_medium'] + config['num_cpu_low'])
@@ -505,7 +505,7 @@ rule dump_contig_to_reference_alignment_to_bed:
     log:
         'log/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.dump-bed.log'
     benchmark:
-        'run/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.dump-bed.rsrc'
+        'rsrc/output/alignments/contigs_to_reference/{folder_path}/{file_name}_map-to_{aln_reference}.dump-bed.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:

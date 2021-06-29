@@ -150,7 +150,7 @@ rule bwa_short_to_haploid_assembly_alignment:
             '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.filt.sort.st-sort.log'),
     benchmark:
         os.path.join(
-            'run/output/alignments/short_to_phased_assembly',
+            'rsrc/output/alignments/short_to_phased_assembly',
             '{individual}_{library_id}_short_map-to_{assembly}.{hap}.{polisher}.filt.sort' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda:
         '../../environment/conda/conda_biotools.yml'
@@ -598,7 +598,7 @@ rule build_contig_to_reference_paf_alignment:
     log:
         'log/output/alignments/contigs_to_reference/evaluation/{individual}_{assembly}.{hap}.{polisher}_map-to_{known_ref}.minimap.log'
     benchmark:
-        'run/output/alignments/contigs_to_reference/evaluation/{individual}_{assembly}.{hap}.{polisher}_map-to_{known_ref}.minimap' + '.t{}.rsrc'.format(config['num_cpu_high'])
+        'rsrc/output/alignments/contigs_to_reference/evaluation/{individual}_{assembly}.{hap}.{polisher}_map-to_{known_ref}.minimap' + '.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -839,7 +839,7 @@ rule summarize_variant_calls:
     output:
         'output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.tsv'
     benchmark:
-        'run/output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.rsrc'
+        'rsrc/output/evaluation/qv_estimation/variant_calls/70-summary-{known_ref}/{callset}.summary.rsrc'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
@@ -883,7 +883,7 @@ rule compute_illumina_qv_estimate:
     output:
         'output/evaluation/qv_estimation/illumina_calls_{known_ref}/{callset}.qv.tsv'
     benchmark:
-        'run/output/evaluation/qv_estimation/illumina_calls_{known_ref}/{callset}.qv.rsrc'
+        'rsrc/output/evaluation/qv_estimation/illumina_calls_{known_ref}/{callset}.qv.rsrc'
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 4096 * attempt,
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,

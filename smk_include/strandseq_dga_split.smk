@@ -36,7 +36,7 @@ rule strandseq_dga_split_haplo_tagging:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.fq.tag.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.fq.tag.rsrc'
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{fq_hap_reads}.{sequence}.fq.tag.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -70,7 +70,7 @@ rule strandseq_dga_split_haplo_tagging_pacbio_native:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.pbn.tag.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.pbn.tag.rsrc'
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haplotags/{pbn_hap_reads}.{sequence}.pbn.tag.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -102,7 +102,7 @@ rule strandseq_dga_split_haplo_splitting:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.{sequence}.fq.split.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.{sequence}.fq.split.rsrc',
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.{sequence}.fq.split.rsrc',
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -135,7 +135,7 @@ rule strandseq_dga_split_haplo_splitting_pacbio_native:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.{sequence}.pbn.split.log',
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.{sequence}.pbn.split.rsrc',
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.{sequence}.pbn.split.rsrc',
     conda:
         '../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -164,7 +164,7 @@ rule strandseq_dga_split_merge_tag_groups:
     output:
         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}-un.{sequence}.fastq.gz'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}-un.{sequence}.fq.mrg.rsrc'
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_fastq/{fq_hap_reads}.h{haplotype}-un.{sequence}.fq.mrg.rsrc'
     conda:
         '../environment/conda/conda_shelltools.yml'
     wildcard_constraints:
@@ -193,7 +193,7 @@ rule strandseq_dga_split_merge_tag_groups_pacbio_native:
     log:
         'log/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.log'
     benchmark:
-        'run/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.rsrc'
+        'rsrc/output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_bam/{pbn_hap_reads}.h{haplotype}-un.{sequence}.pbn.mrg.rsrc'
     conda:
         '../environment/conda/conda_pbtools.yml'
     wildcard_constraints:

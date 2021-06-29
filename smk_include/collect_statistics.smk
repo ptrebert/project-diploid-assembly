@@ -14,7 +14,7 @@ rule compute_statistics_complete_input_fastq:
         dump = 'output/statistics/stat_dumps/{sample}.fastq.pck',
         summary = 'input/fastq/{sample}.stats',
     log: 'log/output/statistics/stat_dumps/{sample}.fastq.log',
-    benchmark: 'run/output/statistics/stat_dumps/{sample}.fastq.t2.rsrc'
+    benchmark: 'rsrc/output/statistics/stat_dumps/{sample}.fastq.t2.rsrc'
     threads: 2
     resources:
         runtime_hrs= 8,
@@ -44,7 +44,7 @@ rule compute_statistics_complete_input_fasta:
         dump = 'output/statistics/stat_dumps/{sample}.fasta.pck',
         summary = 'input/fasta/{sample}.stats'
     log: 'log/output/statistics/stat_dumps/{sample}.fasta.log',
-    benchmark: 'run/output/statistics/stat_dumps/{sample}.fasta.t2.rsrc'
+    benchmark: 'rsrc/output/statistics/stat_dumps/{sample}.fasta.t2.rsrc'
     message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     threads: 2
     resources:
@@ -75,7 +75,7 @@ rule compute_statistics_split_cluster_fastq:
           dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.pck',
           summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.stats',
     log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.t2.rsrc'
+    benchmark: 'rsrc/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.t2.rsrc'
     threads: 2
     resources:
              runtime_hrs= 1,
@@ -101,7 +101,7 @@ rule compute_statistics_joint_cluster_fastq:
     log:
         'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.log',
     benchmark:
-        'run/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.t2.rsrc'
+        'rsrc/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.fastq.t2.rsrc'
     threads: 2
     resources:
         runtime_hrs= lambda wildcards, attempt: attempt,
@@ -125,7 +125,7 @@ rule compute_statistics_split_cluster_fasta:
           dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.pck',
           summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.stats',
     log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.t2.rsrc'
+    benchmark: 'rsrc/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.t2.rsrc'
     message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     threads: 2
     resources:
@@ -150,7 +150,7 @@ rule compute_statistics_joint_cluster_fasta:
           dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.pck',
           summary = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.stats',
     log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.log',
-    benchmark: 'run/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.t2.rsrc'
+    benchmark: 'rsrc/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.t2.rsrc'
     message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
     threads: 2
     resources:
@@ -175,7 +175,7 @@ rule compute_statistics_complete_input_bam:
         dump = 'output/statistics/stat_dumps/{sample}.pbn.bam.pck',
         summary = 'input/bam/{sample}.stats',
     log: 'log/output/statistics/stat_dumps/{sample}.pbn.bam.log',
-    benchmark: 'run/output/statistics/stat_dumps/{sample}.pbn.bam.t2.rsrc'
+    benchmark: 'rsrc/output/statistics/stat_dumps/{sample}.pbn.bam.t2.rsrc'
     threads: 2
     resources:
         runtime_hrs= 23,
@@ -352,7 +352,7 @@ rule summarize_tagging_splitting_statistics:
     output:
         'output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.tsv'
     benchmark:
-        'run/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.rsrc'
+        'rsrc/output/statistics/tag_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/{hap_reads}.tags.{tag_type}.rsrc'
     priority: 200
     run:
         import os

@@ -76,7 +76,7 @@ rule run_breakpointr:
     log:
         'log/output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/breakpointr.log'
     benchmark:
-        os.path.join('run/output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}',
+        os.path.join('rsrc/output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}',
                      'breakpointr.t{}.rsrc'.format(config['num_cpu_high'])
                      )
     conda:
@@ -156,7 +156,7 @@ rule run_strandphaser:
     log:
         stp = 'log/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.phased.log',
     benchmark:
-        os.path.join('run/output/integrative_phasing/processing/strandphaser',
+        os.path.join('rsrc/output/integrative_phasing/processing/strandphaser',
                      PATH_INTEGRATIVE_PHASING + '.phased.t{}.rsrc'.format(config['num_cpu_high'])
                      )
     conda:
@@ -283,7 +283,7 @@ rule run_integrative_phasing:
     log:
         'log/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.log'
     benchmark:
-        'run/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.rsrc'
+        'rsrc/output/integrative_phasing/processing/whatshap/' + PATH_INTEGRATIVE_PHASING + '/{hap_reads}.{sequence}.phased.rsrc'
     conda:
         '../environment/conda/conda_biotools.yml'
     resources:
