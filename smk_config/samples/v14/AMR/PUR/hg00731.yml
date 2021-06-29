@@ -1,0 +1,47 @@
+
+sample_description_HG00731:
+  individual: HG00731
+  sex: male
+  super_population: AMR
+  population: PUR
+  family: PR05
+  member: parent
+  data_sources:
+    - long_reads:
+        readset: HG00731_hgsvc_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG00731/
+    - strandseq:
+        readset: &sseq_reads HG00731_1kg_il25k-npe_sseq
+        library_fractions: two
+        data_source_folder: /gpfs/project/projects/medbioinf/data/1000GP_strandseq/HG00731/
+    - short_reads:
+        readset: HG00731_1kg_il25k-125pe_short
+        source_type: ena
+        bioproject: PRJEB9396
+        load_type: parts
+    - short_reads:
+        readset: HG00731_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB31736
+        load_type: complete
+        comment: "2504 cohort"
+
+
+sample_targets_HG00731:
+  - aliases:
+      1: &ccs_reads HG00731_hgsvc_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sseq_reads: *sseq_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
+      var_caller: deepvar

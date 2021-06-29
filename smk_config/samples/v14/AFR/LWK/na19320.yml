@@ -1,0 +1,42 @@
+
+sample_description_NA19320:
+  individual: NA19320
+  sex: female
+  super_population: AFR
+  population: LWK
+  family: NA19320
+  member: unrelated
+  data_sources:
+    - long_reads:
+        readset: NA19320_hgsvc_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/GM19320/
+    - strandseq:
+        readset: &sseq_reads NA19320_hgsvc_ilnxs-80pe_sseq
+        library_fractions: one
+        library_qc: yes
+        #data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19320/
+    - short_reads:
+        readset: &short_reads NA19320_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
+
+sample_targets_NA19320:
+  - aliases:
+      1: &ccs_reads NA19320_hgsvc_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sseq_reads: *sseq_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
+      var_caller: deepvar
