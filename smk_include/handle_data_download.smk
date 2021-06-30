@@ -282,6 +282,7 @@ rule create_input_data_download_requests:
         #     tsv_metadata_files = []
 
         json_dump_files = [input.json_dump]
+        tsv_metadata_files = input.tsv_metadata
 
         try:
             sseq_exclude_files = list(input.sseq_exclude)
