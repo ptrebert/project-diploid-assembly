@@ -19,6 +19,13 @@ MALE_SAMPLES = [
     'NA24149'
 ]
 
+MALE_SUBSET = [
+    'HG00731',
+    'HG00512',
+    'NA19239',
+    'HG002'
+]
+
 FEMALE_SAMPLES = [
     'HG00732',
     'HG00733',
@@ -183,10 +190,7 @@ def find_script_path(script_name, subfolder=''):
 
 rule run_hic_assemblies:
     input:
-        'output/assemblies/layout/hifi_hic/HG00731/HG00731.done',
-        'output/assemblies/layout/hifi_hic/HG00512/HG00512.done',
-        'output/assemblies/layout/hifi_hic/NA19239/NA19239.done',
-        'output/assemblies/layout/hifi_hic/HG002/HG002.done'
+        ['output/assemblies/layout/hifi_hic/{sample}.hic.hap1.p_ctg.fasta'.format(s) for s in MALE_SUBSET],
 
 
 rule run_all:
@@ -1130,3 +1134,40 @@ rule hifiasm_hic_assembly:
     shell:
         'hifiasm -o {params.prefix} -t {threads} --l-msjoin 500000 --h1 {input.hic_reads1} --h2 {input.hic_reads2} {input.hifi_reads} &> {log.hifiasm} '
         ' && touch {output.assm_done}'
+
+
+rule convert_hic_tigs_gfa_to_fasta:
+    input:
+        gfa = 'output/assemblies/layout/hifi_hic/{sample}/{sample}.done'
+    output:
+        fasta1 = 'output/assemblies/layout/hifi_hic/{sample}.hic.hap1.p_ctg.fasta',
+        stats1 = 'output/assemblies/layout/hifi_hic/{sample}.hic.hap1.p_ctg.contig.stats',
+        fasta2 = 'output/assemblies/layout/hifi_hic/{sample}.hic.hap2.p_ctg.fasta',
+        stats2 = 'output/assemblies/layout/hifi_hic/{sample}.hic.hap2.p_ctg.contig.stats',
+    log:
+        'log/output/assemblies/{sample}.hic.p_ctg.gfa-convert.log'
+    benchmark:
+        'run/output/assemblies/{sample}.hic.p_ctg.gfa-convert' + '.t{}.rsrc'.format(config['num_cpu_low'])
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    wildcard_constraints:
+        sample = '(' + '|'.join(MALE_SAMPLES) + ')',
+    threads: config['num_cpu_low']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py'),
+        hap1_tigs = lambda wildcards, input: input.gfa.replace('.done', '.hic.hap1.p_ctg.gfa'),
+        hap2_tigs = lambda wildcards, input: input.gfa.replace('.done', '.hic.hap2.p_ctg.gfa'),
+    shell:
+        'echo "hap1" > {log}'
+        ' && '
+        '{params.script_exec} --gfa {params.hap1_tigs} --n-cpus {threads} '
+        '--out-fasta {output.fasta1} --out-stats {output.stats1} &>> {log}'
+        ' && '
+        'echo "hap2" >> {log}'
+        ' && '
+        '{params.script_exec} --gfa {params.hap2_tigs} --n-cpus {threads} '
+        '--out-fasta {output.fasta2} --out-stats {output.stats2} &>> {log}'
