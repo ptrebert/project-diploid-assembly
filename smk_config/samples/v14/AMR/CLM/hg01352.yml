@@ -1,0 +1,42 @@
+
+sample_description_HG01352:
+  individual: HG01352
+  sex: female
+  super_population: AMR
+  population: CLM
+  family: CLM29
+  member: child
+  data_sources:
+    - long_reads:
+        readset: HG01352_hgsvc_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG01352/
+    - strandseq:
+        readset: &sseq_reads HG01352_hgsvc_ilnxs-80pe_sseq
+        library_fractions: one
+        library_qc: yes
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG01352/
+    - short_reads:
+        readset: &short_reads HG01352_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
+
+sample_targets_HG01352:
+  - aliases:
+      1: &ccs_reads HG01352_hgsvc_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sseq_reads: *sseq_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
+      var_caller: deepvar

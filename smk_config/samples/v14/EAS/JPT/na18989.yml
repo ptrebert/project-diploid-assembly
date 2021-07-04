@@ -1,0 +1,42 @@
+
+sample_description_NA18989:
+  individual: NA18989
+  sex: male
+  super_population: EAS
+  population: JPT
+  family: NA18989
+  member: unrelated
+  data_sources:
+    - long_reads:
+        readset: NA18989_hgsvc_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/GM18989/
+    - strandseq:
+        readset: &sseq_reads NA18989_hgsvc_ilnxs-80pe_sseq
+        library_fractions: one
+        library_qc: yes
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/NA18989/
+    - short_reads:
+        readset: &short_reads NA18989_1kg_ilnvs-150pe_short
+        source_type: ena
+        bioproject: PRJEB36890
+        load_type: complete
+        comment: "698 cohort"
+
+sample_targets_NA18989:
+  - aliases:
+      1: &ccs_reads NA18989_hgsvc_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sseq_reads: *sseq_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
+      var_caller: deepvar
