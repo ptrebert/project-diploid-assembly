@@ -360,7 +360,7 @@ rule check_max_cluster_size:
 
         with open(output[0], 'w') as check_ok:
             for c in sorted(cache.keys()):
-                cluster_size = cache(c)
+                cluster_size = cache[c]
                 ratio = round(cluster_size / max_seq_len * 100, 2)
                 _ = check_ok.write('{}\t{}\t{}\n'.format(c, cluster_size, ratio))
 
