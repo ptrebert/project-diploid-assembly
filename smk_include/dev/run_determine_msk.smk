@@ -190,7 +190,7 @@ def find_script_path(script_name, subfolder=''):
 
 rule run_hic_assemblies:
     input:
-        ['output/assemblies/layout/hifi_hic/{sample}.hic.hap1.p_ctg.fasta'.format(s) for s in MALE_SUBSET],
+        ['output/assemblies/layout/hifi_hic/{sample}.hic.hap1.p_ctg.fasta'.format(sample) for sample in MALE_SUBSET],
 
 
 rule run_all:
@@ -1151,7 +1151,7 @@ rule convert_hic_tigs_gfa_to_fasta:
     conda:
         '../../environment/conda/conda_pyscript.yml'
     wildcard_constraints:
-        sample = '(' + '|'.join(MALE_SAMPLES) + ')',
+        sample = '(' + '|'.join(MALE_SUBSET) + ')',
     threads: config['num_cpu_low']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt * attempt,
@@ -1165,9 +1165,9 @@ rule convert_hic_tigs_gfa_to_fasta:
         'echo "hap1" > {log}'
         ' && '
         '{params.script_exec} --gfa {params.hap1_tigs} --n-cpus {threads} '
-        '--out-fasta {output.fasta1} --out-stats {output.stats1} &>> {log}'
+        '--out-fasta {output.fasta1} --out-map /dev/null --out-stats {output.stats1} &>> {log}'
         ' && '
         'echo "hap2" >> {log}'
         ' && '
         '{params.script_exec} --gfa {params.hap2_tigs} --n-cpus {threads} '
-        '--out-fasta {output.fasta2} --out-stats {output.stats2} &>> {log}'
+        '--out-fasta {output.fasta2} --out-map /dev/null --out-stats {output.stats2} &>> {log}'
