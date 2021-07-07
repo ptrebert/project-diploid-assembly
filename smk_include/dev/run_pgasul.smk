@@ -1,6 +1,41 @@
 localrules: run_all
 
 
+def find_script_path(script_name, subfolder=''):
+    """
+    Find full path to script to be executed. Function exists
+    to avoid config parameter "script_dir"
+
+    :param script_name:
+    :param subfolder:
+    :return:
+    """
+    import os
+
+    current_root = workflow.basedir
+    last_root = ''
+
+    script_path = None
+
+    for _ in range(workflow.basedir.count('/')):
+        if last_root.endswith('project-diploid-assembly'):
+            raise RuntimeError('Leaving project directory tree (next: {}). '
+                               'Cannot find script {} (subfolder: {}).'.format(current_root, script_name, subfolder))
+        check_path = os.path.join(current_root, 'scripts', subfolder).rstrip('/')  # if subfolder is empty string
+        if os.path.isdir(check_path):
+            check_script = os.path.join(check_path, script_name)
+            if os.path.isfile(check_script):
+                script_path = check_script
+                break
+        last_root = current_root
+        current_root = os.path.split(current_root)[0]
+
+    if script_path is None:
+        raise RuntimeError('Could not find script {} (subfolder {}). '
+                           'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
+    return script_path
+
+
 rule run_all:
     input:
         'output/alignments/ont_to_assm_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_v0151_2hap.r_utg.gaf',
@@ -15,11 +50,61 @@ wildcard_constraints:
     sample = 'NA24385'
 
 
+rule check_overlong_edges:
+    input:
+        gfa = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.gfa'
+    output:
+        discard = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.discard.links'
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_check_ovl.py'),
+        stats_out = lambda wildcards, output: output.discard.replace('.discard.links', '.stats')
+    resources:
+        mem_total_mb = 512,
+        runtime_hrs = 0,
+        runtime_min = 10,
+    shell:
+        '{params.script_exec} -g {input.gfa} &> {params.stats_out}'
+
+
+rule clean_input_gfa:
+    input:
+        gfa = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.gfa',
+        discard = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.discard.links'
+    output:
+        gfa = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.clean.gfa'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        skip_lines = []
+        with open(input.discard, 'r') as table:
+            for line in table:
+                if line.startswith('#'):
+                    continue
+                ln = line.split('\t')[0]
+                skip_lines.append(int(ln))
+        
+        if not skip_lines:
+            import os
+            os.symlink(input.gfa, output.gfa)
+        else:
+            gfa_buffer = io.StringIO()
+            with open(input.gfa, 'r') as gfa:
+                for ln, line in enumerate(gfa, start=1):
+                    if ln in skip_lines:
+                        continue
+                    gfa_buffer.write(line)
+            with open(output.gfa, 'w') as gfa:
+                _ = gfa.write(gfa_buffer.getvalue())
+    # END OF RUN BLOCK
+
+
 rule ont_to_graph_alignment:
     """
     """
     input:
-        graph = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.gfa',
+        container = ancient('graphaligner.sif'),
+        graph = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.clean.gfa',
         reads = 'input/ont/{sample}_{readset}.fa.gz',
     output:
         gaf = 'output/alignments/ont_to_{graph_type}_graph/{sample}_{readset}_MAP-TO_{graph}.{tigs}.gaf',
@@ -36,6 +121,7 @@ rule ont_to_graph_alignment:
         mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
     shell:
+        'module load Singularity && singularity exec {input.container} '
         'GraphAligner -g {input.graph} -f {input.reads} '
             '-x vg -t {threads} '
             '--min-alignment-score 100 --multimap-score-fraction 1 '
