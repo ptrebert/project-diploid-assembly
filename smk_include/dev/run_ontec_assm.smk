@@ -398,7 +398,7 @@ rule check_overlap_hifiasm_raw_unitig_graph:
 
 rule clean_hifiasm_raw_unitig_graph:
     input:
-        graph = ancient('/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/assemblies/freeze_v1/graphs/NA24385_hpg_pbsq2-ccs_1000/NA24385_hpg_pbsq2-ccs_1000.r_utg.gfa'),
+        gfa = ancient('/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/assemblies/freeze_v1/graphs/NA24385_hpg_pbsq2-ccs_1000/NA24385_hpg_pbsq2-ccs_1000.r_utg.gfa'),
         discard = 'output/asm_hifi/HG002_HiFi.asm-r_utg.discard.links',
     output:
         gfa = 'output/asm_hifi/HG002_HiFi.asm-r_utg-clean.gfa',
