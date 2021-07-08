@@ -55,15 +55,16 @@ rule check_overlong_edges:
         gfa = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.gfa'
     output:
         discard = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.discard.links'
+    conda: '../../environment/conda/conda_pyscript.yml'
     params:
         script_exec = lambda wildcards: find_script_path('gfa_check_ovl.py'),
         stats_out = lambda wildcards, output: output.discard.replace('.discard.links', '.stats')
     resources:
-        mem_total_mb = 512,
+        mem_total_mb = lambda wildcards, attempt: 512 * attempt,
         runtime_hrs = 0,
-        runtime_min = 10,
+        runtime_min = lambda wildcards, attempt: 10 * attempt,
     shell:
-        '{params.script_exec} -g {input.gfa} &> {params.stats_out}'
+        '{params.script_exec} -g {input.gfa} > {params.stats_out}'
 
 
 rule clean_input_gfa:
@@ -76,17 +77,20 @@ rule clean_input_gfa:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     run:
+        import os
+        import io
+        import shutil
+
         skip_lines = []
         with open(input.discard, 'r') as table:
             for line in table:
-                if line.startswith('#'):
+                if line.startswith('#') or not line.strip():
                     continue
                 ln = line.split('\t')[0]
                 skip_lines.append(int(ln))
         
         if not skip_lines:
-            import os
-            os.symlink(input.gfa, output.gfa)
+            shutil.copy(input.gfa, output.gfa)
         else:
             gfa_buffer = io.StringIO()
             with open(input.gfa, 'r') as gfa:
@@ -114,8 +118,8 @@ rule ont_to_graph_alignment:
         'log/output/alignments/ont_to_{graph_type}_graph/{sample}_{readset}_MAP-TO_{graph}.{tigs}.ga.log'
     benchmark:
         'rsrc/output/alignments/ont_to_{graph_type}_graph/{sample}_{readset}_MAP-TO_{graph}.{tigs}.ga.rsrc'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
+#    conda:
+#        '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
