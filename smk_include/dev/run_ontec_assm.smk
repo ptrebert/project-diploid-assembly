@@ -100,6 +100,20 @@ rule run_all:
         ),
         'output/assembly/layout/HG002_hifi-ontec_geq50000/HG002_hifi-ontec_geq50000.p_utg.gfa',
         'output/assembly/layout/HG002_hifi-ontec_geq0/HG002_hifi-ontec_geq0.p_utg.gfa',
+        expand(
+            'output/ont_aln/{filename}_mbg-k{kmer}-w{window}.ms{minscore}.raw-ec_MAP-TO_HG002_HiFi.asm-r_utg-clean.gaf',
+            zip,
+            filename=ALL_ONT_FILES['HG002'] * len(MBG_KMER_SIZE),
+            kmer=MBG_KMER_SIZE * 2,
+            window=MBG_WINDOW_SIZE * 2,
+            minscore=[GA_MIN_SCORE] * 2 * len(MBG_KMER_SIZE)
+        ),
+        expand(
+            'output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.asm-r_utg-clean.gaf',
+            reference='T2Tv11_38p13Y_chm13',
+            subset=['h2a', 'chrY'],
+            sample=['HG002']
+        )
         # 'output/assembly/layout/HG00733_hifi-ontec_geq50000/HG00733_hifi-ontec_geq50000.p_utg.gfa',
         # expand(
         #     'output/read_info/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.h5',
@@ -279,6 +293,30 @@ rule align_roi_sequences_to_mbg:
             '-a {output.gaf} &> {log}'
 
 
+rule align_roi_sequences_to_hifiasm:
+    input:
+        container = ancient('graphaligner.sif'),
+        graph = 'output/asm_hifi/{sample}_HiFi.asm-r_utg-clean.gfa',
+        reads = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.fasta')),
+    output:
+        gaf = 'output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.asm-r_utg-clean.gaf',
+    log:
+        'log/output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.asm-r_utg-clean.ga.log',
+    benchmark:
+        'rsrc/output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.asm-r_utg-clean.ga.rsrc',
+#    conda:
+#        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt
+    shell:
+        'module load Singularity && singularity exec {input.container} '
+        'GraphAligner -t {threads} -g {input.graph} -f {input.reads} '
+            '-x vg --min-alignment-score 500 --multimap-score-fraction 1 '
+            '-a {output.gaf} &> {log}'
+
+
 rule strip_sequences_from_graph:
     input:
         gfa = 'output/mbg_hifi/{sample}_HiFi.mbg-k{kmer}-w{window}.gfa'
@@ -337,6 +375,85 @@ rule ont_error_correction:
             '-x dbg -t {threads} '
             '--min-alignment-score {wildcards.minscore} --multimap-score-fraction 1 '
             '--corrected-clipped-out {output.ec_reads_clip} --corrected-out {output.ec_reads_raw} '
+            '-a {output.gaf} &> {log}'
+
+
+rule check_overlap_hifiasm_raw_unitig_graph:
+    input:
+        graph = ancient('/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/assemblies/freeze_v1/graphs/NA24385_hpg_pbsq2-ccs_1000/NA24385_hpg_pbsq2-ccs_1000.r_utg.gfa'),
+    output:
+        discard = 'output/asm_hifi/HG002_HiFi.asm-r_utg.discard.links',
+        stats = 'output/asm_hifi/HG002_HiFi.asm-r_utg.stats'
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 256 * attempt,
+        runtime_hrs = 0,
+        runtime_min = lambda wildcards, attempt: 10 * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_check_ovl.py')
+    shell:
+        '{params.script_exec} --graph {input.graph} --out-discard {output.discard} --out-stats {output.stats}'
+
+
+rule clean_hifiasm_raw_unitig_graph:
+    input:
+        graph = ancient('/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/assemblies/freeze_v1/graphs/NA24385_hpg_pbsq2-ccs_1000/NA24385_hpg_pbsq2-ccs_1000.r_utg.gfa'),
+        discard = 'output/asm_hifi/HG002_HiFi.asm-r_utg.discard.links',
+    output:
+        gfa = 'output/asm_hifi/HG002_HiFi.asm-r_utg-clean.gfa',
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import os
+        import io
+        import shutil
+
+        skip_lines = []
+        with open(input.discard, 'r') as table:
+            for line in table:
+                if line.startswith('#') or not line.strip():
+                    continue
+                ln = line.split('\t')[0]
+                skip_lines.append(int(ln))
+        
+        if not skip_lines:
+            shutil.copy(input.gfa, output.gfa)
+        else:
+            gfa_buffer = io.StringIO()
+            with open(input.gfa, 'r') as gfa:
+                for ln, line in enumerate(gfa, start=1):
+                    if ln in skip_lines:
+                        continue
+                    gfa_buffer.write(line)
+            with open(output.gfa, 'w') as gfa:
+                _ = gfa.write(gfa_buffer.getvalue())
+    # END OF RUN BLOCK
+
+
+rule align_raw_ontec_to_hifiasm_rutg:
+    input:
+        container = ancient('graphaligner.sif'),
+        graph = 'output/asm_hifi/HG002_HiFi.asm-r_utg-clean.gfa',
+        reads = 'output/ont_ec/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.raw-ec.fa.gz',
+    output:
+        gaf = 'output/ont_aln/{filename}_mbg-k{kmer}-w{window}.ms{minscore}.raw-ec_MAP-TO_HG002_HiFi.asm-r_utg-clean.gaf',
+    log:
+        'log/output/ont_aln/{filename}_mbg-k{kmer}-w{window}.ms{minscore}.raw-ec_MAP-TO_HG002_HiFi.asm-r_utg-clean.ga.log'
+    benchmark:
+        'rsrc/output/ont_aln/{filename}_mbg-k{kmer}-w{window}.ms{minscore}.raw-ec_MAP-TO_HG002_HiFi.asm-r_utg-clean.ga.rsrc'
+#    conda:
+#        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 65536 + 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    shell:
+        'module load Singularity && singularity exec {input.container} '
+        'GraphAligner -g {input.graph} -f {input.reads} '
+            '-x vg -t {threads} '
+            '--min-alignment-score {wildcards.minscore} --multimap-score-fraction 1 '
             '-a {output.gaf} &> {log}'
 
 
@@ -536,7 +653,6 @@ rule hifiasm_hifi_ontec_assembly:
         discard = multiext(
             'output/assembly/layout/{sample}_hifi-ontec_geq{size_fraction}/{sample}_hifi-ontec_geq{size_fraction}',
             '.a_ctg.gfa', '.a_ctg.noseq.gfa',
-            '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
             '.p_ctg.noseq.gfa', '.p_utg.noseq.gfa',
             '.r_utg.noseq.gfa'
         )
