@@ -24,4 +24,3 @@ sample_targets_NA24149:
       vc_reads: *ccs_reads
   - target:
       nhr_assembler: hifiasm
-      var_caller: deepvar
