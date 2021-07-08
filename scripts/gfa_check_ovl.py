@@ -55,7 +55,7 @@ def determine_wrong_links(segment_lengths, links):
         segment_length = segment_lengths[segment_id]
         for (ln, link_length, other_segment) in segment_links:
             length_diff = segment_length - link_length
-            if length_diff < 0:
+            if length_diff < 1:
                 error_lengths.append(link_length)
                 error_links.append((ln, segment_id, other_segment, link_length, length_diff))
     
