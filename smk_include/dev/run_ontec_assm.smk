@@ -257,6 +257,7 @@ rule extract_roi_sequences:
 
 rule align_roi_sequences_to_mbg:
     input:
+        container = ancient('graphaligner.sif'),
         graph = 'output/mbg_hifi/{sample}_HiFi.mbg-k{kmer}-w{window}.gfa',
         reads = ancient(os.path.join(REFERENCE_FOLDER, '{reference}.{subset}.fasta')),
     output:
@@ -265,13 +266,14 @@ rule align_roi_sequences_to_mbg:
         'log/output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.mbg-k{kmer}-w{window}.ga.log',
     benchmark:
         'rsrc/output/roi_aln/{reference}.{subset}_MAP-TO_{sample}_HiFi.mbg-k{kmer}-w{window}.ga.rsrc',
-    conda:
-        '../../environment/conda/conda_biotools.yml'
+#    conda:
+#        '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 65536 * attempt,
         runtime_hrs = lambda wildcards, attempt: 12 * attempt
     shell:
+        'module load Singularity && singularity exec {input.container} '
         'GraphAligner -t {threads} -g {input.graph} -f {input.reads} '
             '-x dbg --min-alignment-score 500 --multimap-score-fraction 1 '
             '-a {output.gaf} &> {log}'
@@ -312,6 +314,7 @@ rule ont_error_correction:
     """
     """
     input:
+        container = ancient('graphaligner.sif'),
         graph = select_mbg_graph,
         reads = 'input/ont/{filename}.fa.gz',
     output:
@@ -322,13 +325,14 @@ rule ont_error_correction:
         'log/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.ga.log'
     benchmark:
         'rsrc/output/ont_aln/{filename}_MAP-TO_mbg-k{kmer}-w{window}.ms{minscore}.ga.rsrc'
-    conda:
-        '../../environment/conda/conda_biotools.yml'
+#    conda:
+#        '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 65536 + 32768 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
     shell:
+        'module load Singularity && singularity exec {input.container} '
         'GraphAligner -g {input.graph} -f {input.reads} '
             '-x dbg -t {threads} '
             '--min-alignment-score {wildcards.minscore} --multimap-score-fraction 1 '
