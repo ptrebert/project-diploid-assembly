@@ -38,12 +38,12 @@ def find_script_path(script_name, subfolder=''):
 
 rule run_all:
     input:
-        'output/alignments/ont_to_assm_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_v0151_2hap.r_utg.gaf',
-        'output/alignments/ont_to_assm_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_v0151_2hap.r_utg.gaf',
         'output/alignments/ont_to_assm_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_v0152_patg.r_utg.gaf',
         'output/alignments/ont_to_assm_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_v0152_patg.r_utg.gaf',
         'output/alignments/ont_to_mbg_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
         'output/alignments/ont_to_mbg_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
+        #'output/alignments/ont_to_assm_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_v0151_2hap.r_utg.gaf',
+        #'output/alignments/ont_to_assm_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_v0151_2hap.r_utg.gaf',
 
 
 wildcard_constraints:
@@ -122,13 +122,15 @@ rule ont_to_graph_alignment:
 #        '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+        mem_total_mb = lambda wildcards, attempt: 98304 + 49152 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 72 * attempt
+    params:
+        preset = lambda wildcards: 'dbg' if wildcards.tigs == 'mbg' else 'vg'
     shell:
         'module load Singularity && singularity exec {input.container} '
         'GraphAligner -g {input.graph} -f {input.reads} '
-            '-x vg -t {threads} '
-            '--min-alignment-score 100 --multimap-score-fraction 1 '
+            '-x {params.preset} -t {threads} '
+            '--min-alignment-score 500 --multimap-score-fraction 1 '
             '--corrected-clipped-out {output.ec_reads_clip} --corrected-out {output.ec_reads_raw} '
             '-a {output.gaf} &> {log}'
 
