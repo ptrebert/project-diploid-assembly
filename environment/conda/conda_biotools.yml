@@ -35,8 +35,8 @@ dependencies:
   - htslib=1.10.2
   - libdeflate=1.6
   - pysam=0.16.0
-  - samtools=1.10
   - bamtools=2.5.1
+  - pear=0.9.6
   - bedtools=2.30.0
   - bedops=2.4.37
   - bcftools=1.10
