@@ -1,3 +1,5 @@
+import pathlib
+
 localrules: run_all
 
 
@@ -160,3 +162,50 @@ rule build_hifi_read_graph:
         runtime_hrs = lambda wildcards, attempt: 6 * attempt
     shell:
         'MBG -i {input} -o {output} -t {threads} -k 2001 -w 1000 &> {log}'
+
+
+def extract_read_length(library_name):
+
+    components = library_name.split('_')
+    library_info = components[2].split('-')[1].strip('pe')
+    read_length = int(library_info)
+    return read_length
+
+
+rule merge_strandseq_reads:
+    input:
+        mate1 = pathlib.Path(SSEQ_INPUT_DIR, '{sample}', '{library_id}_1.fastq.gz'),
+        mate2 = pathlib.Path(SSEQ_INPUT_DIR, '{sample}', '{library_id}_2.fastq.gz'),
+    output:
+        merged = 'output/sseq_merged/temp/{sample}/{library_id}.assembled.fastq',
+        discarded = 'output/sseq_merged/temp/{sample}/{library_id}.discarded.fastq',
+        skip_frw = 'output/sseq_merged/temp/{sample}/{library_id}.unassembled.forward.fastq',
+        skip_rev = 'output/sseq_merged/temp/{sample}/{library_id}.unassembled.reverse.fastq',
+    log: 'log/output/sseq_merged/temp/{sample}/{library_id}.pear.log',
+    benchmark: 'rsrc/output/sseq_merged/temp/{sample}/{library_id}.pear.rsrc',
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 128 * attempt,
+    params:
+        min_trim_length = lambda wildcards: int(round(extract_read_length(wildcards.library) * 0.8, 0)),
+        output_prefix = lambda wildcards, output: output.merged.rsplit('.', 2)[0] 
+    shell:
+        'pear -f {input.mate1} -r {input.mate2} -t {params.min_trim_length} '
+            '--memory {resources.mem_total_mb}M -o {params.output_prefix} &> {log}'
+
+
+rule concat_merged_and_unassembled:
+    input:
+        merged = 'output/sseq_merged/temp/{sample}/{library_id}.assembled.fastq',
+        unassembled = 'output/sseq_merged/temp/{sample}/{library_id}.unassembled.forward.fastq',
+    output:
+        fq = 'output/sseq_merged/{sample}/{library_id}.merged.fastq.gz'
+    benchmark: 'rsrc/output/sseq_merged/{sample}/{library_id}.merged.rsrc',
+    threads: 2
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    shell:
+        'seqtk seq -A -C {input.merged} {input.unassembled} | pigz -p {threads} --best > {output.fq}'
+
+
