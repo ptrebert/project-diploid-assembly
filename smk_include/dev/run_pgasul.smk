@@ -1,6 +1,6 @@
 import pathlib
 
-localrules: run_all
+localrules: run_all, collect_concat_strandseq
 
 
 def find_script_path(script_name, subfolder=''):
@@ -38,14 +38,33 @@ def find_script_path(script_name, subfolder=''):
     return script_path
 
 
+def collect_sseq_libs_per_sample():
+
+    import os
+
+    lut = dict()
+
+    for root, dirs, files in os.walk('input/sseq/'):
+        if not files:
+            continue
+        libs = sorted([f.rsplit('_', 1)[-2] for f in files if f.endswith('_1.fastq.gz')])
+        assert len(libs) > 1
+        sample = os.path.split(root)[-1]
+        assert all(sample in lib for lib in libs)
+        lut[sample] = libs
+    return lut
+
+
+SSEQ_SAMPLE_TO_LIBS = collect_sseq_libs_per_sample()
+
+
 rule run_all:
     input:
         'output/alignments/ont_to_assm_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_v0152_patg.r_utg.gaf',
         'output/alignments/ont_to_assm_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_v0152_patg.r_utg.gaf',
         'output/alignments/ont_to_mbg_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
         'output/alignments/ont_to_mbg_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
-        #'output/alignments/ont_to_assm_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_v0151_2hap.r_utg.gaf',
-        #'output/alignments/ont_to_assm_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_v0151_2hap.r_utg.gaf',
+        'output/sseq_merged/NA24385.merged.fofn'
 
 
 wildcard_constraints:
@@ -124,8 +143,8 @@ rule ont_to_graph_alignment:
 #        '../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 98304 + 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 72 * attempt
+        mem_total_mb = lambda wildcards, attempt: 90112 + 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 24 * attempt if wildcards.tigs == 'mbg' else 167
     params:
         preset = lambda wildcards: 'dbg' if wildcards.tigs == 'mbg' else 'vg'
     shell:
@@ -174,8 +193,8 @@ def extract_read_length(library_name):
 
 rule merge_strandseq_reads:
     input:
-        mate1 = pathlib.Path(SSEQ_INPUT_DIR, '{sample}', '{library_id}_1.fastq.gz'),
-        mate2 = pathlib.Path(SSEQ_INPUT_DIR, '{sample}', '{library_id}_2.fastq.gz'),
+        mate1 = 'input/sseq/{sample}/{library_id}_1.fastq.gz',
+        mate2 = 'input/sseq/{sample}/{library_id}_2.fastq.gz',
     output:
         merged = 'output/sseq_merged/temp/{sample}/{library_id}.assembled.fastq',
         discarded = 'output/sseq_merged/temp/{sample}/{library_id}.discarded.fastq',
@@ -195,7 +214,7 @@ rule merge_strandseq_reads:
             '--memory {resources.mem_total_mb}M -o {params.output_prefix} &> {log}'
 
 
-rule concat_merged_and_unassembled:
+rule concat_merged_and_unassembled_strandseq_reads:
     input:
         merged = 'output/sseq_merged/temp/{sample}/{library_id}.assembled.fastq',
         unassembled = 'output/sseq_merged/temp/{sample}/{library_id}.unassembled.forward.fastq',
@@ -208,4 +227,17 @@ rule concat_merged_and_unassembled:
     shell:
         'seqtk seq -A -C {input.merged} {input.unassembled} | pigz -p {threads} --best > {output.fq}'
 
+
+rule collect_concat_strandseq:
+    input:
+        lambda wildcards: expand(
+            'output/sseq_merged/{{sample}}/{library_id}.merged.fastq.gz',
+            library_id=SSEQ_SAMPLE_TO_LIBS[wildcards.sample]
+        )
+    output:
+        'output/sseq_merged/{sample}.merged.fofn'
+    run:
+        assert len(input) > 1
+        with open(output[0], 'w') as dump:
+            _ = dump.write('\n'.join(sorted(input)) + '\n')
 
