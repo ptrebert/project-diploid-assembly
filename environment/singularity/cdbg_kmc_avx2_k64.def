@@ -1,0 +1,35 @@
+Bootstrap: library
+From: library/default/alpine:3.9
+
+%post
+    apk --no-cache add coreutils git tar wget openssh cmake make pkgconfig zlib-dev build-base libc-dev linux-headers
+    mkdir sources
+    cd sources
+    TIMESTAMP=`date`
+    echo $TIMESTAMP > build.time
+    git clone https://github.com/pmelsted/bifrost.git
+    cd bifrost
+    git show --pretty=oneline -s > ../bifrost.commit
+    mkdir build
+    cd build
+    cmake -DCOMPILATION_ARCH=x86-64 -DENABLE_AVX2=ON -DMAX_KMER_SIZE=64 ..
+    make -j 4
+    make install
+    cd /sources
+    git clone https://github.com/tobiasmarschall/theupsetkmer.git
+    cd theupsetkmer
+    git show --pretty=oneline -s > ../upsetkmer.commit
+    g++ -fexceptions -O3 -std=c++11 -march=x86-64 -Wno-c++98-compat -c venn_diagram.cpp -o venn_diagram.o
+    g++ -o venn_diagram venn_diagram.o -s -O3 -lbifrost -pthread -lz
+    cp venn_diagram /usr/local/bin/
+    apk del coreutils git tar wget openssh make cmake gcc g++ linux-headers
+
+%runscript
+    echo "===================="
+    echo "Container build time"
+    cat /sources/build.time
+    echo "Bifrost version/commit"
+    cat /sources/bifrost.commit
+    echo "TheUpsetKmer version/commit"
+    cat /sources/upsetkmer.commit
+    echo "===================="
