@@ -70,7 +70,7 @@ rule dump_reads_fofn:
 rule build_bifrost_colored_dbg:
     input:
         container = 'bifrost_x86-64_AVX2_k64.sif',
-        read_files = 'input/NA18989_reads.fofn'
+        read_fofn = 'input/NA18989_reads.fofn'
     output:
         'output/cdbg/NA18989.gfa',
         'output/cdbg/NA18989.bfg_colors'
