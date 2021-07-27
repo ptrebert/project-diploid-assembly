@@ -5,6 +5,7 @@ import io
 import collections as col
 import argparse as argp
 import multiprocessing as mp
+import functools as fnt
 
 import pandas as pd
 
@@ -47,19 +48,29 @@ def parse_command_line():
         required=True,
         dest='out_stats'
     )
+    parser.add_argument(
+        '--break-lines',
+        '-b',
+        type=int,
+        default=120,
+        dest='break_lines'
+    )
     args = parser.parse_args()
     return args
 
 
-def parse_gfa_segment(line):
+def parse_gfa_segment(line, line_length):
     """
     Primarily intended for hifiasm segment lines
     """
     columns = line.strip().split()
     contig = columns[1]
     seq = columns[2]
-    seqlen = int(columns[-2].split(':')[-1])
-    assert seqlen == len(seq), 'length mismatch: {} / {} / {}'.format(contig, seqlen, len(seq))
+    if 'LN:' in columns[-2]:
+        seqlen = int(columns[-2].split(':')[-1])
+        assert seqlen == len(seq), 'length mismatch: {} / {} / {}'.format(contig, seqlen, len(seq))
+    else:
+        seqlen = len(seq)
     stats_counter = col.Counter(seq)
     stats_counter['LEN'] = seqlen
     stats = dict(stats_counter)
@@ -68,9 +79,13 @@ def parse_gfa_segment(line):
     buffer = io.StringIO()
     _ = buffer.write('>{}\n'.format(contig))
     bases_buffered = 0
-    for i in range(0, seqlen // 120 + 1):
-        buffered = buffer.write(seq[i*120:i*120+120] + '\n')
-        bases_buffered += (buffered - 1)
+    if line_length > 1:
+        for i in range(0, seqlen // line_length + 1):
+            bases_buffered += buffer.write(seq[i*line_length:i*line_length+line_length] + '\n')
+            bases_buffered -= 1
+    else:
+        bases_buffered = buffer.write(seq + '\n')
+        bases_buffered -= 1
     assert bases_buffered == seqlen, 'Dropped bases for {}: {} / {}'.format(contig, seqlen, bases_buffered)
     return buffer, stats
 
@@ -85,18 +100,21 @@ def parse_gfa_assembly(line):
     return contig, start, end, name, orient
 
 
-def parse_gfa_line(line):
-    if line.startswith('S'):
-        return parse_gfa_segment(line)
-    elif line.startswith('A'):
+def parse_gfa_line(line_length, line):
+    if not line.strip():
+        return None
+    first_char = line[0]
+    if first_char == 'S':
+        return parse_gfa_segment(line, line_length)
+    elif first_char == 'A':
         return parse_gfa_assembly(line)
-    elif line.startswith('L'):
+    elif first_char in ['#', 'H', 'L', 'C', 'P']:
         return None
     else:
         raise ValueError('Unexpected GFA line: {} .....'.format(line.strip()[:50]))
 
 
-def convert_gfa_to_fasta(gfa_file, threads):
+def convert_gfa_to_fasta(gfa_file, threads, line_length):
     """
     Primarily intended to convert hifiasm gfa to FASTA
     """
@@ -105,11 +123,13 @@ def convert_gfa_to_fasta(gfa_file, threads):
     read_to_contigs = []
     contig_stats = []
 
+    process_gfa_line = fnt.partial(parse_gfa_line, line_length)
+
     with open(gfa_file, 'r') as gfa:
 
         with mp.Pool(threads) as pool:
 
-            res_iter = pool.imap_unordered(parse_gfa_line, gfa)
+            res_iter = pool.imap_unordered(process_gfa_line, gfa)
             for res in res_iter:
                 if res is None:
                     continue
@@ -127,7 +147,7 @@ def convert_gfa_to_fasta(gfa_file, threads):
 def main():
     args = parse_command_line()
 
-    fasta_buffer, rc_map, stats = convert_gfa_to_fasta(args.gfa, args.n_cpus)
+    fasta_buffer, rc_map, stats = convert_gfa_to_fasta(args.gfa, args.n_cpus, args.break_lines)
 
     abs_fasta_path = os.path.abspath(args.out_fasta)
     abs_fasta_folder = os.path.dirname(abs_fasta_path)
