@@ -1,6 +1,6 @@
 import pathlib
 
-localrules: run_all, collect_concat_strandseq
+localrules: run_all, collect_aligned_strandseq
 
 
 def find_script_path(script_name, subfolder=''):
@@ -64,11 +64,13 @@ rule run_all:
         'output/alignments/ont_to_assm_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_v0152_patg.r_utg.gaf',
         'output/alignments/ont_to_mbg_graph/NA24385_giab_ULfastqs_guppy324_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
         'output/alignments/ont_to_mbg_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
-        'output/sseq_merged/NA24385.merged.fofn'
+        'output/alignments/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg.fofn',
+        'output/alignments/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg.fofn',
 
 
 wildcard_constraints:
-    sample = 'NA24385'
+    sample = 'NA24385',
+    tigs = '(r_utg|mbg)'
 
 
 rule check_overlong_edges:
@@ -234,16 +236,78 @@ rule concat_merged_and_unassembled_strandseq_reads:
         'pigz -p {params.compress_threads} --best > {output.fa}'
 
 
-rule collect_concat_strandseq:
+rule dump_graph_to_fasta:
+    input:
+        graph = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.clean.gfa',
+    output:
+        fasta = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.clean.fasta',
+        stats = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.clean.stats.tsv',
+    threads: config['num_cpu_low']
+    conda:
+        '../../environment/conda/conda_pyscript.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 + 4096 * attempt,
+    params:
+        script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py'),
+    shell:
+        '{params.script_exec} --graph {input.graph} --threads {threads} '
+            '--out-fasta {output.fasta} --out-stats {output.stats} --out-map /dev/null '
+            '--break-lines 0 '
+
+
+rule bwa_index_fasta:
+    input:
+        fasta = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.clean.fasta',
+    output:
+        multiext(
+            'input/{graph_type}_graph/{sample}.{graph}.{tigs}.clean/bwa_index',
+            '.amb', '.ann', '.bwt', '.pac', '.sa'
+        )
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    params:
+        prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0]
+    shell:
+        'bwa index -p {params.prefix} {input.fasta}'
+
+
+rule align_strandseq_to_tigs:
+    input:
+        index = 'input/{graph_type}_graph/{sample}.{graph}.{tigs}.clean/bwa_index.bwt',
+        reads = 'output/sseq_merged/{sample}/{library_id}.merged.fasta.gz'
+    output:
+        bam = 'output/alignments/sseq_to_{graph_type}_graph/{sample}/{library_id}_MAP-TO_{graph}.{tigs}.psort.mdup.bam',
+        bai = 'output/alignments/sseq_to_{graph_type}_graph/{sample}/{library_id}_MAP-TO_{graph}.{tigs}.psort.mdup.bam.bai',
+        tmp_bam = temp('output/alignments/temp/sseq_to_{graph_type}_graph/{sample}/{library_id}_MAP-TO_{graph}.{tigs}.psort.bam'),
+    conda:
+        '../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 + 4096 * attempt,
+    params:
+        prefix = lambda wildcards, input: input.index.rsplit('.', 1)[0],
+    shell:
+        'bwa mem -t {threads} -R "@RG\\tID:{wildcards.library_id}\\tPL:Illumina\\tSM:{wildcards.sample}" '
+            '{params.prefix} {input.reads} | '
+            'samtools sort -m 1024M -@ 2 -O BAM > {output.tmp_bam} '
+            ' && '
+            'sambamba markdup -t {threads} --overflow-list-size 1000000 --io-buffer-size=512 {output.tmp_bam} {output.bam} '
+            ' && '
+            'samtools index {output.bam}'
+
+
+rule collect_aligned_strandseq:
     input:
         lambda wildcards: expand(
-            'output/sseq_merged/{{sample}}/{library_id}.merged.fasta.gz',
+            'output/alignments/sseq_to_{{graph_type}}_graph/{{sample}}/{library_id}_MAP-TO_{{graph}}.{{tigs}}.psort.mdup.bam',
             library_id=SSEQ_SAMPLE_TO_LIBS[wildcards.sample]
         )
     output:
-        'output/sseq_merged/{sample}.merged.fofn'
+        'output/alignments/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.fofn',
     run:
         assert len(input) > 1
         with open(output[0], 'w') as dump:
             _ = dump.write('\n'.join(sorted(input)) + '\n')
-
