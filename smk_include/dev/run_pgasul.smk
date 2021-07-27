@@ -205,13 +205,14 @@ rule merge_strandseq_reads:
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 128 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        mem_pear_mb = lambda wildcards, attempt: 512 * attempt
     params:
         min_trim_length = lambda wildcards: int(round(extract_read_length(wildcards.library_id) * 0.8, 0)),
         output_prefix = lambda wildcards, output: output.merged.rsplit('.', 2)[0] 
     shell:
         'pear -f {input.mate1} -r {input.mate2} -t {params.min_trim_length} '
-            '--memory {resources.mem_total_mb}M -o {params.output_prefix} &> {log}'
+            '--memory {resources.mem_pear_mb}M -o {params.output_prefix} &> {log}'
 
 
 rule concat_merged_and_unassembled_strandseq_reads:
@@ -219,19 +220,24 @@ rule concat_merged_and_unassembled_strandseq_reads:
         merged = 'output/sseq_merged/temp/{sample}/{library_id}.assembled.fastq',
         unassembled = 'output/sseq_merged/temp/{sample}/{library_id}.unassembled.forward.fastq',
     output:
-        fq = 'output/sseq_merged/{sample}/{library_id}.merged.fastq.gz'
+        fa = 'output/sseq_merged/{sample}/{library_id}.merged.fasta.gz'
     benchmark: 'rsrc/output/sseq_merged/{sample}/{library_id}.merged.rsrc',
-    threads: 2
+    threads: 3
     conda:
         '../../environment/conda/conda_biotools.yml'
+    params:
+        script_exec = lambda wildcards: find_script_path('fasta_add_libname.py'),
+        compress_threads = 2
     shell:
-        'seqtk seq -A -C {input.merged} {input.unassembled} | pigz -p {threads} --best > {output.fq}'
+        'seqtk seq -A -C {input.merged} {input.unassembled} | '
+        '{params.script_exec} --lib-name {wildcards.library_id} | '
+        'pigz -p {params.compress_threads} --best > {output.fa}'
 
 
 rule collect_concat_strandseq:
     input:
         lambda wildcards: expand(
-            'output/sseq_merged/{{sample}}/{library_id}.merged.fastq.gz',
+            'output/sseq_merged/{{sample}}/{library_id}.merged.fasta.gz',
             library_id=SSEQ_SAMPLE_TO_LIBS[wildcards.sample]
         )
     output:
