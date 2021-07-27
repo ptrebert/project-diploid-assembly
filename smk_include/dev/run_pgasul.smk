@@ -250,7 +250,7 @@ rule dump_graph_to_fasta:
     params:
         script_exec = lambda wildcards: find_script_path('gfa_to_fasta.py'),
     shell:
-        '{params.script_exec} --graph {input.graph} --threads {threads} '
+        '{params.script_exec} --graph {input.graph} --n-cpus {threads} '
             '--out-fasta {output.fasta} --out-stats {output.stats} --out-map /dev/null '
             '--break-lines 0 '
 
@@ -266,7 +266,7 @@ rule bwa_index_fasta:
     conda:
         '../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 + 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: 4 * attempt
     params:
         prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0]
