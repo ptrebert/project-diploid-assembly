@@ -207,7 +207,7 @@ rule merge_strandseq_reads:
     resources:
         mem_total_mb = lambda wildcards, attempt: 128 * attempt,
     params:
-        min_trim_length = lambda wildcards: int(round(extract_read_length(wildcards.library) * 0.8, 0)),
+        min_trim_length = lambda wildcards: int(round(extract_read_length(wildcards.library_id) * 0.8, 0)),
         output_prefix = lambda wildcards, output: output.merged.rsplit('.', 2)[0] 
     shell:
         'pear -f {input.mate1} -r {input.mate2} -t {params.min_trim_length} '
