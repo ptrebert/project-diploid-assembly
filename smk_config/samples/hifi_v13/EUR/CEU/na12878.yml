@@ -5,7 +5,7 @@ sample_description_NA12878:
   super_population: EUR
   population: CEU
   family: 1463
-  member: child
+  member: mother
   data_sources:
     - long_reads:
         readset: NA12878_giab_pbsq2-ccs
