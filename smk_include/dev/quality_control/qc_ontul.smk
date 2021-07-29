@@ -31,12 +31,12 @@ rule run_all:
             'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf',
             zip,
             sample=['NA18989'] * 4,
-            readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom'] * 2,
+            readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom', 'ONTUL_guppy-4.0.11-hac-prom'],
             kmer=[1001, 3001] * 2,
             window=[500, 2000] * 2
         ),
-        'output/kmer_stats/NA18989_ONTUL_guppy-5.0.11-sup-prom.unsupported.txt',
-        'output/kmer_stats/NA18989_ONTUL_guppy-4.0.11-hac-prom.unsupported.txt'
+        ukm5sup = 'output/kmer_stats/NA18989_ONTUL_guppy-5.0.11-sup-prom.unsupported.txt',
+        ukm4hac = 'output/kmer_stats/NA18989_ONTUL_guppy-4.0.11-hac-prom.unsupported.txt'
 
         #'output/cdbg/NA18989.gfa',
 
