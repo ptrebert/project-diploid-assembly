@@ -205,10 +205,10 @@ rule ont_to_graph_alignment:
         'rsrc/output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.ga.rsrc'
 #    conda:
 #        '../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 90112 + 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 24 * attempt
+        mem_total_mb = lambda wildcards, attempt: 90112 + 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt
     params:
         preset = 'dbg'
     shell:
@@ -234,5 +234,6 @@ rule dump_unsupported_kmers:
         '../../../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
     shell:
         'meryl print [difference {input.ont_db} {input.hifiec} {input.hifiaf} {input.short}] > {output}'
