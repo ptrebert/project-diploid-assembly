@@ -20,6 +20,9 @@ INPUT_READS = [
 
 READSETS = [os.path.basename(x.rsplit('.', 2)[0]) for x in INPUT_READS]
 
+wildcard_constraints:
+    sample = 'NA18989'
+
 rule run_all:
     input:
         readsets = INPUT_READS,
@@ -31,7 +34,9 @@ rule run_all:
             readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom'] * 2,
             kmer=[1001, 3001] * 2,
             window=[500, 2000] * 2
-        )
+        ),
+        'output/kmer_stats/NA18989_ONTUL_guppy-5.0.11-sup-prom.unsupported.txt',
+        'output/kmer_stats/NA18989_ONTUL_guppy-4.0.11-hac-prom.unsupported.txt'
 
         #'output/cdbg/NA18989.gfa',
 
@@ -110,9 +115,9 @@ def count_kmer_runtime(wildcards, attempt):
     if 'HIFI' in wildcards.readset:
         return 24 * attempt
     elif 'ONT' in wildcards.readset:
-        return attempt * attempt * attempt
+        return 12 * attempt
     else:
-        return attempt * attempt
+        return attempt * attempt * attempt
 
 
 def count_kmer_memory(wildcards, attempt, unit='mb'):
@@ -120,9 +125,9 @@ def count_kmer_memory(wildcards, attempt, unit='mb'):
     if 'HIFI' in wildcards.readset:
         mem = 176128
     elif 'ONT' in wildcards.readset:
-        mem = 81920
+        mem = 90112
     else:
-        mem = 8192
+        mem = 32768
     if unit == 'gb':
         mem = int(mem / 1024)
     return mem * attempt
@@ -146,7 +151,7 @@ rule meryl_count_kmers:
     benchmark:
         'rsrc/output/kmer_db/{readset}.meryl.rsrc'
     conda:
-        '../../environment/conda/conda_biotools.yml'
+        '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt),
@@ -175,7 +180,7 @@ rule build_hifi_read_dbg:
     benchmark:
         'rsrc/output/mbg_hifi/NA18989_HIFIEC.mbg-k{kmer}-w{window}.rsrc'
     conda:
-        '../../environment/conda/conda_biotools.yml'
+        '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
@@ -213,3 +218,21 @@ rule ont_to_graph_alignment:
             '--min-alignment-score 10000 --multimap-score-fraction 1 '
             '--corrected-clipped-out {output.ec_reads_clip} '
             '-a {output.gaf} &> {log}'
+
+
+rule dump_unsupported_kmers:
+    input:
+        ont_db = 'output/kmer_db/{readset}.meryl',
+        hifiec = 'output/kmer_db/NA18989_HIFIEC_hifiasm-v0.15.4.meryl',
+        hifiaf = 'output/kmer_db/NA18989_HIFIAF_pgas-v14-dev.meryl',
+        short = 'output/kmer_db/NA18989_ERR3239679.meryl',
+    output:
+        'output/kmer_stats/{readset}.unsupported.txt'
+    benchmark:
+        'rsrc/output/kmer_stats/{readset}.unsupported.meryl.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+    shell:
+        'meryl print [difference {input.ont_db} {input.hifiec} {input.hifiaf} {input.short}] > {output}'
