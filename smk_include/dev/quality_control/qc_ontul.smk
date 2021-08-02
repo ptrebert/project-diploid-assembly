@@ -35,9 +35,16 @@ rule run_all:
             kmer=[1001, 3001] * 2,
             window=[500, 2000] * 2
         ),
-        ukm5sup = 'output/kmer_stats/NA18989_ONTUL_guppy-5.0.11-sup-prom.unsupported.txt',
-        ukm4hac = 'output/kmer_stats/NA18989_ONTUL_guppy-4.0.11-hac-prom.unsupported.txt'
-
+        ukm5sup = 'output/kmer_stats/NA18989_ONTUL_guppy-5.0.11-sup-prom.unsupported.counts.tsv',
+        ukm4hac = 'output/kmer_stats/NA18989_ONTUL_guppy-4.0.11-hac-prom.unsupported.counts.tsv',
+        align_stats = expand(
+            'output/aln_stats/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf-stats.tsv.gz',
+            zip,
+            sample=['NA18989'] * 4,
+            readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom', 'ONTUL_guppy-4.0.11-hac-prom'],
+            kmer=[1001, 3001] * 2,
+            window=[500, 2000] * 2
+        ),
         #'output/cdbg/NA18989.gfa',
 
 
@@ -227,13 +234,97 @@ rule dump_unsupported_kmers:
         hifiaf = 'output/kmer_db/NA18989_HIFIAF_pgas-v14-dev.meryl',
         short = 'output/kmer_db/NA18989_ERR3239679.meryl',
     output:
-        'output/kmer_stats/{readset}.unsupported.txt'
+        'output/kmer_stats/{readset}.unsupported.txt.gz'
     benchmark:
         'rsrc/output/kmer_stats/{readset}.unsupported.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
     shell:
-        'meryl print [difference {input.ont_db} {input.hifiec} {input.hifiaf} {input.short}] > {output}'
+        'meryl print [difference {input.ont_db} {input.hifiec} {input.hifiaf} {input.short}] | pigz -p {threads} --best > {output}'
+
+
+rule create_unsupported_kmer_histogram:
+    input:
+        'output/kmer_stats/{readset}.unsupported.txt.gz'
+    output:
+        'output/kmer_stats/{readset}.unsupported.counts.tsv'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
+    run:
+        import gzip
+        import collections as col
+
+        hist = col.Counter()
+
+        with gzip.open(input[0], 'rt') as dump:
+            for ln, line in enumerate(dump, start=1):
+                try:
+                    _, abundance = line.split()
+                    hist[int(abundance)] += 1
+                except (ValueError, IndexError) as err:
+                    if not line.strip():
+                        continue
+                    raise ValueError(f'LN: {ln} - {str(err)}')
+        
+        with open(output[0], 'w') as dump:
+            _ = dump.write('abundance\tcount\n')
+            for k in sorted(hist.keys()):
+                c = hist[k]
+                _ = dump.write(f'{k}\t{c}\n')
+    # END OF RUN BLOCK
+
+
+def process_gaf_line(translation_table, gaf_line):
+
+    _, rdlen, alns, alne, _, path, _, _, _, resmatch, _, _, _, ascore, _, identity, _ = gaf_line.split()
+    aligned_length = int(alne) - int(alns)
+    aligned_fraction = round(aligned_length / int(rdlen) * 100, 2)
+    matched_fraction = round(int(resmatch) / int(rdlen) * 100, 2)
+    ascore = int(round(float(ascore.split(':')[-1]), 0))
+    identity = round(float(identity.split(':')[-1]) * 100, 2)
+    nodes = path.translate(translation_table).split()
+    return rdlen, aligned_length, aligned_fraction, matched_fraction, ascore, identity, nodes
+
+
+rule collect_gaf_statistics:
+    input:
+        'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf',
+    output:
+        'output/aln_stats/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf-stats.tsv.gz',
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
+    run:
+        import gzip
+
+        translation_table = dict((i,i) for i in '1234567890')
+        translation_table['>'] = ' '
+        translation_table['<'] = ' '
+        translation_table = str.maketrans(translation_table)
+
+        data_keys = [
+            'read_length',
+            'aligned_length',
+            'aligned_fraction',
+            'matched_fraction',
+            'tag_AS',
+            'tag_ID',
+            'node'
+        ]
+
+        with gzip.open(output[0], 'wt') as dump:
+            _ = dump.write(f'key\tvalue\n')
+            with open(input[0], 'r') as gaf:
+                for ln, line in enumerate(gaf, start=1):
+                    values = process_gaf_line(translation_table, line)
+                    for key, value in zip(data_keys, values):
+                        if key == 'node':
+                            for node in value:
+                                _ = dump.write(f'node\t{node}\n')
+                        else:
+                            _ = dump.write(f'{key}\t{value}\n')
+
+    # END OF RUN BLOCK
