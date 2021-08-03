@@ -137,6 +137,8 @@ def check_sample_description(sample_in_filename, sample_desc, metadata):
         if cfg_key == 'member':
             if cfg_value == 'parent' and md_value in ['mother', 'father']:
                 continue
+            if cfg_value in ['unrelated', 'unspecified'] and md_value in ['unrelated', 'unspecified']:
+                continue
         err_msg += f'Sample {sample_in_filename} metadata mismatch for keys {cfg_key} / {md_key}: '
         err_msg += f'SAMPLE CFG [found] {cfg_value} / METADATA [expect] {md_value}\n'
 
