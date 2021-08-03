@@ -66,6 +66,8 @@ rule run_all:
         'output/alignments/ont_to_mbg_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
         'output/alignments/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg.fofn',
         'output/alignments/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg.fofn',
+        'output/saarclust/NA24385/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg/clustering/ss_clusters.data',
+        'output/saarclust/NA24385/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg/clustering/ss_clusters.data'
 
 
 wildcard_constraints:
@@ -311,3 +313,42 @@ rule collect_aligned_strandseq:
         assert len(input) > 1
         with open(output[0], 'w') as dump:
             _ = dump.write('\n'.join(sorted(input)) + '\n')
+
+
+SAARCLUSTER=[f'cluster{i}' for i in range(1,24)]
+
+rule run_saarclust_script:
+	input:
+		bam = lambda wildcards: expand(
+            'output/alignments/sseq_to_{{graph_type}}_graph/{{sample}}/{library_id}_MAP-TO_{{graph}}.{{tigs}}.psort.mdup.bam',
+            library_id=SSEQ_SAMPLE_TO_LIBS[wildcards.sample]
+        ),
+        bai = lambda wildcards: expand(
+            'output/alignments/sseq_to_{{graph_type}}_graph/{{sample}}/{library_id}_MAP-TO_{{graph}}.{{tigs}}.psort.mdup.bam.bai',
+            library_id=SSEQ_SAMPLE_TO_LIBS[wildcards.sample]
+        )
+	output:
+    	ss_clust='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/ss_clusters.data',
+		hard_clust='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/hard_clusters.RData',
+		soft_clust='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/soft_clusters.RData',
+		ML_clust='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/MLclust.data',
+		ss_clust_sp=expand(
+            'output/saarclust/{{sample}}/sseq_to_{{graph_type}}_graph/{{sample}}_MAP-TO_{{graph}}.{{tigs}}/clustering/ss_clusters_{cluster}.data',
+            cluster=SAARCLUSTER),
+		clust_pairs='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/clust_partners.txt',
+		wc_cells_clusters='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/wc_cells_clusters.data'
+	log:
+        'log/output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.log'
+    benchmark:
+        'rsrc/output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.rsrc'
+    conda: '../../environment/conda/conda_rscript.yml'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt
+	params:
+		input_type='bam',
+		num_clusters=80,
+		num_alignments=30000,
+		EMiter=2,
+	threads: config['num_cpu_high']
+	script: pathlib.Path(pathlib.Path.cwd(), 'repos', 'haploclust', 'pipeline', 'utils', 'SaaRclust.snakemake.R')
