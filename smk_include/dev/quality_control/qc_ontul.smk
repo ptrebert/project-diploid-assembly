@@ -23,9 +23,42 @@ READSETS = [os.path.basename(x.rsplit('.', 2)[0]) for x in INPUT_READS]
 wildcard_constraints:
     sample = 'NA18989'
 
+
+def find_script_path(script_name, subfolder=''):
+    import os
+
+    current_root = workflow.basedir
+    last_root = ''
+
+    script_path = None
+
+    for _ in range(workflow.basedir.count('/')):
+        if last_root.endswith('project-diploid-assembly'):
+            raise RuntimeError('Leaving project directory tree (next: {}). '
+                               'Cannot find script {} (subfolder: {}).'.format(current_root, script_name, subfolder))
+        check_path = os.path.join(current_root, 'scripts', subfolder).rstrip('/')  # if subfolder is empty string
+        if os.path.isdir(check_path):
+            check_script = os.path.join(check_path, script_name)
+            if os.path.isfile(check_script):
+                script_path = check_script
+                break
+        last_root = current_root
+        current_root = os.path.split(current_root)[0]
+
+    if script_path is None:
+        raise RuntimeError('Could not find script {} (subfolder {}). '
+                           'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
+    return script_path
+
+
 rule run_all:
     input:
         readsets = INPUT_READS,
+        input_stats = expand(
+            'output/read_stats/input/{sample}_ONTUL_{basecaller}.summary.tsv',
+            sample=['NA18989'],
+            basecaller=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom']
+        ),
         kmer_dbs = expand('output/kmer_db/{readset}.total.count', readset=READSETS),
         ont_align = expand(
             'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf',
@@ -39,6 +72,14 @@ rule run_all:
         ukm4hac = 'output/kmer_stats/NA18989_ONTUL_guppy-4.0.11-hac-prom.unsupported.counts.tsv',
         align_stats = expand(
             'output/aln_stats/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf-stats.tsv.gz',
+            zip,
+            sample=['NA18989'] * 4,
+            readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom', 'ONTUL_guppy-4.0.11-hac-prom'],
+            kmer=[1001, 3001] * 2,
+            window=[500, 2000] * 2
+        ),
+        ontec_stats = expand(
+            'output/read_stats/ontec/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.summary.tsv',
             zip,
             sample=['NA18989'] * 4,
             readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom', 'ONTUL_guppy-4.0.11-hac-prom'],
@@ -79,6 +120,28 @@ rule merge_ont_data:
         runtime_hrs = lambda wildcards, attempt: 48 * attempt
     shell:
         'pigz -d -c {input} | seqtk seq -A -C | pigz -p {threads} --best > {output}'
+
+
+rule compute_input_read_stats:
+    input:
+        'input/ont/{sample}_ONTUL_{basecaller}.fasta.gz'
+    output:
+        dump = 'output/read_stats/input/{sample}_ONTUL_{basecaller}.dump.pck',
+        summary = 'output/read_stats/input/{sample}_ONTUL_{basecaller}.summary.tsv',
+    log:
+        'log/output/read_stats/{sample}_ONTUL_{basecaller}.comp-stats.log'
+    benchmark:
+        'rsrc/output/read_stats/{sample}_ONTUL_{basecaller}.comp-stats.rsrc'
+    conda: '../../../environment/conda/conda_pyscript.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
+    params:
+        script_exec = find_script_path('collect_read_stats.py')
+    shell:
+        '{params.script_exec} --input-files {input} --output {output.dump} --summary-output {output.summary} '
+            '--genome-size 3100000000 --num-cpu {threads} &> {log}'
 
 
 rule dump_reads_fofn:
@@ -227,6 +290,28 @@ rule ont_to_graph_alignment:
             '-a {output.gaf} &> {log}'
 
 
+rule compute_input_read_stats:
+    input:
+        'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.fa.gz',
+    output:
+        dump = 'output/read_stats/ontec/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.dump.pck',
+        summary = 'output/read_stats/ontec/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.summary.tsv',
+    log:
+        'log/output/read_stats/ontec/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.comp-stats.log'
+    benchmark:
+        'rsrc/output/read_stats/ontec/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.comp-stats.rsrc'
+    conda: '../../../environment/conda/conda_pyscript.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
+    params:
+        script_exec = find_script_path('collect_read_stats.py')
+    shell:
+        '{params.script_exec} --input-files {input} --output {output.dump} --summary-output {output.summary} '
+            '--genome-size 3100000000 --num-cpu {threads} &> {log}'
+
+
 rule dump_unsupported_kmers:
     input:
         ont_db = 'output/kmer_db/{readset}.meryl',
@@ -241,8 +326,8 @@ rule dump_unsupported_kmers:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt
     shell:
         'meryl print [difference {input.ont_db} {input.hifiec} {input.hifiaf} {input.short}] | pigz -p {threads} --best > {output}'
 
