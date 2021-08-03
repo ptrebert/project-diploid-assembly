@@ -1,33 +1,33 @@
 
-sample_description_HG02554:
-  individual: HG02554
-  sex: male
-  super_population: AMR
-  population: ACB
-  family: BB67
-  member: parent
+sample_description_NA20355:
+  individual: NA20355
+  sex: female
+  super_population: AFR
+  population: ASW
+  family: 2484a
+  member: unrelated
   data_sources:
     - long_reads:
-        readset: HG02554_hgsvc_pbsq2-ccs
+        readset: NA20355_hgsvc_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: parts
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG02554/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/GM20355/
 #    - strandseq:
-#        readset: &sseq_reads HG02554_hgsvc_ilnxs-80pe_sseq
+#        readset: &sseq_reads NA20355_hgsvc_ilnxs-80pe_sseq
 #        library_fractions: one
 #        library_qc: yes
-#        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG02554/
+#        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM20355/
     - short_reads:
-        readset: &short_reads HG02554_1kg_ilnvs-150pe_short
+        readset: &short_reads NA20355_1kg_ilnvs-150pe_short
         source_type: ena
         bioproject: PRJEB36890
         load_type: complete
         comment: "698 cohort"
 
-sample_targets_HG02554:
+sample_targets_NA20355:
   - aliases:
-      1: &ccs_reads HG02554_hgsvc_pbsq2-ccs_1000
+      1: &ccs_reads NA20355_hgsvc_pbsq2-ccs_1000
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads

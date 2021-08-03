@@ -4,7 +4,7 @@ sample_description_NA21487:
   sex: female
   super_population: AFR
   population: MKK
-  family: NA21487
+  family: 2618
   member: child
   data_sources:
     - long_reads:
