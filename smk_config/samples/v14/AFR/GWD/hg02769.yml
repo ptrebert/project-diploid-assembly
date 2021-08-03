@@ -12,7 +12,6 @@ sample_description_HG02769:
         technology: pacbio
         data_type: fastq
         load_type: parts
-        comment: "PRJNA339722 - MGI"
         data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG02769/
     - strandseq:
         readset: &sseq_reads HG02769_hgsvc_ilnxs-80pe_sseq
