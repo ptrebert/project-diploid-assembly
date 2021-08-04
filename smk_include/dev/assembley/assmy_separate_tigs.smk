@@ -7,7 +7,7 @@ rule dump_tigs_to_fasta:
     output:
         fasta = 'output/tigs/{sample_info}_{sample}.{tigs}.fasta'
     benchmark:
-        'output/tigs/{sample_info}_{sample}.{tigs}.dump.rsrc'
+        'rsrc/output/tigs/{sample_info}_{sample}.{tigs}.dump.rsrc'
     wildcard_constraints:
         tigs = '(TIGPRI|TIGALT|TIGRAW)',
         sample = CONSTRAINT_SAMPLES
@@ -97,7 +97,7 @@ rule merge_tigs_to_reference_bams:
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
-        mem_mb = lambda wildcards, attempt: 4096 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     shell:
         'samtools merge -l 6 -O BAM --no-PG -@ {threads} {output.bam} {input.bams} 2> {log} '
