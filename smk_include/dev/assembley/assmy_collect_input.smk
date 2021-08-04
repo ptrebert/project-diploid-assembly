@@ -1,72 +1,95 @@
-localrules: link_input_hifi_ec_reads,
-            link_input_hifi_assemblies
+
+import pathlib
+
+def read_sample_table(tsv_path):
+    import pandas as pd
+    import collections as col
+
+    df = pd.read_csv(tsv_path, sep='\t', header=0)
+    sample_infos = col.defaultdict(dict)
+
+    for row in df.itertuples(index=False):
+        sex = row.sex[0].upper()
+        assert sex in ['M', 'F']
+        long_sample = f'{row.super_population}-{row.population}-{row.family_id}-{sex}_{row.sample}'
+        sample_infos[row.sample]['long_id'] = long_sample
+        sample_infos[row.sample]['sex'] = sex
+    return sample_infos
 
 
-ROOT_FOLDER_SAMPLE_CONFIGS = '/home/local/work/code/github/project-diploid-assembly/smk_config/samples/hifi_v13'
-ROOT_FOLDER_ASSM_GRAPH = ''
-ROOT_FOLDER_HIFI_EC_READS = ''
+def add_hifiec_readsets(sample_infos, hifiec_path):
+
+    fasta_files = pathlib.Path(hifiec_path).glob('*.ec-reads.fasta.gz')
+    hifiec_samples = []
+
+    for fasta_file in fasta_files:
+        file_size_bytes = fasta_file.stat().st_size
+        if file_size_bytes < 15 * 1024**3:
+            # assume file is still being dumped to disk
+            continue
+        file_sample = fasta_file.name.split('_')[0]
+        assert file_sample in sample_infos
+        sample_infos[file_sample]['HIFIEC'] = fasta_file
+        hifiec_samples.append(file_sample)
+    return sample_infos, sorted(hifiec_samples)
 
 
-def collect_sexed_samples(top_dir):
-    import os
-    import yaml
-    import pathlib
+def add_assembly_graphs(sample_infos, assembly_path):
+    import collections as col
 
-    males = set()
-    females = set()
-    sample_long_id = dict()
+    graph_files = pathlib.Path(assembly_path).glob('**/*.gfa')
+    assembled_samples = set()
+    graph_count = col.Counter()
 
-    for root, dirs, files in os.walk(top_dir):
-        sample_configs = [f for f in files if f.endswith('.yml')]
-        for s in sample_configs:
-            sample = s.split('.')[0].upper()
-            with open(pathlib.Path(root, s), 'rb') as yaml_dump:
-                cfg = yaml.load(yaml_dump)
-                sample_info = cfg['sample_description_' + sample]
-                assert sample_info['individual'] == sample, f'Sample config error: {sample} / {s} / {sample_info}'
-                sex = sample_info['sex']
-                pop = sample_info['ASK']
-                super_pop = sample_info['super_population']
-                long_sample = f'{super_pop}_{pop}_{sample}'
-                if sex == 'male':
-                    males.add(sample)
-                    sample_long_id[sample] = long_sample
-                elif sex == 'female':
-                    females.add(sample)
-                    sample_long_id[sample] = long_sample
-                else:
-                    raise ValueError(f'Unknown sex: {sample_info}')
-
-    return sorted(males), sorted(females), sample_long_id
+    for graph_file in graph_files:
+        if 'noseq' in graph_file.name:
+            continue
+        if 'p_utg' in graph_file.name:
+            continue
+        file_sample = graph_file.name.split('_')[0]
+        assert file_sample in sample_infos
+        if 'a_ctg' in graph_file.name:
+            sample_infos[file_sample]['TIGALT'] = graph_file
+        elif 'p_ctg' in graph_file.name:
+            sample_infos[file_sample]['TIGPRI'] = graph_file
+        elif 'r_utg' in graph_file.name:
+            sample_infos[file_sample]['TIGRAW'] = graph_file
+        else:
+            raise ValueError(f'Unexpected file: {graph_file.name}')
+        assembled_samples.add(file_sample)
+        graph_count[file_sample] += 1
+    for n, c in graph_count.most_common():
+        if c != 3:
+            raise ValueError(f'Missing assembly graph type for sample {n}')
+    return sample_infos, sorted(assembled_samples)
 
 
-def find_hifi_ec_reads(input_dir, samples):
-    import os
-    import pathlib
+def add_ontul_readsets(sample_infos, assembly_path):
 
-    read_files = os.listdir(input_dir)
-    read_files = [f for f in read_files if f.split('_')[0] in samples]
-    read_files = [str(pathlib.Path(input_dir, f)) for f in read_files]
+    ontul_samples = []
 
-    return sorted(read_files)
+    return sample_infos, sorted(ontul_samples)
 
 
-rule link_input_hifi_ec_reads:
-    input:
-        reads = find_hifi_ec_reads
-    output:
-        link = 'input/ec_reads/{sample}.hifi.fasta.gz'
-    run:
-        import os
-        short_sample = wildcards.sample.split('_')[-1]
-
-        for read_file in input.reads:
-            if not read_file.startswith(short_sample):
-                continue
-            os.symlink(read_file, output.link)
-            break
+PATH_SAMPLE_TABLE = config['path_sample_table']
+PATH_HIFIEC_READS = config['path_hifiec_reads']
+PATH_ASSEMBLY_GRAPHS = config['path_assembly_graphs']
+PATH_ONTUL_READS = ''
 
 
+def init_samples_and_data():
+
+    location_smk_file = pathlib.Path(workflow.basedir)
+    location_sample_table = (location_smk_file / pathlib.Path(PATH_SAMPLE_TABLE)).resolve()
+    
+    sample_infos = read_sample_table(location_sample_table)
+    sample_infos, hifiec_samples = add_hifiec_readsets(sample_infos, PATH_HIFIEC_READS)
+    sample_infos, assembled_samples = add_assembly_graphs(sample_infos, PATH_ASSEMBLY_GRAPHS)
+    sample_infos, ontul_samples = add_ontul_readsets(sample_infos, PATH_ONTUL_READS)
+
+    return sample_infos, hifiec_samples, ontul_samples, assembled_samples
 
 
-males, females, sample_long_id = collect_sexed_samples(ROOT_FOLDER_SAMPLE_CONFIGS)
+SAMPLE_INFOS, HIFIEC_SAMPLES, ONTUL_SAMPLES, ASSEMBLED_SAMPLES = init_samples_and_data()
+
+CONSTRAINT_SAMPLES = '(' + '|'.join(sorted(SAMPLE_INFOS.keys())) + ')'

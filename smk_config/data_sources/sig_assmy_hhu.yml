@@ -1,0 +1,5 @@
+
+
+path_sample_table: '../../../annotation/samples/samples.tsv'
+path_hifiec_reads: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder/output/reference_assembly/non-hap-res/layout/hifiasm'
+path_assembly_graphs: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder/output/reference_assembly/non-hap-res/layout/hifiasm'
