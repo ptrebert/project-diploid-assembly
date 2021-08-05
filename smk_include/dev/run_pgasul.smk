@@ -316,15 +316,12 @@ rule collect_aligned_strandseq:
             _ = dump.write('\n'.join(sorted(input)) + '\n')
 
 
-SAARCLUSTER=[f'cluster{i}' for i in range(1,24)]
-
-
 rule write_haploclust_config_json:
     input:
         bam_aln = 'output/alignments/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.fofn',
-        sources = directory('repos/haploclust/R')
+        sources = 'repos/haploclust/R'
     output:
-        'output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/haploclust.cfg.json'
+        'output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/haploclust.cfg.json'
     params:
         threads = config['num_cpu_high'],
         input_type = 'bam',
@@ -351,7 +348,7 @@ rule write_haploclust_config_json:
                     continue
                 input_bam_files.append(line.strip())
         hc_config['input_alignment_files'] = sorted(input_bam_files)
-        hc_config['output_folder'] = str(pathlib.Path(input_bam_files[0]).parent)
+        hc_config['input_folder'] = str(pathlib.Path(input_bam_files[0]).parent)
 
         output_files = [
             'hard_clusters.RData',
@@ -367,12 +364,15 @@ rule write_haploclust_config_json:
             hc_config[cfg_key] = out_path
         
         with open(output[0], 'w') as dump:
-            _ = json.dump(hc_config, dump, encure_ascii=True, indent=2, sort_keys=True)
+            _ = json.dump(hc_config, dump, ensure_ascii=True, indent=2, sort_keys=True)
 
     # END OF RUN BLOCK
 
 
-rule run_saarclust_script:
+SSEQ_CLUSTER=[f'cluster{i}' for i in range(1,24)]
+
+
+rule run_haploclust_script:
     input:
         bam = lambda wildcards: expand(
             'output/alignments/sseq_to_{{graph_type}}_graph/{{sample}}/{library_id}_MAP-TO_{{graph}}.{{tigs}}.psort.mdup.bam',
@@ -381,21 +381,22 @@ rule run_saarclust_script:
         bai = lambda wildcards: expand(
             'output/alignments/sseq_to_{{graph_type}}_graph/{{sample}}/{library_id}_MAP-TO_{{graph}}.{{tigs}}.psort.mdup.bam.bai',
             library_id=SSEQ_SAMPLE_TO_LIBS[wildcards.sample]
-        )
+        ),
+        cfg = 'output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/haploclust.cfg.json'
     output:
-        ss_clust='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/ss_clusters.data',
-        hard_clust='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/hard_clusters.RData',
-        soft_clust='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/soft_clusters.RData',
-        ML_clust='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/MLclust.data',
+        ss_clust='output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/ss_clusters.data',
+        hard_clust='output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/hard_clusters.RData',
+        soft_clust='output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/soft_clusters.RData',
+        ML_clust='output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/MLclust.data',
         ss_clust_sp=expand(
-            'output/saarclust/{{sample}}/sseq_to_{{graph_type}}_graph/{{sample}}_MAP-TO_{{graph}}.{{tigs}}/clustering/ss_clusters_{cluster}.data',
-            cluster=SAARCLUSTER),
-        clust_pairs='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/clust_partners.txt',
-        wc_cells_clusters='output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/wc_cells_clusters.data'
+            'output/haploclust/{{sample}}/sseq_to_{{graph_type}}_graph/{{sample}}_MAP-TO_{{graph}}.{{tigs}}/clustering/ss_clusters_{cluster}.data',
+            cluster=SSEQ_CLUSTER),
+        clust_pairs='output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/clust_partners.txt',
+        wc_cells_clusters='output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/clustering/wc_cells_clusters.data'
     log:
-        'log/output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.log'
+        'log/output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.log'
     benchmark:
-        'rsrc/output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.rsrc'
+        'rsrc/output/haploclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.rsrc'
     conda: '../../environment/conda/conda_rhaploclust.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: 12 * attempt,
