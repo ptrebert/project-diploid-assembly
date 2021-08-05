@@ -351,4 +351,4 @@ rule run_saarclust_script:
         num_alignments=30000,
         EMiter=2,
     threads: config['num_cpu_high']
-    script: pathlib.Path(pathlib.Path.cwd(), 'repos', 'haploclust', 'pipeline', 'utils', 'SaaRclust.snakemake.R')
+    script: str(pathlib.Path(pathlib.Path.cwd(), 'repos', 'haploclust', 'pipeline', 'utils', 'SaaRclust.snakemake.R'))
