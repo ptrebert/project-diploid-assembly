@@ -1,6 +1,6 @@
 import pathlib
 
-localrules: run_all, collect_aligned_strandseq
+localrules: run_all, collect_aligned_strandseq, write_haploclust_config_json
 
 
 def find_script_path(script_name, subfolder=''):
@@ -66,8 +66,8 @@ rule run_all:
         'output/alignments/ont_to_mbg_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
         'output/alignments/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg.fofn',
         'output/alignments/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg.fofn',
-        'output/saarclust/NA24385/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg/clustering/ss_clusters.data',
-        'output/saarclust/NA24385/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg/clustering/ss_clusters.data'
+        'output/saarclust/NA24385/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg/haploclust.cfg.json',
+        'output/saarclust/NA24385/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg/haploclust.cfg.json'
 
 
 wildcard_constraints:
@@ -304,8 +304,9 @@ rule align_strandseq_to_tigs:
 rule collect_aligned_strandseq:
     input:
         lambda wildcards: expand(
-            'output/alignments/sseq_to_{{graph_type}}_graph/{{sample}}/{library_id}_MAP-TO_{{graph}}.{{tigs}}.psort.mdup.bam',
-            library_id=SSEQ_SAMPLE_TO_LIBS[wildcards.sample]
+            'output/alignments/sseq_to_{{graph_type}}_graph/{{sample}}/{library_id}_MAP-TO_{{graph}}.{{tigs}}.psort.mdup.bam{ext}',
+            library_id=SSEQ_SAMPLE_TO_LIBS[wildcards.sample],
+            ext=['', '.bai']
         )
     output:
         'output/alignments/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.fofn',
@@ -316,6 +317,60 @@ rule collect_aligned_strandseq:
 
 
 SAARCLUSTER=[f'cluster{i}' for i in range(1,24)]
+
+
+rule write_haploclust_config_json:
+    input:
+        bam_aln = 'output/alignments/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.fofn',
+        sources = directory('repos/haploclust/R')
+    output:
+        'output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}/haploclust.cfg.json'
+    params:
+        threads = config['num_cpu_high'],
+        input_type = 'bam',
+        num_clusters = 80,
+        em_iter = 2,
+        num_alignments = 30000,
+    run:
+        import json
+
+        hc_config = {
+            'num_cpu': params.threads,
+            'input_type': params.input_type,
+            'num_clusters': params.num_clusters,
+            'em_iter': params.em_iter,
+            'num_alignments': params.num_alignments,
+            'r_source_folder': input.sources  # special parameter
+        }
+
+        hc_config['output_folder'] = str(pathlib.Path(output[0]).parent / 'clustering')
+        input_bam_files = []
+        with open(input.bam_aln, 'r') as fofn:
+            for line in fofn:
+                if line.strip().endswith('.bai'):
+                    continue
+                input_bam_files.append(line.strip())
+        hc_config['input_alignment_files'] = sorted(input_bam_files)
+        hc_config['output_folder'] = str(pathlib.Path(input_bam_files[0]).parent)
+
+        output_files = [
+            'hard_clusters.RData',
+            'soft_clusters.RData',
+            'MLclust.data',
+            'ss_clusters.data',
+            'cluster_partners.txt',
+            'wc_cells_clusters.data'
+        ]
+        for out in output_files:
+            out_path = str(pathlib.Path(hc_config['output_folder']) / out)
+            cfg_key = out.rsplit('.', 1)[0]
+            hc_config[cfg_key] = out_path
+        
+        with open(output[0], 'w') as dump:
+            _ = json.dump(hc_config, dump, encure_ascii=True, indent=2, sort_keys=True)
+
+    # END OF RUN BLOCK
+
 
 rule run_saarclust_script:
     input:
@@ -341,7 +396,7 @@ rule run_saarclust_script:
         'log/output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.log'
     benchmark:
         'rsrc/output/saarclust/{sample}/sseq_to_{graph_type}_graph/{sample}_MAP-TO_{graph}.{tigs}.rsrc'
-    conda: '../../environment/conda/conda_rscript.yml'
+    conda: '../../environment/conda/conda_rhaploclust.yml'
     resources:
         runtime_hrs = lambda wildcards, attempt: 12 * attempt,
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt
