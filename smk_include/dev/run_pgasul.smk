@@ -66,8 +66,8 @@ rule run_all:
         'output/alignments/ont_to_mbg_graph/NA24385_ONT_PAD64459_Guppy32_MAP-TO_HIFIec_k2001_w1000.mbg.gaf',
         'output/alignments/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg.fofn',
         'output/alignments/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg.fofn',
-        'output/saarclust/NA24385/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg/haploclust.cfg.json',
-        'output/saarclust/NA24385/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg/haploclust.cfg.json'
+        'output/haploclust/NA24385/sseq_to_assm_graph/NA24385_MAP-TO_v0152_patg.r_utg/haploclust.cfg.json',
+        'output/haploclust/NA24385/sseq_to_mbg_graph/NA24385_MAP-TO_HIFIec_k2001_w1000.mbg/haploclust.cfg.json'
 
 
 wildcard_constraints:
