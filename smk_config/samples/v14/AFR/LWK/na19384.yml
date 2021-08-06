@@ -1,0 +1,47 @@
+
+sample_description_NA19384:
+    individual: NA19384
+    sex: male
+    super_population: AFR
+    population: LWK
+    family: NA19384
+    member: unspecified
+    data_sources:
+        - long_reads:
+            readset: NA19384_hgsvc_pbsq2-ccs
+            technology: pacbio
+            data_type: fastq
+            load_type: parts
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/NA19384
+        # - strandseq:
+        #     readset: NA19384_SSEQ_READSET
+        #     library_fractions: one
+        #     library_qc: yes
+        #     data_source_folder: EMPTY_PATH
+        # - short_reads:
+        #     readset: NA19384_SHORT_READSET
+        #     load_type: complete
+        #     data_source_folder: EMPTY_PATH
+        # - ont_reads:
+        #     readset: NA19384_ONT_READSET
+        #     load_type: parts
+        #     data_source_folder: EMPTY_PATH
+
+sample_targets_NA19384:
+  - aliases:
+      1: &long_reads NA19384_hgsvc_pbsq2-ccs_1000
+      2: &strandseq_reads NA19384_SSEQ_READSET
+      3: &ont_reads NA19384_ONT_READSET
+      4: &short_reads NA19384_SHORT_READSET
+  - defaults:
+      hap_reads: *long_reads
+      vc_reads: *long_reads
+#      sseq_reads: *strandseq_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
+      var_caller: deepvar
