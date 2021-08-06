@@ -54,10 +54,10 @@ def find_script_path(script_name, subfolder=''):
 rule run_all:
     input:
         readsets = INPUT_READS,
-        input_stats = expand(
+        ontul_stats = expand(
             'output/read_stats/input/{sample}_ONTUL_{basecaller}.summary.tsv',
             sample=['NA18989'],
-            basecaller=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom']
+            basecaller=['guppy-5.0.11-sup-prom', 'guppy-4.0.11-hac-prom']
         ),
         kmer_dbs = expand('output/kmer_db/{readset}.total.count', readset=READSETS),
         ont_align = expand(
@@ -94,7 +94,34 @@ rule run_all:
             kmer=[1001, 3001] * 2,
             window=[500, 2000] * 2
         ),
-        #'output/cdbg/NA18989.gfa',
+        ontul_jaccard = expand(
+            'output/kmer_stats/{sample}_ONTUL_{basecaller1}_vs_{sample}_ONTUL_{basecaller2}.union.count',
+            sample=['NA18989'],
+            basecaller1=['guppy-5.0.11-sup-prom'],
+            basecaller2=['guppy-4.0.11-hac-prom']
+        ),
+        ontec_jaccard = expand(
+            'output/kmer_stats/{readset1}_vs_{readset2}.union.count',
+            zip,
+            readset1=[
+                'NA18989_ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+                'NA18989_HIFIEC_hifiasm-v0.15.4',
+                'NA18989_ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+                'NA18989_ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+                'NA18989_ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+                'NA18989_ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+                'NA18989_HIFIEC_hifiasm-v0.15.4',
+            ],
+            readset2=[
+                'NA18989_ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+                'NA18989_HIFIAF_pgas-v14-dev',
+                'NA18989_HIFIEC_hifiasm-v0.15.4',
+                'NA18989_HIFIEC_hifiasm-v0.15.4',
+                'NA18989_ONTUL_guppy-4.0.11-hac-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+                'NA18989_ONTUL_guppy-4.0.11-hac-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+                'NA18989_ERR3239679'
+            ]
+        )
 
 
 def select_ont_input(wildcards):
@@ -358,14 +385,13 @@ rule create_unsupported_kmer_histogram:
     output:
         'output/kmer_stats/{readset}.unsupported.counts.tsv'
     resources:
-        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt
     run:
-        import gzip
         import collections as col
 
         hist = col.Counter()
 
-        with gzip.open(input[0], 'rt') as dump:
+        with open(input[0], 'r') as dump:
             for ln, line in enumerate(dump, start=1):
                 try:
                     _, abundance = line.split()
@@ -381,6 +407,26 @@ rule create_unsupported_kmer_histogram:
                 c = hist[k]
                 _ = dump.write(f'{k}\t{c}\n')
     # END OF RUN BLOCK
+
+
+rule prepare_ont_any_jaccard:
+    input:
+        db1 = 'output/kmer_db/{readset1}.meryl',
+        db2 = 'output/kmer_db/{readset2}.meryl',
+    output:
+        union = 'output/kmer_stats/{readset1}_vs_{readset2}.union.count',
+        intersect = 'output/kmer_stats/{readset1}_vs_{readset2}.intersect.count',
+    benchmark:
+        'rsrc/output/kmer_stats/{readset1}_vs_{readset2}.prepjacc.rsrc',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 16 * attempt
+    shell:
+        'meryl print [union {input.db1} {input.db2}] | wc -l > {output.union} '
+        ' && '
+        'meryl print [intersect {input.db1} {input.db2}] | wc -l > {output.intersect} '
 
 
 def process_gaf_line(translation_table, gaf_line):
