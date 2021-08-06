@@ -86,6 +86,14 @@ rule run_all:
             kmer=[1001, 3001] * 2,
             window=[500, 2000] * 2
         ),
+        ontec_ukm = expand(
+            'output/kmer_stats/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.unsupported.counts.tsv',
+            zip,
+            sample=['NA18989'] * 4,
+            readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom', 'ONTUL_guppy-4.0.11-hac-prom'],
+            kmer=[1001, 3001] * 2,
+            window=[500, 2000] * 2
+        ),
         #'output/cdbg/NA18989.gfa',
 
 
@@ -206,7 +214,16 @@ def count_kmer_memory(wildcards, attempt, unit='mb'):
 def select_sequence_input(wildcards):
 
     readset = [x for x in INPUT_READS if wildcards.readset in x]
-    assert len(readset) == 1
+    if len(readset) == 0:
+        if 'mbg' in wildcards.readset and 'HIFIEC' in wildcards.readset:
+            ontec_path = 'output/alignments/ont_to_mbg_hifi/' + wildcards.readset + '.clip-ec.fa.gz'
+            readset = [ontec_path]
+        else:
+            raise ValueError(f'Cannot determine desired output: {str(wildcards)}')
+    elif len(readset) == 1:
+        pass
+    else:
+        raise ValueError(f'Cannot determine desired output: {str(wildcards)}')
     return readset[0]
 
 
@@ -290,7 +307,7 @@ rule ont_to_graph_alignment:
             '-a {output.gaf} &> {log}'
 
 
-rule compute_input_read_stats:
+rule compute_ontec_read_stats:
     input:
         'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.fa.gz',
     output:
@@ -313,32 +330,35 @@ rule compute_input_read_stats:
 
 
 rule dump_unsupported_kmers:
+    """
+    Piping the k-mer counts to pigz for direct compression
+    extensively prolongs runtime (days...)
+    """
     input:
         ont_db = 'output/kmer_db/{readset}.meryl',
         hifiec = 'output/kmer_db/NA18989_HIFIEC_hifiasm-v0.15.4.meryl',
         hifiaf = 'output/kmer_db/NA18989_HIFIAF_pgas-v14-dev.meryl',
         short = 'output/kmer_db/NA18989_ERR3239679.meryl',
     output:
-        'output/kmer_stats/{readset}.unsupported.txt.gz'
+        'output/kmer_stats/{readset}.unsupported.txt'
     benchmark:
         'rsrc/output/kmer_stats/{readset}.unsupported.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: 16 * attempt
     shell:
-        'meryl print [difference {input.ont_db} {input.hifiec} {input.hifiaf} {input.short}] | pigz -p {threads} --best > {output}'
+        'meryl print [difference {input.ont_db} {input.hifiec} {input.hifiaf} {input.short}] > {output}'
 
 
 rule create_unsupported_kmer_histogram:
     input:
-        'output/kmer_stats/{readset}.unsupported.txt.gz'
+        'output/kmer_stats/{readset}.unsupported.txt'
     output:
         'output/kmer_stats/{readset}.unsupported.counts.tsv'
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     run:
         import gzip
         import collections as col
