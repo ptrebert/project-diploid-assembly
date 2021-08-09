@@ -7,6 +7,13 @@ if (any(grepl('login', host.name, fixed=TRUE), grepl('submit', host.name, fixed=
 }
 
 suppressMessages(library(rjson))
+suppressMessages(library(dplyr))
+suppressMessages(library(data.table))
+suppressMessages(library(Rsamtools))
+suppressMessages(library(doParallel))
+suppressMessages(library(matrixStats))
+suppressMessages(library(assertthat))
+suppressMessages(library(biovizBase))
 
 args = commandArgs(trailingOnly=TRUE)
 
