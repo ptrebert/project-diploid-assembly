@@ -555,7 +555,7 @@ rule winnowmap_align_readsets:
         readgroup_id = lambda wildcards: wildcards.readset.replace('.', ''),
         preset = lambda wildcards: 'map-ont' if 'ONTUL' in wildcards.readset else 'map-pb'
     shell:
-        'winnowmap -W {input.ref_repkmer} -k {wildcards.wmap_kmer} -t {resources.align_threads} -Y --eqx --MD -a -x {params.preset} '
+        'winnowmap -W {input.ref_repkmer} -k 15 -t {resources.align_threads} -Y -L --eqx --MD -a -x {params.preset} '
         '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
         '{input.reference} {input.reads} | '
         'samtools view -u -F 260 | '
