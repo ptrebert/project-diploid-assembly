@@ -103,3 +103,110 @@ rule merge_tigs_to_reference_bams:
         'samtools merge -l 6 -O BAM --no-PG -@ {threads} {output.bam} {input.bams} 2> {log} '
             ' && '
             'samtools index {output.bam}'
+
+
+rule dump_tigs_to_reference_to_bed:
+    input:
+        bam = 'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.psort.bam',
+        bai = 'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.psort.bam.bai',
+    output:
+        bed = 'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.psort.bed',
+    wildcard_constraints:
+        sample = CONSTRAINT_SAMPLES
+    benchmark:
+        'rsrc/output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.dumpbed.rsrc'
+    conda: '../../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        'bedtools bamtobed -i {input.bam} > {output.bed}'
+
+
+def load_sequence_names(file_path):
+    seq_names = set()
+    with open(file_path, 'r') as fasta:
+        for line in fasta:
+            if not line.startswith('>'):
+                continue
+            seq_name = line.strip()[1:]
+            seq_names.add(seq_name)
+    return seq_names
+
+
+rule classify_tigs:
+    input:
+        tigs_pri = 'output/tigs/{sample_info}_{sample}.TIGPRI.fasta',
+        tigs_alt = 'output/tigs/{sample_info}_{sample}.TIGALT.fasta',
+        bed = 'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.psort.bed',
+    output:
+        multiext(
+            'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.tigs',
+            '.AM.pass.txt', '.AM.fail.txt',
+            '.XY.pass.txt', '.XY.fail.txt',
+            '.AMXY.fail.txt', '.UN.fail.txt'
+        )
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: max(0, attempt - 1)
+    run:
+        import pandas as pd
+        import collections as col
+        bed_columns = ['chrom', 'start', 'end', 'tig', 'mapq', 'orientation']
+        df = pd.read_csv(input.bed, sep='\t', header=None, names=bed_columns)
+        auto_mito = [f'chr{i}' for i in range(1, 23)] + ['chrM']
+        df['karyo_group'] = df['chrom'].apply(lambda x: 'AM' if x in auto_mito else 'XY')
+        all_tigs = set().union(load_sequence_names(input.tigs_pri), load_sequence_names(input.tigs_alt))
+
+        # init output to ensure that all output files are always created
+        groups = {
+            ('AM', 'pass'): [],
+            ('AM', 'fail'): [],
+            ('XY', 'pass'): [],
+            ('XY', 'fail'): [],
+            ('AMXY', 'fail'): [],
+            ('UN', 'fail'): []
+        }
+
+        aligned_tigs = set()
+        for contig, alignments in df.groupby('contig'):
+            short_tig_name = contig.split('.')[1]
+            ext_tig_name = contig + '.'
+            if alignments['chrom'].nunique() == 1:
+                chrom = alignments['chrom'].values[0]
+                ext_tig_name += chrom
+                group_key = (alignments['karyo_group'].values[0], 'pass')
+            elif alignments['karyo_group'].nunique() == 1:
+                chrom = 'chr' + alignments['karyo_group'].values[0]
+                ext_tig_name += chrom
+                group_key = (alignments['karyo_group'].values[0], 'fail')
+            elif alignments['chrom'].nunique() > 1 and alignments['karyo_group'].nunique() > 1:
+                chrom = 'chrNN'
+                ext_tig_name += chrom
+                group_key = ('AMXY', 'fail')
+            else:
+                raise ValueError(f'Cannot process alignments: {alignments}')
+            groups[group_key].append(
+                (
+                    contig,
+                    short_tig_name,
+                    ext_tig_name
+                )
+            )
+            aligned_tigs.add(contig)
+        
+        for contig in (all_tigs - aligned_tigs):
+            groups[('UN', 'fail')].append(
+                (
+                    contig,
+                    contig.split('.')[1]
+                    contig + '.chrUN'
+                )
+            )
+        
+        base_out = output[0].rsplit('.', 3)[0]
+        for (karyo_group, tig_names), v in groups.items():
+            out_file = base_out + f'.{karyo_group}.{label}.txt'
+            with open(out_file, 'w') as dump:
+                _ = dump.write('\n'.join(['\t'.join(t) for t in sorted(tig_names)]) + '\n')
+    # END OF RUN BLOCK
