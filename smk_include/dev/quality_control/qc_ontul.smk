@@ -121,6 +121,17 @@ rule run_all:
                 'NA18989_ONTUL_guppy-4.0.11-hac-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
                 'NA18989_ERR3239679'
             ]
+        ),
+        read_cov = expand(
+            'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
+            sample=['NA18989'],
+            readset=[
+                'ONTUL_guppy-5.0.11-sup-prom',
+                'HIFIEC_hifiasm-v0.15.4',
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+            ],
+            reference=['T2Tv11_38p13Y_chm13']
         )
 
 
@@ -252,6 +263,27 @@ def select_sequence_input(wildcards):
     else:
         raise ValueError(f'Cannot determine desired output: {str(wildcards)}')
     return readset[0]
+
+
+rule meryl_count_reference_kmers:
+    input:
+        sequence = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta')
+    output:
+        kmer_db = directory('/gpfs/project/projects/medbioinf/data/references/{reference}.k15.db'),
+        rep_kmer = '/gpfs/project/projects/medbioinf/data/references/{reference}.k15.rep-grt09998.txt'
+    benchmark:
+        'rsrc/output/kmer_db/{reference}.meryl-ref-kmer.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 12288 + 4096 * attempt,
+        mem_total_gb = lambda wildcards, attempt: int((12288 + 4096 * attempt)/1024) - 2,
+        runtime_hrs = lambda wildcards, attempt: attempt
+    shell:
+        "meryl count k=15 threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.sequence} "
+            " && "
+            "meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}"
 
 
 rule meryl_count_kmers:
@@ -479,3 +511,54 @@ rule collect_gaf_statistics:
                             _ = dump.write(f'{key}\t{value}\n')
 
     # END OF RUN BLOCK
+
+# 'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.fa.gz',
+# 'input/ont/NA18989_ONTUL_guppy-5.0.11-sup-prom.fasta.gz',
+# 'input/hifi/NA18989_HIFIEC_hifiasm-v0.15.4.fasta.gz',
+
+def select_winnowmap_reads(wildcards):
+
+    if 'MAP-TO_HIFIEC' in wildcards.readset:
+        reads = [f'output/alignments/ont_to_mbg_hifi/{wildcards.sample}_{wildcards.readset}.clip-ec.fa.gz']
+    elif 'ONTUL' in wildcards.readset:
+        reads = [f'input/ont/{wildcards.sample}_{wildcards.readset}.fasta.gz']
+    elif 'HIFIEC' in wildcards.readset:
+        reads = [f'input/hifi/{wildcards.sample}_{wildcards.readset}.fasta.gz']
+    else:
+        raise ValueError(str(wildcards))
+    return reads
+
+
+rule winnowmap_align_readsets:
+    input:
+        reads = select_winnowmap_reads,
+        reference = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta'),
+        ref_repkmer = '/gpfs/project/projects/medbioinf/data/references/{reference}.k15.rep-grt09998.txt'
+    output:
+        bam = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
+        bai = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam.bai'
+    log:
+        'log/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.wmap.log'
+    benchmark:
+        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.wmap.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt ** 5,
+        mem_sort_mb = 4096,
+        align_threads = config['num_cpu_high'] - config['num_cpu_low'],
+        sort_threads = config['num_cpu_low'],
+    params:
+        individual = lambda wildcards: wildcards.sample,
+        readgroup_id = lambda wildcards: wildcards.readset.replace('.', ''),
+        preset = lambda wildcards: 'map-ont' if 'ONTUL' in wildcards.readset else 'map-pb'
+    shell:
+        'winnowmap -W {input.ref_repkmer} -k {wildcards.wmap_kmer} -t {resources.align_threads} -Y --eqx --MD -a -x {params.preset} '
+        '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
+        '{input.reference} {input.reads} | '
+        'samtools view -u -F 260 | '
+        'samtools sort -m {resources.mem_sort_mb}M -@ {resources.sort_threads} -O BAM > {output.bam} '
+        ' && '
+        'samtools index {output.bam}'
