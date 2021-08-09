@@ -330,7 +330,7 @@ def create_multi_panel_plot(cargs, stats, genome_length, logger):
         logger.debug('Plotting summary info')
 
         plot_values = [t for t in stats['summary'] if t[0].startswith('cov_geq_')]
-        x_values = np.array([int(t[0].split('_')[-1]) for t in plot_values], dtype=np.float16)
+        x_values = np.array([int(t[0].split('_')[-1]) for t in plot_values], dtype=np.float32)
         if x_values[1] >= 1000:
             x_values /= 1000
             x_label = 'Read length > X kbp'
