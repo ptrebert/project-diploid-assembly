@@ -708,6 +708,6 @@ rule compute_merqury_report:
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt ** 5,
     params:
-        out_prefix = lambda wildcards, output: output.rsplit('.', 1)[0]
+        out_prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0]
     shell:
         '$CONDA_PREFIX/share/merqury/eval/qv.sh {input.short_kmer_db} {input.long_reads} {params.out_prefix} &> {log}'
