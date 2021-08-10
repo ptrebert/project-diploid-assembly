@@ -14,10 +14,11 @@ sample_description_HG02666:
             load_type: parts
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG02666
         - strandseq:
-            readset: HG02769_hgsvc_ilnxs-80pe_sseq
+            readset: HG02666_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG02666
+            data_source_filter: ".txt.gz"
         # - short_reads:
         #     readset: HG02666_SHORT_READSET
         #     load_type: complete
@@ -30,7 +31,7 @@ sample_description_HG02666:
 sample_targets_HG02666:
   - aliases:
       1: &long_reads HG02666_hgsvc_pbsq2-ccs_1000
-      2: &strandseq_reads HG02769_hgsvc_ilnxs-80pe_sseq
+      2: &strandseq_reads HG02666_hgsvc_ilnxs-80pe_sseq
       3: &ont_reads HG02666_ONT_READSET
       4: &short_reads HG02666_SHORT_READSET
   - defaults:
