@@ -132,6 +132,17 @@ rule run_all:
                 'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
             ],
             reference=['T2Tv11_38p13Y_chm13']
+        ),
+        read_qv = expand(
+            'output/qv_est/{sample}_{readset}_REF-{short_reads}.qv',
+            sample=['NA18989'],
+            readset=[
+                'HIFIEC_hifiasm-v0.15.4',
+                'HIFIAF_pgas-v14-dev',
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000'
+            ],
+            short_reads=['ERR3239679']
         )
 
 
@@ -188,6 +199,123 @@ rule compute_input_read_stats:
     shell:
         '{params.script_exec} --input-files {input} --output {output.dump} --summary-output {output.summary} '
             '--genome-size 3100000000 --num-cpu {threads} &> {log}'
+
+
+rule short_read_quality_trimming:
+    """
+    Note that due to the rather "hidden" way trim-galore/cutadapt
+    are handling multithreading, the number of threads "4" is
+    internally translated to something like 15 or 16 (reading, writing etc.)
+    """
+    input:
+        mate1 = 'input/short/{readset}_1.fastq.gz',
+        mate2 = 'input/short/{readset}_2.fastq.gz'
+    output:
+        mate1 = 'input/short/{readset}/trimmed/{readset}_1_val_1.fq.gz',
+        report1 = 'input/short/{readset}/trimmed/{readset}_1.fastq.gz_trimming_report.txt',
+        mate2 = 'input/short/{readset}/trimmed/{readset}_2_val_2.fq.gz',
+        report2 = 'input/short/{readset}/trimmed/{readset}_2.fastq.gz_trimming_report.txt'
+    log:
+        'log/input/short/{readset}.trimming.log'
+    benchmark:
+        'run/input/short/{readset}.trimming.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: 16
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * 12,
+        mem_total_mb = lambda wildcards, attempt: 12288 * attempt,
+    params:
+        quality_trim = 20,
+        min_read_length = 51,
+        outdir = lambda wildcards, input: os.path.join('input', 'short', wildcards.readset, 'trimmed')
+    shell:
+        'trim_galore --quality {params.quality_trim} --length {params.min_read_length} '
+        '--trim-n --output_dir {params.outdir} --cores 4 --paired '
+        '{input.mate1} {input.mate2} &> {log}'
+
+
+def compute_lighter_alpha(trim_report1, trim_report2, genomesize):
+    """
+    rule of thumb: alpha=(7/C)
+    :param trim_report1:
+    :param trim_report2:
+    :param genomesize:
+    :return:
+    """
+    num_bp1 = 0
+    num_bp2 = 0
+    if not all([os.path.isfile(x) for x in [trim_report1, trim_report2]]):
+        # could be dry run
+        return -1
+    with open(trim_report1, 'r') as report:
+        for line in report:
+            if not line.startswith('Total written'):
+                continue
+            parts = line.strip().split()
+            num_bp1 = int(parts[-3].replace(',', ''))
+            break
+
+    with open(trim_report2, 'r') as report:
+        for line in report:
+            if not line.startswith('Total written'):
+                continue
+            parts = line.strip().split()
+            num_bp2 = int(parts[-3].replace(',', ''))
+            break
+    total_cov = num_bp1 + num_bp2
+    avg_cov = total_cov / genomesize
+    alpha = round(7/avg_cov, 3)
+    return alpha
+
+
+rule short_read_error_correction:
+    input:
+        mate1 = 'input/short/{readset}/trimmed/{readset}_1_val_1.fq.gz',
+        report1 = 'input/short/{readset}/trimmed/{readset}_1.fastq.gz_trimming_report.txt',
+        mate2 = 'input/short/{readset}/trimmed/{readset}_2_val_2.fq.gz',
+        report2 = 'input/short/{readset}/trimmed/{readset}_2.fastq.gz_trimming_report.txt'
+    output:
+        mate1 = 'input/short/{readset}/corrected/{readset}_1_val_1.cor.fq.gz',
+        mate2 = 'input/short/{readset}/corrected/{readset}_2_val_2.cor.fq.gz',
+    log:
+        'log/input/short/{readset}.corr.log'
+    benchmark:
+        'run/input/short/{readset}.corr.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * 23,
+        mem_total_mb = lambda wildcards, attempt: 24676 * attempt
+    params:
+        kmer_size = 31,  # this k-mer size is used for consistency with existing meryl DBs
+        alpha = lambda wildcards, input: compute_lighter_alpha(input.report1, input.report2, int(6.2e9)),
+        genomesize = int(6.2e9),  # we want to assess diploid read sets, not [haploid] phased assemblies
+        outdir = lambda wildcards, output: os.path.dirname(output.mate1)
+    shell:
+        'lighter -r {input.mate1} -r {input.mate2} '
+        '-k {params.kmer_size} {params.genomesize} {params.alpha} '
+        '-od {params.outdir} -t {threads} -zlib 6 &> {log}'
+
+
+rule merge_error_corrected_short_reads:
+    """
+    This rule is more convenience s.t. all downstream rules can stay as-is
+    """
+    input:
+        mate1 = 'input/short/{readset}/corrected/{readset}_1_val_1.cor.fq.gz',
+        mate2 = 'input/short/{readset}/corrected/{readset}_2_val_2.cor.fq.gz',
+    output:
+        'input/short/{readset}.fasta.gz'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 24 * attempt
+    shell:
+        'pigz -d -c {input} | seqtk seq -A -C | pigz -p {threads} --best > {output}'
 
 
 rule dump_reads_fofn:
@@ -512,9 +640,6 @@ rule collect_gaf_statistics:
 
     # END OF RUN BLOCK
 
-# 'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.fa.gz',
-# 'input/ont/NA18989_ONTUL_guppy-5.0.11-sup-prom.fasta.gz',
-# 'input/hifi/NA18989_HIFIEC_hifiasm-v0.15.4.fasta.gz',
 
 def select_winnowmap_reads(wildcards):
 
@@ -524,6 +649,8 @@ def select_winnowmap_reads(wildcards):
         reads = [f'input/ont/{wildcards.sample}_{wildcards.readset}.fasta.gz']
     elif 'HIFIEC' in wildcards.readset:
         reads = [f'input/hifi/{wildcards.sample}_{wildcards.readset}.fasta.gz']
+    elif 'HIFIAF' in wildcards.readset:
+        reads = [f'input/hifi/{wildcards.sample}_{wildcards.readset}.fastq.gz']
     else:
         raise ValueError(str(wildcards))
     return reads
@@ -562,3 +689,25 @@ rule winnowmap_align_readsets:
         'samtools sort -m {resources.mem_sort_mb}M -@ {resources.sort_threads} -O BAM > {output.bam} '
         ' && '
         'samtools index {output.bam}'
+
+
+rule compute_merqury_report:
+    input:
+        short_kmer_db = 'output/kmer_db/{sample}_{short_reads}.meryl',
+        long_reads = select_winnowmap_reads
+    output:
+        'output/qv_est/{sample}_{readset}_REF-{short_reads}.qv'
+    log:
+        'log/output/qv_est/{sample}_{readset}_REF-{short_reads}.merqury.log'
+    benchmark:
+        'rsrc/output/qv_est/{sample}_{readset}_REF-{short_reads}.merqury.rsrc'
+    conda:
+        '../../../environment/conda/conda_merqury.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt ** 5,
+    params:
+        out_prefix = lambda wildcards, output: output.rsplit('.', 1)[0]
+    shell:
+        '$CONDA_PREFIX/share/merqury/eval/qv.sh {input.short_kmer_db} {input.long_reads} {params.out_prefix} &> {log}'

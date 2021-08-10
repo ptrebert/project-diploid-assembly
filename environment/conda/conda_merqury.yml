@@ -1,0 +1,6 @@
+name: merqury
+dependencies:
+  - Python
+  - pip
+  - merqury=1.3
+  - openjdk=11
