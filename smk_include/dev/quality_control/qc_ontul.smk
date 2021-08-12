@@ -59,7 +59,7 @@ rule run_all:
             sample=['NA18989'],
             basecaller=['guppy-5.0.11-sup-prom', 'guppy-4.0.11-hac-prom']
         ),
-        kmer_dbs = expand('output/kmer_db/{readset}.total.count', readset=READSETS),
+        kmer_dbs = expand('output/kmer_db/{readset}.meryl.stats.h5', readset=READSETS),
         ont_align = expand(
             'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf',
             zip,
@@ -68,8 +68,6 @@ rule run_all:
             kmer=[1001, 3001] * 2,
             window=[500, 2000] * 2
         ),
-        ukm5sup = 'output/kmer_stats/NA18989_ONTUL_guppy-5.0.11-sup-prom.unsupported.counts.tsv',
-        ukm4hac = 'output/kmer_stats/NA18989_ONTUL_guppy-4.0.11-hac-prom.unsupported.counts.tsv',
         align_stats = expand(
             'output/aln_stats/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf-stats.tsv.gz',
             zip,
@@ -80,14 +78,6 @@ rule run_all:
         ),
         ontec_stats = expand(
             'output/read_stats/ontec/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.clip-ec.summary.tsv',
-            zip,
-            sample=['NA18989'] * 4,
-            readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom', 'ONTUL_guppy-4.0.11-hac-prom'],
-            kmer=[1001, 3001] * 2,
-            window=[500, 2000] * 2
-        ),
-        ontec_ukm = expand(
-            'output/kmer_stats/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.unsupported.counts.tsv',
             zip,
             sample=['NA18989'] * 4,
             readset=['ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-5.0.11-sup-prom', 'ONTUL_guppy-4.0.11-hac-prom', 'ONTUL_guppy-4.0.11-hac-prom'],
@@ -284,14 +274,14 @@ rule short_read_error_correction:
         'run/input/short/{readset}.corr.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_low']
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * 23,
-        mem_total_mb = lambda wildcards, attempt: 24676 * attempt
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt
     params:
         kmer_size = 31,  # this k-mer size is used for consistency with existing meryl DBs
         alpha = lambda wildcards, input: compute_lighter_alpha(input.report1, input.report2, int(6.2e9)),
-        genomesize = int(6.2e9),  # we want to assess diploid read sets, not [haploid] phased assemblies
+        genomesize = int(6.2e9),
         outdir = lambda wildcards, output: os.path.dirname(output.mate1)
     shell:
         'lighter -r {input.mate1} -r {input.mate2} '
@@ -419,9 +409,6 @@ rule meryl_count_kmers:
         sequence = select_sequence_input
     output:
         kmer_db = directory('output/kmer_db/{readset}.meryl'),
-        total = 'output/kmer_db/{readset}.total.count',
-        distinct = 'output/kmer_db/{readset}.distinct.count',
-        singleton = 'output/kmer_db/{readset}.singleton.count',
     benchmark:
         'rsrc/output/kmer_db/{readset}.meryl.rsrc'
     conda:
@@ -435,10 +422,115 @@ rule meryl_count_kmers:
         kmer_size = 31,
         use_hpc = 'compress'
     shell:
-        "meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} {params.use_hpc} output {output.kmer_db} {input.sequence} && "
-            "meryl print {output.kmer_db} | cut -f 2 | awk '{{s+=$1}} END {{print s}}' > {output.total} && "
-            "meryl print {output.kmer_db} | wc -l > {output.distinct} && "
-            "meryl print [equal-to 1 {output.kmer_db}] | wc -l > {output.singleton} "
+        "meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} {params.use_hpc} output {output.kmer_db} {input.sequence}"
+
+
+rule meryl_dump_db_statistics:
+    """
+    This operation is not documented in the cli help
+    """
+    input:
+        kmer_db = 'output/kmer_db/{readset}.meryl'
+    output:
+        stats = 'output/kmer_db/{readset}.meryl.statistics'
+    benchmark:
+        'rsrc/output/kmer_db/{readset}.meryl.stats.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        "meryl statistics {input.kmer_db} > {output.stats}"
+
+
+rule store_meryl_db_statistics:
+    """
+    NB: unique = singletons, k-mers with abundance 1
+
+    FORMAT:
+
+    Found 1 command tree.
+    Number of 31-mers that are:
+    unique              698268532  (exactly one instance of the kmer is in the input)
+    distinct           2560577684  (non-redundant kmer sequences in the input)
+    present           70996266663  (...)
+    missing   4611686015866810220  (non-redundant kmer sequences not in the input)
+
+                number of   cumulative   cumulative     presence
+                distinct     fraction     fraction   in dataset
+    frequency        kmers     distinct        total       (1e-6)
+    --------- ------------ ------------ ------------ ------------
+            1    698268532       0.2727       0.0098     0.000014
+            2     20636896       0.2808       0.0104     0.000028
+            3      6183975       0.2832       0.0107     0.000042
+            4      3214166       0.2844       0.0109     0.000056
+            5      2299957       0.2853       0.0110     0.000070
+    """
+    input:
+        stats = 'output/kmer_db/{readset}.meryl.statistics'
+    output:
+        hdf = 'output/kmer_db/{readset}.meryl.stats.h5'
+    benchmark:
+        'rsrc/output/kmer_db/{readset}.meryl.hdf.rsrc'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import pandas as pd
+        db_statistics = ['unique', 'distinct', 'present', 'missing']
+        db_stats = {}
+        kmer_freqs = []
+        freq_line = False
+
+        with open(input.stats, 'r') as txt:
+            for ln, line in enumerate(txt, start=1):
+                if not line.strip():
+                    continue
+                elif freq_line:
+                    columns = line.strip().split()
+                    assert len(columns) == 5, f'Malformed frequency line {ln}: {line.strip()}'
+                    kmer_freqs.append(
+                        (
+                            int(columns[0]),
+                            int(columns[1]),
+                            float(columns[2]),
+                            float(columns[3]),
+                            float(columns[4])
+                        )
+                    )
+                elif line.startswith('Number of'):
+                    parts = line.strip().split()
+                    kmer_size = int(parts[2].split('-')[0])
+                    db_stats['kmer_size'] = kmer_size
+                else:
+                    if any(line.startswith(x) for x in db_statistics):
+                        parts = line.strip().split()
+                        statistic = parts[0]
+                        assert statistic in db_statistics
+                        value = int(parts[1])
+                        db_stats[statistic] = value
+                    elif line.startswith('-------'):
+                        freq_line = True
+                        continue
+                    else:  # e.g., table header
+                        continue
+        assert len(db_stats) == 5, f'Missing DB stats: {db_stats}'
+        db_stats = pd.Series(db_stats, index=None, name='db_statistics')
+        kmer_freqs = pd.DataFrame.from_records(
+            kmer_freqs,
+            columns=[
+                'frequency',
+                'num_distinct_kmers',
+                'cum_fraction_distinct',
+                'cum_fraction_total',
+                'presence_in_dataset'
+            ]
+        )
+        with pd.HDFStore(output.hdf, 'wb', complevel=9) as hdf:
+            hdf.put('statistics', db_stats, format='fixed')
+            hdf.put('kmer_freq', kmer_freqs, format='fixed')
+    # END OF RUN BLOCK
 
 
 rule build_hifi_read_dbg:
@@ -514,59 +606,6 @@ rule compute_ontec_read_stats:
     shell:
         '{params.script_exec} --input-files {input} --output {output.dump} --summary-output {output.summary} '
             '--genome-size 3100000000 --num-cpu {threads} &> {log}'
-
-
-rule dump_unsupported_kmers:
-    """
-    Piping the k-mer counts to pigz for direct compression
-    extensively prolongs runtime (days...)
-    """
-    input:
-        ont_db = 'output/kmer_db/{readset}.meryl',
-        hifiec = 'output/kmer_db/NA18989_HIFIEC_hifiasm-v0.15.4.meryl',
-        hifiaf = 'output/kmer_db/NA18989_HIFIAF_pgas-v14-dev.meryl',
-        short = 'output/kmer_db/NA18989_ERR3239679.meryl',
-    output:
-        'output/kmer_stats/{readset}.unsupported.txt'
-    benchmark:
-        'rsrc/output/kmer_stats/{readset}.unsupported.meryl.rsrc'
-    conda:
-        '../../../environment/conda/conda_biotools.yml'
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 16 * attempt
-    shell:
-        'meryl print [difference {input.ont_db} {input.hifiec} {input.hifiaf} {input.short}] > {output}'
-
-
-rule create_unsupported_kmer_histogram:
-    input:
-        'output/kmer_stats/{readset}.unsupported.txt'
-    output:
-        'output/kmer_stats/{readset}.unsupported.counts.tsv'
-    resources:
-        runtime_hrs = lambda wildcards, attempt: 16 * attempt
-    run:
-        import collections as col
-
-        hist = col.Counter()
-
-        with open(input[0], 'r') as dump:
-            for ln, line in enumerate(dump, start=1):
-                try:
-                    _, abundance = line.split()
-                    hist[int(abundance)] += 1
-                except (ValueError, IndexError) as err:
-                    if not line.strip():
-                        continue
-                    raise ValueError(f'LN: {ln} - {str(err)}')
-        
-        with open(output[0], 'w') as dump:
-            _ = dump.write('abundance\tcount\n')
-            for k in sorted(hist.keys()):
-                c = hist[k]
-                _ = dump.write(f'{k}\t{c}\n')
-    # END OF RUN BLOCK
 
 
 rule prepare_ont_any_jaccard:
@@ -691,23 +730,36 @@ rule winnowmap_align_readsets:
         'samtools index {output.bam}'
 
 
-rule compute_merqury_report:
+# Prepare meryl DBs for merqury-like QV estimation
+
+rule meryl_query_only_kmer_db:
+    """
+    Create DB containing k-mers unique to the query sequences
+    (the sequences for which the QV estimate should be created)
+    """
     input:
-        short_kmer_db = 'output/kmer_db/{sample}_{short_reads}.meryl',
-        long_reads = select_winnowmap_reads
+        query_db = 'output/kmer_db/{sample}_{readset1}.meryl',
+        reference_db = 'output/kmer_db/{sample}_{readset2}.meryl'
     output:
-        'output/qv_est/{sample}_{readset}_REF-{short_reads}.qv'
-    log:
-        'log/output/qv_est/{sample}_{readset}_REF-{short_reads}.merqury.log'
+        query_only = 'output/kmer_db/{sample}_{readset1}_DIFF_{readset2}.meryl'
     benchmark:
-        'rsrc/output/qv_est/{sample}_{readset}_REF-{short_reads}.merqury.rsrc'
+        'rsrc/output/kmer_db/{sample}_{readset1}_DIFF_{readset2}.meryl.rsrc'
     conda:
-        '../../../environment/conda/conda_merqury.yml'
-    threads: config['num_cpu_medium']
+        '../../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt ** 5,
-    params:
-        out_prefix = lambda wildcards, output: output[0].rsplit('.', 1)[0]
+        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
     shell:
-        '$CONDA_PREFIX/share/merqury/eval/qv.sh {input.short_kmer_db} {input.long_reads} {params.out_prefix} &> {log}'
+        'meryl difference output {output.query_only} {input.query_db} {input.reference_db}'
+
+
+#  -existence:
+#     Generate a tab-delimited line for each input sequence with the
+#     number of kmers in the sequence, in the database and common to both.
+#
+# 1p36.13 1024211 2560577684      1611
+# NOTCH2NL        8767215 2560577684      15521
+# 3q29    528228  2560577684      580
+# SMN     3282043 2560577684      4671
+# Beta_DEF        7999970 2560577684      15208
+# BOLA2_NPIPB     2106692 2560577684      2265
+# TBC1D3_2        349143  2560577684      360
