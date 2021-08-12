@@ -1,5 +1,5 @@
 
-localrules: dump_reads_fofn
+localrules: dump_reads_fofn, run_all, compute_global_query_qv_estimate
 
 # raw Illumina
 # ec Illumina
@@ -438,8 +438,8 @@ rule meryl_dump_db_statistics:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt
     shell:
         "meryl statistics {input.kmer_db} > {output.stats}"
 
@@ -452,10 +452,10 @@ rule store_meryl_db_statistics:
 
     Found 1 command tree.
     Number of 31-mers that are:
-    unique              698268532  (exactly one instance of the kmer is in the input)
-    distinct           2560577684  (non-redundant kmer sequences in the input)
-    present           70996266663  (...)
-    missing   4611686015866810220  (non-redundant kmer sequences not in the input)
+        unique              698268532  (exactly one instance of the kmer is in the input)
+        distinct           2560577684  (non-redundant kmer sequences in the input)
+        present           70996266663  (...)
+        missing   4611686015866810220  (non-redundant kmer sequences not in the input)
 
                 number of   cumulative   cumulative     presence
                 distinct     fraction     fraction   in dataset
@@ -474,8 +474,8 @@ rule store_meryl_db_statistics:
     benchmark:
         'rsrc/output/kmer_db/{readset}.meryl.hdf.rsrc'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt
     run:
         import pandas as pd
         db_statistics = ['unique', 'distinct', 'present', 'missing']
@@ -499,18 +499,25 @@ rule store_meryl_db_statistics:
                             float(columns[4])
                         )
                     )
-                elif line.startswith('Number of'):
+                elif line.strip().startswith('Number of'):
                     parts = line.strip().split()
                     kmer_size = int(parts[2].split('-')[0])
                     db_stats['kmer_size'] = kmer_size
                 else:
-                    if any(line.startswith(x) for x in db_statistics):
+                    if any(line.strip().startswith(x) for x in db_statistics):
                         parts = line.strip().split()
                         statistic = parts[0]
                         assert statistic in db_statistics
-                        value = int(parts[1])
+                        try:
+                            value = int(parts[1])
+                        except ValueError:
+                            # this happens b/c of "distinct" appearing
+                            # twice (also in table header)
+                            if parts[1] == 'fraction':
+                                continue
+                            raise
                         db_stats[statistic] = value
-                    elif line.startswith('-------'):
+                    elif line.strip().startswith('-------'):
                         freq_line = True
                         continue
                     else:  # e.g., table header
@@ -527,7 +534,7 @@ rule store_meryl_db_statistics:
                 'presence_in_dataset'
             ]
         )
-        with pd.HDFStore(output.hdf, 'wb', complevel=9) as hdf:
+        with pd.HDFStore(output.hdf, 'w', complevel=9) as hdf:
             hdf.put('statistics', db_stats, format='fixed')
             hdf.put('kmer_freq', kmer_freqs, format='fixed')
     # END OF RUN BLOCK
@@ -721,6 +728,7 @@ rule winnowmap_align_readsets:
         readgroup_id = lambda wildcards: wildcards.readset.replace('.', ''),
         preset = lambda wildcards: 'map-ont' if 'ONTUL' in wildcards.readset else 'map-pb'
     shell:
+        'set -euo pipefail ; '
         'winnowmap -W {input.ref_repkmer} -k 15 -t {resources.align_threads} -Y -L --eqx --MD -a -x {params.preset} '
         '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
         '{input.reference} {input.reads} | '
@@ -735,21 +743,77 @@ rule winnowmap_align_readsets:
 rule meryl_query_only_kmer_db:
     """
     Create DB containing k-mers unique to the query sequences
-    (the sequences for which the QV estimate should be created)
+    (the sequences for which the QV estimate should be computed)
     """
     input:
         query_db = 'output/kmer_db/{sample}_{readset1}.meryl',
         reference_db = 'output/kmer_db/{sample}_{readset2}.meryl'
     output:
-        query_only = 'output/kmer_db/{sample}_{readset1}_DIFF_{readset2}.meryl'
+        query_only = directory('output/kmer_db/{sample}_{readset1}_DIFF_{readset2}.meryl')
     benchmark:
         'rsrc/output/kmer_db/{sample}_{readset1}_DIFF_{readset2}.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
     shell:
         'meryl difference output {output.query_only} {input.query_db} {input.reference_db}'
+
+
+def prob_base_correct(kmer_shared, kmer_total, kmer_size):
+    return (kmer_shared / kmer_total) ** (1/kmer_size)
+
+
+def base_error_rate(kmer_assembly_only, kmer_total, kmer_size):
+    return 1 - (1 - kmer_assembly_only / kmer_total) ** (1/kmer_size)
+
+
+def qv_estimate(error_rate):
+    return -10 * math.log10(error_rate)
+
+
+rule compute_global_query_qv_estimate:
+    """
+    Formulas for QV estimation as stated in 
+
+    Rhie, A., Walenz, B.P., Koren, S. et al.
+    Merqury: reference-free quality, completeness, and phasing assessment for genome assemblies.
+    Genome Biol 21, 245 (2020). https://doi.org/10.1186/s13059-020-02134-9
+
+    Methods section "Consensus quality (QV) estimation"
+    """
+    input:
+        query_stats = 'output/kmer_db/{sample}_{readset1}.meryl.stats.h5',
+        query_only_stats = 'output/kmer_db/{sample}_{readset1}_DIFF_{readset2}.meryl.stats.h5'
+    output:
+        'output/qv_estimate/{sample}_{readset1}_REF_{readset2}.qv.tsv'
+    run:
+        import pandas as pd
+        import math
+
+        with pd.HDFStore(input.query_stats, mode='r') as hdf:
+            num_kmer_query_total = hdf['statistics']['present']
+            kmer_size_query_total = hdf['statistics']['kmer_size']
+
+        with pd.HDFStore(input.query_only_stats, mode='r') as hdf:
+            num_kmer_query_only = hdf['statistics']['present']
+            kmer_size_query_only = hdf['statistics']['kmer_size']
+        if kmer_size_query_total != kmer_size_query_only:
+            raise ValueError(f'k-mer sizes do not match: {kmer_size_query_total} vs {kmer_size_query_only}')
+
+        error_rate = base_error_rate(num_kmer_query_only, num_kmer_query_total, kmer_size_query_total)
+        qv_est = round(-10 * math.log10(error_rate), 1)
+
+        with open(output[0], 'w') as table:
+            _ = table.write(f'sample\t{wildcards.sample}\n')
+            _ = table.write(f'query_sequences\t{wildcards.readset1}\n')
+            _ = table.write(f'reference_sequences\t{wildcards.readset2}\n')
+            _ = table.write(f'kmer_size\t{kmer_size_query_only}\n')
+            _ = table.write(f'kmer_query_only\t{num_kmer_query_only}\n')
+            _ = table.write(f'kmer_query_total\t{num_kmer_query_total}\n')
+            _ = table.write(f'error_rate\t{error_rate}\n')
+            _ = table.write(f'QV_estimate\t{qv_est}\n')
+    # END OF RUN BLOCK
 
 
 #  -existence:
