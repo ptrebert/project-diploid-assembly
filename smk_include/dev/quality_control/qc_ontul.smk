@@ -59,7 +59,7 @@ rule run_all:
             sample=['NA18989'],
             basecaller=['guppy-5.0.11-sup-prom', 'guppy-4.0.11-hac-prom']
         ),
-        kmer_dbs = expand('output/kmer_db/{readset}.meryl.stats.h5', readset=READSETS),
+        kmer_dbs = expand('output/kmer_stats/{readset}.meryl.stats.h5', readset=READSETS),
         ont_align = expand(
             'output/alignments/ont_to_mbg_hifi/{sample}_{readset}_MAP-TO_HIFIEC.mbg-k{kmer}-w{window}.gaf',
             zip,
@@ -123,14 +123,15 @@ rule run_all:
             ],
             reference=['T2Tv11_38p13Y_chm13']
         ),
-        read_qv = expand(
-            'output/qv_est/{sample}_{readset}_REF-{short_reads}.qv',
+        read_qv_est = expand(
+            'output/qv_estimate/{sample}_{readset}_REF_{short_reads}.qv.tsv',
             sample=['NA18989'],
             readset=[
                 'HIFIEC_hifiasm-v0.15.4',
                 'HIFIAF_pgas-v14-dev',
                 'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
-                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000'
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+                'ONTUL_guppy-5.0.11-sup-prom'
             ],
             short_reads=['ERR3239679']
         )
@@ -432,9 +433,9 @@ rule meryl_dump_db_statistics:
     input:
         kmer_db = 'output/kmer_db/{readset}.meryl'
     output:
-        stats = 'output/kmer_db/{readset}.meryl.statistics'
+        stats = 'output/kmer_stats/{readset}.meryl.statistics'
     benchmark:
-        'rsrc/output/kmer_db/{readset}.meryl.stats.rsrc'
+        'rsrc/output/kmer_stats/{readset}.meryl.stats.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
@@ -468,11 +469,11 @@ rule store_meryl_db_statistics:
             5      2299957       0.2853       0.0110     0.000070
     """
     input:
-        stats = 'output/kmer_db/{readset}.meryl.statistics'
+        stats = 'output/kmer_stats/{readset}.meryl.statistics'
     output:
-        hdf = 'output/kmer_db/{readset}.meryl.stats.h5'
+        hdf = 'output/kmer_stats/{readset}.meryl.stats.h5'
     benchmark:
-        'rsrc/output/kmer_db/{readset}.meryl.hdf.rsrc'
+        'rsrc/output/kmer_stats/{readset}.meryl.hdf.rsrc'
     resources:
         mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt
@@ -783,8 +784,8 @@ rule compute_global_query_qv_estimate:
     Methods section "Consensus quality (QV) estimation"
     """
     input:
-        query_stats = 'output/kmer_db/{sample}_{readset1}.meryl.stats.h5',
-        query_only_stats = 'output/kmer_db/{sample}_{readset1}_DIFF_{readset2}.meryl.stats.h5'
+        query_stats = 'output/kmer_stats/{sample}_{readset1}.meryl.stats.h5',
+        query_only_stats = 'output/kmer_stats/{sample}_{readset1}_DIFF_{readset2}.meryl.stats.h5'
     output:
         'output/qv_estimate/{sample}_{readset1}_REF_{readset2}.qv.tsv'
     run:
