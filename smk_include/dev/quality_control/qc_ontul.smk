@@ -112,18 +112,18 @@ rule run_all:
                 'NA18989_ERR3239679'
             ]
         ),
-        read_cov = expand(
-            'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
-            sample=['NA18989'],
-            readset=[
-                'ONTUL_guppy-5.0.11-sup-prom',
-                'HIFIEC_hifiasm-v0.15.4',
-                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
-                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
-            ],
-            reference=['T2Tv11_38p13Y_chm13']
-        ),
-        read_qv_est = expand(
+        # read_cov = expand(
+        #     'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
+        #     sample=['NA18989'],
+        #     readset=[
+        #         'ONTUL_guppy-5.0.11-sup-prom',
+        #         'HIFIEC_hifiasm-v0.15.4',
+        #         'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+        #         'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+        #     ],
+        #     reference=['T2Tv11_38p13Y_chm13']
+        # ),
+        global_qv_est = expand(
             'output/qv_estimate/{sample}_{readset}_REF_{short_reads}.qv.tsv',
             sample=['NA18989'],
             readset=[
@@ -132,6 +132,14 @@ rule run_all:
                 'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
                 'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
                 'ONTUL_guppy-5.0.11-sup-prom'
+            ],
+            short_reads=['ERR3239679']
+        ),
+        read_qv_est = expand(
+            'output/kmer_stats/{sample}_{readset}_DIFF_{short_reads}.seqkm.tsv',
+            sample=['NA18989'],
+            readset=[
+                'HIFIEC_hifiasm-v0.15.4',
             ],
             short_reads=['ERR3239679']
         )
@@ -756,9 +764,26 @@ rule meryl_query_only_kmer_db:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 1024 * (attempt ** 4),
     shell:
         'meryl difference output {output.query_only} {input.query_db} {input.reference_db}'
+
+
+rule meryl_generate_individual_kmer_stats:
+    input:
+        query_only = 'output/kmer_db/{sample}_{readset}_DIFF_{short_reads}.meryl',
+        query_reads = select_winnowmap_reads
+    output:
+        table = 'output/kmer_stats/{sample}_{readset}_DIFF_{short_reads}.seqkm.tsv'
+    benchmark:
+        'rsrc/output/kmer_stats/{sample}_{readset}_DIFF_{short_reads}.seqkm.meryl.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        'meryl-lookup -existence -sequence {input.query_reads} -mers {input.query_only} > {output.table}'
 
 
 def prob_base_correct(kmer_shared, kmer_total, kmer_size):
