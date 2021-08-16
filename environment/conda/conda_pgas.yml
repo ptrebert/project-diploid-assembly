@@ -3,7 +3,7 @@ dependencies:
   - Python=3.7.*
   - pip
   - openssl
-  - Snakemake=6.5.1
+  - Snakemake=6.4.1
   - drmaa=0.7.9
   - pyyaml=5.3
   - pandas=1.2.3
