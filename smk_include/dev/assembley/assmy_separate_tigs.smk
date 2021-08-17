@@ -224,7 +224,7 @@ rule generate_gonosomal_reference:
     output:
         fasta = 'output/gonosomal_reference/fasta/{sample_long}.{reference}.AMXYUN.tigs.fasta',
         gfa = 'output/gonosomal_reference/graph/{sample_long}.{reference}.AMXYUN.tigs.gfa',
-        stats = 'output/gonosomal_reference/graph/{sample_long}.{reference}.AMXYUN.tigs.stats.tsv',
+        stats = 'output/gonosomal_reference/{sample_long}.{reference}.AMXYUN.tigs.stats.tsv',
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
@@ -256,6 +256,7 @@ rule generate_gonosomal_reference:
                             continue
                         assert seq_name.size == 1
                         seq_name = seq_name.values[0]
+                        buffer = True
                     elif buffer:
                         seq_len = len(line.strip())
                         stats.append((seq_name, seq_len))
@@ -268,7 +269,7 @@ rule generate_gonosomal_reference:
         with open(output.fasta, 'w') as dump:
             _ = dump.write(fasta_buffer.getvalue())
         with open(output.gfa, 'w') as dump:
-            _ = dump.write(gfa_buffer.getvalue())
+            _ = dump.write(graph_buffer.getvalue())
         with open(output.stats, 'w') as dump:
             total_length = sum(t[1] for t in stats)
             _ = dump.write(f'total_bp\t{total_length}\n')
