@@ -231,6 +231,7 @@ rule generate_gonosomal_reference:
     run:
         import pandas as pd
         import io as io
+        import collections as col
 
         tig_table = []
         for tig_group in input.tig_groups:
@@ -242,7 +243,7 @@ rule generate_gonosomal_reference:
 
         fasta_buffer = io.StringIO()
         graph_buffer = io.StringIO('H\tVN:Z:1\n')
-        stats = []
+        length_stats = col.Counter()
         buffer = False
         seq_name = None
         for fasta_file in [input.tigs_pri, input.tigs_alt]:
@@ -256,10 +257,15 @@ rule generate_gonosomal_reference:
                             continue
                         assert seq_name.size == 1
                         seq_name = seq_name.values[0]
+                        assert seq_name not in length_stats
                         buffer = True
                     elif buffer:
                         seq_len = len(line.strip())
-                        stats.append((seq_name, seq_len))
+                        length_stats[seq_name] += seq_len
+                        length_stats['total_bp'] += seq_len
+                        chrom_group = seq_name.rsplit('.',1)[-1]
+                        length_stats[chrom_group] += seq_len
+
                         fasta_buffer.write(f'>{seq_name}\n{line}')
                         graph_buffer.write(f'S\t{seq_name}\t{line.strip()}\tLN:i:{seq_len}\n')
                         buffer = False
@@ -271,8 +277,7 @@ rule generate_gonosomal_reference:
         with open(output.gfa, 'w') as dump:
             _ = dump.write(graph_buffer.getvalue())
         with open(output.stats, 'w') as dump:
-            total_length = sum(t[1] for t in stats)
-            _ = dump.write(f'total_bp\t{total_length}\n')
-            _ = dump.write(''.join([f'{t[0]}\t{t[1]}\n' for t in sorted(stats, key=lambda x: x[1], reverse=True)]))
+            for n, c in length_stats.most_common():
+                _ = dump.write(f'{n}\t{c}\n')
     # END OF RUN BLOCK
 
