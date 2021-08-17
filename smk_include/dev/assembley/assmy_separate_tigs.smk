@@ -1,5 +1,3 @@
-include: 'assmy_collect_input.smk'
-
 
 rule dump_tigs_to_fasta:
     input:
