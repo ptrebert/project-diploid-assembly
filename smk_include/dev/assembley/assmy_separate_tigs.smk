@@ -141,7 +141,7 @@ rule classify_tigs:
         bed = 'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.psort.bed',
     output:
         multiext(
-            'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.tigs',
+            'output/tig_aln/chrom_groups/{sample_info}_{sample}_MAP-TO_{reference}.tigs',
             '.AM.pass.txt', '.AM.fail.txt',
             '.XY.pass.txt', '.XY.fail.txt',
             '.AMXY.fail.txt', '.UN.fail.txt'
@@ -199,7 +199,7 @@ rule classify_tigs:
             groups[('UN', 'fail')].append(
                 (
                     contig,
-                    contig.split('.')[1]
+                    contig.split('.')[1],
                     contig + '.chrUN'
                 )
             )
