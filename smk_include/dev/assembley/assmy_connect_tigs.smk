@@ -21,12 +21,18 @@ rule determine_frequent_kmers_gono_reference:
 
 rule wmap_align_ont_to_gono_reference:
     input:
-        fasta = 'output/gonosomal_reference/fasta/{sample}_{sample_info}.{reference}.AMXYUN.tigs.fasta',
-        rep_kmer = 'output/gonosomal_reference/kmer_db/{sample}_{sample_info}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.meryl.repkmer-grt09998.txt',
+        fasta = 'output/gonosomal_reference/fasta/{sample_info}_{sample}.{reference}.AMXYUN.tigs.fasta',
+        rep_kmer = 'output/gonosomal_reference/kmer_db/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.meryl.repkmer-grt09998.txt',
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
     output:
-        bam = 'output/read_aln/{sample}_{sample_info}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.psort.bam',
-        bai = 'output/read_aln/{sample}_{sample_info}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.psort.bam.bai',
+        bam = 'output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.psort.bam',
+        bai = 'output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.psort.bam.bai',
+    log:
+        'log/output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.log'
+    benchmark:
+        'rsrc/output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.rsrc'
+    wildcard_constraints:
+        sample = CONSTRAINT_SAMPLES
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
@@ -39,7 +45,7 @@ rule wmap_align_ont_to_gono_reference:
     shell:
         'winnowmap -k {wildcards.kmer_size} -W {input.rep_kmer} -x {params.preset} --MD -Y --eqx -L -a --secondary=no '
             '-R "@RG\\tID:{wildcards.sample}_{wildcards.sample_info}_{wildcards.ont_type}\\tSM:{wildcards.sample}" '
-            '{input.fasta} {input.reads}'
+            '{input.fasta} {input.reads} 2> {log}'
         ' | '
         'samtools view -F 260 -u -q 20'
         ' | '
@@ -51,12 +57,18 @@ rule wmap_align_ont_to_gono_reference:
 rule ga_align_ont_to_gono_reference:
     input:
         container = ancient('graphaligner.sif'),
-        graph = 'output/gonosomal_reference/graph/{sample}_{sample_info}.{reference}.AMXYUN.tigs.gfa',
+        graph = 'output/gonosomal_reference/graph/{sample_info}_{sample}.{reference}.AMXYUN.tigs.gfa',
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
     output:
-        gaf = 'output/read_aln/{sample}_{sample_info}.{reference}.AMXYUN.tigs.{ont_type}.ga.gaf',
-        hybrid_reads = 'output/read_aln/{sample}_{sample_info}.{reference}.AMXYUN.{ont_type}.ONTHY.fasta',
-    conda: '../../../environment/conda/conda_biotools.yml'
+        gaf = 'output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.{ont_type}.ga.gaf',
+        hybrid_reads = 'output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.{ont_type}.ONTHY.fasta',
+    log:
+        'log/output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.{ont_type}.ga.log'
+    benchmark:
+        'rsrc/output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.{ont_type}.ga.rsrc'
+    wildcard_constraints:
+        sample = CONSTRAINT_SAMPLES
+#    conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt,

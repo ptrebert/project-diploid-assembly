@@ -48,5 +48,6 @@ rule run_all:
         graph_ontul_gono_ref = expand(
             'output/read_aln/{sample_long}.{reference}.AMXYUN.tigs.{ont_type}.ga.gaf',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            reference=['T2Tv11_38p13Y_chm13'],
             ont_type=['ONTUL']
         ),
