@@ -169,7 +169,7 @@ rule classify_tigs:
         }
 
         aligned_tigs = set()
-        for contig, alignments in df.groupby('contig'):
+        for contig, alignments in df.groupby('tig'):
             short_tig_name = contig.split('.')[1]
             ext_tig_name = contig + '.'
             if alignments['chrom'].nunique() == 1:
@@ -205,8 +205,73 @@ rule classify_tigs:
             )
         
         base_out = output[0].rsplit('.', 3)[0]
-        for (karyo_group, tig_names), v in groups.items():
+        for (karyo_group, label), tig_names in groups.items():
             out_file = base_out + f'.{karyo_group}.{label}.txt'
             with open(out_file, 'w') as dump:
                 _ = dump.write('\n'.join(['\t'.join(t) for t in sorted(tig_names)]) + '\n')
     # END OF RUN BLOCK
+
+
+rule generate_gonosomal_reference:
+    input:
+        tigs_pri = 'output/tigs/{sample_long}.TIGPRI.fasta',
+        tigs_alt = 'output/tigs/{sample_long}.TIGALT.fasta',
+        tig_groups = multiext(
+            'output/tig_aln/chrom_groups/{sample_long}_MAP-TO_{reference}.tigs',
+            '.XY.pass.txt', '.XY.fail.txt',
+            '.AMXY.fail.txt', '.UN.fail.txt'
+        )
+    output:
+        fasta = 'output/gonosomal_reference/fasta/{sample_long}.{reference}.AMXYUN.tigs.fasta',
+        gfa = 'output/gonosomal_reference/graph/{sample_long}.{reference}.AMXYUN.tigs.gfa',
+        stats = 'output/gonosomal_reference/graph/{sample_long}.{reference}.AMXYUN.tigs.stats.tsv',
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import pandas as pd
+        import io as io
+
+        tig_table = []
+        for tig_group in input.tig_groups:
+            df = pd.read_csv(tig_group, sep='\t', names=['tig_long', 'tig', 'tig_ext_group'])
+            if df.empty:
+                continue
+            tig_table.append(df)
+        tig_table = pd.concat(tig_table, axis=0, ignore_index=False)
+
+        fasta_buffer = io.StringIO()
+        graph_buffer = io.StringIO('H\tVN:Z:1\n')
+        stats = []
+        buffer = False
+        seq_name = None
+        for fasta_file in [input.tigs_pri, input.tigs_alt]:
+            with open(fasta_file, 'r') as fasta:
+                for line in fasta:
+                    if line.startswith('>'):
+                        seq_name = line.strip().strip('>')
+                        seq_name = tig_table.loc[tig_table['tig_long'] == seq_name, 'tig_ext_group']
+                        if seq_name.empty:
+                            buffer = False
+                            continue
+                        assert seq_name.size == 1
+                        seq_name = seq_name.values[0]
+                    elif buffer:
+                        seq_len = len(line.strip())
+                        stats.append((seq_name, seq_len))
+                        fasta_buffer.write(f'>{seq_name}\n{line}')
+                        graph_buffer.write(f'S\t{seq_name}\t{line.strip()}\tLN:i:{seq_len}\n')
+                        buffer = False
+                        seq_name = None
+                    else:
+                        continue
+        with open(output.fasta, 'w') as dump:
+            _ = dump.write(fasta_buffer.getvalue())
+        with open(output.gfa, 'w') as dump:
+            _ = dump.write(gfa_buffer.getvalue())
+        with open(output.stats, 'w') as dump:
+            total_length = sum(t[1] for t in stats)
+            _ = dump.write(f'total_bp\t{total_length}\n')
+            _ = dump.write(''.join([f'{t[0]}\t{t[1]}\n' for t in sorted(stats, key=lambda x: x[1], reverse=True)]))
+    # END OF RUN BLOCK
+

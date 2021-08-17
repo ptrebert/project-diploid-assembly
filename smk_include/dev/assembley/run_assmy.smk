@@ -22,4 +22,9 @@ rule run_all:
                 '.AMXY.fail.txt',
                 '.UN.fail.txt'
             ]
+        ),
+        gono_ref = expand(
+            'output/gonosomal_reference/graph/{sample_long}.{reference}.AMXYUN.tigs.stats.tsv',
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ASSEMBLED_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            reference=['T2Tv11_38p13Y_chm13'],
         )
