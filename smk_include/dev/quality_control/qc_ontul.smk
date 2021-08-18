@@ -112,17 +112,17 @@ rule run_all:
                 'NA18989_ERR3239679'
             ]
         ),
-        # read_cov = expand(
-        #     'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
-        #     sample=['NA18989'],
-        #     readset=[
-        #         'ONTUL_guppy-5.0.11-sup-prom',
-        #         'HIFIEC_hifiasm-v0.15.4',
-        #         'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
-        #         'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
-        #     ],
-        #     reference=['T2Tv11_38p13Y_chm13']
-        # ),
+        read_cov = expand(
+            'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
+            sample=['NA18989'],
+            readset=[
+                'ONTUL_guppy-5.0.11-sup-prom',
+                'HIFIEC_hifiasm-v0.15.4',
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+            ],
+            reference=['T2Tv11_38p13Y_chm13']
+        ),
         global_qv_est = expand(
             'output/qv_estimate/{sample}_{readset}_REF_{short_reads}.qv.tsv',
             sample=['NA18989'],
@@ -737,7 +737,6 @@ rule winnowmap_align_readsets:
         readgroup_id = lambda wildcards: wildcards.readset.replace('.', ''),
         preset = lambda wildcards: 'map-ont' if 'ONTUL' in wildcards.readset else 'map-pb'
     shell:
-        'set -euo pipefail ; '
         'winnowmap -W {input.ref_repkmer} -k 15 -t {resources.align_threads} -Y -L --eqx --MD -a -x {params.preset} '
         '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
         '{input.reference} {input.reads} | '
@@ -770,6 +769,11 @@ rule meryl_query_only_kmer_db:
 
 
 rule meryl_generate_individual_kmer_stats:
+    """
+    -existence:
+        Generate a tab-delimited line for each input sequence with the
+        number of kmers in the sequence, in the database and common to both.
+    """
     input:
         query_only = 'output/kmer_db/{sample}_{readset}_DIFF_{short_reads}.meryl',
         query_reads = select_winnowmap_reads
@@ -781,7 +785,7 @@ rule meryl_generate_individual_kmer_stats:
         '../../../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
     shell:
         'meryl-lookup -existence -sequence {input.query_reads} -mers {input.query_only} > {output.table}'
 
@@ -842,14 +846,33 @@ rule compute_global_query_qv_estimate:
     # END OF RUN BLOCK
 
 
-#  -existence:
-#     Generate a tab-delimited line for each input sequence with the
-#     number of kmers in the sequence, in the database and common to both.
-#
-# 1p36.13 1024211 2560577684      1611
-# NOTCH2NL        8767215 2560577684      15521
-# 3q29    528228  2560577684      580
-# SMN     3282043 2560577684      4671
-# Beta_DEF        7999970 2560577684      15208
-# BOLA2_NPIPB     2106692 2560577684      2265
-# TBC1D3_2        349143  2560577684      360
+rule compute_local_query_qv_estimate:
+    """
+    Comment regarding QV computation:
+    The input meryl DB used for the lookup/existence operation contains
+    only kmers unique to the (long read) sequences (i.e., the kmers from the
+    short read dataset were removed [op difference]). Hence, the QV computation
+    below uses "kmers shared between read sequence and read DB" as sequence-unique
+    kmers (= not supported by Illumina/short read kmers), divided by the number
+    of total kmers in the read sequence.
+    """
+    input:
+        tsv = 'output/kmer_stats/{sample}_{readset}_DIFF_{short_reads}.seqkm.tsv'
+    output:
+        hdf = 'output/qv_estimate/{sample}_{readset}_REF_{short_reads}.seq-qv.h5'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt
+    params:
+        kmer_size = 31
+    run:
+        import pandas as pd
+        import numpy as np
+
+        table_header = ['read_name', 'kmer_in_seq', 'kmer_in_db', 'kmer_shared']
+        seqkm = pd.read_csv(input.tsv, sep='\t', names=table_header, header=None, index_col=None)
+
+        df['error_rate'] = 1 - (1 - df['kmer_shared'] / df['kmer_in_seq']) ** (1/params.kmer_size)
+        df['qv_estimate'] = (-10 * np.log10(df['error_rate'])).round(1)
+
+        with pd.HDFStore(output.hdf, 'w', complevel=6) as hdf:
+            hdf.put('sequence_qv', df, format='fixed')
