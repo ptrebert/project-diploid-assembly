@@ -784,8 +784,8 @@ rule meryl_generate_individual_kmer_stats:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+        mem_total_mb = lambda wildcards, attempt: 8192 + 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt
     shell:
         'meryl-lookup -existence -sequence {input.query_reads} -mers {input.query_only} > {output.table}'
 
@@ -869,10 +869,21 @@ rule compute_local_query_qv_estimate:
         import numpy as np
 
         table_header = ['read_name', 'kmer_in_seq', 'kmer_in_db', 'kmer_shared']
-        seqkm = pd.read_csv(input.tsv, sep='\t', names=table_header, header=None, index_col=None)
+        df = pd.read_csv(input.tsv, sep='\t', names=table_header, header=None, index_col=None)
 
-        df['error_rate'] = 1 - (1 - df['kmer_shared'] / df['kmer_in_seq']) ** (1/params.kmer_size)
-        df['qv_estimate'] = (-10 * np.log10(df['error_rate'])).round(1)
+        # uncertain: for a test case of HiFi reads, the number of shared (= unsupported)
+        # kmers was almost always 0. This might be an artifact due to the length
+        # (statistical: expected number of errors per read for error rates ~10e-4 ~ 0),
+        # or indicates some bug/problem...
+        # For now, deal with that situation explicitly:
+
+        df['error_rate'] = 0
+        df['qv_estimate'] = -1
+
+        select_nz = np.array(df['kmer_shared'] > 0, dtype=np.bool)
+
+        df.loc[select_nz, 'error_rate'] = 1 - (1 - df.loc[select_nz, 'kmer_shared'] / df.loc[select_nz, 'kmer_in_seq']) ** (1/params.kmer_size)
+        df.loc[select_nz, 'qv_estimate'] = (-10 * np.log10(df.loc[select_nz, 'error_rate'])).round(1)
 
         with pd.HDFStore(output.hdf, 'w', complevel=6) as hdf:
             hdf.put('sequence_qv', df, format='fixed')
