@@ -4,7 +4,7 @@ rule determine_frequent_kmers_gono_reference:
         fasta = 'output/gonosomal_reference/fasta/{sample_long}.{reference}.AMXYUN.tigs.fasta'
     output:
         db = directory('output/gonosomal_reference/kmer_db/{sample_long}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.meryl'),
-        repkmer = 'output/gonosomal_reference/kmer_db/{sample_long}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.meryl.repkmer-grt09998.txt'
+        rep_kmer = 'output/gonosomal_reference/kmer_db/{sample_long}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.meryl.repkmer-grt09998.txt'
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:
@@ -34,14 +34,14 @@ rule wmap_align_ont_to_gono_reference:
     wildcard_constraints:
         sample = CONSTRAINT_SAMPLES
     conda: '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 8 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 48576 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 47 * attempt,
     params:
         preset = lambda wildcards: 'map-pb' if wildcards.ont_type == 'ONTEC' else 'map-ont',
         sort_threads = 4,
-        sort_mem = 2048
+        sort_mem = 4096
     shell:
         'winnowmap -k {wildcards.kmer_size} -W {input.rep_kmer} -x {params.preset} --MD -Y --eqx -L -a --secondary=no '
             '-R "@RG\\tID:{wildcards.sample}_{wildcards.sample_info}_{wildcards.ont_type}\\tSM:{wildcards.sample}" '
