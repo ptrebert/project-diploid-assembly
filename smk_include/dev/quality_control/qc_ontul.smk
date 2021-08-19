@@ -727,9 +727,9 @@ rule winnowmap_align_readsets:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt ** 5,
-        mem_sort_mb = 4096,
+        mem_total_mb = lambda wildcards, attempt: 65536 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 48 * attempt,
+        mem_sort_mb = 2048,
         align_threads = config['num_cpu_high'] - config['num_cpu_low'],
         sort_threads = config['num_cpu_low'],
     params:
