@@ -1,6 +1,8 @@
 
 localrules: dump_reads_fofn, run_all, compute_global_query_qv_estimate
 
+ruleorder: meryl_query_only_kmer_db > meryl_count_kmers
+
 # raw Illumina
 # ec Illumina
 # raw HiFi
@@ -113,7 +115,7 @@ rule run_all:
             ]
         ),
         read_cov = expand(
-            'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
+            'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cov.bedgraph',
             sample=['NA18989'],
             readset=[
                 'ONTUL_guppy-5.0.11-sup-prom',
@@ -136,10 +138,14 @@ rule run_all:
             short_reads=['ERR3239679']
         ),
         read_qv_est = expand(
-            'output/kmer_stats/{sample}_{readset}_DIFF_{short_reads}.seqkm.tsv',
+            'output/qv_estimate/{sample}_{readset}_REF_{short_reads}.seq-qv.h5',
             sample=['NA18989'],
             readset=[
                 'HIFIEC_hifiasm-v0.15.4',
+                'HIFIAF_pgas-v14-dev',
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+                'ONTUL_guppy-5.0.11-sup-prom'
             ],
             short_reads=['ERR3239679']
         )
@@ -745,6 +751,23 @@ rule winnowmap_align_readsets:
         ' && '
         'samtools index {output.bam}'
 
+
+rule dump_alignment_coverage:
+    input:
+        bam = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
+        bai = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam.bai',
+    output:
+        bg = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cov.bedgraph',
+    benchmark:
+        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cov.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: 1
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt,
+    shell:
+        'bedtools genomecov -bg -ibam {input.bam} > {output.bg}'
 
 # Prepare meryl DBs for merqury-like QV estimation
 
