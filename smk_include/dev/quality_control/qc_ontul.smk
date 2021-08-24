@@ -114,8 +114,8 @@ rule run_all:
                 'NA18989_ERR3239679'
             ]
         ),
-        read_cov = expand(
-            'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cov.bedgraph',
+        cache_read_cov = expand(
+            'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cache.h5',
             sample=['NA18989'],
             readset=[
                 'ONTUL_guppy-5.0.11-sup-prom',
@@ -769,6 +769,49 @@ rule dump_alignment_coverage:
     shell:
         'bedtools genomecov -bg -ibam {input.bam} > {output.bg}'
 
+
+rule cache_read_coverage:
+    input:
+        bg = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cov.bedgraph',
+        fai = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta.fai'),
+    output:
+        hdf = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cache.h5',
+    benchmark:
+        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cache.rsrc',
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt
+    run:
+        import pandas as pd
+        import numpy as np
+
+        chrom_sizes = {}
+        with open(input.fai, 'r') as faidx:
+            for line in faidx:
+                name, size = line.split()[:2]
+                chrom_sizes[name] = int(size)
+
+        with open(input.bg, 'r') as bedgraph:
+            for line in bedgraph:
+                chrom, start, end, cov = line.strip().split()
+                last_chrom = chrom
+                chrom_cov = np.zeros(chrom_sizes[chrom], dtype=np.int16)
+                break
+
+        with pd.HDFStore(output.hdf, mode='w') as hdf:
+            with open(input.bg, 'r') as bedgraph:
+                for line in bedgraph:
+                    chrom, start, end, cov = line.strip().split()
+                    start = int(start) - 1
+                    end = int(end)
+                    if chrom != last_chrom:
+                        out_key = f'{chrom}'
+                        hdf.put(out_key, pd.Series(chrom_cov, dtype=np.int16), format='fixed')
+                        last_chrom = chrom
+                        chrom_cov = np.zeros(chrom_sizes[chrom], dtype=np.int16)
+                    chrom_cov[start:end] = int(cov)
+    # END OF RUN BLOCK
+
+
 # Prepare meryl DBs for merqury-like QV estimation
 
 rule meryl_query_only_kmer_db:
@@ -791,6 +834,18 @@ rule meryl_query_only_kmer_db:
         'meryl difference output {output.query_only} {input.query_db} {input.reference_db}'
 
 
+def set_meryl_memory(wildcards, attempt):
+
+    memory_mb = 8192 + 2048 * attempt
+    if 'ONTUL' in wildcards.readset:
+        if 'HIFIEC' in wildcards.readset and 'mbg' in wildcards.readset:
+            pass
+        else:
+            # raw ONTUL reads
+            memory_mb = 229376 + 16384 * attempt
+    return memory_mb
+
+
 rule meryl_generate_individual_kmer_stats:
     """
     -existence:
@@ -807,7 +862,7 @@ rule meryl_generate_individual_kmer_stats:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 + 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: set_meryl_memory(wildcards, attempt),
         runtime_hrs = lambda wildcards, attempt: 8 * attempt
     shell:
         'meryl-lookup -existence -sequence {input.query_reads} -mers {input.query_only} > {output.table}'
