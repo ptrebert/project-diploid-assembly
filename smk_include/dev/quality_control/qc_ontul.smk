@@ -717,7 +717,65 @@ def select_winnowmap_reads(wildcards):
     return reads
 
 
-rule winnowmap_align_readsets:
+def set_winnowmap_memory(wildcards, attempt):
+    """
+    aligning the ONT-UL reads is driving me crazy...
+    now use the hammer
+    """
+    base_mem = 65536
+    if 'MAP-TO_HIFIEC' in wildcards.readset:
+        base_mem += 24768
+    elif 'ONTUL' in wildcards.readset:
+        base_mem = 262144
+    elif 'HIFIEC' in wildcards.readset:
+        pass
+    elif 'HIFIAF' in wildcards.readset:
+        pass
+    else:
+        raise ValueError(str(wildcards))
+    return base_mem * attempt
+
+
+def set_winnowmap_runtime(wildcards, attempt):
+    """
+    aligning the ONT-UL reads is driving me crazy...
+    now use the hammer
+    """
+    base_hrs = 24
+    if 'MAP-TO_HIFIEC' in wildcards.readset:
+        base_hrs = 60
+    elif 'ONTUL' in wildcards.readset:
+        base_hrs = 84
+    elif 'HIFIEC' in wildcards.readset:
+        pass
+    elif 'HIFIAF' in wildcards.readset:
+        pass
+    else:
+        raise ValueError(str(wildcards))
+    return base_hrs * attempt
+
+
+def set_winnowmap_preset(wildcards):
+    """
+    aligning the ONT-UL reads is driving me crazy...
+    now use the hammer
+    """
+    preset = None
+    if 'MAP-TO_HIFIEC' in wildcards.readset:
+        preset = 'map-pb'
+    elif 'ONTUL' in wildcards.readset:
+        preset = 'map-ont'
+    elif 'HIFIEC' in wildcards.readset:
+        preset = 'map-pb'
+    elif 'HIFIAF' in wildcards.readset:
+        preset = 'map-pb'
+    else:
+        raise ValueError(str(wildcards))
+    assert preset is not None
+    return preset
+
+
+rule ontqc_wmap_align_readsets:
     input:
         reads = select_winnowmap_reads,
         reference = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta'),
@@ -733,15 +791,15 @@ rule winnowmap_align_readsets:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 65536 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 48 * attempt,
-        mem_sort_mb = 2048,
+        mem_total_mb = lambda wildcards, attempt: set_winnowmap_memory(wildcards, attempt),
+        runtime_hrs = lambda wildcards, attempt: set_winnowmap_runtime(wildcards, attempt),
+        mem_sort_mb = 4096,
         align_threads = config['num_cpu_high'] - config['num_cpu_low'],
         sort_threads = config['num_cpu_low'],
     params:
         individual = lambda wildcards: wildcards.sample,
         readgroup_id = lambda wildcards: wildcards.readset.replace('.', ''),
-        preset = lambda wildcards: 'map-ont' if 'ONTUL' in wildcards.readset else 'map-pb'
+        preset = lambda wildcards: set_winnowmap_preset(wildcards)
     shell:
         'winnowmap -W {input.ref_repkmer} -k 15 -t {resources.align_threads} -Y -L --eqx --MD -a -x {params.preset} '
         '-R "@RG\\tID:{params.readgroup_id}\\tSM:{params.individual}" --secondary=no '
@@ -797,7 +855,7 @@ rule cache_read_coverage:
                 chrom_cov = np.zeros(chrom_sizes[chrom], dtype=np.int16)
                 break
 
-        with pd.HDFStore(output.hdf, mode='w') as hdf:
+        with pd.HDFStore(output.hdf, mode='w', complib='blosc', complevel=9) as hdf:
             with open(input.bg, 'r') as bedgraph:
                 for line in bedgraph:
                     chrom, start, end, cov = line.strip().split()
@@ -842,7 +900,7 @@ def set_meryl_memory(wildcards, attempt):
             pass
         else:
             # raw ONTUL reads
-            memory_mb = 229376 + 16384 * attempt
+            memory_mb = 262144 + 65536 * attempt
     return memory_mb
 
 
