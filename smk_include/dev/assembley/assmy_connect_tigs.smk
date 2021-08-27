@@ -36,8 +36,8 @@ rule wmap_align_ont_to_gono_reference:
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 48576 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 47 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 65536 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 72 * attempt,
     params:
         preset = lambda wildcards: 'map-pb' if wildcards.ont_type == 'ONTEC' else 'map-ont',
         sort_threads = 4,
