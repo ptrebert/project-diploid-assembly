@@ -1,6 +1,7 @@
 include: 'assmy_collect_input.smk'
 include: 'assmy_separate_tigs.smk'
 include: 'assmy_connect_tigs.smk'
+include: 'assmy_finnish_hybrid.smk'
 
 localrules: run_all
 
@@ -45,9 +46,15 @@ rule run_all:
             hpc=['nohpc'],
             ont_type=['ONTEC']
         ),
-        graph_ontul_gono_ref = expand(
-            'output/read_aln/{sample_long}.{reference}.AMXYUN.tigs.{ont_type}.ga.gaf',
+        hybrid_ont_align = expand(
+            'output/hybrid/ont_to_graph/{sample_long}.{ont_type}.{tigs}.gaf',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
-            reference=['T2Tv11_38p13Y_chm13'],
-            ont_type=['ONTUL']
-        ),
+            ont_type=['ONTUL'],
+            tigs=['TIGRAW']
+        )
+        # graph_ontul_gono_ref = expand(
+        #     'output/read_aln/{sample_long}.{reference}.AMXYUN.tigs.{ont_type}.ga.gaf',
+        #     sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+        #     reference=['T2Tv11_38p13Y_chm13'],
+        #     ont_type=['ONTUL']
+        # ),
