@@ -57,7 +57,7 @@ def compute_read_coverage_files():
 
     out_path = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.Q{minq}.L{minl}.WS{window_size}.h5'
 
-    sample=['NA18989'],
+    sample=['NA18989']
     readset=[
         'ONTUL_guppy-5.0.11-sup-prom',
         'HIFIEC_hifiasm-v0.15.4',
@@ -848,7 +848,7 @@ rule dump_alignment_coverage:
     threads: 1
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 12 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt,
     shell:
         'bedtools bamtobed -i {input.bam} > {output.bed}'
 
@@ -882,12 +882,12 @@ rule cache_read_coverage:
                 chrom_sizes[name] = int(size)
 
         with open(input.bed, 'r') as bed:
-            chrom = bed.readline.split()[0]
+            chrom = bed.readline().split()[0]
             assert '#' not in chrom
             last_chrom = chrom
             chrom_cov = np.zeros(chrom_sizes[chrom], dtype=np.int16)
 
-        mapqs = col.Counter(),
+        mapqs = col.Counter()
         lengths = []
         aln = col.Counter() 
 
@@ -900,13 +900,13 @@ rule cache_read_coverage:
                     mapq = int(mapq)
                     length = end - start
                     if chrom != last_chrom:
-                        out_key = f'{chrom}/cov'
+                        out_key = f'{last_chrom}/cov'
                         hdf.put(out_key, pd.Series(chrom_cov, dtype=np.int16), format='fixed')
-                        out_key = f'{chrom}/mapq'
+                        out_key = f'{last_chrom}/mapq'
                         hdf.put(out_key, pd.Series(mapqs, dtype=np.int32), format='fixed')
-                        out_key = f'{chrom}/aln_length'
+                        out_key = f'{last_chrom}/aln_length'
                         hdf.put(out_key, pd.Series(lengths, dtype=np.int32), format='fixed')
-                        out_key = f'{chrom}/reads'
+                        out_key = f'{last_chrom}/reads'
                         read_abundance = pd.DataFrame.from_records(
                             [(k, v) for k, v in aln.items()],
                             columns=['read', 'num_aln']
@@ -955,34 +955,29 @@ rule bin_read_coverage:
 
         ws = int(wildcards.window_size)
         with pd.HDFStore(input.hdf, 'r') as hdf_in:
-            for key in hdf.keys():
+            for key in hdf_in.keys():
                 if not key.endswith('/cov'):
                     continue
                 chrom = key.strip('/').split('/')[0]
                 chrom_cov = hdf[key]
+                if chrom_cov.size < ws:
+                    # NB: chrM is part of T2T reference
+                    continue
                 blunt_end = chrom_cov.size // ws * ws
 
-                window_avg_cov = cov_data.values[:blunt_end].reshape((-1, ws)).mean(axis=1)
-                window_avg_cov_dec, avg_bins = pd.qcut(window_avg_cov, 10, retbins=True, labels=range(1,11))
-
-                window_med_cov = np.sort(cov_data.values[:blunt_end].reshape((-1, ws)), axis=1)[:, ws//2]
-                window_med_cov_dec, med_bins = pd.qcut(window_med_cov, 10, retbins=True, labels=range(1,11))
+                window_avg_cov = chrom_cov.values[:blunt_end].reshape((-1, ws)).mean(axis=1)
+                window_med_cov = np.sort(chrom_cov.values[:blunt_end].reshape((-1, ws)), axis=1)[:, ws//2]
 
                 df = pd.DataFrame(
-                    [window_avg_cov, window_avg_cov_dec],
-                    index=['avg_cov', 'avg_cov_dec', 'med_cov', 'med_cov_dec']
+                    [window_avg_cov, window_med_cov],
+                    index=['avg_cov', 'med_cov']
                 )
                 df = df.transpose()
-
-                df_bins = pd.DataFrame(
-                    [avg_bins, med_bins],
-                    index=['avg_bins', 'med_bins'],
-                    dtype=np.float32
-                )
+                df['avg_cov_pctrk'] = df['avg_cov'].rank(ascending=True, pct=True)
+                df['med_cov_pctrk'] = df['avg_cov'].rank(ascending=True, pct=True)
 
                 with pd.HDFStore(output.hdf, 'a', complevel=9, complib='blosc') as hdf_out:
                     hdf_out.put(f'{chrom}/window_cov', df, format='fixed')
-                    hdf_out.put(f'{chrom}/bins', df_bins, format='fixed')
     # END OF RUN BLOCK
 
 
