@@ -7,9 +7,12 @@ https://github.com/maickrau/hybrid-assembly/blob/master/commands.sh
 
 rule hybrid_ga_align_ont_to_string_graph:
     """
+    This rule uses a source built from GA's MultiseedDP branch
+    to enable command line parameter "discard-cigar" (less relevant)
+    and the computation of MAPQ scores (relevant, used in downstream scripts)
     """
     input:
-        container = ancient('graphaligner.sif'),
+        container = ancient('graphaligner.MultiseedDP.sif'),
         graph = lambda wildcards: ASSEMBLED_SAMPLES[wildcards.sample][wildcards.tigs],
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
     output:
@@ -36,5 +39,3 @@ rule hybrid_ga_align_ont_to_string_graph:
             '-b 15 --discard-cigar '
             '--corrected-out {output.hybrid_reads} '
             '-a {output.gaf} &> {log}'
-
-
