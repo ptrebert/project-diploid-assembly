@@ -53,6 +53,41 @@ def find_script_path(script_name, subfolder=''):
     return script_path
 
 
+def compute_read_coverage_files():
+
+    out_path = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.Q{minq}.L{minl}.WS{window_size}.h5'
+
+    sample=['NA18989'],
+    readset=[
+        'ONTUL_guppy-5.0.11-sup-prom',
+        'HIFIEC_hifiasm-v0.15.4',
+        'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
+        'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
+    ]
+    reference=['T2Tv11_38p13Y_chm13']
+    ql_combs = [(0, 0), (60, 0), (60, 20000), (60, 100000)]
+    window_sizes = [20000, 50000, 100000]
+
+    read_cov_files = []
+
+    for s in sample:
+        for rs in readset:
+            for ref in reference:
+                for (q, l) in ql_combs:
+                    for ws in window_sizes:
+                        formatter = {
+                            'sample': s,
+                            'readset': rs,
+                            'reference': ref,
+                            'minq': q,
+                            'minl': l,
+                            'window_size': ws
+                        }
+                        tmp = out_path.format(**formatter)
+                        read_cov_files.append(tmp)
+    return read_cov_files
+
+
 rule run_all:
     input:
         readsets = INPUT_READS,
@@ -114,17 +149,7 @@ rule run_all:
                 'NA18989_ERR3239679'
             ]
         ),
-        cache_read_cov = expand(
-            'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cache.h5',
-            sample=['NA18989'],
-            readset=[
-                'ONTUL_guppy-5.0.11-sup-prom',
-                'HIFIEC_hifiasm-v0.15.4',
-                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500',
-                'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k3001-w2000',
-            ],
-            reference=['T2Tv11_38p13Y_chm13']
-        ),
+        cache_read_cov = compute_read_coverage_files(),
         global_qv_est = expand(
             'output/qv_estimate/{sample}_{readset}_REF_{short_reads}.qv.tsv',
             sample=['NA18989'],
@@ -815,9 +840,9 @@ rule dump_alignment_coverage:
         bam = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam',
         bai = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.psort.bam.bai',
     output:
-        bg = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cov.bedgraph',
+        bed = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.aln.bed',
     benchmark:
-        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cov.rsrc'
+        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.aln.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: 1
@@ -825,22 +850,30 @@ rule dump_alignment_coverage:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: 12 * attempt,
     shell:
-        'bedtools genomecov -bg -ibam {input.bam} > {output.bg}'
+        'bedtools bamtobed -i {input.bam} > {output.bed}'
 
 
 rule cache_read_coverage:
+    """
+    input bed:
+    chr1    1       16514   m64039_210506_192609/37554193/ccs       60      +
+    """
     input:
-        bg = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cov.bedgraph',
+        bed = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.aln.bed',
         fai = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta.fai'),
     output:
-        hdf = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cache.h5',
+        hdf = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.Q{minq}.L{minl}.cache.h5',
     benchmark:
-        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.cache.rsrc',
+        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.Q{minq}.L{minl}.cache.rsrc',
     resources:
-        mem_total_mb = lambda wildcards, attempt: 4096 * attempt
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt
     run:
         import pandas as pd
         import numpy as np
+        import collections as col
+
+        min_mapq = int(wildcards.minq)
+        min_length = int(wildcards.minl)
 
         chrom_sizes = {}
         with open(input.fai, 'r') as faidx:
@@ -848,25 +881,108 @@ rule cache_read_coverage:
                 name, size = line.split()[:2]
                 chrom_sizes[name] = int(size)
 
-        with open(input.bg, 'r') as bedgraph:
-            for line in bedgraph:
-                chrom, start, end, cov = line.strip().split()
-                last_chrom = chrom
-                chrom_cov = np.zeros(chrom_sizes[chrom], dtype=np.int16)
-                break
+        with open(input.bed, 'r') as bed:
+            chrom = bed.readline.split()[0]
+            assert '#' not in chrom
+            last_chrom = chrom
+            chrom_cov = np.zeros(chrom_sizes[chrom], dtype=np.int16)
+
+        mapqs = col.Counter(),
+        lengths = []
+        aln = col.Counter() 
 
         with pd.HDFStore(output.hdf, mode='w', complib='blosc', complevel=9) as hdf:
-            with open(input.bg, 'r') as bedgraph:
-                for line in bedgraph:
-                    chrom, start, end, cov = line.strip().split()
+            with open(input.bed, 'r') as bed:
+                for line in bed:
+                    chrom, start, end, read, mapq, strand = line.strip().split()
                     start = int(start) - 1
                     end = int(end)
+                    mapq = int(mapq)
+                    length = end - start
                     if chrom != last_chrom:
-                        out_key = f'{chrom}'
+                        out_key = f'{chrom}/cov'
                         hdf.put(out_key, pd.Series(chrom_cov, dtype=np.int16), format='fixed')
+                        out_key = f'{chrom}/mapq'
+                        hdf.put(out_key, pd.Series(mapqs, dtype=np.int32), format='fixed')
+                        out_key = f'{chrom}/aln_length'
+                        hdf.put(out_key, pd.Series(lengths, dtype=np.int32), format='fixed')
+                        out_key = f'{chrom}/reads'
+                        read_abundance = pd.DataFrame.from_records(
+                            [(k, v) for k, v in aln.items()],
+                            columns=['read', 'num_aln']
+                        )
+                        hdf.put(out_key, read_abundance, format='fixed')
+                        # reset
                         last_chrom = chrom
                         chrom_cov = np.zeros(chrom_sizes[chrom], dtype=np.int16)
-                    chrom_cov[start:end] = int(cov)
+                        mapqs = col.Counter()
+                        lengths = []
+                        aln = col.Counter()
+                    if mapq < min_mapq or length < min_length:
+                        continue
+                    chrom_cov[start:end] += 1
+                    mapqs[mapq] += 1
+                    lengths.append(length)
+                    aln[read] += 1
+
+            out_key = f'{chrom}/cov'
+            hdf.put(out_key, pd.Series(chrom_cov, dtype=np.int16), format='fixed')
+            out_key = f'{chrom}/mapq'
+            hdf.put(out_key, pd.Series(mapqs, dtype=np.int32), format='fixed')
+            out_key = f'{chrom}/aln_length'
+            hdf.put(out_key, pd.Series(lengths, dtype=np.int32), format='fixed')
+            out_key = f'{chrom}/reads'
+            read_abundance = pd.DataFrame.from_records(
+                [(k, v) for k, v in aln.items()],
+                columns=['read', 'num_aln']
+            )
+            hdf.put(out_key, read_abundance, format='fixed')
+    # END OF RUN BLOCK
+
+
+rule bin_read_coverage:
+    input:
+        hdf = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.Q{minq}.L{minl}.cache.h5',
+    output:
+        hdf = 'output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.Q{minq}.L{minl}.WS{window_size}.h5',
+    benchmark:
+        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{readset}_MAP-TO_{reference}.Q{minq}.L{minl}.WS{window_size}.rsrc',
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt
+    run:
+        import pandas as pd
+        import numpy as np
+
+        ws = int(wildcards.window_size)
+        with pd.HDFStore(input.hdf, 'r') as hdf_in:
+            for key in hdf.keys():
+                if not key.endswith('/cov'):
+                    continue
+                chrom = key.strip('/').split('/')[0]
+                chrom_cov = hdf[key]
+                blunt_end = chrom_cov.size // ws * ws
+
+                window_avg_cov = cov_data.values[:blunt_end].reshape((-1, ws)).mean(axis=1)
+                window_avg_cov_dec, avg_bins = pd.qcut(window_avg_cov, 10, retbins=True, labels=range(1,11))
+
+                window_med_cov = np.sort(cov_data.values[:blunt_end].reshape((-1, ws)), axis=1)[:, ws//2]
+                window_med_cov_dec, med_bins = pd.qcut(window_med_cov, 10, retbins=True, labels=range(1,11))
+
+                df = pd.DataFrame(
+                    [window_avg_cov, window_avg_cov_dec],
+                    index=['avg_cov', 'avg_cov_dec', 'med_cov', 'med_cov_dec']
+                )
+                df = df.transpose()
+
+                df_bins = pd.DataFrame(
+                    [avg_bins, med_bins],
+                    index=['avg_bins', 'med_bins'],
+                    dtype=np.float32
+                )
+
+                with pd.HDFStore(output.hdf, 'a', complevel=9, complib='blosc') as hdf_out:
+                    hdf_out.put(f'{chrom}/window_cov', df, format='fixed')
+                    hdf_out.put(f'{chrom}/bins', df_bins, format='fixed')
     # END OF RUN BLOCK
 
 
