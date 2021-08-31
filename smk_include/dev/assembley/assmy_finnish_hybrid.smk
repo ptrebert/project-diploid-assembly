@@ -13,7 +13,7 @@ rule hybrid_ga_align_ont_to_string_graph:
     """
     input:
         container = ancient('graphaligner.MultiseedClusters.sif'),
-        graph = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.tigs],
+        graph = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.gfa',
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
     output:
         gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.gaf',
@@ -32,7 +32,7 @@ rule hybrid_ga_align_ont_to_string_graph:
     shell:
         'module load Singularity && singularity exec {input.container} '
         '--bind /:/hilbert '
-        'GraphAligner -g /hilbert/{input.graph} -f /hilbert/{input.reads} '
+        'GraphAligner -g {input.graph} -f /hilbert/{input.reads} '
             '-t {threads} '
             '--min-alignment-score 5000 --multimap-score-fraction 0.99 '
             '--precise-clipping 0.7 --hpc-collapse-reads '

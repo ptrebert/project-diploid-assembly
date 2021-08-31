@@ -1,4 +1,5 @@
 include: 'assmy_collect_input.smk'
+include: 'assmy_preprocess.smk'
 include: 'assmy_separate_tigs.smk'
 include: 'assmy_connect_tigs.smk'
 include: 'assmy_finnish_hybrid.smk'
