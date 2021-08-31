@@ -959,7 +959,7 @@ rule bin_read_coverage:
                 if not key.endswith('/cov'):
                     continue
                 chrom = key.strip('/').split('/')[0]
-                chrom_cov = hdf[key]
+                chrom_cov = hdf_in[key]
                 if chrom_cov.size < ws:
                     # NB: chrM is part of T2T reference
                     continue
