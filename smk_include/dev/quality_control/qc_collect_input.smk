@@ -92,7 +92,7 @@ def add_ontul_readsets(sample_infos, ontul_path):
     for flag_file in flag_files:
         sample_folder = flag_file.parent
         sample_name = flag_file.parent.stem
-        fastq_files = sample_folder.glob(f'*.{suffix}')
+        fastq_files = sample_folder.glob(f'*{suffix}')
         fastq_files = sorted([str(f) for f in fastq_files])
         assert len(fastq_files) == 2
         sample_infos[sample_name]['ONTUL'] = fastq_files
@@ -100,7 +100,7 @@ def add_ontul_readsets(sample_infos, ontul_path):
 
     return sample_infos, sorted(ontul_samples)
 
-
+PATH_SAMPLE_TABLE = config['path_sample_table']
 PATH_HIFIEC_READS = config['path_hifiec_reads']
 PATH_HIFIAF_READS = config['path_hifiaf_reads']
 PATH_ASSEMBLY_GRAPHS = config['path_assembly_graphs']

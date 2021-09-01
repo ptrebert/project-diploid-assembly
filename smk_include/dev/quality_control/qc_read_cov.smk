@@ -68,7 +68,7 @@ def set_winnowmap_preset(wildcards):
     return preset
 
 
-rule ontqc_wmap_align_readsets:
+rule qc_wmap_align_readsets:
     input:
         reads = select_winnowmap_reads,
         reference = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta'),

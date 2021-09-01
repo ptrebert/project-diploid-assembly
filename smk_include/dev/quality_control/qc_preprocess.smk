@@ -1,7 +1,7 @@
 
 rule qc_merge_ontul:
     input:
-        ancient(select_ont_input)
+        fastq = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['ONTUL']
     output:
         'input/ONTUL/{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz'
     benchmark:
@@ -17,9 +17,9 @@ rule qc_merge_ontul:
 
 rule qc_local_seq_stats:
     input:
-        'input/{read_type}/{sample}_{read_type}_{modifier}.fasta.gz'
+        'input/{read_type}/{sample}_{read_type}_{readset}.fasta.gz'
     output:
-        'input/{read_type}/{sample}_{read_type}_{modifier}.stats.tsv.gz'
+        'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz'
     conda: '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         read_type = '(ONTUL|ONTEC|ONTHY)'
@@ -35,7 +35,7 @@ rule qc_remote_seq_stats:
     input:
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type.upper()]
     output:
-        'input/{read_type}/{sample}_{read_type}_{modifier}.stats.tsv.gz'
+        'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz'
     wildcard_constraints:
         read_type = '(HIFIEC|HIFIAF|SHORT)'
     threads: 2
