@@ -1,15 +1,6 @@
 
 localrules: dump_reads_fofn, run_all, compute_global_query_qv_estimate
 
-ruleorder: meryl_query_only_kmer_db > meryl_count_kmers
-
-# raw Illumina
-# ec Illumina
-# raw HiFi
-# af HiFi
-# ec HiFi
-# raw ONT
-# ONTec w/ single parameterization?
 
 INPUT_READS = [
         'input/ont/NA18989_ONTUL_guppy-5.0.11-sup-prom.fasta.gz',
@@ -18,39 +9,6 @@ INPUT_READS = [
         'input/hifi/NA18989_HIFIAF_pgas-v14-dev.fastq.gz',
         'input/short/NA18989_ERR3239679.fasta.gz'
     ]
-
-
-READSETS = [os.path.basename(x.rsplit('.', 2)[0]) for x in INPUT_READS]
-
-wildcard_constraints:
-    sample = 'NA18989'
-
-
-def find_script_path(script_name, subfolder=''):
-    import os
-
-    current_root = workflow.basedir
-    last_root = ''
-
-    script_path = None
-
-    for _ in range(workflow.basedir.count('/')):
-        if last_root.endswith('project-diploid-assembly'):
-            raise RuntimeError('Leaving project directory tree (next: {}). '
-                               'Cannot find script {} (subfolder: {}).'.format(current_root, script_name, subfolder))
-        check_path = os.path.join(current_root, 'scripts', subfolder).rstrip('/')  # if subfolder is empty string
-        if os.path.isdir(check_path):
-            check_script = os.path.join(check_path, script_name)
-            if os.path.isfile(check_script):
-                script_path = check_script
-                break
-        last_root = current_root
-        current_root = os.path.split(current_root)[0]
-
-    if script_path is None:
-        raise RuntimeError('Could not find script {} (subfolder {}). '
-                           'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
-    return script_path
 
 
 def compute_read_coverage_files():
