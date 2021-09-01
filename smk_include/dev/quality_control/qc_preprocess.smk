@@ -33,9 +33,10 @@ rule qc_local_seq_stats:
 
 rule qc_remote_seq_stats:
     input:
-        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type.upper()]
+        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type]
     output:
         'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz'
+    conda: '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         read_type = '(HIFIEC|HIFIAF|SHORT)'
     threads: 2

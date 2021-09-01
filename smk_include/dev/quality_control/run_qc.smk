@@ -5,6 +5,8 @@ include: 'qc_preprocess.smk'
 include: 'qc_kmers.smk'
 include: 'qc_read_cov.smk'
 
+localrules: run_read_cov, run_seq_stats
+
 wildcard_constraints:
     sample = '(' + '|'.join([s for s in ONTUL_SAMPLES]) + ')'
 
