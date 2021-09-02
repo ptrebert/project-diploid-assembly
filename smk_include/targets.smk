@@ -586,12 +586,12 @@ def define_file_targets(wildcards):
     file_targets = []
 
     keep_path = False
-    selected_path = None
+    selected_paths = []
     if 'select_target_path' in config:
         keep_path = True
-        selected_path = config['select_target_path']
-        if not selected_path in TARGET_PATHS:
-            raise ValueError('Selected target path does not exist: '
+        selected_paths = config['select_target_path'].split(',')
+        if any([s not in TARGET_PATHS for s in selected_paths]):
+            raise ValueError('At least one selected target path does not exist: '
                              '{} // {}'.format(selected_path, sorted(TARGET_PATHS.keys())))
 
     # switch off Strand-seq based scaffolding by default
@@ -632,7 +632,7 @@ def define_file_targets(wildcards):
             for target_name, target_path in TARGET_PATHS.items():
                 if not build_experimental_targets and target_name in experimental_targets:
                     continue
-                if keep_path and selected_path != target_name:
+                if keep_path and target_name not in selected_paths:
                     if target_name.startswith('INIT'):
                         # Init targets are always needed
                         pass
