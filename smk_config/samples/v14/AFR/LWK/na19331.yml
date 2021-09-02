@@ -17,7 +17,7 @@ sample_description_NA19331:
             readset: NA19331_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
-            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/NA19331
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19331
             data_source_filter: ".txt.gz"
         # - short_reads:
         #     readset: NA19331_SHORT_READSET
