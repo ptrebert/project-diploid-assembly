@@ -520,7 +520,7 @@ def load_saarclust_params(wildcards, input, use_case):
         'concat.fasta': None,
         'remove.always.WC': 'TRUE',
         'mask.regions': 'FALSE',
-        'max.cluster.length.mbp': '250'
+        'max.cluster.length.mbp': config.get('max_cluster_length_mbp', None)
     }
     if use_case == 'haploid':
         parameter_set['concat.fasta'] = 'FALSE'
