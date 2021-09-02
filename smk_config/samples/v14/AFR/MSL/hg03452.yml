@@ -12,7 +12,6 @@ sample_description_HG03452:
         technology: pacbio
         data_type: fastq
         load_type: parts
-        comment: "PRJNA438669 - MGI"
         data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG03452/
 #    - strandseq:
 #        readset: &sseq_reads HG03452_hgsvc_ilnxs-80pe_sseq

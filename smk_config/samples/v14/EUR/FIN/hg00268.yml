@@ -13,11 +13,12 @@ sample_description_HG00268:
         data_type: fastq
         load_type: parts
         data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG00268/
-#    - strandseq:
-#        readset: &sseq_reads HG00268_hgsvc_ilnxs-80pe_sseq
-#        library_fractions: one
-#        library_qc: yes
-#        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG00268/
+    - strandseq:
+        readset: &sseq_reads HG00268_hgsvc_ilnxs-80pe_sseq
+        library_fractions: one
+        library_qc: yes
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG00268/
+        data_source_filter: ".txt.gz"
     - short_reads:
         readset: &short_reads HG00268_1kg_ilnvs-150pe_short
         source_type: ena
@@ -31,7 +32,7 @@ sample_targets_HG00268:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-#      sseq_reads: *sseq_reads
+      sseq_reads: *sseq_reads
       hap_assm_mode: split
       hap:
         - h1-un

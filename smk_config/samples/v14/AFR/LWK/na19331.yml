@@ -13,11 +13,12 @@ sample_description_NA19331:
             data_type: fastq
             load_type: parts
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/GM19331
-        # - strandseq:
-        #     readset: NA19331_SSEQ_READSET
-        #     library_fractions: one
-        #     library_qc: yes
-        #     data_source_folder: EMPTY_PATH
+        - strandseq:
+            readset: NA19331_hgsvc_ilnxs-80pe_sseq
+            library_fractions: one
+            library_qc: yes
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/NA19331
+            data_source_filter: ".txt.gz"
         # - short_reads:
         #     readset: NA19331_SHORT_READSET
         #     load_type: complete
@@ -30,13 +31,13 @@ sample_description_NA19331:
 sample_targets_NA19331:
   - aliases:
       1: &long_reads NA19331_hgsvc_pbsq2-ccs_1000
-    #   2: &strandseq_reads NA19331_SSEQ_READSET
+      2: &strandseq_reads NA19331_hgsvc_ilnxs-80pe_sseq
     #   3: &ont_reads NA19331_ONT_READSET
     #   4: &short_reads NA19331_SHORT_READSET
   - defaults:
       hap_reads: *long_reads
       vc_reads: *long_reads
-    #   sseq_reads: *strandseq_reads
+      sseq_reads: *strandseq_reads
       hap_assm_mode: split
       hap:
         - h1-un
