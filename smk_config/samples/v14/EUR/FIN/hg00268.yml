@@ -18,7 +18,6 @@ sample_description_HG00268:
         library_fractions: one
         library_qc: yes
         data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG00268/
-        data_source_filter: ".txt.gz"
     - short_reads:
         readset: &short_reads HG00268_1kg_ilnvs-150pe_short
         source_type: ena
