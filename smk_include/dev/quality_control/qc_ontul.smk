@@ -1,15 +1,10 @@
 
-localrules: dump_reads_fofn, run_all, compute_global_query_qv_estimate
-
-
-INPUT_READS = [
-        'input/ont/NA18989_ONTUL_guppy-5.0.11-sup-prom.fasta.gz',
-        'input/ont/NA18989_ONTUL_guppy-4.0.11-hac-prom.fasta.gz',
-        'input/hifi/NA18989_HIFIEC_hifiasm-v0.15.4.fasta.gz',
-        'input/hifi/NA18989_HIFIAF_pgas-v14-dev.fastq.gz',
-        'input/short/NA18989_ERR3239679.fasta.gz'
-    ]
-
+################################
+# This module is deprecated and  
+# dysfunctional.
+# Rules will be distributed to
+# more task-specific modules
+################################
 
 def compute_read_coverage_files():
 
@@ -149,22 +144,6 @@ def select_ont_input(wildcards):
     else:
         raise ValueError(str(wildcards))
     return fastq
-
-
-rule merge_ont_data:
-    input:
-        select_ont_input
-    output:
-        'input/ont/NA18989_ONTUL_{basecaller}.fasta.gz'
-    benchmark:
-        'rsrc/input/ont/NA18989_ONTUL_{basecaller}.merge.rsrc'
-    conda: '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_low']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 48 * attempt
-    shell:
-        'pigz -d -c {input} | seqtk seq -A -C | pigz -p {threads} --best > {output}'
 
 
 rule compute_input_read_stats:
