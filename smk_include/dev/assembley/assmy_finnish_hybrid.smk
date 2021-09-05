@@ -31,8 +31,8 @@ rule hybrid_ga_align_ont_to_string_graph:
 #    conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 376832 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 72 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 245760 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 167 * attempt,
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.container} '

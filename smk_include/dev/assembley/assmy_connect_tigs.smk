@@ -54,6 +54,22 @@ rule wmap_align_ont_to_gono_reference:
         'samtools index {output.bam}'
 
 
+rule dump_ont_to_gono_reference:
+    input:
+        bam = 'output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.psort.bam',
+        bai = 'output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.psort.bam.bai',
+    output:
+        bed = 'output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.cov.bed',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: 1
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+    shell:
+        'bedtools bamtobed -i {input.bam} > {output.bed}'
+
+
 rule ga_align_ont_to_gono_reference:
     input:
         container = ancient('graphaligner.sif'),

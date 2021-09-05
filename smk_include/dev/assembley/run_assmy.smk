@@ -32,7 +32,7 @@ rule run_all:
             reference=['T2Tv11_38p13Y_chm13'],
         ),
         lin_ontul_gono_ref = expand(
-            'output/read_aln/{sample_long}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.psort.bam',
+            'output/read_aln/{sample_long}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.cov.bed',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             reference=['T2Tv11_38p13Y_chm13'],
             kmer_size=[15],
@@ -40,7 +40,7 @@ rule run_all:
             ont_type=['ONTUL']
         ),
         lin_ontec_gono_ref = expand(
-            'output/read_aln/{sample_long}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.psort.bam',
+            'output/read_aln/{sample_long}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.cov.bed',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTEC_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             reference=['T2Tv11_38p13Y_chm13'],
             kmer_size=[15],
