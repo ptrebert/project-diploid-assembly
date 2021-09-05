@@ -2,6 +2,6 @@
 
 path_sample_table: '../../../annotation/samples/samples.tsv'
 path_hifiec_reads: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder/output/reference_assembly/non-hap-res/layout/hifiasm'
-path_ontul_reads: '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder/input/ont'
+path_ontul_reads: '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder/input/ONTUL'
 path_ontec_reads: '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder/output/alignments/ont_to_mbg_hifi'
 path_assembly_graphs: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder/output/reference_assembly/non-hap-res/layout/hifiasm'
