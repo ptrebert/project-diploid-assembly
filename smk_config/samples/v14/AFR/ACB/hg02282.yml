@@ -1,0 +1,47 @@
+
+sample_description_HG02282:
+    individual: HG02282
+    sex: female
+    super_population: AFR
+    population: ACB
+    family: BB24
+    member: mother
+    data_sources:
+        - long_reads:
+            readset: HG02282_LR_READSET
+            technology: pacbio
+            data_type: fastq
+            load_type: parts
+            data_source_folder: EMPTY_PATH
+        - strandseq:
+            readset: HG02282_SSEQ_READSET
+            library_fractions: one
+            library_qc: yes
+            data_source_folder: EMPTY_PATH
+        - short_reads:
+            readset: HG02282_SHORT_READSET
+            load_type: complete
+            data_source_folder: EMPTY_PATH
+        - ont_reads:
+            readset: HG02282_ONT_READSET
+            load_type: parts
+            data_source_folder: EMPTY_PATH
+
+sample_targets_HG02282:
+  - aliases:
+      1: &long_reads HG02282_LR_READSET
+      2: &strandseq_reads HG02282_SSEQ_READSET
+      3: &ont_reads HG02282_ONT_READSET
+      4: &short_reads HG02282_SHORT_READSET
+  - defaults:
+      hap_reads: *long_reads
+      vc_reads: *long_reads
+      sseq_reads: *strandseq_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
+      var_caller: deepvar
