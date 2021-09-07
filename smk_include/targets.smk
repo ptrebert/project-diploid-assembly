@@ -599,7 +599,7 @@ def define_file_targets(wildcards):
 
     for target_specification in sample_targets:
         if 'ignore' in target_specification:
-            continue
+            break
         elif 'aliases' in target_specification:
             continue
         elif 'defaults' in target_specification:
