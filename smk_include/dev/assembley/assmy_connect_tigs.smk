@@ -119,8 +119,6 @@ rule mmap_align_ont_to_aug_reference:
         runtime_hrs = lambda wildcards, attempt: 48 * attempt,
     params:
         preset = lambda wildcards: 'map-pb' if wildcards.ont_type == 'ONTEC' else 'map-ont',
-        sort_threads = 4,
-        sort_mem = 4096
     shell:
-        'minimap -x {params.preset} --secondary=no -o {output.paf} {input.fasta} {input.reads} &> {log}'
+        'minimap2 -x {params.preset} --secondary=no -o {output.paf} {input.fasta} {input.reads} &> {log}'
         

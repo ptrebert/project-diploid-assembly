@@ -100,7 +100,7 @@ rule merge_reference_confirmed_y_contigs:
     shell:
         'cat {input.fa_ref} {input.contigs} > {output.fa}'
             ' && '
-            'samtools faidx {output.faidx}'
+            'samtools faidx {output.fa}'
 
 
 rule extract_confirmed_y_contig_names:
