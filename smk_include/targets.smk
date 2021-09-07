@@ -598,7 +598,9 @@ def define_file_targets(wildcards):
     build_experimental_targets, experimental_targets = define_experimental_file_targets()
 
     for target_specification in sample_targets:
-        if 'aliases' in target_specification:
+        if 'ignore' in target_specification:
+            continue
+        elif 'aliases' in target_specification:
             continue
         elif 'defaults' in target_specification:
             target_spec = target_specification['defaults']

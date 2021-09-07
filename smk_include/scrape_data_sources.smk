@@ -385,7 +385,9 @@ def read_local_data_sources():
         for ds in values['data_sources']:
             for readset_type, readset_spec in ds.items():
                 readset_name = readset_spec['readset']
-                if 'data_source_folder' not in readset_spec:
+                skip_data_source = ('data_source_folder' not in readset_spec) or \
+                                   (readset_spec['data_source_folder'].lower() == 'empty_path')
+                if skip_data_source:
                     if WARN:
                         sys.stderr.write('\nWarning: no data source folder for readset {} - skipping\n'.format(readset_name))
                     continue
