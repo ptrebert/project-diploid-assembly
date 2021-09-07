@@ -125,7 +125,7 @@ rule extract_confirmed_y_contig_read_names:
         'egrep "^A" {input.tig_alt} | egrep -f {input.tig_names} | cut -f 5 >> {output}'
 
 
-rule extract_confirmed_y_contig_read_names:
+rule extract_confirmed_y_contig_reads:
     input:
         read_names = 'output/references/{sample_info}_{sample}.XYPAR.reads.txt',
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['HIFIAF'],
