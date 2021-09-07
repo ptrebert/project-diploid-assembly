@@ -59,3 +59,26 @@ rule run_all:
         #     reference=['T2Tv11_38p13Y_chm13'],
         #     ont_type=['ONTUL']
         # )
+
+
+rule run_extract_confirmed_reads:
+    input:
+        xypar_reads = expand(
+            'output/references/{sample_long}.XYPAR.reads.fastq.gz',
+            sample_long=[
+                'AFR-YRI-Y117-M_NA19239',
+                'AMR-PUR-PR05-M_HG00731',
+                'EAS-CHS-SH032-M_HG00512',
+                'EUR-ASK-3140-M_NA24385'   
+            ]
+        )
+
+
+rule run_mmap_to_aug_reference:
+    input:
+        mmap_align = expand(
+            'output/read_aln/{sample_long}.{reference}.augY.{ont_type}.mmap.paf',
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            reference=['T2Tv11_38p13Y_chm13'],
+            ont_type=['ONTUL']
+        )

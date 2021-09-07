@@ -1,3 +1,4 @@
+import pathlib as pl
 
 def find_script_path(script_name, subfolder=''):
     """
@@ -85,3 +86,55 @@ rule clean_input_gfa:
             with open(output.gfa, 'w') as gfa:
                 _ = gfa.write(gfa_buffer.getvalue())
     # END OF RUN BLOCK
+
+
+rule merge_reference_confirmed_y_contigs:
+    input:
+        contigs = lambda wildcards: [str(p) for p in pl.Path(config['path_chry_contigs']).glob('*.fasta')],
+        fa_ref = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta')
+    output:
+        fa = 'output/references/{reference}.augY.fasta',
+        faidx = 'output/references/{reference}.augY.fasta.fai'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    shell:
+        'cat {input.fa_ref} {input.contigs} > {output.fa}'
+            ' && '
+            'samtools faidx {output.faidx}'
+
+
+rule extract_confirmed_y_contig_names:
+    input:
+        contigs = pl.Path(config['path_chry_contigs']) / pl.Path('{sample_long}.TIGPRI_TIGALT_Y_X-PAR_contigs.fasta')
+    output:
+        'output/references/{sample_long}.XYPAR.contigs.txt'
+    shell:
+        'egrep "^>" {input.contigs} | egrep -o "[a-z0-9]+$" > {output}'
+
+
+rule extract_confirmed_y_contig_read_names:
+    input:
+        tig_names = 'output/references/{sample_info}_{sample}.XYPAR.contigs.txt',
+        tig_pri = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['TIGPRI'],
+        tig_alt = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['TIGALT'],
+    output:
+        'output/references/{sample_info}_{sample}.XYPAR.reads.txt'
+    shell:
+        'egrep "^A" {input.tig_pri} | egrep -f {input.tig_names} | cut -f 5 > {output}'
+            ' && '
+        'egrep "^A" {input.tig_alt} | egrep -f {input.tig_names} | cut -f 5 >> {output}'
+
+
+rule extract_confirmed_y_contig_read_names:
+    input:
+        read_names = 'output/references/{sample_info}_{sample}.XYPAR.reads.txt',
+        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['HIFIAF'],
+    output:
+        fq = 'output/references/{sample_info}_{sample}.XYPAR.reads.fastq.gz'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: 4
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt ** 3
+    shell:
+        'seqtk subseq {input.reads} {input.read_names} | pigz -p 4 --best > {output}'

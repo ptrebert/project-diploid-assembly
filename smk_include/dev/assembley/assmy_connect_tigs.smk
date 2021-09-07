@@ -98,3 +98,29 @@ rule ga_align_ont_to_gono_reference:
             '--min-alignment-score 5000 --multimap-score-fraction 1 '
             '--corrected-out {output.hybrid_reads} '
             '-a {output.gaf} &> {log}'
+
+
+rule mmap_align_ont_to_aug_reference:
+    input:
+        fasta = 'output/references/{reference}.augY.fasta',
+        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
+    output:
+        paf = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.paf',
+    log:
+        'log/output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.log',
+    benchmark:
+        'rsrc/output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.rsrc'
+    wildcard_constraints:
+        sample = CONSTRAINT_SAMPLES
+    conda: '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 65536 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 48 * attempt,
+    params:
+        preset = lambda wildcards: 'map-pb' if wildcards.ont_type == 'ONTEC' else 'map-ont',
+        sort_threads = 4,
+        sort_mem = 4096
+    shell:
+        'minimap -x {params.preset} --secondary=no -o {output.paf} {input.fasta} {input.reads} &> {log}'
+        
