@@ -28,6 +28,7 @@ sample_description_HG02282:
             data_source_folder: EMPTY_PATH
 
 sample_targets_HG02282:
+  - ignore: yes
   - aliases:
       1: &long_reads HG02282_LR_READSET
       2: &strandseq_reads HG02282_SSEQ_READSET

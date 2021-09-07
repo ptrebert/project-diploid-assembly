@@ -14,10 +14,10 @@ sample_description_NA19836:
             load_type: parts
             data_source_folder: EMPTY_PATH
         - strandseq:
-            readset: NA19836_SSEQ_READSET
+            readset: NA19836_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
-            data_source_folder: EMPTY_PATH
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19836
         - short_reads:
             readset: NA19836_SHORT_READSET
             load_type: complete
@@ -28,9 +28,10 @@ sample_description_NA19836:
             data_source_folder: EMPTY_PATH
 
 sample_targets_NA19836:
+  - ignore: yes
   - aliases:
       1: &long_reads NA19836_LR_READSET
-      2: &strandseq_reads NA19836_SSEQ_READSET
+      2: &strandseq_reads NA19836_hgsvc_ilnxs-80pe_sseq
       3: &ont_reads NA19836_ONT_READSET
       4: &short_reads NA19836_SHORT_READSET
   - defaults:
