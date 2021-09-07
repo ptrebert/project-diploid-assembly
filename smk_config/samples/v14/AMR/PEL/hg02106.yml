@@ -29,7 +29,7 @@ sample_description_HG02106:
 
 sample_targets_HG02106:
   - aliases:
-      1: &long_reads HG02106_LR_READSET
+      1: &long_reads HG02106_hgsvc_pbsq2-ccs_1000
       2: &strandseq_reads HG02106_SSEQ_READSET
       3: &ont_reads HG02106_ONT_READSET
       4: &short_reads HG02106_SHORT_READSET

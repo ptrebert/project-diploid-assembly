@@ -37,7 +37,7 @@ sample_targets_HG02282:
   - defaults:
       hap_reads: *long_reads
       vc_reads: *long_reads
-      sseq_reads: *strandseq_reads
+#      sseq_reads: *strandseq_reads
       hap_assm_mode: split
       hap:
         - h1-un
