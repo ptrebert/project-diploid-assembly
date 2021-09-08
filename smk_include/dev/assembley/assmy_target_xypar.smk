@@ -27,10 +27,6 @@ rule compute_hifiasm_nonhapres_assembly:
             ),
         ec_reads = 'output/target_assembly/xypar_reads/xypar.ec.fa',
         reads_ava = 'output/target_assembly/xypar_reads/xypar.ovlp.paf'
-        # exclude the all-vs-all overlap information from output
-        # => won't be deleted by snakemake in case of errors;
-        # should save time if assembly job is restarted
-        # '.ec.bin', '.ovlp.reverse.bin', '.ovlp.source.bin',
     log:
         hifiasm = 'log/output/target_assembly/xypar_reads.hifiasm.log',
     benchmark:
@@ -39,8 +35,8 @@ rule compute_hifiasm_nonhapres_assembly:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 48576 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
     shell:
