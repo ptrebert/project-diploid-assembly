@@ -2,6 +2,7 @@ include: 'assmy_collect_input.smk'
 include: 'assmy_preprocess.smk'
 include: 'assmy_separate_tigs.smk'
 include: 'assmy_connect_tigs.smk'
+include: 'assmy_target_xypar.smk'
 include: 'assmy_finnish_hybrid.smk'
 
 localrules: run_all
@@ -71,8 +72,8 @@ rule run_extract_confirmed_reads:
                 'EAS-CHS-SH032-M_HG00512',
                 'EUR-ASK-3140-M_NA24385'   
             ]
-        )
-
+        ),
+        xypar_assm = 'output/target_assembly/xypar_reads/xypar.p_utg.gfa'
 
 rule run_mmap_to_aug_reference:
     input:
