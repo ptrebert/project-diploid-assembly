@@ -64,7 +64,7 @@ rule run_seq_stats:
             readset=['guppy-5.0.11-sup-prom']
         ),
         stats_ontec_k501 = expand(
-            'input/{read_type}/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}.{graph_readset}.MBG-k{kmer}-w{window}.stats.tsv.gz',
+            'input/{read_type}/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.tsv.gz',
             sample=[s for s in ONTUL_SAMPLES],
             read_type=['ONTEC'],
             readset=['guppy-5.0.11-sup-prom'],
@@ -74,7 +74,7 @@ rule run_seq_stats:
             window=[100]
         ),
         stats_ontec_k1001 = expand(
-            'input/{read_type}/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}.{graph_readset}.MBG-k{kmer}-w{window}.stats.tsv.gz',
+            'input/{read_type}/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.tsv.gz',
             sample=[s for s in ONTUL_SAMPLES],
             read_type=['ONTEC'],
             readset=['guppy-5.0.11-sup-prom'],

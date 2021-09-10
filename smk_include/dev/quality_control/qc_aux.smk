@@ -28,5 +28,5 @@ def find_script_path(script_name, subfolder=''):
 
 def validate_readset(readset, input_reads):
     if readset not in input_reads:
-        raise ValueError(f'No readset match: {readset} / {input_reads}'
+        raise ValueError(f'No readset match: {readset} / {input_reads}')
     return None

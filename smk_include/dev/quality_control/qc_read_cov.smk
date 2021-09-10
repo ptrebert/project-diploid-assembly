@@ -86,7 +86,7 @@ rule qc_mmap_align_readsets:
         sort_threads = config['num_cpu_low'],
     params:
         individual = lambda wildcards: wildcards.sample,
-        readgroup_id = lambda wildcards: f'{wildcards.read_type}_{wildcards.readset.replace('.', '')}',
+        readgroup_id = lambda wildcards: f"{wildcards.read_type}_{wildcards.readset.replace('.', '')}",
         preset = lambda wildcards: set_alignment_preset(wildcards),
         temp_prefix = lambda wildcards: f'temp/mmap/{wildcards.reference}/{wildcards.sample}/{wildcards.read_type}/{wildcards.readset}/tmp_stsort_',
         temp_dir = lambda wildcards: f'temp/mmap/{wildcards.reference}/{wildcards.sample}/{wildcards.read_type}/{wildcards.readset}/',
