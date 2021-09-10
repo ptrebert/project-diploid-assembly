@@ -11,9 +11,8 @@ dependencies:
   - libcblas=3.8.0
   - liblapack=3.8.0
   - libopenblas=0.3.6
-  - libgfortran-ng=7.3.0
-  - libgcc-ng=9.3.0
-  - libstdcxx-ng=9.3.0
+  - libgfortran-ng
+  - libstdcxx-ng
   - libxml2=2.9.9
   - lp_solve=5.5.2.5
   - openblas=0.3.6
@@ -21,11 +20,10 @@ dependencies:
   - seqtk=1.3
   - blast=2.5.0
   - bwa=0.7.17
-  - minimap2=2.20
-  - unimap=0.1
-  - _libgcc_mutex=0.1
-  - libgomp=9.3.0
-  - _openmp_mutex=4.5
+  - minimap2=2.22
+  - _libgcc_mutex
+  - libgomp
+  - _openmp_mutex
   - bifrost=1.0.5
   - meryl=1.3
   - winnowmap=2.03
@@ -56,7 +54,7 @@ dependencies:
   - cutadapt=2.10
   - trim-galore=0.6.5
   - fastp=0.20.1
-  - mbg=1.0.5
+  - mbg=1.0.6
   - graphaligner=1.0.13
   - vg=1.33.0
   - gfatools=0.5
