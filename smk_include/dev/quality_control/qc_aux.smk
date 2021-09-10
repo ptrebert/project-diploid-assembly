@@ -24,3 +24,9 @@ def find_script_path(script_name, subfolder=''):
         raise RuntimeError('Could not find script {} (subfolder {}). '
                            'Started at path: {}'.format(script_name, subfolder, workflow.basedir))
     return script_path
+
+
+def validate_readset(readset, input_reads):
+    if readset not in input_reads:
+        raise ValueError(f'No readset match: {readset} / {input_reads}'
+    return None

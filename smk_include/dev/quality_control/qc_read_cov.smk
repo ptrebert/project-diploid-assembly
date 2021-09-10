@@ -5,13 +5,13 @@ def set_alignment_memory(wildcards, attempt):
     now use the hammer
     """
     base_mem = 94208
-    if 'ONTEC' in wildcards.readset:
+    if 'ONTEC' in wildcards.read_type:
         base_mem += 24768
-    elif 'ONTUL' in wildcards.readset:
+    elif 'ONTUL' in wildcards.read_type:
         base_mem = 262144
-    elif 'HIFIEC' in wildcards.readset:
+    elif 'HIFIEC' in wildcards.read_type:
         pass
-    elif 'HIFIAF' in wildcards.readset:
+    elif 'HIFIAF' in wildcards.read_type:
         pass
     else:
         raise ValueError(str(wildcards))
@@ -24,13 +24,13 @@ def set_alignment_runtime(wildcards, attempt):
     now use the hammer
     """
     base_hrs = 36
-    if 'ONTEC' in wildcards.readset:
+    if 'ONTEC' in wildcards.read_type:
         base_hrs = 72
-    elif 'ONTUL' in wildcards.readset:
+    elif 'ONTUL' in wildcards.read_type:
         base_hrs = 167
-    elif 'HIFIEC' in wildcards.readset:
+    elif 'HIFIEC' in wildcards.read_type:
         pass
-    elif 'HIFIAF' in wildcards.readset:
+    elif 'HIFIAF' in wildcards.read_type:
         pass
     else:
         raise ValueError(str(wildcards))
@@ -42,13 +42,13 @@ def set_alignment_runtime(wildcards, attempt):
 
 def set_alignment_preset(wildcards):
     preset = None
-    if 'ONTEC' in wildcards.readset:
+    if 'ONTEC' in wildcards.read_type:
         preset = 'map-pb'
-    elif 'ONTUL' in wildcards.readset:
+    elif 'ONTUL' in wildcards.read_type:
         preset = 'map-ont'
-    elif 'HIFIEC' in wildcards.readset:
+    elif 'HIFIEC' in wildcards.read_type:
         preset = 'map-pb'
-    elif 'HIFIAF' in wildcards.readset:
+    elif 'HIFIAF' in wildcards.read_type:
         preset = 'map-pb'
     else:
         raise ValueError(str(wildcards))
@@ -90,7 +90,7 @@ rule qc_mmap_align_readsets:
         preset = lambda wildcards: set_alignment_preset(wildcards),
         temp_prefix = lambda wildcards: f'temp/mmap/{wildcards.reference}/{wildcards.sample}/{wildcards.read_type}/{wildcards.readset}/tmp_stsort_',
         temp_dir = lambda wildcards: f'temp/mmap/{wildcards.reference}/{wildcards.sample}/{wildcards.read_type}/{wildcards.readset}/',
-        validate = lambda wildcards, input: assert wildcards.readset in input.reads
+        validate = lambda wildcards, input:validate_readset(wildcards.readset, input.reads)
     shell:
         'rm -rfd {params.temp_dir} && mkdir -p {params.temp_dir} && '
         'minimap2 -t {resources.align_threads} -Y -L --eqx --MD -a -x {params.preset} '
