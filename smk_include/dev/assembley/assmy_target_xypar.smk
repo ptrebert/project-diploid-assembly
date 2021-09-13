@@ -1,10 +1,6 @@
 
 
-rule compute_hifiasm_nonhapres_assembly:
-    """
-    Runtime for slow I/O systems
-    Memory consumption is fairly low and stable
-    """
+rule hifiasm_xypar_targeted_assembly:
     input:
         fastq = expand(
             'output/references/{sample_long}.XYPAR.reads.fastq.gz',
@@ -41,3 +37,30 @@ rule compute_hifiasm_nonhapres_assembly:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
     shell:
         'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.fastq} &> {log.hifiasm}'
+
+
+# rule mbg_xypar_targeted_assembly:
+#     input:
+#         fastq = expand(
+#             'output/references/{sample_long}.XYPAR.reads.fastq.gz',
+#             sample_long=[
+#                 'AFR-YRI-Y117-M_NA19239',
+#                 'AMR-PUR-PR05-M_HG00731',
+#                 'EAS-CHS-SH032-M_HG00512',
+#                 'EUR-ASK-3140-M_NA24385'   
+#             ]
+#         )
+#     output:
+#         'output/target_assembly/xypar_kmers/'
+#     log:
+
+#     benchmark:
+
+#     conda:
+#         '../../../environment/conda/conda_biotools.yml'
+#     threads: config['num_cpu_medium']
+#     resources:
+#         mem_total_mb = lambda wildcards, attempt: 180224 * attempt,
+#         runtime_hrs = lambda wildcards, attempt: 12 * attempt
+#     shell:
+#         'MBG '

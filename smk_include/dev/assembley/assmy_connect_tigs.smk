@@ -121,4 +121,101 @@ rule mmap_align_ont_to_aug_reference:
         preset = lambda wildcards: 'map-pb' if wildcards.ont_type == 'ONTEC' else 'map-ont',
     shell:
         'minimap2 -x {params.preset} --secondary=no -o {output.paf} {input.fasta} {input.reads} &> {log}'
+
+
+PAF_HEADER = [
+    'query_name',
+    'query_length',
+    'query_start',
+    'query_end',
+    'orientation',
+    'target_name',
+    'target_length',
+    'target_start',
+    'target_end',
+    'res_matches',
+    'block_length',
+    'mapq',
+    'aln_type',
+    'tag_cm',
+    'tag_s1',
+    'tag_s2',
+    'divergence',
+    'tag_rl'
+]
+
+
+rule extract_xy_reads:
+    input:
+        paf = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.paf',
+    output:
+        stats = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.stats.tsv',
+        chrx_reads = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.chrX-reads.txt',
+        chry_reads = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.chrY-reads.txt',
+    wildcard_constraints:
+        sample = CONSTRAINT_SAMPLES
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt
+    run:
+        import pandas as pd
+        import numpy as np
+    
+        autosomes = [f'chr{i}' for i in range(1,23)]
+
+        df = pd.read_csv(
+            input.paf,
+            sep='\t',
+            header=None,
+            names=PAF_HEADER,
+            usecols=['query_name', 'query_length', 'target_name', 'mapq', 'divergence']
+        )
+        df['divergence'] = df['divergence'].apply(lambda x: float(x.split(':')[-1]))
+        df['x_or_y'] = 1
+        df.loc[df['target_name'].isin(autosomes), 'x_or_y'] = -1
+        df.loc[df['target_name'].isin(['chrX']), 'x_or_y'] = 0
+
+        is_chry = set()
+        chry_lengths = []
+        chry_divergences = []
+        is_chrx = set()
+        chrx_lengths = []
+        chrx_divergences = []
+        ambig = 0
+
+        for read, alignments in df.groupby('query_name'):
+            if (alignments['x_or_y'] == -1).all():
+                continue
+            if (alignments['x_or_y'] == -1).any():
+                ambig += 1
+                continue
+            if (alignments['x_or_y'] == 1).all():
+                is_chry.add(read)
+                chry_lengths.append(alignments['query_length'].values[0])
+                chry_divergences.extend(alignments['divergence'].tolist())
+            else:
+                is_chrx.add(read)
+                chrx_lengths.append(alignments['query_length'].values[0])
+                chrx_divergences.extend(alignments['divergence'].tolist())
+
+        chry_divergences = np.array(chry_divergences, dtype=np.float16)
+        chrx_divergences = np.array(chrx_divergences, dtype=np.float16)
+
+        with open(output.chrx_reads, 'w') as dump:
+            _ = '\n'.join(sorted(is_chrx) + '\n')
+        with open(output.chry_reads, 'w') as dump:
+            _ = '\n'.join(sorted(is_chry) + '\n')
         
+        with open(output.stats, 'w') as dump:
+            _ = dump.write(f'total_alignments\t{df.shape[0]}\n')
+            _ = dump.write(f'total_reads\t{df['query_name'].nunique()}\n')
+            _ = dump.write(f'ambiguous_reads\t{ambig}\n')
+
+            _ = dump.write(f'chrY_num_reads\t{len(is_chry)}\n')
+            _ = dump.write(f'chrY_sum_length\t{sum(chry_lengths)}\n')
+            _ = dump.write(f'chrY_mean_divergence\t{chry_divergences.mean()}\n')
+            _ = dump.write(f'chrY_stddev_divergence\t{chry_divergences.std()}\n')
+
+            _ = dump.write(f'chrX_num_reads\t{len(is_chrx)}\n')
+            _ = dump.write(f'chrX_sum_length\t{sum(chrx_lengths)}\n')
+            _ = dump.write(f'chrX_mean_divergence\t{chrx_divergences.mean()}\n')
+            _ = dump.write(f'chrX_stddev_divergence\t{chrx_divergences.std()}\n')
