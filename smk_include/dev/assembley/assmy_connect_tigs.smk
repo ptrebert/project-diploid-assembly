@@ -145,7 +145,7 @@ PAF_HEADER = [
 ]
 
 
-rule extract_xy_reads:
+rule collect_xy_read_statistics:
     input:
         paf = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.paf',
     output:
@@ -201,9 +201,9 @@ rule extract_xy_reads:
         chrx_divergences = np.array(chrx_divergences, dtype=np.float16)
 
         with open(output.chrx_reads, 'w') as dump:
-            _ = '\n'.join(sorted(is_chrx)) + '\n'
+            _ = dump.write('\n'.join(sorted(is_chrx)) + '\n')
         with open(output.chry_reads, 'w') as dump:
-            _ = '\n'.join(sorted(is_chry)) + '\n'
+            _ = dump.write('\n'.join(sorted(is_chry)) + '\n')
         
         with open(output.stats, 'w') as dump:
             _ = dump.write(f'total_alignments\t{df.shape[0]}\n')
@@ -219,3 +219,20 @@ rule extract_xy_reads:
             _ = dump.write(f'chrX_sum_length\t{sum(chrx_lengths)}\n')
             _ = dump.write(f'chrX_mean_divergence\t{chrx_divergences.mean()}\n')
             _ = dump.write(f'chrX_stddev_divergence\t{chrx_divergences.std()}\n')
+    # END OF RUN BLOCK
+
+
+rule extract_xy_reads:
+    input:
+        read_names = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.{chrom}-reads.txt',
+        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
+    output:
+        'output/read_subsets/xypar/{sample_info}_{sample}.{reference}.augY.{ont_type}.{chrom}-reads.fasta.gz'
+    conda: '../../../environment/conda/conda_biotools.yml'
+    threads: 2
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt ** 3,
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt
+    shell:
+        'seqtk subseq {input.reads} {input.read_names} | pigz -p 2 --best > {output}'
+
