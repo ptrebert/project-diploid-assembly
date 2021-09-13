@@ -201,13 +201,13 @@ rule extract_xy_reads:
         chrx_divergences = np.array(chrx_divergences, dtype=np.float16)
 
         with open(output.chrx_reads, 'w') as dump:
-            _ = '\n'.join(sorted(is_chrx) + '\n')
+            _ = '\n'.join(sorted(is_chrx)) + '\n'
         with open(output.chry_reads, 'w') as dump:
-            _ = '\n'.join(sorted(is_chry) + '\n')
+            _ = '\n'.join(sorted(is_chry)) + '\n'
         
         with open(output.stats, 'w') as dump:
             _ = dump.write(f'total_alignments\t{df.shape[0]}\n')
-            _ = dump.write(f'total_reads\t{df['query_name'].nunique()}\n')
+            _ = dump.write(f'total_reads\t{df["query_name"].nunique()}\n')
             _ = dump.write(f'ambiguous_reads\t{ambig}\n')
 
             _ = dump.write(f'chrY_num_reads\t{len(is_chry)}\n')
