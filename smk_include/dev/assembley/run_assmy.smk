@@ -78,7 +78,7 @@ rule run_extract_confirmed_reads:
 rule run_mmap_to_aug_reference:
     input:
         xypar_reads = expand(
-            'output/read_subsets/xypar/{sample_info}_{sample}.{reference}.augY.{ont_type}.{chrom}-reads.fasta.gz',
+            'output/read_subsets/xypar/{sample_long}.{reference}.augY.{ont_type}.{chrom}-reads.fasta.gz',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             reference=['T2Tv11_38p13Y_chm13'],
             ont_type=['ONTUL'],
