@@ -8,16 +8,17 @@ sample_description_NA19129:
     member: child
     data_sources:
         - long_reads:
-            readset: NA19129_LR_READSET
+            readset: NA19129_hgsvc_pbsq2-ccs
             technology: pacbio
             data_type: fastq
             load_type: parts
-            data_source_folder: EMPTY_PATH
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/GM19129
         - strandseq:
-            readset: NA19129_SSEQ_READSET
+            readset: NA19129_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
-            data_source_folder: EMPTY_PATH
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19129
+            data_source_filter: ".txt.gz"
         - short_reads:
             readset: NA19129_SHORT_READSET
             load_type: complete
@@ -30,8 +31,8 @@ sample_description_NA19129:
 sample_targets_NA19129:
   - ignore: yes
   - aliases:
-      1: &long_reads NA19129_LR_READSET
-      2: &strandseq_reads NA19129_SSEQ_READSET
+      1: &long_reads NA19129_hgsvc_pbsq2-ccs_1000
+      2: &strandseq_reads NA19129_hgsvc_ilnxs-80pe_sseq
       3: &ont_reads NA19129_ONT_READSET
       4: &short_reads NA19129_SHORT_READSET
   - defaults:
