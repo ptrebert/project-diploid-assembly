@@ -61,6 +61,18 @@ rule run_all:
         BAM_TO_FASTQ
 
 
+rule index_pacbio_bam_file:
+    input:
+        pbn_bam = '{filepath}.bam'
+    output:
+        pbi = '{filepath}.bam.pbi'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 16 * attempt
+    conda:
+        '../../environment/conda/conda_pbtools.yml'
+    shell:
+        'pbindex {input} &> {log}'
+
 
 rule convert_bam_to_fastq:
     input:
