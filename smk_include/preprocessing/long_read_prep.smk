@@ -71,7 +71,7 @@ rule index_pacbio_bam_file:
     conda:
         '../../environment/conda/conda_pbtools.yml'
     shell:
-        'pbindex {input} &> {log}'
+        'pbindex {input}'
 
 
 rule convert_bam_to_fastq:
