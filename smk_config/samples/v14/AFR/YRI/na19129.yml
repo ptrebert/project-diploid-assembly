@@ -29,7 +29,6 @@ sample_description_NA19129:
             data_source_folder: EMPTY_PATH
 
 sample_targets_NA19129:
-  - ignore: yes
   - aliases:
       1: &long_reads NA19129_hgsvc_pbsq2-ccs_1000
       2: &strandseq_reads NA19129_hgsvc_ilnxs-80pe_sseq
