@@ -91,17 +91,17 @@ def build_seqence_qv_estimate_targets(wildcards):
     template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_REF_SHORT_{short_reads}.seq-qv.h5'
     template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_REF_SHORT_{short_reads}.qv.tsv'
 
-    long_reads = ['ONTUL', 'HIFIEC', 'HIFIAF']
-    read_sets = ['guppy-5.0.11-sup-prom', 'hifiasm-v0.15.4', 'pgas-v14-dev']
+    long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF']
+    long_read_sets = ['guppy-5.0.11-sup-prom', 'hifiasm-v0.15.4', 'pgas-v14-dev']
 
     targets = []
     for sample in SHORT_SAMPLES:
         short_readset = SAMPLE_INFOS[sample]['SHORT_RS']
-        for long_reads, read_sets in zip(long_reads, read_sets):
+        for long_reads, read_set in zip(long_read_types, long_read_sets):
             formatter = {
                 'sample': sample,
                 'long_reads': long_reads,
-                'readset': read_sets,
+                'readset': read_set,
                 'short_reads': short_readset
             }
             fmt_target = template_seq.format(**formatter)

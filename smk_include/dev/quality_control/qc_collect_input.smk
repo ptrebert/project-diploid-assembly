@@ -94,7 +94,7 @@ def add_ontul_readsets(sample_infos, ontul_path):
         sample_name = flag_file.parent.stem
         fastq_files = sample_folder.glob(f'*{suffix}')
         fastq_files = sorted([str(f) for f in fastq_files])
-        assert len(fastq_files) == 2
+        assert len(fastq_files) > 1, f'{str(fastq_files)}'
         sample_infos[sample_name]['ONTUL'] = fastq_files
         ontul_samples.add(sample_name)
 
@@ -117,7 +117,7 @@ def add_short_readsets(sample_infos, short_path):
             raise ValueError(fastq_file)
         short_samples.add(sample_name)
         readset = fastq_file.name.split('_')[0]
-        sample_infos[sample]['SHORT_RS'] = readset
+        sample_infos[sample_name]['SHORT_RS'] = readset
     return sample_infos, sorted(short_samples)
 
 
