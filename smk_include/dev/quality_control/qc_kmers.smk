@@ -20,6 +20,29 @@ rule meryl_count_reference_kmers:
             "meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}"
 
 
+def count_kmer_runtime(wildcards, attempt):
+
+    if 'HIFI' in wildcards.readset:
+        return 24 * attempt
+    elif 'ONT' in wildcards.readset:
+        return 12 * attempt
+    else:
+        return attempt * attempt * attempt
+
+
+def count_kmer_memory(wildcards, attempt, unit='mb'):
+
+    if 'HIFI' in wildcards.readset:
+        mem = 176128
+    elif 'ONT' in wildcards.readset:
+        mem = 90112
+    else:
+        mem = 32768
+    if unit == 'gb':
+        mem = int(mem / 1024)
+    return mem * attempt
+
+
 rule meryl_count_kmers_local:
     """
     Note: do not count k-mers in HPC-space b/c k-mer
