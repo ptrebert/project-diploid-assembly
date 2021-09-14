@@ -100,11 +100,33 @@ def add_ontul_readsets(sample_infos, ontul_path):
 
     return sample_infos, sorted(ontul_samples)
 
+
+def add_short_readsets(sample_infos, short_path):
+
+    fastq_files = pathlib.Path(short_path).glob('*/*.fastq.gz')
+
+    short_samples = set()
+    for fastq_file in fastq_files:
+        sample_folder = fastq_file.parent
+        sample_name = fastq_file.parent.stem
+        if str(fastq_file).endswith('_1.fastq.gz'):
+            sample_infos[sample_name]['SHORT_1'] = fastq_file
+        elif str(fastq_file).endswith('_2.fastq.gz'):
+            sample_infos[sample_name]['SHORT_2'] = fastq_file
+        else:
+            raise ValueError(fastq_file)
+        short_samples.add(sample_name)
+        readset = fastq_file.name.split('_')[0]
+        sample_infos[sample]['SHORT_RS'] = readset
+    return sample_infos, sorted(short_samples)
+
+
 PATH_SAMPLE_TABLE = config['path_sample_table']
 PATH_HIFIEC_READS = config['path_hifiec_reads']
 PATH_HIFIAF_READS = config['path_hifiaf_reads']
 PATH_ASSEMBLY_GRAPHS = config['path_assembly_graphs']
 PATH_ONTUL_READS = config['path_ontul_reads']
+PATH_SHORT_READS = config['path_short_reads']
 
 
 def init_samples_and_data():
@@ -117,10 +139,11 @@ def init_samples_and_data():
     sample_infos, hifiaf_samples = add_hifiaf_readsets(sample_infos, PATH_HIFIEC_READS)
     sample_infos, assembled_samples = add_assembly_graphs(sample_infos, PATH_ASSEMBLY_GRAPHS)
     sample_infos, ontul_samples = add_ontul_readsets(sample_infos, PATH_ONTUL_READS)
+    sample_infos, short_samples = add_short_readsets(sample_infos, PATH_SHORT_READS)
 
-    return sample_infos, hifiec_samples, hifiaf_samples, ontul_samples, assembled_samples
+    return sample_infos, hifiec_samples, hifiaf_samples, ontul_samples, short_samples, assembled_samples
 
 
-SAMPLE_INFOS, HIFIEC_SAMPLES, HIFIAF_SAMPLES, ONTUL_SAMPLES, ASSEMBLED_SAMPLES = init_samples_and_data()
+SAMPLE_INFOS, HIFIEC_SAMPLES, HIFIAF_SAMPLES, ONTUL_SAMPLES, SHORT_SAMPLES, ASSEMBLED_SAMPLES = init_samples_and_data()
 
 CONSTRAINT_SAMPLES = '(' + '|'.join(sorted(SAMPLE_INFOS.keys())) + ')'
