@@ -34,10 +34,10 @@ def add_hifiec_readsets(sample_infos, hifiec_path):
     return sample_infos, sorted(hifiec_samples)
 
 
-def add_hifiaf_readsets(sample_infos, hifiec_path):
+def add_hifiaf_readsets(sample_infos, hifiaf_path):
 
-    fastq_files = pathlib.Path(hifiec_path).glob('*_1000.fastq.gz')
-    hifiec_samples = []
+    fastq_files = pathlib.Path(hifiaf_path).glob('*_1000.fastq.gz')
+    hifiaf_samples = []
 
     for fastq_file in fastq_files:
         file_size_bytes = fastq_file.stat().st_size
@@ -47,8 +47,8 @@ def add_hifiaf_readsets(sample_infos, hifiec_path):
         file_sample = fastq_file.name.split('_')[0]
         assert file_sample in sample_infos
         sample_infos[file_sample]['HIFIAF'] = fastq_file
-        hifiec_samples.append(file_sample)
-    return sample_infos, sorted(hifiec_samples)
+        hifiaf_samples.append(file_sample)
+    return sample_infos, sorted(hifiaf_samples)
 
 
 def add_assembly_graphs(sample_infos, assembly_path):
@@ -136,7 +136,7 @@ def init_samples_and_data():
     
     sample_infos = read_sample_table(location_sample_table)
     sample_infos, hifiec_samples = add_hifiec_readsets(sample_infos, PATH_HIFIEC_READS)
-    sample_infos, hifiaf_samples = add_hifiaf_readsets(sample_infos, PATH_HIFIEC_READS)
+    sample_infos, hifiaf_samples = add_hifiaf_readsets(sample_infos, PATH_HIFIAF_READS)
     sample_infos, assembled_samples = add_assembly_graphs(sample_infos, PATH_ASSEMBLY_GRAPHS)
     sample_infos, ontul_samples = add_ontul_readsets(sample_infos, PATH_ONTUL_READS)
     sample_infos, short_samples = add_short_readsets(sample_infos, PATH_SHORT_READS)
