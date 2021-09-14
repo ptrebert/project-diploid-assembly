@@ -20,7 +20,34 @@ rule meryl_count_reference_kmers:
             "meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}"
 
 
-rule meryl_count_kmers:
+rule meryl_count_kmers_local:
+    """
+    Note: do not count k-mers in HPC-space b/c k-mer
+    counts will only be used for QV estimation at the moment.
+    Unsupported HP-errors should show up as such.
+    """
+    input:
+        sequence = 'input/{read_type}/{sample}_{read_type}_{readset}.fasta.gz'
+    output:
+        kmer_db = directory('output/kmer_smp_db/{sample}_{read_type}_{readset}.meryl'),
+    benchmark:
+        'rsrc/output/kmer_smp_db/{sample}_{read_type}_{readset}.meryl.meryl.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        read_type = '(SHORT|ONTUL|ONTEC|ONTHY)'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt),
+        mem_total_gb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt, 'gb'),
+        runtime_hrs = lambda wildcards, attempt: count_kmer_runtime(wildcards, attempt)
+    params:
+        kmer_size = 31,
+    shell:
+        "meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.sequence}"
+
+
+rule meryl_count_kmers_remote:
     """
     Note: do not count k-mers in HPC-space b/c k-mer
     counts will only be used for QV estimation at the moment.
@@ -34,6 +61,8 @@ rule meryl_count_kmers:
         'rsrc/output/kmer_smp_db/{sample}_{read_type}_{readset}.meryl.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        read_type = '(HIFIEC|HIFIAF)'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt),
@@ -43,7 +72,6 @@ rule meryl_count_kmers:
         kmer_size = 31,
     shell:
         "meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.sequence}"
-
 
 
 def select_meryl_database(wildcards):
