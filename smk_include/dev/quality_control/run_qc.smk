@@ -95,7 +95,8 @@ def build_seqence_qv_estimate_targets(wildcards):
     long_read_sets = ['guppy-5.0.11-sup-prom', 'hifiasm-v0.15.4', 'pgas-v14-dev']
 
     targets = []
-    for sample in SHORT_SAMPLES:
+    #for sample in SHORT_SAMPLES:
+    for sample in ['NA18989', 'HG02666']:
         short_readset = SAMPLE_INFOS[sample]['SHORT_RS']
         for long_reads, read_set in zip(long_read_types, long_read_sets):
             formatter = {

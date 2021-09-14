@@ -43,13 +43,13 @@ def set_alignment_runtime(wildcards, attempt):
 def set_alignment_preset(wildcards):
     preset = None
     if 'ONTEC' in wildcards.read_type:
-        preset = 'map-pb'
+        preset = 'map-hifi'
     elif 'ONTUL' in wildcards.read_type:
-        preset = 'map-ont'
+        preset = 'map-ont -k17'
     elif 'HIFIEC' in wildcards.read_type:
-        preset = 'map-pb'
+        preset = 'map-hifi'
     elif 'HIFIAF' in wildcards.read_type:
-        preset = 'map-pb'
+        preset = 'map-hifi'
     else:
         raise ValueError(str(wildcards))
     assert preset is not None
@@ -61,7 +61,7 @@ rule qc_mmap_align_readsets:
     https://github.com/lh3/minimap2/issues/771
     Above github issue contains some hints how to speed up alignment
     for ONT reads. Following this, set...
-    -k17
+    -k17 [for ONTUL]
     --cap-kalloc=1g
     -K4g
     """
@@ -89,7 +89,7 @@ rule qc_mmap_align_readsets:
         validate = lambda wildcards, input:validate_readset(wildcards.readset, input.reads)
     shell:
         'minimap2 -t {resources.align_threads} -x {params.preset} --secondary=no '
-        '-k17 --cap-kalloc=1g -K4g '
+        '--cap-kalloc=1g -K4g '
         '{input.reference} {input.reads} | pigz --best -p {resources.compress_threads} > {output}'
 
 
