@@ -84,9 +84,6 @@ rule qc_mmap_align_readsets:
         compress_threads = config['num_cpu_low'],
     params:
         preset = lambda wildcards: set_alignment_preset(wildcards),
-        #temp_prefix = lambda wildcards: f'temp/mmap/{wildcards.reference}/{wildcards.sample}/{wildcards.read_type}/{wildcards.readset}/tmp_stsort_',
-        #temp_dir = lambda wildcards: f'temp/mmap/{wildcards.reference}/{wildcards.sample}/{wildcards.read_type}/{wildcards.readset}/',
-        validate = lambda wildcards, input:validate_readset(wildcards.readset, input.reads)
     shell:
         'minimap2 -t {resources.align_threads} -x {params.preset} --secondary=no '
         '--cap-kalloc=1g -K4g '
