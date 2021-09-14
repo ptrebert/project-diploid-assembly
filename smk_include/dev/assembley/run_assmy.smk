@@ -48,18 +48,22 @@ rule run_all:
             hpc=['nohpc'],
             ont_type=['ONTEC']
         ),
-        hybrid_ont_align = expand(
-            'output/hybrid/ont_to_graph/{sample_long}.{ont_type}.{tigs}.gaf',
-            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
-            ont_type=['ONTUL'],
-            tigs=['TIGRAW']
-        )
         # graph_ontul_gono_ref = expand(
         #     'output/read_aln/{sample_long}.{reference}.AMXYUN.tigs.{ont_type}.ga.gaf',
         #     sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
         #     reference=['T2Tv11_38p13Y_chm13'],
         #     ont_type=['ONTUL']
         # )
+
+
+rule run_hybrid_assembly:
+    input:
+        hybrid_ont_align = expand(
+            'output/hybrid/ont_to_graph/{sample_long}.{ont_type}.{tigs}.gaf',
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            ont_type=['ONTUL'],
+            tigs=['TIGRAW']
+        )
 
 
 rule run_extract_confirmed_reads:

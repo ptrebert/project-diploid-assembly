@@ -29,9 +29,9 @@ rule hybrid_ga_align_ont_to_string_graph:
     wildcard_constraints:
         sample = CONSTRAINT_SAMPLES
 #    conda: '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_high']
+    threads: config['num_cpu_max']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 245760 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 1048576 * attempt,
         runtime_hrs = lambda wildcards, attempt: 167,
     shell:
         'module load Singularity && singularity exec '
