@@ -25,7 +25,7 @@ def build_read_cov_targets(wildcards):
         for read_type, readset in zip(long_read_types, long_read_sets):
             formatter = {
                 'sample': sample,
-                'read_Type': read_type,
+                'read_type': read_type,
                 'readset': readset,
                 'reference': config['reference']
             }

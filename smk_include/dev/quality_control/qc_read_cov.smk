@@ -130,7 +130,7 @@ rule cache_read_alignments:
     input:
         faidx = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta.fai'),
         paf = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.mmap.paf.gz',
-        read_stats = 'input/{sample}_{read_type}_{readset}.stats.tsv.gz'
+        read_stats = 'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz'
     output:
         cache = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.cov.cache.h5'
     resources:
@@ -184,6 +184,6 @@ rule cache_read_alignments:
             hdf.put('metadata', pd.Series(metadata, dtype='int64'), format='fixed')
             if not unaligned.empty:
                 hdf.put('unaligned', unaligned, format='fixed')
-            for chrom, alignments in df.groupby('chrom'):
+            for chrom, alignments in df.groupby('ref_name'):
                 hdf.put(chrom, alignments, format='fixed')
     # END OF RUN BLOCK
