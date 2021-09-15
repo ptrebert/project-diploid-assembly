@@ -34,12 +34,12 @@ rule meryl_generate_individual_kmer_stats:
         number of kmers in the sequence, in the database and common to both.
     """
     input:
-        query_only = 'output/kmer_op_db/{sample}_{read_type}_{readset}_DIFF_{short_reads}.meryl',
+        query_only = 'output/kmer_op_db/{sample}_{read_type}_{readset}_DIFF_{readset2}.meryl',
         query_reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type]
     output:
-        table = 'output/kmer_stats/{sample}_{read_type}_{readset}_DIFF_{short_reads}.seqkm.tsv'
+        table = 'output/kmer_stats/{sample}_{read_type}_{readset}_DIFF_{readset2}.seqkm.tsv'
     benchmark:
-        'rsrc/output/kmer_stats/{sample}_{read_type}_{readset}_DIFF_{short_reads}.seqkm.meryl.rsrc'
+        'rsrc/output/kmer_stats/{sample}_{read_type}_{readset}_DIFF_{readset2}.seqkm.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
@@ -116,9 +116,9 @@ rule compute_local_query_qv_estimate:
     of total kmers in the read sequence.
     """
     input:
-        tsv = 'output/kmer_stats/{sample}_{readset}_DIFF_{short_reads}.seqkm.tsv'
+        tsv = 'output/kmer_stats/{sample}_{readset}_DIFF_{ref_reads}.seqkm.tsv'
     output:
-        hdf = 'output/qv_estimate/{sample}_{readset}_REF_{short_reads}.seq-qv.h5'
+        hdf = 'output/qv_estimate/{sample}_{readset}_REF_{ref_reads}.seq-qv.h5'
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     params:

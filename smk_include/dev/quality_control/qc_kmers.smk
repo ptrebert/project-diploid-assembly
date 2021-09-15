@@ -25,7 +25,7 @@ def count_kmer_runtime(wildcards, attempt):
     if 'HIFI' in wildcards.readset:
         return 24 * attempt
     elif 'ONT' in wildcards.readset:
-        return 12 * attempt
+        return 48 * attempt
     else:
         return attempt * attempt * attempt
 
