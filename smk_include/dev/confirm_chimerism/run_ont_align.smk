@@ -115,6 +115,7 @@ rule extract_contig_read_names:
         import pandas as pd
         import gzip as gzip
         import io as io
+        import collections as col
 
         contig_names = set(cn.strip() for cn in open(input.ctg_names, 'r').readlines())
 
@@ -124,6 +125,7 @@ rule extract_contig_read_names:
             '+': 'forward',
             '-': 'reverse'
         }
+        read_mult = col.Counter()
         with open(input.graph, 'r') as graph:
             for line in graph:
                 if not line.startswith('A'):
@@ -133,7 +135,10 @@ rule extract_contig_read_names:
                     continue
                 new_name = f'{read_name}|CTGNAME_{contig}|CTGSTART_{ctg_start}|RDDIR_{dir_map[read_dir]}|RDSTART_{read_start}|RDEND_{read_end}'
                 records.append((contig, ctg_start, read_dir, read_name, read_start, read_end, new_name))
-                assert read_name not in name_lut, f'exists: {read_name} to {name_lut[read_name]} / collision: {new_name}'
+                # NB: it indeed happens that a read is used more than once for assembly,
+                # just keep last record as new name for now
+                #assert read_name not in name_lut, f'exists: {read_name} to {name_lut[read_name]} / collision: {new_name}'
+                read_mult[read_name] += 1
                 name_lut[read_name] = new_name
 
         df = pd.DataFrame.from_records(records, columns=['contig', 'ctg_start', 'read_dir', 'read_name', 'read_start', 'read_end', 'read_new_name'])
@@ -158,6 +163,7 @@ rule extract_contig_read_names:
             _ = fasta.write(out_buffer.getvalue())
 
         df['read_length'] = (df['read_name'].replace(read_lengths)).astype('int32')
+        df['read_multiplicity'] = (df['read_name'].replace(read_mult)).astype('int8')
         df.to_csv(output.read_info, sep='\t', header=True, index=False)
     # END OF RUN BLOCK
 
