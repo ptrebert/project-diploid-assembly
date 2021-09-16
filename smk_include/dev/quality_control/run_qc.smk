@@ -52,33 +52,37 @@ def build_seqence_qv_estimate_targets(wildcards):
     for sample in ['NA18989', 'HG02666']:
         short_readset = SAMPLE_INFOS[sample]['SHORT_RS']
         for long_reads, read_set in zip(long_read_types, long_read_sets):
-            formatter = {
-                'sample': sample,
-                'long_reads': long_reads,
-                'readset': read_set,
-                'short_reads': short_readset
-            }
-            fmt_target = template_seq.format(**formatter)
-            targets.append(fmt_target)
-            fmt_target = template_global.format(**formatter)
-            targets.append(fmt_target)
+            for hpc in ['ishpc', 'nohpc']:
+                formatter = {
+                    'sample': sample,
+                    'long_reads': long_reads,
+                    'readset': read_set,
+                    'short_reads': short_readset,
+                    'hpc': hpc
+                }
+                fmt_target = template_seq.format(**formatter)
+                targets.append(fmt_target)
+                fmt_target = template_global.format(**formatter)
+                targets.append(fmt_target)
 
     template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_hifiasm-v0.15.4_nohpc.seq-qv.h5'
     template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_hifiasm-v0.15.4_nohpc.qv.tsv'
 
     for long_reads, read_set in zip(long_read_types, long_read_sets):
-        if long_reads == 'HIFIEC':
-            continue
-        formatter = {
-            'sample': sample,
-            'long_reads': long_reads,
-            'readset': read_set,
-            'short_reads': short_readset
-        }
-        fmt_target = template_seq.format(**formatter)
-        targets.append(fmt_target)
-        fmt_target = template_global.format(**formatter)
-        targets.append(fmt_target)
+        for hpc in ['ishpc', 'nohpc']:
+            if long_reads == 'HIFIEC':
+                continue
+            formatter = {
+                'sample': sample,
+                'long_reads': long_reads,
+                'readset': read_set,
+                'short_reads': short_readset,
+                'hpc': hpc
+            }
+            fmt_target = template_seq.format(**formatter)
+            targets.append(fmt_target)
+            fmt_target = template_global.format(**formatter)
+            targets.append(fmt_target)
 
     return sorted(targets)
 
