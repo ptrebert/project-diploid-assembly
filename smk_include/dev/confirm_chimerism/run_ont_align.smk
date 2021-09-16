@@ -1,63 +1,234 @@
 
 localrules: dump_contig_name, run_all
 
+PGAS_PATH = '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder'
+ONTQC_PATH = '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder'
+
+
 rule run_all:
     input:
-        'output/ont_align/NA18989_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz'
+        'output/read_ctg_align/NA18989_HIFIEC-SUB_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        'output/read_ctg_align/HG02666_HIFIEC-SUB_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        'output/read_ctg_align/NA18989_HIFIEC_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        'output/read_ctg_align/HG02666_HIFIEC_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        'output/read_ctg_align/NA18989_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        'output/read_ctg_align/HG02666_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
 
 
 rule dump_contig_name:
-    """
-    contig names from file
-    2021_pgas/run_folder/output/reference_assembly/clustered/temp/saarclust/results/NA18989_hgsvc_pbsq2-ccs_1000_nhr-hifiasm/NA18989_hgsvc_ilnxs-80pe_sseq/clustered_assembly/
-    asmErrorsReport_2e+05bp_dynamic.tsv
-    ~5 Mbp
-    ~8 Mbp
-    ~13 Mbp
-    """
+    input:
+        asm_error = ancient(os.path.join(
+            PGAS_PATH,
+            'output/reference_assembly/clustered/temp/saarclust/results',
+            '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm/{sample}_hgsvc_ilnxs-80pe_sseq/clustered_assembly',
+            'asmErrorsReport_2e+05bp_dynamic.tsv'
+        )),
+        ctg_order = ancient(os.path.join(
+            PGAS_PATH,
+            'output/reference_assembly/clustered/temp/saarclust/results',
+            '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm/{sample}_hgsvc_ilnxs-80pe_sseq/clustered_assembly',
+            'ordered\&oriented_2e+05bp_dynamic.tsv'
+        )),
     output:
-        'output/chimeric.contigs.txt'
+        ctg_names = 'output/{sample}.chimeric-contigs.names.txt',
+        ctg_info = 'output/{sample}.chimeric-contigs.info.tsv',
     run:
-        contigs = [
-            'ptg000187l',
-            'ptg000086l',
-            'ptg000068l'
+        import pandas as pd
+
+        error_header = [
+            'ctg_name',
+            'start',
+            'end',
+            'width',
+            'strand',
+            'error_type',
+            'misasm_bases'
         ]
-        with open(output[0], 'w') as dump:
-            _ = dump.write('\n'.join(contigs) + '\n')
+        df_error = pd.read_csv(input.asm_error, sep='\t', header=0, names=error_header, usecols=[0,5,6])
+        assert (df_error['error_type'] == 'chimerism').all()
+
+        df_error = df_error[df_error['misasm_bases'] >= 1e6, :].copy()
+        assert not df_error.empty
+
+        order_header = [
+            'ctg_name',
+            'start',
+            'end',
+            'length',
+            'strand',
+            'direction',
+            'order_num',
+            'cluster_id'
+        ]
+
+        df_order = pd.read_csv(input.ctg_order, sep='\t', header=0, names=order_header, usecols=[0,1,2,3,5,6,7])
+        df_order['direction'] = (df_order['direction'].replace({'dir': 1, 'revcomp': -1})).astype('int8')
+        df_order = df_order[df_order['ctg_name'].isin(df_error['ctg_name']), :].copy()
+
+        df_order = df_order.merge(df_error, left_on='ctg_name', right_on='ctg_name')
+
+        contig_names = df_order['ctg_name'].unique().tolist()
+        with open(output.ctg_names, 'w') as dump:
+            _ = dump.write('\n'.join(contig_names) + '\n')
+
+        df_order.to_csv(output.ctg_info, sep='\t', header=True, index=False)
+
+    # END OF RUN BLOCK
 
 
 rule extract_contig_sequences:
     input:
-        names = 'output/chimeric.contigs.txt',
-        assembly = '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder/output/reference_assembly/non-hap-res/NA18989_hgsvc_pbsq2-ccs_1000_nhr-hifiasm.fasta'
+        ctg_names = 'output/{sample}.chimeric-contigs.names.txt',
+        assembly = ancient(os.path.join(PGAS_PATH, 'output/reference_assembly/non-hap-res', '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm.fasta'))
     output:
-        'output/NA1898.chimeric-contigs.fasta'
+        'output/{sample}.chimeric-contigs.fasta'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     shell:
-        'seqtk subseq {input.assembly} {input.names} > {output}'
+        'seqtk subseq {input.assembly} {input.ctg_names} > {output}'
+
+
+rule extract_contig_read_names:
+    input:
+        ctg_names = 'output/{sample}.chimeric-contigs.names.txt',
+        graph = ancient(
+            os.path.join(
+                PGAS_PATH,
+                'output/reference_assembly/non-hap-res/layout/hifiasm',
+                '{sample}_hgsvc_pbsq2-ccs_1000/{sample}_hgsvc_pbsq2-ccs_1000.p_ctg.noseq.gfa'
+            )
+        ),
+        reads = ancient(
+            os.path.join(
+                PGAS_PATH,
+                'output/reference_assembly/non-hap-res/layout/hifiasm',
+                '{sample}_hgsvc_pbsq2-ccs_1000.ec-reads.fasta.gz'
+            )
+        )
+    output:
+        read_info = 'output/{sample}.chimeric-contigs.reads.tsv',
+        renamed_reads = 'output/read_subsets/{sample}.HIFIEC.fasta.gz'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt ** 3
+    run:
+        import pandas as pd
+        import gzip as gzip
+        import io as io
+
+        contig_names = set(cn.strip() for cn in open(input.ctg_names, 'r').readlines())
+
+        records = []
+        name_lut = dict()
+        dir_map = {
+            '+': 'forward',
+            '-': 'reverse'
+        }
+        with open(input.graph, 'r') as graph:
+            for line in graph:
+                if not line.startswith('A'):
+                    continue
+                _, contig, ctg_start, read_dir, read_name, read_start, read_end, _, _ = line.strip().split()
+                if contig not in contig_names:
+                    continue
+                new_name = f'{read_name}|CTGNAME_{contig}|CTGSTART_{ctg_start}|RDDIR_{dir_map[read_dir]}|RDSTART_{read_start}|RDEND_{read_end}'
+                records.append((contig, ctg_start, read_dir, read_name, read_start, read_end, new_name))
+                assert read_name not in name_lut
+                name_lut[read_name] = new_name
+
+        df = pd.DataFrame.from_records(records, columns=['contig', 'ctg_start', 'read_dir', 'read_name', 'read_start', 'read_end', 'read_new_name'])
+
+        found = 0
+        limit = len(name_lut)
+        out_buffer = io.StringIO()
+        read_lengths = {}
+        with gzip.open(input.reads, 'rt') as fasta:
+            while found < limit:
+                read_name = fasta.readline().strip().strip('>')
+                new_name = name_lut.get(read_name, None)
+                if new_name is None:
+                    _ = fasta.readline()
+                    continue
+                read_sequence = fasta.readline().strip()
+                read_lengths[read_name] = len(read_sequence)
+                out_buffer.write(f'>{new_name}\n{read_sequence}\n')
+                found += 1
+        assert found == limit
+        with gzip.open(output.renamed_reads, 'wt') as fasta:
+            _ = fasta.write(out_buffer.getvalue())
+
+        df['read_length'] = (df['read_name'].replace(read_lengths)).astype('int32')
+        df.to_csv(output.read_info, sep='\t', header=True, index=False)
+    # END OF RUN BLOCK
 
 
 rule align_ont_reads:
     """
     """
     input:
-        reads = '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder/input/ONTUL/NA18989_ONTUL_guppy-5.0.11-sup-prom.fasta.gz',
-        reference = 'output/NA1898.chimeric-contigs.fasta',
+        reads = ancient(os.path.join(ONTQC_PATH, 'input/ONTUL', '{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz')),
+        reference = 'output/{sample}.chimeric-contigs.fasta'
     output:
-        paf = 'output/ont_align/NA18989_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        paf = 'output/read_ctg_align/{sample}_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
     benchmark:
-        'rsrc/output/ont_align/NA18989_ONTUL_MAP-TO_chimeric-contigs.mmap.rsrc'
+        'rsrc/output/read_ctg_align/{sample}_ONTUL_MAP-TO_chimeric-contigs.mmap.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: 24
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 2 * attempt,
-    params:
-        preset = lambda wildcards: set_alignment_preset(wildcards),
+        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt,
     shell:
         'minimap2 -t 22 -x map-ont -k17 --secondary=no '
+        '--cap-kalloc=1g -K4g '
+        '{input.reference} {input.reads} | pigz --best -p 4 > {output}'
+
+
+rule align_hifiec_reads:
+    """
+    """
+    input:
+        reads = ancient(ancient(
+            os.path.join(
+                PGAS_PATH,
+                'output/reference_assembly/non-hap-res/layout/hifiasm',
+                '{sample}_hgsvc_pbsq2-ccs_1000.ec-reads.fasta.gz'
+            )
+        )),
+        reference = 'output/{sample}.chimeric-contigs.fasta'
+    output:
+        paf = 'output/read_ctg_align/{sample}_HIFIEC_MAP-TO_chimeric-contigs.mmap.paf.gz',
+    benchmark:
+        'rsrc/output/read_ctg_align/{sample}_HIFIEC_MAP-TO_chimeric-contigs.mmap.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: 24
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt,
+    shell:
+        'minimap2 -t 22 -x map-hifi --secondary=no '
+        '--cap-kalloc=1g -K4g '
+        '{input.reference} {input.reads} | pigz --best -p 4 > {output}'
+
+
+rule align_hifiec_subset_reads:
+    """
+    """
+    input:
+        reads = ancient('output/read_subsets/{sample}.HIFIEC.fasta.gz'),
+        reference = 'output/{sample}.chimeric-contigs.fasta'
+    output:
+        paf = 'output/read_ctg_align/{sample}_HIFIEC-SUB_MAP-TO_chimeric-contigs.mmap.paf.gz',
+    benchmark:
+        'rsrc/output/read_ctg_align/{sample}_HIFIEC-SUB_MAP-TO_chimeric-contigs.mmap.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: 24
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+    shell:
+        'minimap2 -t 22 -x map-hifi --secondary=no '
         '--cap-kalloc=1g -K4g '
         '{input.reference} {input.reads} | pigz --best -p 4 > {output}'
