@@ -35,6 +35,30 @@ def find_script_path(script_name, subfolder=''):
     return script_path
 
 
+rule merge_hg002_chry_draft:
+    input:
+        genome = '/gpfs/project/projects/medbioinf/data/references/T2Tv11_T2TC_chm13.fasta',
+        chry = '/gpfs/project/projects/medbioinf/data/references/hg002.chrY.v2.fasta'
+    output:
+        genome = '/gpfs/project/projects/medbioinf/data/references/T2Tv11_hg002Yv2_chm13.fasta'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt
+    run:
+        import shutil
+        import io
+
+        shutil.copy(input.genome, output.genome)
+
+        out_buffer = io.StringIO()
+        _ = out_buffer.write('>chrY\n')
+        with open(input.chry, 'r') as fasta_in:
+            _ = fasta_in.readline()
+            _ = out_buffer.write(fasta_in.read())
+
+        with open(output.genome, 'a') as fasta_out:
+            _ = fasta_out.write(out_buffer.getvalue())
+
+
 rule check_overlong_edges:
     input:
         gfa = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.tigs]
