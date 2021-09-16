@@ -45,9 +45,9 @@ rule dump_contig_name:
             'misasm_bases'
         ]
         df_error = pd.read_csv(input.asm_error, sep='\t', header=0, names=error_header, usecols=[0,5,6])
-        assert (df_error['error_type'] == 'chimerism').all()
+        df_error = df_error.loc[df_error['error_type'] == 'chimerism', :].copy()
 
-        df_error = df_error[df_error['misasm_bases'] >= 1e6, :].copy()
+        df_error = df_error.loc[df_error['misasm_bases'] >= int(1e6), :].copy()
         assert not df_error.empty
 
         order_header = [
@@ -63,7 +63,7 @@ rule dump_contig_name:
 
         df_order = pd.read_csv(input.ctg_order, sep='\t', header=0, names=order_header, usecols=[0,1,2,3,5,6,7])
         df_order['direction'] = (df_order['direction'].replace({'dir': 1, 'revcomp': -1})).astype('int8')
-        df_order = df_order[df_order['ctg_name'].isin(df_error['ctg_name']), :].copy()
+        df_order = df_order.loc[df_order['ctg_name'].isin(df_error['ctg_name']), :].copy()
 
         df_order = df_order.merge(df_error, left_on='ctg_name', right_on='ctg_name')
 
@@ -133,7 +133,7 @@ rule extract_contig_read_names:
                     continue
                 new_name = f'{read_name}|CTGNAME_{contig}|CTGSTART_{ctg_start}|RDDIR_{dir_map[read_dir]}|RDSTART_{read_start}|RDEND_{read_end}'
                 records.append((contig, ctg_start, read_dir, read_name, read_start, read_end, new_name))
-                assert read_name not in name_lut
+                assert read_name not in name_lut, f'exists: {read_name} to {name_lut[read_name]} / collision: {new_name}'
                 name_lut[read_name] = new_name
 
         df = pd.DataFrame.from_records(records, columns=['contig', 'ctg_start', 'read_dir', 'read_name', 'read_start', 'read_end', 'read_new_name'])
