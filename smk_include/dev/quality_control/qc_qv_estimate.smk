@@ -5,8 +5,8 @@ rule meryl_query_only_kmer_db:
     (the sequences for which the QV estimate should be computed)
     """
     input:
-        query_db = 'output/kmer_smp_db/{sample}_{readset1}.{hpc}.meryl',
-        reference_db = 'output/kmer_smp_db/{sample}_{readset2}.nohpc.meryl'
+        query_db = 'output/kmer_smp_db/{sample}_{readset1}_{hpc}.meryl',
+        reference_db = 'output/kmer_smp_db/{sample}_{readset2}_nohpc.meryl'
     output:
         query_only = directory('output/kmer_op_db/{sample}_{readset1}_{hpc}_DIFF_{readset2}_nohpc.meryl')
     benchmark:
