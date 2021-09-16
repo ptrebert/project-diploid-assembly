@@ -44,3 +44,29 @@ rule hybrid_ga_align_ont_to_string_graph:
             '-b 15 --discard-cigar '
             '--corrected-out {output.hybrid_reads} '
             '-a {output.gaf} &> {log}'
+
+
+AFR_SAMPLE_1 = 'NA19317'
+AFR_SAMPLE_2 = 'NA19347'
+
+rule assemble_afr_mix:
+    input:
+        s1_reads = lambda wildcards: SAMPLE_INFOS[AFR_SAMPLE_1]['HIFIAF'],
+        s2_reads = lambda wildcards: SAMPLE_INFOS[AFR_SAMPLE_2]['HIFIAF']
+    output:
+        primary_contigs = 'output/hybrid/afr_mix/hifiasm/{afr_sample1}-U-{afr_sample2}.p_ctg.gfa',
+    log:
+        hifiasm = 'log/output/hybrid/afr_mix/hifiasm/{afr_sample1}-U-{afr_sample2}.hifiasm.log',
+    benchmark:
+        'rsrc/output/hybrid/afr_mix/hifiasm/{afr_sample1}-U-{afr_sample2}.hifiasm.rsrc',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: int((180224 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 180224 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 36 * attempt
+    params:
+        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
+    shell:
+        'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.s1_reads} {input.s2_reads} &> {log.hifiasm}'
