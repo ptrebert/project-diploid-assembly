@@ -109,13 +109,14 @@ rule extract_contig_read_names:
         read_info = 'output/{sample}.chimeric-contigs.reads.tsv',
         renamed_reads = 'output/read_subsets/{sample}.HIFIEC.fasta.gz'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt ** 3
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
     run:
         import pandas as pd
         import gzip as gzip
         import io as io
         import collections as col
+        import sys
 
         contig_names = set(cn.strip() for cn in open(input.ctg_names, 'r').readlines())
 
@@ -145,23 +146,28 @@ rule extract_contig_read_names:
 
         found = 0
         limit = len(name_lut)
+        sys.stdout.write(f'Total reads to extract: {limit}\n')
         out_buffer = io.StringIO()
         read_lengths = {}
         with gzip.open(input.reads, 'rt') as fasta:
             while found < limit:
                 read_name = fasta.readline().strip().strip('>')
-                new_name = name_lut.get(read_name, None)
-                if new_name is None:
+                if read_name not in name_lut:
                     _ = fasta.readline()
                     continue
+                new_name = name_lut[read_name]
                 read_sequence = fasta.readline().strip()
                 read_lengths[read_name] = len(read_sequence)
                 out_buffer.write(f'>{new_name}\n{read_sequence}\n')
                 found += 1
+                if found % 10000 == 0:
+                    sys.stdout.write(f'Found {} reads\n')
         assert found == limit
+        sys.stdout.write(f'Dumping buffer\n')
         with gzip.open(output.renamed_reads, 'wt') as fasta:
             _ = fasta.write(out_buffer.getvalue())
 
+        sys.stdout.write(f'Dumping metadata\n')
         df['read_length'] = (df['read_name'].replace(read_lengths)).astype('int32')
         df['read_multiplicity'] = (df['read_name'].replace(read_mult)).astype('int8')
         df.to_csv(output.read_info, sep='\t', header=True, index=False)
