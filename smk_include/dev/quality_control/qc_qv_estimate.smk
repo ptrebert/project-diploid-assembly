@@ -1,15 +1,16 @@
+
 rule meryl_query_only_kmer_db:
     """
     Create DB containing k-mers unique to the query sequences
     (the sequences for which the QV estimate should be computed)
     """
     input:
-        query_db = 'output/kmer_smp_db/{sample}_{readset1}.meryl',
-        reference_db = 'output/kmer_smp_db/{sample}_{readset2}.meryl'
+        query_db = 'output/kmer_smp_db/{sample}_{readset1}.{hpc}.meryl',
+        reference_db = 'output/kmer_smp_db/{sample}_{readset2}.nohpc.meryl'
     output:
-        query_only = directory('output/kmer_op_db/{sample}_{readset1}_DIFF_{readset2}.meryl')
+        query_only = directory('output/kmer_op_db/{sample}_{readset1}_{hpc}_DIFF_{readset2}_nohpc.meryl')
     benchmark:
-        'rsrc/output/kmer_op_db/{sample}_{readset1}_DIFF_{readset2}.meryl.rsrc'
+        'rsrc/output/kmer_op_db/{sample}_{readset1}_{hpc}_DIFF_{readset2}_nohpc.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
@@ -34,12 +35,12 @@ rule meryl_generate_individual_kmer_stats:
         number of kmers in the sequence, in the database and common to both.
     """
     input:
-        query_only = 'output/kmer_op_db/{sample}_{read_type}_{readset}_DIFF_{readset2}.meryl',
+        query_only = 'output/kmer_op_db/{sample}_{read_type}_{readset}_{hpc}_DIFF_{readset2}_nohpc.meryl',
         query_reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type]
     output:
-        table = 'output/kmer_stats/{sample}_{read_type}_{readset}_DIFF_{readset2}.seqkm.tsv'
+        table = 'output/kmer_stats/{sample}_{read_type}_{readset}_{hpc}_DIFF_{readset2}_nohpc.seqkm.tsv'
     benchmark:
-        'rsrc/output/kmer_stats/{sample}_{read_type}_{readset}_DIFF_{readset2}.seqkm.meryl.rsrc'
+        'rsrc/output/kmer_stats/{sample}_{read_type}_{readset}_{hpc}_DIFF_{readset2}_nohpc.seqkm.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:

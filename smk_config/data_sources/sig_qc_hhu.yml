@@ -6,4 +6,4 @@ path_hifiaf_reads: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/ru
 path_ontul_reads: '/gpfs/project/projects/medbioinf/data/hgsvc_ontul'
 path_assembly_graphs: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder/output/reference_assembly/non-hap-res/layout/hifiasm'
 path_short_reads: /gpfs/project/projects/medbioinf/data/short_reads/nygc
-reference: T2Tv11_38p13Y_chm13
+reference: T2Tv11_hg002Yv2_chm13

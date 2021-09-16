@@ -1,29 +1,8 @@
 
-rule meryl_count_reference_kmers:
-    input:
-        sequence = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta')
-    output:
-        kmer_db = directory('/gpfs/project/projects/medbioinf/data/references/{reference}.k15.db'),
-        rep_kmer = '/gpfs/project/projects/medbioinf/data/references/{reference}.k15.rep-grt09998.txt'
-    benchmark:
-        'rsrc/output/kmer_db/{reference}.meryl-ref-kmer.rsrc'
-    conda:
-        '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_medium']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 12288 + 4096 * attempt,
-        mem_total_gb = lambda wildcards, attempt: int((12288 + 4096 * attempt)/1024) - 2,
-        runtime_hrs = lambda wildcards, attempt: attempt
-    shell:
-        "meryl count k=15 threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.sequence} "
-            " && "
-            "meryl print greater-than distinct=0.9998 {output.kmer_db} > {output.rep_kmer}"
-
-
 def count_kmer_runtime(wildcards, attempt):
 
     if 'HIFI' in wildcards.readset:
-        return 24 * attempt
+        return 36 * attempt
     elif 'ONT' in wildcards.readset:
         return 48 * attempt
     else:
@@ -35,30 +14,27 @@ def count_kmer_memory(wildcards, attempt, unit='mb'):
     if 'HIFI' in wildcards.readset:
         mem = 176128
     elif 'ONT' in wildcards.readset:
-        mem = 90112
+        mem = 176128
     else:
         mem = 32768
     if unit == 'gb':
         mem = int(mem / 1024)
-    return mem * attempt
+    hpc_factor = 2 if wildcards.hpc == 'nohpc' else 1
+    return mem * attempt * hpc_factor
 
 
-rule meryl_count_kmers_local:
-    """
-    Note: do not count k-mers in HPC-space b/c k-mer
-    counts will only be used for QV estimation at the moment.
-    Unsupported HP-errors should show up as such.
-    """
+rule qc_meryl_count_kmers_local:
     input:
         sequence = 'input/{read_type}/{sample}_{read_type}_{readset}.fasta.gz'
     output:
-        kmer_db = directory('output/kmer_smp_db/{sample}_{read_type}_{readset}.meryl'),
+        kmer_db = directory('output/kmer_smp_db/{sample}_{read_type}_{readset}_{hpc}.meryl'),
     benchmark:
-        'rsrc/output/kmer_smp_db/{sample}_{read_type}_{readset}.meryl.meryl.rsrc'
+        'rsrc/output/kmer_smp_db/{sample}_{read_type}_{readset}.{hpc}.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        read_type = '(SHORT|ONTUL|ONTEC|ONTHY)'
+        read_type = '(SHORT|ONTUL|ONTEC|ONTHY)',
+        hpc = '(ishpc|nohpc)'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt),
@@ -66,11 +42,12 @@ rule meryl_count_kmers_local:
         runtime_hrs = lambda wildcards, attempt: count_kmer_runtime(wildcards, attempt)
     params:
         kmer_size = 31,
+        compress = lambda wildcards: 'compress' if wildcards.hpc == 'ishpc' else ''
     shell:
-        "meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.sequence}"
+        "meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} {params.compress} output {output.kmer_db} {input.sequence}"
 
 
-rule meryl_count_kmers_remote:
+rule qc_meryl_count_kmers_remote:
     """
     Note: do not count k-mers in HPC-space b/c k-mer
     counts will only be used for QV estimation at the moment.
@@ -79,13 +56,14 @@ rule meryl_count_kmers_remote:
     input:
         sequence = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type]
     output:
-        kmer_db = directory('output/kmer_smp_db/{sample}_{read_type}_{readset}.meryl'),
+        kmer_db = directory('output/kmer_smp_db/{sample}_{read_type}_{readset}_{hpc}.meryl'),
     benchmark:
-        'rsrc/output/kmer_smp_db/{sample}_{read_type}_{readset}.meryl.meryl.rsrc'
+        'rsrc/output/kmer_smp_db/{sample}_{read_type}_{readset}.{hpc}.meryl.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        read_type = '(HIFIEC|HIFIAF)'
+        read_type = '(HIFIEC|HIFIAF)',
+        hpc = '(ishpc|nohpc)'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt),
@@ -93,8 +71,9 @@ rule meryl_count_kmers_remote:
         runtime_hrs = lambda wildcards, attempt: count_kmer_runtime(wildcards, attempt)
     params:
         kmer_size = 31,
+        compress = lambda wildcards: 'compress' if wildcards.hpc == 'ishpc' else ''
     shell:
-        "meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} output {output.kmer_db} {input.sequence}"
+        "meryl count k={params.kmer_size} threads={threads} memory={resources.mem_total_gb} {params.compress} output {output.kmer_db} {input.sequence}"
 
 
 def select_meryl_database(wildcards):
@@ -106,7 +85,7 @@ def select_meryl_database(wildcards):
     return p
 
 
-rule meryl_dump_db_statistics:
+rule qc_meryl_dump_db_statistics:
     """
     This operation is not documented in the cli help
     """
@@ -125,7 +104,7 @@ rule meryl_dump_db_statistics:
         "meryl statistics {input.kmer_db} > {output.stats}"
 
 
-rule store_meryl_db_statistics:
+rule qc_store_meryl_db_statistics:
     """
     NB: unique = singletons, k-mers with abundance 1
 

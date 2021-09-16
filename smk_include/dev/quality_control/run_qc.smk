@@ -41,8 +41,8 @@ rule run_read_cov:
 
 def build_seqence_qv_estimate_targets(wildcards):
 
-    template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_REF_SHORT_{short_reads}.seq-qv.h5'
-    template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_REF_SHORT_{short_reads}.qv.tsv'
+    template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_SHORT_{short_reads}_nohpc.seq-qv.h5'
+    template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_SHORT_{short_reads}_nohpc.qv.tsv'
 
     long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF']
     long_read_sets = ['guppy-5.0.11-sup-prom', 'hifiasm-v0.15.4', 'pgas-v14-dev']
@@ -63,8 +63,8 @@ def build_seqence_qv_estimate_targets(wildcards):
             fmt_target = template_global.format(**formatter)
             targets.append(fmt_target)
 
-    template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_REF_HIFIEC_hifiasm-v0.15.4.seq-qv.h5'
-    template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_REF_HIFIEC_hifiasm-v0.15.4.qv.tsv'
+    template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_hifiasm-v0.15.4_nohpc.seq-qv.h5'
+    template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_hifiasm-v0.15.4_nohpc.qv.tsv'
 
     for long_reads, read_set in zip(long_read_types, long_read_sets):
         if long_reads == 'HIFIEC':
