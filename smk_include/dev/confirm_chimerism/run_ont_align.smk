@@ -161,7 +161,7 @@ rule extract_contig_read_names:
                 out_buffer.write(f'>{new_name}\n{read_sequence}\n')
                 found += 1
                 if found % 10000 == 0:
-                    sys.stdout.write(f'Found {} reads\n')
+                    sys.stdout.write(f'Found {found} reads\n')
         assert found == limit
         sys.stdout.write(f'Dumping buffer\n')
         with gzip.open(output.renamed_reads, 'wt') as fasta:
