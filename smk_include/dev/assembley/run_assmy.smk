@@ -66,25 +66,44 @@ rule run_hybrid_assembly:
         )
 
 
-rule run_extract_confirmed_reads:
-    input:
-        xypar_reads = expand(
-            'output/references/{sample_long}.XYPAR.reads.fastq.gz',
-            sample_long=[
-                'AFR-YRI-Y117-M_NA19239',
-                'AMR-PUR-PR05-M_HG00731',
-                'EAS-CHS-SH032-M_HG00512',
-                'EUR-ASK-3140-M_NA24385'   
-            ]
-        ),
-        xypar_assm = 'output/target_assembly/xypar_reads/xypar.p_utg.gfa'
+# rule run_extract_confirmed_reads:
+#     input:
+#         xypar_reads = expand(
+#             'output/references/{sample_long}.XYPAR.reads.fastq.gz',
+#             sample_long=[
+#                 'AFR-YRI-Y117-M_NA19239',
+#                 'AMR-PUR-PR05-M_HG00731',
+#                 'EAS-CHS-SH032-M_HG00512',
+#                 'EUR-ASK-3140-M_NA24385'   
+#             ]
+#         ),
+#         xypar_assm = 'output/target_assembly/xypar_reads/xypar.p_utg.gfa'
 
-rule run_mmap_to_aug_reference:
+
+# rule run_mmap_to_aug_reference:
+#     input:
+#         xypar_reads = expand(
+#             'output/read_subsets/xypar/{sample_long}.{reference}.augY.{ont_type}.{chrom}-reads.fasta.gz',
+#             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+#             reference=['T2Tv11_38p13Y_chm13'],
+#             ont_type=['ONTUL'],
+#             chrom=['chrX', 'chrY']
+#         )
+
+
+rule run_extract_aligned_chry_reads:
     input:
-        xypar_reads = expand(
-            'output/read_subsets/xypar/{sample_long}.{reference}.augY.{ont_type}.{chrom}-reads.fasta.gz',
+        fasta = expand(
+            'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
-            reference=['T2Tv11_38p13Y_chm13'],
-            ont_type=['ONTUL'],
-            chrom=['chrX', 'chrY']
-        )
+            read_type=['HIFIEC', 'ONTUL'],
+            mapq=['mq00', 'mq60'],
+            seqtype=['fasta']
+        ),
+        fastq = expand(
+            'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            read_type=['HIFIAF'],
+            mapq=['mq00', 'mq60'],
+            seqtype=['fastq']
+        ),

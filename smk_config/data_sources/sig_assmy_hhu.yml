@@ -7,3 +7,4 @@ path_ontul_reads: '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_fol
 path_ontec_reads: '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder/output/alignments/ont_to_mbg_hifi'
 path_assembly_graphs: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder/output/reference_assembly/non-hap-res/layout/hifiasm'
 path_chry_contigs: '/gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/2021-08_freeze-v2_-hifiasm_v0154/assemblies/Y_contigs'
+path_alignment_cache: '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder/output/alignments/reads_to_linear_ref'
