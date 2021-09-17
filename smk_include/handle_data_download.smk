@@ -1,7 +1,7 @@
 
 FORCE_LOCAL_COPY = bool(config.get('force_local_copy', False))
 
-if FORCE_LOCAL_COPY
+if FORCE_LOCAL_COPY:
     localrules: master_handle_data_download,
                 create_input_data_download_requests
 else:
