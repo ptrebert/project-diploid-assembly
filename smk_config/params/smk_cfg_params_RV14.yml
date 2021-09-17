@@ -47,9 +47,11 @@ init_clusters: 100
 desired_clusters_male: 25
 desired_clusters_female: 24
 min_mapq: 10
-# changed from 250 to 300, see e-mail
+# - changed from 250 to 300, see e-mail
 # by David P. from July 8, 2021
-max_cluster_length_mbp: 300
+# - change back to 260 to check for
+# problems in clustering step
+max_cluster_length_mbp: 260
 
 # VARIANT CALLING
 # Postprocessing parameters
