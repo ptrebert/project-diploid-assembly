@@ -48,8 +48,7 @@ def build_seqence_qv_estimate_targets(wildcards):
     long_read_sets = ['guppy-5.0.11-sup-prom', 'hifiasm-v0.15.4', 'pgas-v14-dev']
 
     targets = []
-    #for sample in SHORT_SAMPLES:
-    for sample in ['NA18989', 'HG02666']:
+    for sample in ONTUL_SAMPLES:
         short_readset = SAMPLE_INFOS[sample]['SHORT_RS']
         for long_reads, read_set in zip(long_read_types, long_read_sets):
             for hpc in ['ishpc', 'nohpc']:
@@ -68,21 +67,21 @@ def build_seqence_qv_estimate_targets(wildcards):
     template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_hifiasm-v0.15.4_nohpc.seq-qv.h5'
     template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_hifiasm-v0.15.4_nohpc.qv.tsv'
 
-    for long_reads, read_set in zip(long_read_types, long_read_sets):
-        for hpc in ['ishpc', 'nohpc']:
-            if long_reads == 'HIFIEC':
-                continue
-            formatter = {
-                'sample': sample,
-                'long_reads': long_reads,
-                'readset': read_set,
-                'short_reads': short_readset,
-                'hpc': hpc
-            }
-            fmt_target = template_seq.format(**formatter)
-            targets.append(fmt_target)
-            fmt_target = template_global.format(**formatter)
-            targets.append(fmt_target)
+    for sample in ONTUL_SAMPLES:
+        for long_reads, read_set in zip(long_read_types, long_read_sets):
+            for hpc in ['ishpc', 'nohpc']:
+                if long_reads == 'HIFIEC':
+                    continue
+                formatter = {
+                    'sample': sample,
+                    'long_reads': long_reads,
+                    'readset': read_set,
+                    'hpc': hpc
+                }
+                fmt_target = template_seq.format(**formatter)
+                targets.append(fmt_target)
+                fmt_target = template_global.format(**formatter)
+                targets.append(fmt_target)
 
     return sorted(targets)
 
