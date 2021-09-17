@@ -14,10 +14,10 @@ sample_description_HG02106:
             load_type: parts
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG02106/
         - strandseq:
-            readset: HG02106_SSEQ_READSET
+            readset: HG02106_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
-            data_source_folder: EMPTY_PATH
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG02106
         - short_reads:
             readset: HG02106_SHORT_READSET
             load_type: complete
@@ -30,7 +30,7 @@ sample_description_HG02106:
 sample_targets_HG02106:
   - aliases:
       1: &long_reads HG02106_hgsvc_pbsq2-ccs_1000
-      2: &strandseq_reads HG02106_SSEQ_READSET
+      2: &strandseq_reads HG02106_hgsvc_ilnxs-80pe_sseq
       3: &ont_reads HG02106_ONT_READSET
       4: &short_reads HG02106_SHORT_READSET
   - defaults:

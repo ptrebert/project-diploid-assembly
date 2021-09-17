@@ -14,10 +14,10 @@ sample_description_NA19434:
             load_type: parts
             data_source_folder: EMPTY_PATH
         - strandseq:
-            readset: NA19434_SSEQ_READSET
+            readset: NA19434_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
-            data_source_folder: EMPTY_PATH
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19434
         - short_reads:
             readset: NA19434_SHORT_READSET
             load_type: complete
@@ -31,7 +31,7 @@ sample_targets_NA19434:
   - ignore: yes
   - aliases:
       1: &long_reads NA19434_LR_READSET
-      2: &strandseq_reads NA19434_SSEQ_READSET
+      2: &strandseq_reads NA19434_hgsvc_ilnxs-80pe_sseq
       3: &ont_reads NA19434_ONT_READSET
       4: &short_reads NA19434_SHORT_READSET
   - defaults:

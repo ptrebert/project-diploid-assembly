@@ -14,10 +14,11 @@ sample_description_HG02282:
             load_type: parts
             data_source_folder: EMPTY_PATH
         - strandseq:
-            readset: HG02282_SSEQ_READSET
+            readset: HG02282_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
-            data_source_folder: EMPTY_PATH
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG02282
+            data_source_filter: ".txt.gz"
         - short_reads:
             readset: HG02282_SHORT_READSET
             load_type: complete
@@ -31,7 +32,7 @@ sample_targets_HG02282:
   - ignore: yes
   - aliases:
       1: &long_reads HG02282_LR_READSET
-      2: &strandseq_reads HG02282_SSEQ_READSET
+      2: &strandseq_reads HG02282_hgsvc_ilnxs-80pe_sseq
       3: &ont_reads HG02282_ONT_READSET
       4: &short_reads HG02282_SHORT_READSET
   - defaults:
