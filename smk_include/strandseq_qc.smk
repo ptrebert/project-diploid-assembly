@@ -316,8 +316,8 @@ rule exclude_low_quality_libraries:
             lowq_libraries = (qc_info['label'] == 0).sum()
             _ = logfile.write(f'fail_threshold_lowQ\t{params.error_lowq}\n')
             _ = logfile.write(f'total_lowQ_libs\t{lowq_libraries}\n')
-            frac_lowq_libs = round(lowq_libraries / total_libraries, 2)
-            pct_lowq_libs = round(lowq_libraries / total_libraries * 100, 1)
+            frac_lowq_libs = round(lowq_libraries / total_num_libs, 2)
+            pct_lowq_libs = round(lowq_libraries / total_num_libs * 100, 1)
             _ = logfile.write(f'fraction_lowQ_libs\t{frac_lowq_libs}\n')
             _ = logfile.write(f'pct_lowQ_libs\t{pct_lowq_libs}\n')
 
