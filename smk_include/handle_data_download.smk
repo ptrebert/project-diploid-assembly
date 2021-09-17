@@ -1,5 +1,17 @@
 
-localrules: master_handle_data_download
+FORCE_LOCAL_COPY = bool(config.get('force_local_copy', False))
+
+if FORCE_LOCAL_COPY
+    localrules: master_handle_data_download,
+                create_input_data_download_requests
+else:
+    localrules: master_handle_data_download,
+                create_input_data_download_requests,
+                handle_partial_fastq_download_request,
+                handle_partial_pacbio_download_request,
+                handle_short_read_download_request,
+                handle_strandseq_download_requests,
+                handle_single_fastq_download_request
 
 
 rule master_handle_data_download:

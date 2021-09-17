@@ -6,6 +6,9 @@ import re
 from snakemake.exceptions import WildcardError as WildcardError
 
 
+localrules: dump_build_targets
+
+
 TARGET_PATHS = {
     "INIT_COMPLETE_DATA": os.path.join(
         "input",
