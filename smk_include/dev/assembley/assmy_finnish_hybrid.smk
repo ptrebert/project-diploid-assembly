@@ -190,7 +190,7 @@ rule find_bridges:
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     params:
-        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'find_bridges.py.py'),
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'find_bridges.py'),
     shell:
         '{params.script_exec} {input.uniq_nodes} < {input.paths} > {output.listing}'
 
@@ -247,10 +247,12 @@ rule build_connected_graph:
         majority_bridges = 'output/hybrid/90_majority_bridges/{sample_info}_{sample}.{ont_type}.{tigs}.majority-bridges.txt',
     output:
         gfa = 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa'
+    log:
+        'log/output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.build-final.log'
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt
     params:
         script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'connect_uniques.py'),
-        min_solid_coverage = 30
     shell:
-        '{params.script_exec} {input.gapped_graph} {input.forbidden_ends} {input.majority_bridges} > {output.gfa}'
+        '{params.script_exec} {input.gapped_graph} {input.forbidden_ends} {input.majority_bridges} > {output.gfa} 2> {log}'
