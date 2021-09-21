@@ -13,6 +13,8 @@ rule run_all:
         'output/read_ctg_align/HG02666_HIFIEC_MAP-TO_chimeric-contigs.mmap.paf.gz',
         'output/read_ctg_align/NA18989_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
         'output/read_ctg_align/HG02666_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        'output/repmask/NA18989',
+        'output/repmask/HG02666'
 
 
 rule dump_contig_name:
@@ -244,3 +246,17 @@ rule align_hifiec_subset_reads:
         'minimap2 -t 22 -x map-hifi --secondary=no '
         '--cap-kalloc=1g -K4g '
         '{input.reference} {input.reads} | pigz --best -p 4 > {output}'
+
+
+rule mask_repeats_in_chimeric_contigs:
+    input:
+        contigs = 'output/{sample}.chimeric-contigs.fasta'
+    output:
+        repmsk_dir = directory('output/repmask/{sample}')
+    threads: 12
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    shell:
+        'module load RepeatMasker && rm -rfd {output.repmsk_dir} && mkdir -p {output.repmsk_dir} && '
+        'RepeatMasker -species human -no_is -pa {threads} -s -dir {output.repmsk_dir} {input.contigs}'
