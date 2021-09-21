@@ -59,7 +59,7 @@ rule run_all:
 rule run_hybrid_assembly:
     input:
         hybrid_ont_align = expand(
-            'output/hybrid/30_node_coverages/{sample_long}.{ont_type}.{tigs}.nodecov.csv',
+            'output/hybrid/110_final_graph/{sample_long}.{ont_type}.{tigs}.final.gfa',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             ont_type=['ONTUL'],
             tigs=['TIGRAW']

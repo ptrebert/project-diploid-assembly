@@ -2,6 +2,8 @@
 Follow HiFi/ONT hybrid approach developed by MR
 https://github.com/maickrau/hybrid-assembly/blob/master/commands.sh
 [lines 46-65]
+Around commit e932291, commands.sh was shortened the relevant steps are now in lines
+14-35
 """
 
 
@@ -117,3 +119,137 @@ rule calculate_node_coverage:
         edge_trim = 1500
     shell:
         '{params.script_exec} {input.graph} < {input.trimmed_aln} > {output.table}'
+
+
+rule extract_qlfilter_trimmed_paths:
+    input:
+        gaf = 'output/hybrid/20_trim_graph_alignment/{sample_info}_{sample}.{ont_type}.{tigs}.trimmed.gaf'
+    output:
+        listing = 'output/hybrid/40_qlfilter_trimmed_paths/{sample_info}_{sample}.{ont_type}.{tigs}.paths.txt'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    shell:
+        'cut -f 6 < {input.gaf} > {output.listing}'
+
+
+rule mapq_filter_ont_graph_alignment:
+    input:
+        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.gaf',
+    output:
+        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.mqfilter.gaf',
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt,
+    params:
+        min_mapq = 20
+    shell:
+        "awk -F \"\\t\" '{{if ($12 >= {params.min_mapq}) print;}}' < {input.gaf} > {output.gaf}"
+
+
+rule insert_alignment_gaps:
+    input:
+        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.mqfilter.gaf',
+        graph = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.gfa',
+    output:
+        graph = 'output/hybrid/50_insert_aln_gaps/{sample_info}_{sample}.{ont_type}.{tigs}.gapped.gfa'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'insert_aln_gaps.py'),
+        min_gap_coverage = 3,
+        max_end_clip = 50
+    shell:
+        '{params.script_exec} {input.graph} {params.min_gap_coverage} {params.max_end_clip} < {input.gaf} > {output.graph}'
+
+
+rule identify_unique_nodes:
+    input:
+        gapped_graph = 'output/hybrid/50_insert_aln_gaps/{sample_info}_{sample}.{ont_type}.{tigs}.gapped.gfa',
+        trimmed_aln = 'output/hybrid/20_trim_graph_alignment/{sample_info}_{sample}.{ont_type}.{tigs}.trimmed.gaf'
+    output:
+        listing = 'output/hybrid/60_id_unique_nodes/{sample_info}_{sample}.{ont_type}.{tigs}.unique-nodes.txt'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'estimate_unique_local.py'),
+        long_node_threshold = 100000,
+        solid_edge_threshold = 30,
+        path_consistency_threshold = 0.8
+    shell:
+        '{params.script_exec} {input.gapped_graph} {input.trimmed_aln} '
+            '{params.long_node_threshold} {params.solid_edge_threshold} {params.path_consistency_threshold} '
+            '> {output.listing}'
+
+
+rule find_bridges:
+    input:
+        uniq_nodes = 'output/hybrid/60_id_unique_nodes/{sample_info}_{sample}.{ont_type}.{tigs}.unique-nodes.txt',
+        paths = 'output/hybrid/40_qlfilter_trimmed_paths/{sample_info}_{sample}.{ont_type}.{tigs}.paths.txt'
+    output:
+        listing = 'output/hybrid/70_bridges/{sample_info}_{sample}.{ont_type}.{tigs}.bridges.txt'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'find_bridges.py.py'),
+    shell:
+        '{params.script_exec} {input.uniq_nodes} < {input.paths} > {output.listing}'
+
+
+rule discard_invalid_bridges:
+    input:
+        bridges = 'output/hybrid/70_bridges/{sample_info}_{sample}.{ont_type}.{tigs}.bridges.txt'
+    output:
+        listing = 'output/hybrid/80_valid_bridges/{sample_info}_{sample}.{ont_type}.{tigs}.valid-bridges.txt'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'remove_wrong_connections_2.py'),
+    shell:
+        'grep -v "(" {input.bridges} | grep -vP "^$" | {params.script_exec} | sort > {output.listing}'
+
+
+rule select_majority_bridge:
+    input:
+        valid_bridges = 'output/hybrid/80_valid_bridges/{sample_info}_{sample}.{ont_type}.{tigs}.valid-bridges.txt'
+    output:
+        listing = 'output/hybrid/90_majority_bridges/{sample_info}_{sample}.{ont_type}.{tigs}.majority-bridges.txt'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'pick_majority_bridge.py'),
+    shell:
+        '{params.script_exec} < {input.bridges} > {output.listing}'
+
+
+rule identify_forbidden_end:
+    input:
+        uniq_nodes = 'output/hybrid/60_id_unique_nodes/{sample_info}_{sample}.{ont_type}.{tigs}.unique-nodes.txt',
+        gapped_graph = 'output/hybrid/50_insert_aln_gaps/{sample_info}_{sample}.{ont_type}.{tigs}.gapped.gfa',
+        majority_bridges = 'output/hybrid/90_majority_bridges/{sample_info}_{sample}.{ont_type}.{tigs}.majority-bridges.txt',
+        paths = 'output/hybrid/40_qlfilter_trimmed_paths/{sample_info}_{sample}.{ont_type}.{tigs}.paths.txt',
+        nodecov = 'output/hybrid/30_node_coverages/{sample_info}_{sample}.{ont_type}.{tigs}.nodecov.csv',
+    output:
+        listing = 'output/hybrid/100_forbidden_end/{sample_info}_{sample}.{ont_type}.{tigs}.forbidden-ends.txt'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'forbid_unbridged_tangles.py'),
+        min_solid_coverage = 30
+    shell:
+        '{params.script_exec} {input.uniq_nodes} {input.gapped_graph} {input.majority_bridges} '
+            '{input.paths} {input.nodecov} {params.min_solid_coverage} > {output.listing}'
+
+
+rule build_connected_graph:
+    input:
+        gapped_graph = 'output/hybrid/50_insert_aln_gaps/{sample_info}_{sample}.{ont_type}.{tigs}.gapped.gfa',
+        forbidden_ends = 'output/hybrid/100_forbidden_end/{sample_info}_{sample}.{ont_type}.{tigs}.forbidden-ends.txt',
+        majority_bridges = 'output/hybrid/90_majority_bridges/{sample_info}_{sample}.{ont_type}.{tigs}.majority-bridges.txt',
+    output:
+        gfa = 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'connect_uniques.py'),
+        min_solid_coverage = 30
+    shell:
+        '{params.script_exec} {input.gapped_graph} {input.forbidden_ends} {input.majority_bridges} > {output.gfa}'
