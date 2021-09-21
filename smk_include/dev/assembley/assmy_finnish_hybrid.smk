@@ -152,7 +152,8 @@ rule insert_alignment_gaps:
     output:
         graph = 'output/hybrid/50_insert_aln_gaps/{sample_info}_{sample}.{ont_type}.{tigs}.gapped.gfa'
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     params:
         script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'insert_aln_gaps.py'),
         min_gap_coverage = 3,
@@ -217,7 +218,7 @@ rule select_majority_bridge:
     params:
         script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'pick_majority_bridge.py'),
     shell:
-        '{params.script_exec} < {input.bridges} > {output.listing}'
+        '{params.script_exec} < {input.valid_bridges} > {output.listing}'
 
 
 rule identify_forbidden_end:
