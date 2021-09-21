@@ -355,6 +355,10 @@ rule check_max_cluster_size:
                             continue
                         seq_len += len(line.strip())
                 if seq_len > max_seq_len and not ignore_size:
+                    # create an untracked error output file for simpler
+                    # summary of what samples failed and why
+                    with open(f'ERROR_cluster-size_{wildcards.sseq_reads}.err', 'w'):
+                        pass
                     raise ValueError('Squashed assembly cluster too large ({} / max {}): {}'.format(seq_len, max_seq_len, fasta_file))
                 cache[cluster_name] = seq_len
 

@@ -323,6 +323,10 @@ rule exclude_low_quality_libraries:
 
             if frac_lowq_libs > params.error_lowq:
                 _ = logfile.write('ERROR - fraction of low-quality libraries too high')
+                # create an untracked error output file for simpler
+                # summary of what samples failed and why
+                with open(f'ERROR_sseq-quality_{wildcards.sseq_reads}.err', 'w'):
+                    pass
                 raise ValueError(f'Cannot process ASHLEYS output for SSEQ reads (lowQ) {wildcards.sseq_reads}')
 
             qc_info.to_csv(
