@@ -59,7 +59,7 @@ rule run_all:
 rule run_hybrid_assembly:
     input:
         hybrid_ont_align = expand(
-            'output/hybrid/ont_to_graph/{sample_long}.{ont_type}.{tigs}.gaf',
+            'output/hybrid/30_node_coverages/{sample_long}.{ont_type}.{tigs}.nodecov.csv',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             ont_type=['ONTUL'],
             tigs=['TIGRAW']
@@ -94,16 +94,14 @@ rule run_hybrid_assembly:
 rule run_extract_aligned_chry_reads:
     input:
         fasta = expand(
-            'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
+            'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.fasta.gz',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             read_type=['HIFIEC', 'ONTUL'],
             mapq=['mq00', 'mq60'],
-            seqtype=['fasta']
         ),
         fastq = expand(
-            'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
+            'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.fastq.gz',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             read_type=['HIFIAF'],
             mapq=['mq00', 'mq60'],
-            seqtype=['fastq']
         ),

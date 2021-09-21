@@ -70,3 +70,50 @@ rule assemble_afr_mix:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
     shell:
         'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.s1_reads} {input.s2_reads} &> {log.hifiasm}'
+
+
+HYBRID_SCRIPT_PATH = 'repos/hybrid-assembly/scripts'
+
+
+rule filter_ont_to_graph_alignment:
+    input:
+        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.gaf',
+    output:
+        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.qlfilter.gaf',
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt,
+    params:
+        min_aligned_length = 0.8,
+        min_mapq = 20
+    shell:
+        'awk -F "\\t" "{{if ($4-$3 >= $2*{params.min_aligned_length} && $12 >= {params.min_mapq}) print;}}" < {input.gaf} > {output.gaf}'
+
+
+rule trim_graph_alignment:
+    input:
+        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.qlfilter.gaf',
+        graph = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.gfa',
+    output:
+        gaf = 'output/hybrid/20_trim_graph_alignment/{sample_info}_{sample}.{ont_type}.{tigs}.trimmed.gaf'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'trim_dbg_alignment.py'),
+        edge_trim = 1500
+    shell:
+        '{params.script_exec} {input.graph} {params.edge_trim} < {input.gaf} > {output.gaf}'
+
+
+rule calculate_node_coverage:
+    input:
+        graph = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.gfa',
+        trimmed_aln = 'output/hybrid/20_trim_graph_alignment/{sample_info}_{sample}.{ont_type}.{tigs}.trimmed.gaf'
+    output:
+        table = 'output/hybrid/30_node_coverages/{sample_info}_{sample}.{ont_type}.{tigs}.nodecov.csv'
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'calculate_coverage.py'),
+        edge_trim = 1500
+    shell:
+        '{params.script_exec} {input.graph} < {input.trimmed_aln} > {output.table}'
