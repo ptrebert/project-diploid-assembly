@@ -256,7 +256,7 @@ rule mask_repeats_in_chimeric_contigs:
     threads: 12
     resources:
         mem_total_mb = lambda wildcards, attempt: 180224 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 24 * attempt
+        runtime_hrs = lambda wildcards, attempt: 12 * attempt
     shell:
         'module load RepeatMasker && rm -rfd {output.repmsk_dir} && mkdir -p {output.repmsk_dir} && '
         'RepeatMasker -species human -no_is -pa {threads} -s -dir {output.repmsk_dir} {input.contigs}'
