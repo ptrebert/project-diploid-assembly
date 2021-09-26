@@ -181,27 +181,27 @@ rule pbmm2_reads_to_reference_alignment_pacbio_fastq:
     log:
         'log/output/alignments/reads_to_reference/{folder_path}/{sample}_map-to_{reference}.pbmm2.log'
     benchmark:
-        'rsrc/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_medium'])
+        'rsrc/output/alignments/reads_to_reference/{{folder_path}}/{{sample}}_map-to_{{reference}}.pbmm2.t{}.rsrc'.format(config['num_cpu_high'])
     conda:
         '../environment/conda/conda_pbtools.yml'
     wildcard_constraints:
         sample = CONSTRAINT_PACBIO_SAMPLES
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_high']
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + 16384 * attempt) / config['num_cpu_medium']),
-        mem_total_mb = lambda wildcards, attempt: 16384 + 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt + 1
+        mem_per_cpu_mb = lambda wildcards, attempt: int((24768 + 16384 * attempt) / config['num_cpu_high']),
+        mem_total_mb = lambda wildcards, attempt: 24768 + 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt,
     params:
-        align_threads = config['num_cpu_medium'] - 4,
-        sort_threads = 4,
+        align_threads = config['num_cpu_high'] - 6,
+        sort_threads = 6,
         preset = load_preset_file,
         individual = lambda wildcards: wildcards.sample.split('_')[0],
         tempdir = lambda wildcards: os.path.join(
                                         'temp', 'pbmm2', wildcards.folder_path,
                                         wildcards.sample, wildcards.reference)
     shell:
-        'TMPDIR={params.tempdir} '
-        'pbmm2 align --log-level INFO --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
+        'mkdir -p {params.tempdir} && TMPDIR={params.tempdir} '
+        'pbmm2 align --log-level DEBUG --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
             ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
             ' --preset {params.preset} --rg "@RG\\tID:1\\tSM:{params.individual}" --sample {params.individual} '
             ' {input.reference} {input.reads} {output.bam} &> {log}'
