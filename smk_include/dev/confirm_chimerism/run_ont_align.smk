@@ -3,7 +3,7 @@ localrules: dump_contig_name, run_all
 
 PGAS_PATH = '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder'
 ONTQC_PATH = '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder'
-
+REFERENCE = 'T2Tv11_hg002Yv2_chm13'
 
 rule run_all:
     input:
@@ -13,8 +13,12 @@ rule run_all:
         'output/read_ctg_align/HG02666_HIFIEC_MAP-TO_chimeric-contigs.mmap.paf.gz',
         'output/read_ctg_align/NA18989_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
         'output/read_ctg_align/HG02666_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
-        'output/repmask/NA18989',
-        'output/repmask/HG02666'
+        expand('output/repmask/{sample}.repmask.tsv', sample=['NA18989', 'HG02666']),
+        expand(
+            'output/contig_ref_align/{sample}_CTG_MAP-TO_{reference}.mmap.paf.gz',
+            sample=['NA18989', 'HG02666'],
+            reference=[REFERENCE]
+        ),
 
 
 rule dump_contig_name:
@@ -176,6 +180,26 @@ rule extract_contig_read_names:
     # END OF RUN BLOCK
 
 
+rule align_chimeric_contigs:
+    input:
+        contigs = 'output/{sample}.chimeric-contigs.fasta',
+        reference = ancient('/gpfs/project/projects/medbioinf/data/references{reference}.fasta')
+    output:
+        'output/contig_ref_align/{sample}_CTG_MAP-TO_{reference}.mmap.paf.gz'
+    benchmark:
+        'rsrc/output/contig_ref_align/{sample}_CTG_MAP-TO_{reference}.mmap.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: 24
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt,
+    shell:
+        'minimap2 -t 22 -x asm20 --secondary=no '
+        '--cap-kalloc=1g -K4g '
+        '{input.reference} {input.contigs} | pigz --best -p 4 > {output}'
+
+
 rule align_ont_reads:
     """
     """
@@ -253,10 +277,21 @@ rule mask_repeats_in_chimeric_contigs:
         contigs = 'output/{sample}.chimeric-contigs.fasta'
     output:
         repmsk_dir = directory('output/repmask/{sample}')
-    threads: 12
+    threads: 36
     resources:
-        mem_total_mb = lambda wildcards, attempt: 180224 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 12 * attempt
+        mem_total_mb = lambda wildcards, attempt: 524288 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 24 * attempt
     shell:
         'module load RepeatMasker && rm -rfd {output.repmsk_dir} && mkdir -p {output.repmsk_dir} && '
         'RepeatMasker -species human -no_is -pa {threads} -s -dir {output.repmsk_dir} {input.contigs}'
+
+
+rule normalize_repmask_output:
+    input:
+        rm_folder = 'output/repmask/{sample}'
+    output:
+        'output/repmask/{sample}.repmask.tsv'
+    params:
+        input_file = lambda wildcards, input: os.path.join(input.rm_folder, f'{wildcards.sample}.chimeric-contigs.fasta.out')
+    shell:
+        'tail -n +4 {params.input_file} | tr -s " " "\\t" > {output}'
