@@ -341,7 +341,8 @@ RM_HEADER = [
     'repeat_class',
     'prior_bases',
     'rep_start',
-    'rep_end'
+    'rep_end',
+    'overlaps'
 ]
 
 RM_USE = [
@@ -366,7 +367,10 @@ rule cache_repmask_output:
         import numpy as np
         seq_sizes = load_sequence_sizes(input.faidx)
 
-        rm = pd.read_csv(input.table, sep='\t', header=None, names=RM_HEADER, usecols=RM_USE)
+        with pd.HDFStore(output[0], 'w', complevel=9, complib='blosc'):
+            pass
+
+        rm = pd.read_csv(input.table, sep='\t', header=None, index_col=None, names=RM_HEADER, usecols=RM_USE)
         rm['is_all'] = 1
         rm['is_simple'] = rm['repeat_class'].apply(lambda x: 1 if 'Simple_repeat' in x else 0)
         rm['is_lowcomplex'] = rm['repeat_class'].apply(lambda x: 1 if 'Low_complexity' in x else 0)
@@ -453,10 +457,10 @@ rule cache_read_coverage_output:
             nz_values = coverage > 0
             mapq[nz_values] /= coverage[nz_values]
             divergence[nz_values] /= coverage[nz_values]
-            with pd.HDFStore(output[0], 'a', complevel=9, complib='blosc') as hdf:
-                hdf.put(f'{wildcards.sample}/read_cov/{wildcards.readset.replace('-', '')}', pd.Series(coverage), format='fixed')
-                hdf.put(f'{wildcards.sample}/aln_mapq/{wildcards.readset.replace('-', '')}', pd.Series(mapq), format='fixed')
-                hdf.put(f'{wildcards.sample}/aln_div/{wildcards.readset.replace('-', '')}', pd.Series(divergence), format='fixed')
+            with pd.HDFStore(output[0], 'w', complevel=9, complib='blosc') as hdf:
+                hdf.put(f'{wildcards.sample}/read_cov/{wildcards.readset.replace("-", "")}', pd.Series(coverage), format='fixed')
+                hdf.put(f'{wildcards.sample}/aln_mapq/{wildcards.readset.replace("-", "")}', pd.Series(mapq), format='fixed')
+                hdf.put(f'{wildcards.sample}/aln_div/{wildcards.readset.replace("-", "")}', pd.Series(divergence), format='fixed')
             
         if wildcards.readset == 'ONTUL':
             aln = aln.loc[aln['read_length'] >= 1e5, :].copy()
