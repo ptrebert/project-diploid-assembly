@@ -256,3 +256,41 @@ rule build_connected_graph:
         script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'connect_uniques.py'),
     shell:
         '{params.script_exec} {input.gapped_graph} {input.forbidden_ends} {input.majority_bridges} > {output.gfa} 2> {log}'
+
+
+rule dump_final_graph_to_fasta:
+    input:
+        gfa = 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa'
+    output:
+        stats = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa',
+        fasta = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.fasta',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+    shell:
+        'gfatools stat {input.gfa} > {output.stats}'
+            ' && '
+        'gfatools gfa2fa {input.gfa} > {output.fasta}'
+
+
+rule align_contigs_to_reference:
+    input:
+        fa_tigs = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.fasta',
+        fa_ref = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta')
+    output:
+        paf = 'output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.paf.gz',
+    wildcard_constraints:
+        tigs = '(TIGPRI|TIGALT|TIGRAW)'
+    conda: '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 24576 + 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
+    shell:
+        'minimap2 -t {threads} '
+            '--cap-kalloc=1g -K4g '
+            '--secondary=no -ax asm20 -m 10000 '
+            '{input.fa_ref} {input.fa_tigs} | '
+        'pigz -p 4 --best > {output.paf}'
