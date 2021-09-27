@@ -19,6 +19,16 @@ rule run_all:
             sample=['NA18989', 'HG02666'],
             reference=[REFERENCE]
         ),
+        expand(
+            'output/cache/{sample}_{readset}.h5',
+            sample=['HG02666', 'NA18989'],
+            readset=['ONTUL', 'HIFIEC', 'HIFIEC-SUB']
+        ),
+        expand(
+            'output/cache/{sample}.repmask.h5',
+            sample=['HG02666', 'NA18989']
+        )
+
 
 
 rule dump_contig_name:
@@ -92,6 +102,17 @@ rule extract_contig_sequences:
         '../../../environment/conda/conda_biotools.yml'
     shell:
         'seqtk subseq {input.assembly} {input.ctg_names} > {output}'
+
+
+rule generate_fasta_index:
+    input:
+        fasta = 'output/{sample}.chimeric-contigs.fasta'
+    output:
+        'output/{sample}.chimeric-contigs.fasta.fai'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    shell:
+        'samtools faidx {input.fasta}'
 
 
 rule extract_contig_read_names:
@@ -183,7 +204,7 @@ rule extract_contig_read_names:
 rule align_chimeric_contigs:
     input:
         contigs = 'output/{sample}.chimeric-contigs.fasta',
-        reference = ancient('/gpfs/project/projects/medbioinf/data/references{reference}.fasta')
+        reference = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta')
     output:
         'output/contig_ref_align/{sample}_CTG_MAP-TO_{reference}.mmap.paf.gz'
     benchmark:
@@ -295,3 +316,167 @@ rule normalize_repmask_output:
         input_file = lambda wildcards, input: os.path.join(input.rm_folder, f'{wildcards.sample}.chimeric-contigs.fasta.out')
     shell:
         'tail -n +4 {params.input_file} | tr -s " " "\\t" > {output}'
+
+
+def load_sequence_sizes(file_path):
+    seq_sizes = {}
+    with open(file_path, 'r') as fa_idx:
+        for line in fa_idx:
+            c, s = line.split()[:2]
+            seq_sizes[c] = int(s)
+    return seq_sizes
+
+
+RM_HEADER = [
+    'SW_score',
+    'sub_pct',
+    'del_pct',
+    'ins_pct',
+    'seq_name',
+    'start',
+    'end',
+    'remain',
+    'orientation',
+    'repeat_name',
+    'repeat_class',
+    'prior_bases',
+    'rep_start',
+    'rep_end'
+]
+
+RM_USE = [
+    'seq_name',
+    'start',
+    'end',
+    'repeat_class'
+]
+
+
+rule cache_repmask_output:
+    input:
+        table = 'output/repmask/{sample}.repmask.tsv',
+        faidx = 'output/{sample}.chimeric-contigs.fasta.fai'
+    output:
+        'output/cache/{sample}.repmask.h5'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import pandas as pd
+        import numpy as np
+        seq_sizes = load_sequence_sizes(input.faidx)
+
+        rm = pd.read_csv(input.table, sep='\t', header=None, names=RM_HEADER, usecols=RM_USE)
+        rm['is_all'] = 1
+        rm['is_simple'] = rm['repeat_class'].apply(lambda x: 1 if 'Simple_repeat' in x else 0)
+        rm['is_lowcomplex'] = rm['repeat_class'].apply(lambda x: 1 if 'Low_complexity' in x else 0)
+        rm['is_satellite'] = rm['repeat_class'].apply(lambda x: 1 if 'Satellite' in x else 0)
+
+        for sequence in rm['seq_name'].unique():
+            for rep_select in ['is_all', 'is_simple', 'is_lowcomplex', 'is_satellite']:
+                selector = np.logical_and(rm['seq_name'] == sequence, rm[rep_select] == 1)
+                subset = rm.loc[selector, :]
+                bases = np.zeros(seq_sizes[sequence], dtype=np.int8)
+                for row in subset.itertuples(index=False):
+                    bases[row[1]:row[2]+1] = 1
+                with pd.HDFStore(output[0], 'a', complevel=9, complib='blosc') as hdf:
+                    hdf.put(f'{wildcards.sample}/{sequence}/repmask/{rep_select}', pd.Series(bases), format='fixed')
+    # END OF RUN BLOCK
+
+
+PAF_HEADER = [
+    'read_name',
+    'read_length',
+    'read_aln_start',
+    'read_aln_end',
+    'orientation',
+    'ref_name',
+    'ref_length',
+    'ref_aln_start',
+    'ref_aln_end',
+    'residue_matches',
+    'block_length',
+    'mapq',
+    'aln_type',
+    'tag_cm',
+    'tag_s1',
+    'tag_s2',
+    'divergence',
+    'tag_rl'
+]
+
+PAF_USE = [
+    'read_length',
+    'read_aln_start',
+    'read_aln_end',
+    'ref_name',
+    'ref_aln_start',  # idx 4
+    'ref_aln_end',  # idx 5
+    'residue_matches',
+    'block_length',
+    'mapq',  # idx 8
+    'divergence',  # idx 9
+]
+
+
+rule cache_read_coverage_output:
+    input:
+        paf = 'output/read_ctg_align/{sample}_{readset}_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        faidx = 'output/{sample}.chimeric-contigs.fasta.fai'
+    output:
+        'output/cache/{sample}_{readset}.h5'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import pandas as pd
+        import numpy as np
+        seq_sizes = load_sequence_sizes(input.faidx)
+
+        aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=PAF_USE)
+        aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
+
+        idx_start = 4
+        idx_end = 5
+        idx_mapq = 8
+        idx_div = 9
+
+        for sequence in aln['ref_name'].unique():
+            coverage = np.zeros(seq_sizes[sequence], dtype=np.int32)
+            mapq = np.zeros(seq_sizes[sequence], dtype=np.float32)
+            divergence = np.zeros(seq_sizes[sequence], dtype=np.float32)
+            subset = aln.loc[aln['ref_name'] == sequence, :]
+            for row in subset.itertuples(index=False):
+                coverage[row[idx_start]:row[idx_end]] += 1
+                mapq[row[idx_start]:row[idx_end]] += row[idx_mapq]
+                divergence[row[idx_start]:row[idx_end]] += row[idx_div]
+            nz_values = coverage > 0
+            mapq[nz_values] /= coverage[nz_values]
+            divergence[nz_values] /= coverage[nz_values]
+            with pd.HDFStore(output[0], 'a', complevel=9, complib='blosc') as hdf:
+                hdf.put(f'{wildcards.sample}/read_cov/{wildcards.readset.replace('-', '')}', pd.Series(coverage), format='fixed')
+                hdf.put(f'{wildcards.sample}/aln_mapq/{wildcards.readset.replace('-', '')}', pd.Series(mapq), format='fixed')
+                hdf.put(f'{wildcards.sample}/aln_div/{wildcards.readset.replace('-', '')}', pd.Series(divergence), format='fixed')
+            
+        if wildcards.readset == 'ONTUL':
+            aln = aln.loc[aln['read_length'] >= 1e5, :].copy()
+            aln['read_aln_fraction'] = (aln['read_aln_end'] - aln['read_aln_end']) / aln['read_length']
+            aln = aln.loc[aln['read_aln_fraction'] >= 0.8, :].copy()
+            aln.drop('read_aln_fraction', axis=1, inplace=True)
+            for sequence in aln['ref_name'].unique():
+                subset = aln.loc[aln['ref_name'] == sequence, :]
+                coverage = np.zeros(seq_sizes[sequence], dtype=np.int32)
+                mapq = np.zeros(seq_sizes[sequence], dtype=np.float32)
+                divergence = np.zeros(seq_sizes[sequence], dtype=np.float32)
+                for row in subset.itertuples(index=False):
+                    coverage[row[idx_start]:row[idx_end]] += 1
+                    mapq[row[idx_start]:row[idx_end]] += row[idx_mapq]
+                    divergence[row[idx_start]:row[idx_end]] += row[idx_div]
+                nz_values = coverage > 0
+                mapq[nz_values] /= coverage[nz_values]
+                divergence[nz_values] /= coverage[nz_values]
+                with pd.HDFStore(output[0], 'a', complevel=9, complib='blosc') as hdf:
+                    hdf.put(f'{wildcards.sample}/read_cov_UL', pd.Series(coverage), format='fixed')
+                    hdf.put(f'{wildcards.sample}/aln_mapq_UL', pd.Series(mapq), format='fixed')
+                    hdf.put(f'{wildcards.sample}/aln_div_UL', pd.Series(divergence), format='fixed')
+        # END OF RUN BLOCK
