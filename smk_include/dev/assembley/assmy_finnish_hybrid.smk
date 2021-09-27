@@ -262,7 +262,7 @@ rule dump_final_graph_to_fasta:
     input:
         gfa = 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa'
     output:
-        stats = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa',
+        stats = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.gfa.stats.txt',
         fasta = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.fasta',
     conda:
         '../../../environment/conda/conda_biotools.yml'
