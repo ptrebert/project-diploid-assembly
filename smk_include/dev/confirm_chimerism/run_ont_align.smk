@@ -315,7 +315,7 @@ rule normalize_repmask_output:
     params:
         input_file = lambda wildcards, input: os.path.join(input.rm_folder, f'{wildcards.sample}.chimeric-contigs.fasta.out')
     shell:
-        'tail -n +4 {params.input_file} | tr -s " " "\\t" > {output}'
+        'tail -n +4 {params.input_file} | tr -s " " "\\t" | sed "s/^\\t//" > {output}'
 
 
 def load_sequence_sizes(file_path):
@@ -339,10 +339,11 @@ RM_HEADER = [
     'orientation',
     'repeat_name',
     'repeat_class',
-    'prior_bases',
-    'rep_start',
-    'rep_end',
-    'overlaps'
+    'column_end1',
+    'column_end2',
+    'column_end3',
+    'column_end4',
+    'column_end5'
 ]
 
 RM_USE = [
@@ -445,6 +446,9 @@ rule cache_read_coverage_output:
         idx_mapq = 8
         idx_div = 9
 
+        with pd.HDFStore(output[0], 'w', complevel=9, complib='blosc'):
+            pass
+
         for sequence in aln['ref_name'].unique():
             coverage = np.zeros(seq_sizes[sequence], dtype=np.int32)
             mapq = np.zeros(seq_sizes[sequence], dtype=np.float32)
@@ -457,7 +461,7 @@ rule cache_read_coverage_output:
             nz_values = coverage > 0
             mapq[nz_values] /= coverage[nz_values]
             divergence[nz_values] /= coverage[nz_values]
-            with pd.HDFStore(output[0], 'w', complevel=9, complib='blosc') as hdf:
+            with pd.HDFStore(output[0], 'a', complevel=9, complib='blosc') as hdf:
                 hdf.put(f'{wildcards.sample}/read_cov/{wildcards.readset.replace("-", "")}', pd.Series(coverage), format='fixed')
                 hdf.put(f'{wildcards.sample}/aln_mapq/{wildcards.readset.replace("-", "")}', pd.Series(mapq), format='fixed')
                 hdf.put(f'{wildcards.sample}/aln_div/{wildcards.readset.replace("-", "")}', pd.Series(divergence), format='fixed')
