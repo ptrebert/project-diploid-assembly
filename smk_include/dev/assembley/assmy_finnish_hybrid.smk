@@ -267,7 +267,7 @@ rule dump_final_graph_to_fasta:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt,
     shell:
         'gfatools stat {input.gfa} > {output.stats}'
@@ -281,6 +281,8 @@ rule align_contigs_to_reference:
         fa_ref = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta')
     output:
         paf = 'output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.paf.gz',
+    benchmark:
+        rsrc = 'rsrc/output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.mmap.rsrc',
     wildcard_constraints:
         tigs = '(TIGPRI|TIGALT|TIGRAW)'
     conda: '../../../environment/conda/conda_biotools.yml'
@@ -291,6 +293,6 @@ rule align_contigs_to_reference:
     shell:
         'minimap2 -t {threads} '
             '--cap-kalloc=1g -K4g '
-            '--secondary=no -ax asm20 -m 10000 '
+            '--secondary=no -x asm20 -m 10000 --end-bonus=100 '
             '{input.fa_ref} {input.fa_tigs} | '
         'pigz -p 4 --best > {output.paf}'
