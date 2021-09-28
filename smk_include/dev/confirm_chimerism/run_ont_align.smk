@@ -27,6 +27,10 @@ rule run_all:
         expand(
             'output/cache/{sample}.repmask.h5',
             sample=['HG02666', 'NA18989']
+        ),
+        expand(
+            'output/cache/{sample}_CTG.h5',
+            sample=['HG02666', 'NA18989']
         )
 
 
@@ -414,7 +418,7 @@ PAF_USE = [
     'read_length',
     'read_aln_start',
     'read_aln_end',
-    'ref_name',
+    'ref_name',  # idx 3
     'ref_aln_start',  # idx 4
     'ref_aln_end',  # idx 5
     'residue_matches',
@@ -429,10 +433,12 @@ rule cache_read_coverage_output:
         paf = 'output/read_ctg_align/{sample}_{readset}_MAP-TO_chimeric-contigs.mmap.paf.gz',
         faidx = 'output/{sample}.chimeric-contigs.fasta.fai'
     output:
-        'output/cache/{sample}_{readset}.h5'
+        hdf = 'output/cache/{sample}_{readset}.h5'
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    wildcard_constraints:
+        readset = '(ONTUL|HIFIEC|HIFIEC\-SUB)'
     run:
         import pandas as pd
         import numpy as np
@@ -446,7 +452,7 @@ rule cache_read_coverage_output:
         idx_mapq = 8
         idx_div = 9
 
-        with pd.HDFStore(output[0], 'w', complevel=9, complib='blosc'):
+        with pd.HDFStore(output.hdf, 'w', complevel=9, complib='blosc'):
             pass
 
         for sequence in aln['ref_name'].unique():
@@ -461,10 +467,10 @@ rule cache_read_coverage_output:
             nz_values = coverage > 0
             mapq[nz_values] /= coverage[nz_values]
             divergence[nz_values] /= coverage[nz_values]
-            with pd.HDFStore(output[0], 'a', complevel=9, complib='blosc') as hdf:
-                hdf.put(f'{wildcards.sample}/read_cov/{wildcards.readset.replace("-", "")}', pd.Series(coverage), format='fixed')
-                hdf.put(f'{wildcards.sample}/aln_mapq/{wildcards.readset.replace("-", "")}', pd.Series(mapq), format='fixed')
-                hdf.put(f'{wildcards.sample}/aln_div/{wildcards.readset.replace("-", "")}', pd.Series(divergence), format='fixed')
+            with pd.HDFStore(output.hdf, 'a', complevel=9, complib='blosc') as hdf:
+                hdf.put(f'{wildcards.sample}/{sequence}/aln_cov/{wildcards.readset.replace("-", "")}', pd.Series(coverage), format='fixed')
+                hdf.put(f'{wildcards.sample}/{sequence}/aln_mapq/{wildcards.readset.replace("-", "")}', pd.Series(mapq), format='fixed')
+                hdf.put(f'{wildcards.sample}/{sequence}/aln_div/{wildcards.readset.replace("-", "")}', pd.Series(divergence), format='fixed')
             
         if wildcards.readset == 'ONTUL':
             aln = aln.loc[aln['read_length'] >= 1e5, :].copy()
@@ -483,8 +489,63 @@ rule cache_read_coverage_output:
                 nz_values = coverage > 0
                 mapq[nz_values] /= coverage[nz_values]
                 divergence[nz_values] /= coverage[nz_values]
-                with pd.HDFStore(output[0], 'a', complevel=9, complib='blosc') as hdf:
-                    hdf.put(f'{wildcards.sample}/read_cov_UL', pd.Series(coverage), format='fixed')
-                    hdf.put(f'{wildcards.sample}/aln_mapq_UL', pd.Series(mapq), format='fixed')
-                    hdf.put(f'{wildcards.sample}/aln_div_UL', pd.Series(divergence), format='fixed')
+                with pd.HDFStore(output.hdf, 'a', complevel=9, complib='blosc') as hdf:
+                    hdf.put(f'{wildcards.sample}/{sequence}/aln_cov/UL100K', pd.Series(coverage), format='fixed')
+                    hdf.put(f'{wildcards.sample}/{sequence}/aln_mapq/UL100K', pd.Series(mapq), format='fixed')
+                    hdf.put(f'{wildcards.sample}/{sequence}/aln_div/UL100K', pd.Series(divergence), format='fixed')
+        # END OF RUN BLOCK
+
+
+rule cache_contig_coverage_output:
+    input:
+        paf = 'output/contig_ref_align/{sample}_CTG_MAP-TO_{reference}.mmap.paf.gz',
+        faidx = 'output/{sample}.chimeric-contigs.fasta.fai'
+    output:
+        hdf = 'output/cache/{sample}_CTG.h5'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import pandas as pd
+        import numpy as np
+        seq_sizes = load_sequence_sizes(input.faidx)
+
+        aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=PAF_USE)
+        aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
+
+        chrom_lut = {'X': 23, 'Y': 24, 'M': 25}
+        aln['ref_int'] = aln['ref_name'].replace(lambda x: chrom_lut.get(x.strip('chr'), int(x.strip('chr'))))
+        chrom_to_pow2 = dict((chrom, 2**order) for order, chrom in enumerate(sorted(aln['ref_int'].unique().values)))
+        aln['ref_int'] = aln['ref_int'].replace(chrom_to_pow2)
+
+        idx_start = 1
+        idx_end = 2
+        idx_mapq = 8
+        idx_div = 9
+        idx_chrom = 10
+
+        with pd.HDFStore(output.hdf, 'w', complevel=9, complib='blosc'):
+            pass
+
+        # NB: read_name here is chimeric contig
+        for sequence in aln['read_name'].unique():
+            coverage = np.zeros(seq_sizes[sequence], dtype=np.int32)
+            chromosomes = np.zeros(seq_sizes[sequence], dtype=np.int32)
+            mapq = np.zeros(seq_sizes[sequence], dtype=np.float32)
+            divergence = np.zeros(seq_sizes[sequence], dtype=np.float32)
+            subset = aln.loc[aln['read_name'] == sequence, :]
+            for row in subset.itertuples(index=False):
+                coverage[row[idx_start]:row[idx_end]] += 1
+                mapq[row[idx_start]:row[idx_end]] += row[idx_mapq]
+                divergence[row[idx_start]:row[idx_end]] += row[idx_div]
+                chrom_unset = chromosomes[idx_start:idx_end] & row[idx_chrom] == 0
+                chromosomes[idx_start:idx_end][chrom_unset] += row[idx_chrom]
+            nz_values = coverage > 0
+            mapq[nz_values] /= coverage[nz_values]
+            divergence[nz_values] /= coverage[nz_values]
+            with pd.HDFStore(output.hdf, 'a', complevel=9, complib='blosc') as hdf:
+                hdf.put(f'{wildcards.sample}/{sequence}/aln_cov/CTG', pd.Series(coverage), format='fixed')
+                hdf.put(f'{wildcards.sample}/{sequence}/aln_mapq/CTG', pd.Series(mapq), format='fixed')
+                hdf.put(f'{wildcards.sample}/{sequence}/aln_div/CTG', pd.Series(divergence), format='fixed')
+                hdf.put(f'{wildcards.sample}/{sequence}/aln_chr/CTG', pd.Series(chromosomes), format='fixed')
         # END OF RUN BLOCK
