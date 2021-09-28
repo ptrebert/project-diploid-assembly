@@ -57,6 +57,7 @@ rule assemble_afr_mix:
         s2_reads = lambda wildcards: SAMPLE_INFOS[AFR_SAMPLE_2]['HIFIAF']
     output:
         primary_contigs = 'output/hybrid/afr_mix/hifiasm/{afr_sample1}-U-{afr_sample2}.p_ctg.gfa',
+        raw_unitigs = 'output/hybrid/afr_mix/hifiasm/{afr_sample1}-U-{afr_sample2}.r_utg.gfa'
     log:
         hifiasm = 'log/output/hybrid/afr_mix/hifiasm/{afr_sample1}-U-{afr_sample2}.hifiasm.log',
     benchmark:
@@ -72,6 +73,68 @@ rule assemble_afr_mix:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
     shell:
         'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.s1_reads} {input.s2_reads} &> {log.hifiasm}'
+
+
+rule dump_afr_mix_graph_to_fasta:
+    input:
+        gfa = 'output/hybrid/afr_mix/hifiasm/{afr_sample1}-U-{afr_sample2}.r_utg.gfa'
+    output:
+        stats = 'output/hybrid/afr_mix/{afr_sample1}-U-{afr_sample2}.TIGRAW.gfa.stats.txt',
+        fasta = 'output/hybrid/afr_mix/{afr_sample1}-U-{afr_sample2}.TIGRAW.fasta',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+    shell:
+        'gfatools stat {input.gfa} > {output.stats}'
+            ' && '
+        'gfatools gfa2fa {input.gfa} > {output.fasta}'
+
+
+rule align_afr_mix_contigs_to_reference:
+    input:
+        fa_tigs = 'output/hybrid/afr_mix/{afr_sample1}-U-{afr_sample2}.TIGRAW.fasta',
+        fa_ref = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta')
+    output:
+        paf = 'output/hybrid/afr_mix/ctg_ref_align/{afr_sample1}-U-{afr_sample2}.TIGRAW_MAP-TO_{reference}.paf.gz',
+    benchmark:
+        'rsrc/output/hybrid/afr_mix/ctg_ref_align/{afr_sample1}-U-{afr_sample2}.TIGRAW_MAP-TO_{reference}.mmap.rsrc',
+    conda: '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 24576 + 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+    shell:
+        'minimap2 -t {threads} '
+            '--cap-kalloc=1g -K4g '
+            '--secondary=no -x asm20 -m 10000 --end-bonus=100 '
+            '{input.fa_ref} {input.fa_tigs} | '
+        'pigz -p 4 --best > {output.paf}'
+
+
+rule cache_afr_mix_contig_to_reference_alignment:
+    input:
+        paf = 'output/hybrid/afr_mix/ctg_ref_align/{afr_sample1}-U-{afr_sample2}.TIGRAW_MAP-TO_{reference}.paf.gz',
+    output:
+        hdf = 'output/hybrid/afr_mix/ctg_ref_align/{afr_sample1}-U-{afr_sample2}.TIGRAW_MAP-TO_{reference}.h5',
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt
+    run:
+        import pandas as pd
+        import collections as col
+        df = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=PAF_USE)
+        df['divergence'] = (df['divergence'].apply(lambda x: float(x.split(':')[-1]))).astype('float16')
+        orientation_map = col.defaultdict(int)
+        orientation_map['+'] = 1
+        orientation_map['-'] = -1
+        df['orientation'] = df['orientation'].replace(orientation_map)
+        df['orientation'] = df['orientation'].astype('int8')
+
+        with pd.HDFStore(output.hdf, 'w', complevel=9, complib='blosc') as hdf:
+            for ref_chrom, alignments in df.groupby('ref_name'):
+                hdf.put(f'{ref_chrom}', alignments, format='fixed')
+    # END OF RUN BLOCK
 
 
 HYBRID_SCRIPT_PATH = 'repos/hybrid-assembly/scripts'
