@@ -296,3 +296,52 @@ rule align_contigs_to_reference:
             '--secondary=no -x asm20 -m 10000 --end-bonus=100 '
             '{input.fa_ref} {input.fa_tigs} | '
         'pigz -p 4 --best > {output.paf}'
+
+
+PAF_HEADER = [
+    'qry_name',
+    'qry_length',
+    'qry_aln_start',
+    'qry_aln_end',
+    'orientation',
+    'ref_name',
+    'ref_length',
+    'ref_aln_start',
+    'ref_aln_end',
+    'residue_matches',
+    'block_length',
+    'mapq',
+    'aln_type',
+    'tag_cm',
+    'tag_s1',
+    'tag_s2',
+    'divergence',
+    'tag_rl'
+]
+
+
+PAF_USE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16]
+
+
+rule cache_contig_to_reference_alignment:
+    input:
+        paf = 'output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.paf.gz',
+    output:
+        hdf = 'output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.h5',
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt
+    run:
+        import pandas as pd
+        import collections as col
+        df = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=PAF_USE)
+        df['divergence'] = (df['divergence'].apply(lambda x: float(x.split(':')[-1]))).astype('float16')
+        orientation_map = col.defaultdict(int)
+        orientation_map['+'] = 1
+        orientation_map['-'] = -1
+        df['orientation'] = df['orientation'].replace(orientation_map)
+        df['orientation'] = df['orientation'].astype('int8')
+
+        with pd.HDFStore(output.hdf, 'w', complevel=9, complib='blosc') as hdf:
+            for ref_chrom, alignments in df.groupby('ref_name'):
+                hdf.put(f'{ref_chrom}', alignments, format='fixed')
+    # END OF RUN BLOCK

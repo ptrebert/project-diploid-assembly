@@ -65,7 +65,7 @@ rule run_hybrid_assembly:
             tigs=['TIGRAW']
         ),
         hybrid_contig_ref_align = expand(
-            'output/hybrid/210_align_ref/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.paf.gz',
+            'output/hybrid/210_align_ref/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.h5',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             ont_type=['ONTUL'],
             tigs=['TIGRAW'],
