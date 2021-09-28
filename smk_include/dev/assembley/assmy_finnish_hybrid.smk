@@ -282,14 +282,14 @@ rule align_contigs_to_reference:
     output:
         paf = 'output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.paf.gz',
     benchmark:
-        rsrc = 'rsrc/output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.mmap.rsrc',
+        'rsrc/output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.mmap.rsrc',
     wildcard_constraints:
         tigs = '(TIGPRI|TIGALT|TIGRAW)'
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 24576 + 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
     shell:
         'minimap2 -t {threads} '
             '--cap-kalloc=1g -K4g '
