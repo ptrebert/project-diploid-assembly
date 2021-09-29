@@ -526,8 +526,9 @@ rule cache_contig_coverage_output:
         aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=['read_name'] + PAF_USE)
         aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
 
-        chrom_lut = {'X': 23, 'Y': 24, 'M': 25}
-        aln['ref_int'] = aln['ref_name'].apply(lambda x: chrom_lut.get(x.strip('chr'), int(x.strip('chr'))))
+        chrom_to_int = {'X': '23', 'Y': '24', 'M': '25'}
+        aln['ref_int'] = aln['ref_name'].str.strip('chr')
+        aln['ref_int'] = (aln['ref_int'].replace(chrom_to_int)).astype('int8')
         chrom_to_pow2 = dict((chrom, 2**order) for order, chrom in enumerate(sorted(aln['ref_int'].unique())))
         aln['ref_int'] = aln['ref_int'].replace(chrom_to_pow2)
 
