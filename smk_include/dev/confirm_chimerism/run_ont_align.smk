@@ -628,6 +628,8 @@ def turn_mask_into_color_bins(mask, bin_size):
     mask = mask.values[:blunt_end].reshape((-1, bin_size)).sum(axis=1) / bin_size
     bin_ranges = [0, 0.1, 0.4, 0.7, 1.1]
     mask = np.digitize(mask, bin_ranges, right=False)
+    # shift binned values by one as np.digitize starts at 1
+    mask -= 1
     mask = pd.Series(mask).replace(SIGNAL_COLOR_CODE)
     return mask
 
