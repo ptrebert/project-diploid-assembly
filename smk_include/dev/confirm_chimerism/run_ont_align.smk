@@ -445,6 +445,14 @@ rule cache_read_coverage_output:
         seq_sizes = load_sequence_sizes(input.faidx)
 
         aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=PAF_USE)
+        if wildcards.readset == 'ONTUL':
+            # alignments of ONT reads are ultra-noisy, not sure if effect of incomplete
+            # target sequence. Need to filter more to get any useful signal
+            selector = np.logical_and(
+                (aln['read_aln_end'] - aln['read_aln_start']) >= 10000,
+                aln['residue_matches'] >= 500
+            )
+            aln = aln.loc[selector, :].copy()
         aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
 
         idx_start = 4
@@ -474,8 +482,8 @@ rule cache_read_coverage_output:
             
         if wildcards.readset == 'ONTUL':
             aln = aln.loc[aln['read_length'] >= 1e5, :].copy()
-            aln['read_aln_fraction'] = (aln['read_aln_end'] - aln['read_aln_end']) / aln['read_length']
-            aln = aln.loc[aln['read_aln_fraction'] >= 0.8, :].copy()
+            aln['read_aln_fraction'] = (aln['read_aln_end'] - aln['read_aln_start']) / aln['read_length']
+            aln = aln.loc[aln['read_aln_fraction'] > 0.5, :].copy()
             aln.drop('read_aln_fraction', axis=1, inplace=True)
             for sequence in aln['ref_name'].unique():
                 subset = aln.loc[aln['ref_name'] == sequence, :]
@@ -498,7 +506,7 @@ rule cache_read_coverage_output:
 
 rule cache_contig_coverage_output:
     input:
-        paf = 'output/contig_ref_align/{sample}_CTG_MAP-TO_{reference}.mmap.paf.gz',
+        paf = 'output/contig_ref_align/{sample}_CTG_MAP-TO_T2Tv11_hg002Yv2_chm13.mmap.paf.gz',
         faidx = 'output/{sample}.chimeric-contigs.fasta.fai'
     output:
         hdf = 'output/cache/{sample}_CTG.h5'
@@ -510,19 +518,19 @@ rule cache_contig_coverage_output:
         import numpy as np
         seq_sizes = load_sequence_sizes(input.faidx)
 
-        aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=PAF_USE)
+        aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=['read_name'] + PAF_USE)
         aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
 
         chrom_lut = {'X': 23, 'Y': 24, 'M': 25}
-        aln['ref_int'] = aln['ref_name'].replace(lambda x: chrom_lut.get(x.strip('chr'), int(x.strip('chr'))))
-        chrom_to_pow2 = dict((chrom, 2**order) for order, chrom in enumerate(sorted(aln['ref_int'].unique().values)))
+        aln['ref_int'] = aln['ref_name'].apply(lambda x: chrom_lut.get(x.strip('chr'), int(x.strip('chr'))))
+        chrom_to_pow2 = dict((chrom, 2**order) for order, chrom in enumerate(sorted(aln['ref_int'].unique())))
         aln['ref_int'] = aln['ref_int'].replace(chrom_to_pow2)
 
-        idx_start = 1
-        idx_end = 2
-        idx_mapq = 8
-        idx_div = 9
-        idx_chrom = 10
+        idx_start = 2
+        idx_end = 3
+        idx_mapq = 9
+        idx_div = 10
+        idx_chrom = 11
 
         with pd.HDFStore(output.hdf, 'w', complevel=9, complib='blosc'):
             pass
