@@ -580,7 +580,9 @@ CLUSTER_COLORS = {
     1: 'gainsboro',
     2: 'beige',
     3: 'mistyrose',
-    4: 'lavender'
+    4: 'lavender',
+    5: 'linen',
+    6: 'honeydew'
 }
 
 
@@ -641,7 +643,7 @@ def turn_clusters_into_color_bins(df, tig_size, bin_size):
             color_id = cluster[row['cluster_id']]
         except KeyError:
             color_id = color_counter
-            assert color_id < 5
+            assert color_id < 7, str(df)
             cluster[row['cluster_id']] = color_id
             color_counter += 1
         bases[row['start']:row['end']+1] = color_id
@@ -671,6 +673,9 @@ rule cache_plot_data_output:
         import pathlib as pl
         import numpy as np
         seq_sizes = load_sequence_sizes(input.faidx)
+        bin_size = int(wildcards.bin_size)
+        sample = wildcards.sample
+
         chimeric_contigs = pd.read_csv(input.cluster_file, sep='\t', header=0)
 
         out_path = pl.Path(output.folder)
@@ -690,7 +695,7 @@ rule cache_plot_data_output:
 
         for chimctg in sorted(chimeric_contigs['ctg_name'].unique()):
             ctg_size = seq_sizes[chimctg]
-            plot_cache_file = out_path / pl.Path(f'{sample}_{chimctg}_{wildcards.bin_size}.cache.h5')
+            plot_cache_file = out_path / pl.Path(f'{sample}_{chimctg}_{bin_size}.cache.h5')
             if plot_cache_file.is_file():
                 continue
 
@@ -698,7 +703,7 @@ rule cache_plot_data_output:
                 signal_color_bins = turn_clusters_into_color_bins(
                     chimeric_contigs.loc[chimeric_contigs['ctg_name'] == chimctg, :].copy(),
                     ctg_size,
-                    wildcards.bin_size
+                    bin_size
                 )
                 hdf.put(f'ID0/cluster', signal_color_bins, format='fixed')
 
@@ -709,13 +714,13 @@ rule cache_plot_data_output:
                     key = [k for k in hdf.keys() if select(k)]
                     signal = hdf[key[0]]
                     assert signal.size == ctg_size
-                    if cache_hint != 'repmask':
-                        signal_color_bins, nz_mean, nz_stddev, nz_median = turn_signal_into_color_bins(signal, wildcards.bin_size)
+                    if not label.startswith('RM'):
+                        signal_color_bins, nz_mean, nz_stddev, nz_median = turn_signal_into_color_bins(signal, bin_size)
                         metadata[f'{label}_nz_mean'] = nz_mean
                         metadata[f'{label}_nz_stddev'] = nz_stddev
                         metadata[f'{label}_nz_median'] = nz_median
                     else:
-                        signal_color_bins = turn_mask_into_color_bins(signal, wildcards.bin_size)
+                        signal_color_bins = turn_mask_into_color_bins(signal, bin_size)
                     with pd.HDFStore(plot_cache_file, 'a', complib='blosc', complevel=9) as hdf:
                         hdf.put(f'ID{idx}/{label}', signal_color_bins, format='fixed')
             # add clustering info
