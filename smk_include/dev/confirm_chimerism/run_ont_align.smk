@@ -569,7 +569,7 @@ SIGNAL_COLOR_CODE = {
     -3: 'royalblue',
     -2: 'cornflowerblue',
     -1: 'lightsteelblue',
-    0: 'palegreen',
+    0: 'honeydew',
     1: 'lightcoral',
     2: 'salmon',
     3: 'orangered',
@@ -582,7 +582,7 @@ CLUSTER_COLORS = {
     3: 'mistyrose',
     4: 'lavender',
     5: 'linen',
-    6: 'honeydew'
+    6: 'ivory'
 }
 
 
@@ -624,8 +624,8 @@ def turn_mask_into_color_bins(mask, bin_size):
     import pandas as pd
 
     blunt_end = mask.size // bin_size * bin_size
-    mask = mask.values[:blunt_end].reshape((-1, bin_size)).sum() / bin_size
-    bin_ranges = [0, 0.1, 0.4, 0.7, 1.01]
+    mask = mask.values[:blunt_end].reshape((-1, bin_size)).sum(axis=1) / bin_size
+    bin_ranges = [0, 0.1, 0.4, 0.7, 1.1]
     mask = np.digitize(mask, bin_ranges, right=False)
     mask = pd.Series(mask).replace(SIGNAL_COLOR_CODE)
     return mask
