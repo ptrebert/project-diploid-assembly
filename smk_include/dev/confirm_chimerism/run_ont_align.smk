@@ -439,6 +439,8 @@ rule cache_read_coverage_output:
         faidx = 'output/{sample}.chimeric-contigs.fasta.fai'
     output:
         hdf = 'output/cache/{sample}_{readset}.h5'
+    benchmark:
+        'rsrc/output/cache/{sample}_{readset}.rsrc'
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
@@ -456,6 +458,14 @@ rule cache_read_coverage_output:
             selector = np.logical_and(
                 (aln['read_aln_end'] - aln['read_aln_start']) >= 10000,
                 aln['residue_matches'] >= 500
+            )
+            aln = aln.loc[selector, :].copy()
+        if wildcards.readset == 'HIFIEC':
+            # alignments of HIFIEC reads are noisy for certain contigs,
+            # mildly filter for informative alignments
+            selector = np.logical_and(
+                (aln['read_aln_end'] - aln['read_aln_start']) >= 1000,
+                aln['residue_matches'] >= 200
             )
             aln = aln.loc[selector, :].copy()
         aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
@@ -515,6 +525,8 @@ rule cache_contig_coverage_output:
         faidx = 'output/{sample}.chimeric-contigs.fasta.fai'
     output:
         hdf = 'output/cache/{sample}_CTG.h5'
+    benchmark:
+        'rsrc/output/cache/{sample}_CTG.rsrc'
     resources:
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
@@ -565,28 +577,6 @@ rule cache_contig_coverage_output:
         # END OF RUN BLOCK
 
 
-SIGNAL_COLOR_CODE = {
-    -128: 'black',  # no signal
-    -3: 'royalblue',
-    -2: 'cornflowerblue',
-    -1: 'lightsteelblue',
-    0: 'honeydew',
-    1: 'lightcoral',
-    2: 'salmon',
-    3: 'orangered',
-}
-
-CLUSTER_COLORS = {
-    0: 'black',
-    1: 'gainsboro',
-    2: 'beige',
-    3: 'mistyrose',
-    4: 'lavender',
-    5: 'linen',
-    6: 'ivory'
-}
-
-
 def turn_signal_into_color_bins(signal, bin_size):
     import numpy as np
     import pandas as pd
@@ -616,7 +606,7 @@ def turn_signal_into_color_bins(signal, bin_size):
     binned_signal = np.sort(signal.values[:blunt_end].reshape((-1, bin_size)).astype(np.int8), axis=1)
     binned_signal = binned_signal[:, bin_size//2]
     signal_steps_colors = pd.Series(binned_signal, dtype=np.int8)
-    signal_steps_colors = signal_steps_colors.replace(SIGNAL_COLOR_CODE)
+    #signal_steps_colors = signal_steps_colors.replace(SIGNAL_COLOR_CODE)
     return signal_steps_colors, nz_mean, nz_std, nz_median
 
 
@@ -630,7 +620,7 @@ def turn_mask_into_color_bins(mask, bin_size):
     mask = np.digitize(mask, bin_ranges, right=False)
     # shift binned values by one as np.digitize starts at 1
     mask -= 1
-    mask = pd.Series(mask).replace(SIGNAL_COLOR_CODE)
+    mask = pd.Series(mask, dtype=np.int8)  #.replace(SIGNAL_COLOR_CODE)
     return mask
 
 
@@ -653,7 +643,7 @@ def turn_clusters_into_color_bins(df, tig_size, bin_size):
     blunt_end = tig_size // bin_size * bin_size
     bases = np.sort(bases[:blunt_end].reshape((-1, bin_size)).astype(np.int8), axis=1)
     colors = bases[:, bin_size//2]
-    colors = pd.Series(colors).replace(CLUSTER_COLORS)
+    colors = pd.Series(colors)  #.replace(CLUSTER_COLORS)
     return colors
 
 
@@ -685,11 +675,16 @@ rule cache_plot_data_output:
         out_path.mkdir(exist_ok=True)
 
         plot_entities = [
-            (input.ctg_cache, 'aln_cov/CTG', 'CTG'),
-            (input.ontul_cache, 'aln_cov/ONTUL', 'ONT'),
-            (input.ontul_cache, 'aln_cov/UL100K', 'UL'),
-            (input.hifiec_cache, 'aln_cov/HIFIEC', 'HIFI'),
-            (input.hifisub_cache, 'aln_cov/HIFIECSUB', 'SUB'),
+            (input.ctg_cache, 'aln_cov/CTG', 'CTG_COV'),
+            (input.ctg_cache, 'aln_mapq/CTG', 'CTG_MAPQ'),
+            (input.ontul_cache, 'aln_cov/ONTUL', 'ONT_COV'),
+            (input.ontul_cache, 'aln_mapq/ONTUL', 'ONT_MAPQ'),
+            (input.ontul_cache, 'aln_cov/UL100K', 'UL_COV'),
+            (input.ontul_cache, 'aln_mapq/UL100K', 'UL_MAPQ'),
+            (input.hifiec_cache, 'aln_cov/HIFIEC', 'HIFI_COV'),
+            (input.hifiec_cache, 'aln_mapq/HIFIEC', 'HIFI_MAPQ'),
+            (input.hifisub_cache, 'aln_cov/HIFIECSUB', 'SUB_COV'),
+            (input.hifisub_cache, 'aln_mapq/HIFIECSUB', 'SUB_MAPQ'),
             (input.repmask_cache, 'is_simple', 'RMSR'),
             (input.repmask_cache, 'is_lowcomplex', 'RMLC'),
             (input.repmask_cache, 'is_satellite', 'RMSAT'),
