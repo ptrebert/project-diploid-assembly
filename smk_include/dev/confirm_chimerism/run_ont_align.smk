@@ -452,22 +452,8 @@ rule cache_read_coverage_output:
         seq_sizes = load_sequence_sizes(input.faidx)
 
         aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=PAF_USE)
-        if wildcards.readset == 'ONTUL':
-            # alignments of ONT reads are ultra-noisy, not sure if effect of incomplete
-            # target sequence. Need to filter more to get any useful signal
-            selector = np.logical_and(
-                (aln['read_aln_end'] - aln['read_aln_start']) >= 10000,
-                aln['residue_matches'] >= 500
-            )
-            aln = aln.loc[selector, :].copy()
-        if wildcards.readset == 'HIFIEC':
-            # alignments of HIFIEC reads are noisy for certain contigs,
-            # mildly filter for informative alignments
-            selector = np.logical_and(
-                (aln['read_aln_end'] - aln['read_aln_start']) >= 1000,
-                aln['residue_matches'] >= 200
-            )
-            aln = aln.loc[selector, :].copy()
+        if wildcards.readset in ['ONTUL', 'HIFIEC']:
+            aln = aln.loc[aln['mapq'] >= 60, :].copy()
         aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
 
         idx_start = 4
@@ -537,6 +523,8 @@ rule cache_contig_coverage_output:
 
         aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=['read_name'] + PAF_USE)
         aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
+
+        aln = aln.loc[aln['mapq'] >= 60, :].copy()
 
         chrom_to_int = {'X': '23', 'Y': '24', 'M': '25'}
         aln['ref_int'] = aln['ref_name'].str.strip('chr')
