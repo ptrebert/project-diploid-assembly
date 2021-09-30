@@ -1,5 +1,5 @@
 
-localrules: dump_contig_name, run_all
+localrules: dump_contig_name, run_all, dump_fake_read
 
 PGAS_PATH = '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder'
 ONTQC_PATH = '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run_folder'
@@ -111,6 +111,34 @@ rule extract_contig_sequences:
         '../../../environment/conda/conda_biotools.yml'
     shell:
         'seqtk subseq {input.assembly} {input.ctg_names} > {output}'
+
+
+rule dump_fake_read:
+    output:
+        'output/references/fake_read.fasta'
+    run:
+        import random as rand
+        seq = ''.join(rand.choices('ACGT', k=1000))
+        with open(output[0], 'w') as dump:
+            _ = dump.write(f'>randread\n{seq}\n')
+
+
+rule compute_assembly_index:
+    input:
+        assembly = ancient(os.path.join(PGAS_PATH, 'output/reference_assembly/non-hap-res', '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm.fasta')),
+        read = 'output/references/fake_read.fasta'
+    output:
+        index = 'output/references/{sample}.nhr.mmi'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    shell:
+        'minimap2 -t {threads} -x map-hifi --secondary=no '
+            '-d {output.index} '
+            '--cap-kalloc=1g -K4g '
+            '{input.assembly} {input.read} > /dev/null'
 
 
 rule generate_fasta_index:
@@ -235,21 +263,23 @@ rule align_ont_reads:
     """
     input:
         reads = ancient(os.path.join(ONTQC_PATH, 'input/ONTUL', '{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz')),
-        reference = 'output/{sample}.chimeric-contigs.fasta'
+        reference = ancient(os.path.join(PGAS_PATH, 'output/reference_assembly/non-hap-res', '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm.fasta')),
     output:
-        paf = 'output/read_ctg_align/{sample}_ONTUL_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        paf = 'output/read_ctg_align/wg/{sample}_ONTUL_MAP-TO_wg.mmap.paf.gz',
+        mmi = 'output/references/{sample}_nhr.ont.mmi'
     benchmark:
-        'rsrc/output/read_ctg_align/{sample}_ONTUL_MAP-TO_chimeric-contigs.mmap.rsrc'
+        'rsrc/output/read_ctg_align/wg/{sample}_ONTUL_MAP-TO_wg.mmap.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: 24
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 6 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 24576 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt,
     shell:
         'minimap2 -t 22 -x map-ont -k17 --secondary=no '
+        '-d {output.mmi} '
         '--cap-kalloc=1g -K4g '
-        '{input.reference} {input.reads} | pigz --best -p 4 > {output}'
+        '{input.reference} {input.reads} | pigz --best -p 4 > {output.paf}'
 
 
 rule align_hifiec_reads:
@@ -263,21 +293,41 @@ rule align_hifiec_reads:
                 '{sample}_hgsvc_pbsq2-ccs_1000.ec-reads.fasta.gz'
             )
         )),
-        reference = 'output/{sample}.chimeric-contigs.fasta'
+        reference = ancient(os.path.join(PGAS_PATH, 'output/reference_assembly/non-hap-res', '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm.fasta')),
     output:
-        paf = 'output/read_ctg_align/{sample}_HIFIEC_MAP-TO_chimeric-contigs.mmap.paf.gz',
+        paf = 'output/read_ctg_align/wg/{sample}_HIFIEC_MAP-TO_wg.mmap.paf.gz',
+        mmi = 'output/references/{sample}_nhr.hifi.mmi'
     benchmark:
-        'rsrc/output/read_ctg_align/{sample}_HIFIEC_MAP-TO_chimeric-contigs.mmap.rsrc'
+        'rsrc/output/read_ctg_align/wg/{sample}_HIFIEC_MAP-TO_wg.mmap.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: 24
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 6 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 24576 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt,
     shell:
         'minimap2 -t 22 -x map-hifi --secondary=no '
+        '-d {output.mmi} '
         '--cap-kalloc=1g -K4g '
-        '{input.reference} {input.reads} | pigz --best -p 4 > {output}'
+        '{input.reference} {input.reads} | pigz --best -p 4 > {output.paf}'
+
+
+rule subset_wg_alignments:
+    input:
+        contigs = 'output/{sample}.chimeric-contigs.names.txt',
+        aln = 'output/read_ctg_align/wg/{sample}_{readset}_MAP-TO_wg.mmap.paf.gz',
+    output:
+        paf = 'output/read_ctg_align/{sample}_{readset}_MAP-TO_chimeric-contigs.mmap.paf.gz',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        readset = '(HIFIEC|ONTUL)'
+    threads: 4
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt,
+    shell:
+        'pigz -p 2 -d -c {input.aln} | grep -f {input.contigs} | pigz --best -p 4 > {output.paf}'
 
 
 rule align_hifiec_subset_reads:
@@ -442,7 +492,7 @@ rule cache_read_coverage_output:
     benchmark:
         'rsrc/output/cache/{sample}_{readset}.rsrc'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt if wildcards.readset == 'ONTUL' else 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     wildcard_constraints:
         readset = '(ONTUL|HIFIEC|HIFIEC\-SUB)'
@@ -452,8 +502,6 @@ rule cache_read_coverage_output:
         seq_sizes = load_sequence_sizes(input.faidx)
 
         aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=PAF_USE)
-        if wildcards.readset in ['ONTUL', 'HIFIEC']:
-            aln = aln.loc[aln['mapq'] >= 60, :].copy()
         aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
 
         idx_start = 4
@@ -523,8 +571,6 @@ rule cache_contig_coverage_output:
 
         aln = pd.read_csv(input.paf, sep='\t', header=None, names=PAF_HEADER, usecols=['read_name'] + PAF_USE)
         aln['divergence'] = aln['divergence'].apply(lambda x: float(x.split(':')[-1]))
-
-        aln = aln.loc[aln['mapq'] >= 60, :].copy()
 
         chrom_to_int = {'X': '23', 'Y': '24', 'M': '25'}
         aln['ref_int'] = aln['ref_name'].str.strip('chr')
