@@ -128,14 +128,16 @@ rule compute_assembly_index:
         assembly = ancient(os.path.join(PGAS_PATH, 'output/reference_assembly/non-hap-res', '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm.fasta')),
         read = 'output/references/fake_read.fasta'
     output:
-        index = 'output/references/{sample}.nhr.mmi'
+        index = 'output/references/{sample}_nhr.{preset}.mmi'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     resources:
         mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
+    params:
+        preset = lambda wildcards: {'hifi': 'map-hifi', 'ont': 'map-ont -k17'}[wildcards.preset]
     shell:
-        'minimap2 -t {threads} -x map-hifi --secondary=no '
+        'minimap2 -t {threads} -x {params.preset} --secondary=no '
             '-d {output.index} '
             '--cap-kalloc=1g -K4g '
             '{input.assembly} {input.read} > /dev/null'
@@ -263,21 +265,19 @@ rule align_ont_reads:
     """
     input:
         reads = ancient(os.path.join(ONTQC_PATH, 'input/ONTUL', '{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz')),
-        reference = ancient(os.path.join(PGAS_PATH, 'output/reference_assembly/non-hap-res', '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm.fasta')),
+        reference = 'output/references/{sample}_nhr.ont.mmi'
     output:
         paf = 'output/read_ctg_align/wg/{sample}_ONTUL_MAP-TO_wg.mmap.paf.gz',
-        mmi = 'output/references/{sample}_nhr.ont.mmi'
     benchmark:
         'rsrc/output/read_ctg_align/wg/{sample}_ONTUL_MAP-TO_wg.mmap.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: 24
     resources:
-        mem_total_mb = lambda wildcards, attempt: 24576 + 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 24576 + 12576 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt,
     shell:
         'minimap2 -t 22 -x map-ont -k17 --secondary=no '
-        '-d {output.mmi} '
         '--cap-kalloc=1g -K4g '
         '{input.reference} {input.reads} | pigz --best -p 4 > {output.paf}'
 
@@ -293,21 +293,19 @@ rule align_hifiec_reads:
                 '{sample}_hgsvc_pbsq2-ccs_1000.ec-reads.fasta.gz'
             )
         )),
-        reference = ancient(os.path.join(PGAS_PATH, 'output/reference_assembly/non-hap-res', '{sample}_hgsvc_pbsq2-ccs_1000_nhr-hifiasm.fasta')),
+        reference = 'output/references/{sample}_nhr.hifi.mmi'
     output:
         paf = 'output/read_ctg_align/wg/{sample}_HIFIEC_MAP-TO_wg.mmap.paf.gz',
-        mmi = 'output/references/{sample}_nhr.hifi.mmi'
     benchmark:
         'rsrc/output/read_ctg_align/wg/{sample}_HIFIEC_MAP-TO_wg.mmap.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: 24
     resources:
-        mem_total_mb = lambda wildcards, attempt: 24576 + 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 24576 + 12576 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt,
     shell:
         'minimap2 -t 22 -x map-hifi --secondary=no '
-        '-d {output.mmi} '
         '--cap-kalloc=1g -K4g '
         '{input.reference} {input.reads} | pigz --best -p 4 > {output.paf}'
 
