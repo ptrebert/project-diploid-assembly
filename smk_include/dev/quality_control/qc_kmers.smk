@@ -1,9 +1,9 @@
 
 def count_kmer_runtime(wildcards, attempt):
 
-    if 'HIFI' in wildcards.readset:
+    if 'HIFI' in wildcards.read_type:
         return 36 * attempt
-    elif 'ONT' in wildcards.readset:
+    elif 'ONT' in wildcards.read_type:
         return 48 * attempt
     else:
         return attempt * attempt * attempt
@@ -11,9 +11,9 @@ def count_kmer_runtime(wildcards, attempt):
 
 def count_kmer_memory(wildcards, attempt, unit='mb'):
 
-    if 'HIFI' in wildcards.readset:
+    if 'HIFI' in wildcards.read_type:
         mem = 131072
-    elif 'ONT' in wildcards.readset:
+    elif 'ONT' in wildcards.read_type:
         mem = 131072
     else:
         mem = 32768
