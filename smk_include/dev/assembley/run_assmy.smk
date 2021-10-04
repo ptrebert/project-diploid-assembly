@@ -112,3 +112,10 @@ rule run_extract_aligned_chry_reads:
             read_type=['HIFIAF'],
             mapq=['mq00', 'mq60'],
         ),
+        target_chry = expand(
+            'output/target_assembly/chry_reads/{sample}/{sample_long}_{read_type}.{mapq}.p_ctg.gfa',
+            sample=[sample for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            read_type=['HIFIAF', 'HIFIEC'],
+            mapq=['mq00', 'mq60'],
+        ),

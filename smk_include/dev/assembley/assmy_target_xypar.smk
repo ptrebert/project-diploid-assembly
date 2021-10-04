@@ -39,6 +39,35 @@ rule hifiasm_xypar_targeted_assembly:
         'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.fastq} &> {log.hifiasm}'
 
 
+def select_chry_reads(wildcards):
+    import pathlib as pl
+    filename = '{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.'.format(**wildcards)
+    reads = list(pl.Path('output/read_subsets/chry_reads').glob(f'{filename}*'))
+    assert len(reads) == 1
+    return reads[0]
+
+
+rule hifiasm_chry_targeted_assembly:
+    input:
+        reads = select_chry_reads
+    output:
+        primary_contigs = 'output/target_assembly/chry_reads/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.p_ctg.gfa',
+    log:
+        hifiasm = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.log',
+    benchmark:
+        'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.t12.rsrc',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_medium']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    params:
+        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
+    shell:
+        'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.reads} &> {log.hifiasm}'
+
+
 # rule mbg_xypar_targeted_assembly:
 #     input:
 #         fastq = expand(
