@@ -7,6 +7,38 @@ Around commit e932291, commands.sh was shortened the relevant steps are now in l
 """
 
 
+def select_hybrid_assm_ont_reads(wildcards):
+
+    if 'MQ' in wildcards.tigs:
+        assert wildcards.ont_type == 'ONTUL'
+        assert 'YRAW' in wildcards.tigs
+        if 'MQ0' in wildcards.tigs:
+            mapq = 'mq00'
+        else:
+            raise
+        template = 'output/read_subsets/chry/{sample_info}_{sample}_ONTUL.chrY-reads.{mapq}.fasta.gz'
+        formatter = {
+            'sample': wildcards.sample,
+            'sample_info': wildcards.sample_info,
+            'mapq': mapq
+        }
+        ont_reads = template.format(**formatter)
+    else:
+        ont_reads = SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
+    return ont_reads
+
+
+def set_graphaligner_hybrid_resources(wildcards):
+
+    if wildcards.tigs in ['TIGRAW', 'TIGPRI', 'TIGALT']:
+        resources = config['num_cpu_max'], 303104, 167
+    elif 'YRAW' in wildcards.tigs:
+        resources = config['num_cpu_high'], 65536, 47
+    else:
+        raise
+    return resources
+
+
 rule hybrid_ga_align_ont_to_string_graph:
     """
     This rule uses a source built from GA's MultiseedClusters branch
@@ -20,7 +52,7 @@ rule hybrid_ga_align_ont_to_string_graph:
     input:
         container = ancient('graphaligner.MultiseedClusters.sif'),
         graph = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.gfa',
-        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
+        reads = select_hybrid_assm_ont_reads
     output:
         gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.gaf',
         hybrid_reads = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.ONTHY.fasta',
@@ -31,10 +63,10 @@ rule hybrid_ga_align_ont_to_string_graph:
     wildcard_constraints:
         sample = CONSTRAINT_SAMPLES
 #    conda: '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_max']
+    threads: lambda wildcards: set_graphaligner_hybrid_resources(wildcards)[0]
     resources:
-        mem_total_mb = lambda wildcards, attempt: 1048576 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 167,
+        mem_total_mb = lambda wildcards, attempt: set_graphaligner_hybrid_resources(wildcards)[1] * attempt,
+        runtime_hrs = lambda wildcards, attempt: set_graphaligner_hybrid_resources(wildcards)[2] * attempt
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.container} '
@@ -347,7 +379,7 @@ rule align_contigs_to_reference:
     benchmark:
         'rsrc/output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.mmap.rsrc',
     wildcard_constraints:
-        tigs = '(TIGPRI|TIGALT|TIGRAW)'
+        tigs = '(TIGPRI|TIGALT|TIGRAW|ECMQ0YRAW|AFMQ0YRAW)'
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:

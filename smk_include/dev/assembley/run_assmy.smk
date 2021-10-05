@@ -112,10 +112,39 @@ rule run_extract_aligned_chry_reads:
             read_type=['HIFIAF'],
             mapq=['mq00', 'mq60'],
         ),
+
+
+def make_combinations(samples, sample_long_desc, read_types, mapq_thresholds):
+
+    wc_name_samplelong = set(t[0] for t in sample_long_desc).pop()
+    for wc_name_sample, sample in samples:
+        for wc_name_readtype, read_type in read_types:
+            for wc_name_mapqt, mapq_trhreshold in mapq_thresholds:
+                formatter = {
+                    wc_name_sample: sample,
+                    wc_name_samplelong: SAMPLE_INFOS[sample]['long_id'],
+                    wc_name_readtype: read_type,
+                    wc_name_mapqt: mapq_trhreshold
+                }
+                yield formatter
+    return
+
+
+rule run_chry_targeted_t2t:
+    input:
         target_chry = expand(
             'output/target_assembly/chry_reads/{sample}/{sample_long}_{read_type}.{mapq}.p_ctg.gfa',
+            make_combinations,
             sample=[sample for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             read_type=['HIFIAF', 'HIFIEC'],
             mapq=['mq00', 'mq60'],
         ),
+        aln_cache = expand(
+            'output/hybrid/210_align_ref/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.h5',
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            ont_type=['ONTUL'],
+            tigs=['ECMQ0YRAW', 'AFMQ0YRAW'],
+            reference=['T2Tv11_hg002Yv2_chm13']
+        )
+

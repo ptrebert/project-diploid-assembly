@@ -59,9 +59,35 @@ rule merge_hg002_chry_draft:
             _ = fasta_out.write(out_buffer.getvalue())
 
 
+def select_input_graph(wildcards):
+
+    try:
+        gfa = SAMPLE_INFOS[wildcards.sample][wildcards.tigs]
+    except KeyError:
+        template = 'output/target_assembly/chry_reads/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.r_utg.gfa'
+        if 'EC' in wildcards.tigs:
+            read_type = 'HIFIEC'
+        elif 'AF' in wildcards.tigs:
+            read_type = 'HIFIAF'
+        else:
+            raise
+        if 'MQ0' in wildcards.tigs:
+            mapq = 'mq00'
+        assert 'RAW' in wildcards.tigs
+        formatter = {
+            'sample': wildcards.sample,
+            'sample_info': wildcards.sample_info,
+            'read_type': read_type,
+            'mapq': mapq
+        }
+        gfa = template.format(**formatter)
+    return gfa
+
+
+
 rule check_overlong_edges:
     input:
-        gfa = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.tigs]
+        gfa = select_input_graph
     output:
         discard = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.discard.links'
     conda: '../../../environment/conda/conda_pyscript.yml'
@@ -78,7 +104,7 @@ rule check_overlong_edges:
 
 rule clean_input_gfa:
     input:
-        gfa = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.tigs],
+        gfa = select_input_graph,
         discard = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.discard.links'
     output:
         gfa = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.gfa'

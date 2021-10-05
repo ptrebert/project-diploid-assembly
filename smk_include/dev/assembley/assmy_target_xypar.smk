@@ -42,7 +42,7 @@ rule hifiasm_xypar_targeted_assembly:
 def select_chry_reads(wildcards):
     import pathlib as pl
     filename = '{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.'.format(**wildcards)
-    reads = list(pl.Path('output/read_subsets/chry_reads').glob(f'{filename}*'))
+    reads = list(pl.Path('output/read_subsets/chry').glob(f'{filename}*.gz'))
     assert len(reads) == 1
     return reads[0]
 
@@ -52,6 +52,7 @@ rule hifiasm_chry_targeted_assembly:
         reads = select_chry_reads
     output:
         primary_contigs = 'output/target_assembly/chry_reads/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.p_ctg.gfa',
+        raw_unitigs = 'output/target_assembly/chry_reads/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.r_utg.gfa',
     log:
         hifiasm = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.log',
     benchmark:
