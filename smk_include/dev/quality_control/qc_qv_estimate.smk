@@ -21,10 +21,10 @@ rule meryl_query_only_kmer_db:
 
 def set_meryl_memory(wildcards, attempt):
 
-    memory_mb = 8192 + 2048 * attempt
+    memory_mb = 49152 * attempt
     if wildcards.read_type == 'ONTUL':
         # raw ONTUL reads
-        memory_mb = 262144 + 65536 * attempt            
+        memory_mb = 262144 * attempt            
     return memory_mb
 
 

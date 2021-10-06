@@ -12,14 +12,14 @@ def count_kmer_runtime(wildcards, attempt):
 def count_kmer_memory(wildcards, attempt, unit='mb'):
 
     if 'HIFI' in wildcards.read_type:
-        mem = 131072
+        mem = 262144
     elif 'ONT' in wildcards.read_type:
-        mem = 131072
+        mem = 262144
     else:
-        mem = 32768
+        mem = 49152
     if unit == 'gb':
         mem = int(mem / 1024)
-    hpc_factor = 3 if wildcards.hpc == 'nohpc' else 1
+    hpc_factor = 4 if wildcards.hpc == 'nohpc' else 1
     return mem * attempt * hpc_factor
 
 
@@ -38,7 +38,7 @@ rule qc_meryl_count_kmers_local:
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt),
-        mem_total_gb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt, 'gb') - 4,
+        mem_total_gb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt, 'gb') - 8,
         runtime_hrs = lambda wildcards, attempt: count_kmer_runtime(wildcards, attempt)
     params:
         kmer_size = 31,
@@ -67,7 +67,7 @@ rule qc_meryl_count_kmers_remote:
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt),
-        mem_total_gb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt, 'gb') - 4,
+        mem_total_gb = lambda wildcards, attempt: count_kmer_memory(wildcards, attempt, 'gb') - 8,
         runtime_hrs = lambda wildcards, attempt: count_kmer_runtime(wildcards, attempt)
     params:
         kmer_size = 31,
