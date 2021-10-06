@@ -1,9 +1,16 @@
 
 import pathlib as pl
 
-ANNOTATION_REFERENCE_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20210830_chm13_1p36.13_allSegments.tsv'
+REFERENCE_NAME = config['refname'])
+if REFERENCE_NAME == 'T2Tv11':
+    ANNOTATION_REFERENCE_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20210830_chm13_1p36.13_allSegments.tsv'
+    REFERENCE_FASTA = '/home/local/work/data/references/T2Tv11_38p13Y_chm13.fasta'
+elif REFERENCE_NAME == 'GRCh38':
+    REFERENCE_FASTA = '/home/local/work/data/references/GRCh38_HGSVC2_noalt.fasta'
+else:
+    raise
+
 ANNOTATION_ASSEMBLY_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20210825_hifiasmv13dev_allSegments4Peter.tsv'
-REFERENCE_FASTA = '/home/local/work/data/references/T2Tv11_38p13Y_chm13.fasta'
 ASSEMBLY_FASTA_FOLDER = '/home/local/work/data/hgsvc_2021/v13dev/phased_assm'
 
 def collect_sample_names():
