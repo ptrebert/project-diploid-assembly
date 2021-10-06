@@ -1,0 +1,47 @@
+
+sample_description_HG02486:
+    individual: HG02486
+    sex: male
+    super_population: AFR
+    population: ACB
+    family: BB55
+    member: child
+    data_sources:
+        - long_reads:
+            readset: HG02486_hprc_pbsq2-ccs
+            technology: pacbio
+            data_type: fastq
+            load_type: parts
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hprc_hifi/HG02486
+        - strandseq:
+            readset: HG02486_hprc_ilnxs-80pe_sseq
+            library_fractions: one
+            library_qc: yes
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hprc_strandseq/HG02486
+        - short_reads:
+            readset: HG02486_SHORT_READSET
+            load_type: complete
+            data_source_folder: EMPTY_PATH
+        - ont_reads:
+            readset: HG02486_ONT_READSET
+            load_type: parts
+            data_source_folder: EMPTY_PATH
+
+sample_targets_HG02486:
+  - aliases:
+      1: &long_reads HG02486_hprc_pbsq2-ccs_1000
+      2: &strandseq_reads HG02486_hprc_ilnxs-80pe_sseq
+      3: &ont_reads HG02486_ONT_READSET
+      4: &short_reads HG02486_SHORT_READSET
+  - defaults:
+      hap_reads: *long_reads
+      vc_reads: *long_reads
+      sseq_reads: *strandseq_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: hifiasm
+      hap_assembler: hifiasm
+      var_caller: deepvar
