@@ -1,5 +1,5 @@
 Bootstrap: library
-From: library/default/alpine:3.9
+From: library/default/alpine:3.11
 
 %post
     apk --no-cache add wget tar cmake zlib-dev make gcc g++ libc-dev build-base linux-headers 
