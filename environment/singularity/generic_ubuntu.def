@@ -1,0 +1,10 @@
+Bootstrap: library
+From: ubuntu:20.04
+
+%post
+    apt-get update
+    apt-get install --assume-yes git build-essential zlib1g-dev
+    apt-get remove --assume-yes git
+    apt-get autoremove --assume-yes
+    apt-get autoclean --assume-yes
+    apt-get clean --assume-yes

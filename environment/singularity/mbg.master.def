@@ -1,0 +1,21 @@
+Bootstrap: library
+From: ubuntu:20.04
+
+# Note: does not work with Alpine Linux due to an
+# incompatibility with the version of the zstr library
+# used in MBG
+
+%post
+    apt-get update
+    apt-get install --assume-yes git build-essential zlib1g-dev
+    mkdir repos/
+    cd repos/
+    git clone https://github.com/maickrau/MBG.git
+    cd MBG
+    git submodule update --init --recursive
+    make -j 4 bin/MBG
+    cp bin/MBG /usr/bin/
+    apt-get remove --assume-yes git
+    apt-get autoremove --assume-yes
+    apt-get autoclean --assume-yes
+    apt-get clean --assume-yes

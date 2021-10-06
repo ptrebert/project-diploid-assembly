@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: continuumio/miniconda3:4.7.12-alpine
+
+%post
+    apk --no-cache add bash git cmake zlib-dev make gcc g++ libc-dev build-base linux-headers
+    export PATH=/opt/conda/bin:/opt/conda:$PATH
+    export SHELL=/bin/bash
+    mkdir repo
+    cd repo
+    git clone https://github.com/maickrau/GraphAligner.git
+    cd GraphAligner
+    git submodule update --init --recursive
+    git checkout MultiseedDP
+    conda init --quiet bash
+    source ~/.bashrc &> /dev/null
+    conda env create -f CondaEnvironment.yml
+    conda activate GraphAligner
+    make bin/GraphAligner
+    mv bin/GraphAligner /usr/bin/
+    conda remove pandas snakemake dropbox ftputil numpy numpy-base psutil
+    conda deactivate
+    cd /
+    rm -rf repo/
+    conda clean --all --yes --quiet
+    apk del bash git gcc g++ make cmake linux-headers zlib-dev build-base
