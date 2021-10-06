@@ -7,3 +7,13 @@ path_ontul_reads: '/gpfs/project/projects/medbioinf/data/hgsvc_ontul'
 path_assembly_graphs: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas/run_folder/output/reference_assembly/non-hap-res/layout/hifiasm'
 path_short_reads: /gpfs/project/projects/medbioinf/data/short_reads/nygc
 reference: T2Tv11_hg002Yv2_chm13
+
+mbg_kmers:
+  - 501
+  - 1001
+  - 2001
+
+mbg_windows:
+  - 100
+  - 200
+  - 400
