@@ -1,17 +1,18 @@
 
 import pathlib as pl
 
-REFERENCE_NAME = config['refname'])
-if REFERENCE_NAME == 'T2Tv11':
-    ANNOTATION_REFERENCE_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20210830_chm13_1p36.13_allSegments.tsv'
-    REFERENCE_FASTA = '/home/local/work/data/references/T2Tv11_38p13Y_chm13.fasta'
-elif REFERENCE_NAME == 'GRCh38':
-    REFERENCE_FASTA = '/home/local/work/data/references/GRCh38_HGSVC2_noalt.fasta'
-else:
-    raise
-
-ANNOTATION_ASSEMBLY_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20210825_hifiasmv13dev_allSegments4Peter.tsv'
+ANNOTATION_REFERENCE_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20211006_chm13_1p36.13_allSegments.tsv'
+ANNOTATION_ASSEMBLY_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20211006_hifiasmv13dev_1p36.13_allSegments.tsv'
+REFERENCE_FASTA = '/home/local/work/data/references/T2Tv11_38p13Y_chm13.fasta'
 ASSEMBLY_FASTA_FOLDER = '/home/local/work/data/hgsvc_2021/v13dev/phased_assm'
+
+
+rule run_all:
+    input:
+        'output/concordance/segments_to_segments.1p3613.tsv',
+        'output/concordance/segments_to_reference.1p3613.RO30.tsv',
+        'output/concordance/segments_to_reference.1p3613.RO50.tsv'
+
 
 def collect_sample_names():
 
@@ -164,12 +165,20 @@ rule extract_segments_from_assemblies:
         import pandas as pd
         right_offset = 1
 
+        # short header for version 2021-08-30
+        # table_header = ['sample', 'hap', 'contig', 'ctg_orient', 'start', 'end', 'color', 'seg_orient']
+        # use_columns = list(range(8))
+        
+        #  short header for version 2021-10-06
+        table_header = ['sample', 'hap', 'contig', 'ctg_orient', 'start', 'end', 'color', 'seg_orient', 'seg_state', 'ctg_length']
+        use_columns = list(range(10))
+
         segments = pd.read_csv(
             input.assm_segments,
             sep='\t',
-            usecols=list(range(8)),
+            usecols=use_columns,
             header=0,
-            names=['sample', 'hap', 'contig', 'ctg_orient', 'start', 'end', 'color', 'seg_orient']
+            names=table_header
         )
         segments['ctg_orient'] = segments['ctg_orient'].replace({'+': 'plus', '-': 'minus', '.': 'unknown'})
         segments['seg_orient'] = segments['seg_orient'].apply(lambda x: x.rstrip('ed'))
@@ -238,7 +247,11 @@ rule merge_segments:
         with open(output.stats, 'w') as table:
             for color in sorted(colored_segments.keys()):
                 count = colored_segments[color]
-                _ = table.write(f'{color}\t{count}\t{nck(count, 2)}\n')
+                try:
+                    _ = table.write(f'{color}\t{count}\t{nck(count, 2)}\n')
+                except ValueError:
+                    assert count < 2
+                    _ = table.write(f'{color}\t{count}\t-1\n')
         with open(output.lengths, 'w') as table:
             for color in sorted(segment_lengths.keys()):
                 values = np.sort(np.array(segment_lengths[color], dtype=np.int32))
@@ -316,12 +329,12 @@ rule compute_reference_concordance:
         segments = 'output/segments/merged_segments.{region}.stats.tsv',
         lengths = 'output/segments/merged_segments.{region}.lengths.tsv',
     output:
-        table = 'output/concordance/segments_to_reference.{region}.tsv'
+        table = 'output/concordance/segments_to_reference.{region}.RO{ro}.tsv'
     run:
         import pandas as pd
         import collections as col
 
-        ro_overlap_fraction = 0.5
+        ro_overlap_fraction = round(float(wildcards.ro) / 100, 2)
 
         stats = col.Counter()
         with open(input.segments, 'r') as counts:
