@@ -14,7 +14,7 @@ def set_errormasking(wildcards):
 rule build_hifi_read_dbg:
     input:
         sif = ancient('mbg.master.sif'),
-        hifi_ec_reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type]
+        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type]
     output:
         graph = 'output/mbg_hifi/{sample}_{read_type}_{readset}.MBG-k{kmer}-w{window}.gfa',
         paths = 'output/mbg_hifi/{sample}_{read_type}_{readset}.MBG-k{kmer}-w{window}.gaf'
@@ -31,11 +31,12 @@ rule build_hifi_read_dbg:
         mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
     params:
+        input_path = lambda wildcards, input: os.path.join('/hilbert', str(input.reads).strip('/')),
         masking = set_errormasking
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.sif} '
-        'MBG -i /hilbert/{input.hifi_ec_reads} -t {threads} '
+        'MBG -i {params.input_path} -t {threads} '
             '-k {wildcards.kmer} -w {wildcards.window} '
             '--error-masking {params.masking} --include-end-kmers '
             '--out {output.graph} --output-sequence-paths {output.paths} &> {log}'
@@ -72,12 +73,13 @@ rule ont_to_graph_alignment:
         mem_total_mb = lambda wildcards, attempt: 90112 + 49152 * attempt,
         runtime_hrs = lambda wildcards, attempt: 72 * attempt
     params:
+        input_path = lambda wildcards, input: os.path.join('/hilbert', str(input.reads).strip('/')),
         preset = 'dbg',
         hpc = set_read_hpc
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.sif} '
-        'GraphAligner -g {input.graph} -f /hilbert/{input.reads} '
+        'GraphAligner -g {input.graph} -f {params.input_path} '
             '-x {params.preset} -t {threads} '
             '--min-alignment-score 5000 --multimap-score-fraction 1 '
             ' {params.hpc} '
