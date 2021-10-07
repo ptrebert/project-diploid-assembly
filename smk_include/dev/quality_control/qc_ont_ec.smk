@@ -23,7 +23,7 @@ rule build_hifi_read_dbg:
     benchmark:
         'rsrc/output/mbg_hifi/{sample}_{read_type}_{readset}.MBG-k{kmer}-w{window}.MBG.rsrc'
     wildcard_constraints:
-        read_type = 'HIFIEC'
+        read_type = '(HIFIEC|HIFIAF)'
 #    conda:
 #        '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -45,7 +45,7 @@ def set_read_hpc(wildcards):
 
     if 'HIFIAF' in wildcards.graph_reads:
         hpc = '--hpc-collapse-reads'
-    elif 'HIFIEC' in wildcards.graphs_reads:
+    elif 'HIFIEC' in wildcards.graph_reads:
         hpc = ''
     else:
         raise ValueError(str(wildcards))
