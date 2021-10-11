@@ -11,10 +11,22 @@ def set_errormasking(wildcards):
     return errm
 
 
+def get_read_path(sample, read_type, prefix=''):
+
+    file_path = str(SAMPLE_INFOS[sample][read_type])
+    if prefix:
+        file_path = str(pl.Path(prefix, file_path.strip('/')))
+        assert 'gpfs' in file_path, f'Not an abs path: {file_path}'
+    return file_path
+
+
 rule build_hifi_read_dbg:
+    """
+    sif = ancient('mbg.master.sif'),
+    """
     input:
-        sif = ancient('mbg.master.sif'),
-        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type]
+        sif = ancient('mbg.UnitigResolve.sif'),
+        reads = lambda wildcards: get_read_path(wildcards.sample, wildcards.read_type, '/hilbert')
     output:
         graph = 'output/mbg_hifi/{sample}_{read_type}_{readset}.MBG-k{kmer}-w{window}.gfa',
         paths = 'output/mbg_hifi/{sample}_{read_type}_{readset}.MBG-k{kmer}-w{window}.gaf'
@@ -31,12 +43,11 @@ rule build_hifi_read_dbg:
         mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
     params:
-        input_path = lambda wildcards, input: os.path.join('/hilbert', str(input.reads).strip('/')),
         masking = set_errormasking
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.sif} '
-        'MBG -i {params.input_path} -t {threads} '
+        'MBG -i {input.reads} -t {threads} '
             '-k {wildcards.kmer} -w {wildcards.window} '
             '--error-masking {params.masking} --include-end-kmers '
             '--out {output.graph} --output-sequence-paths {output.paths} &> {log}'
@@ -59,7 +70,7 @@ rule ont_to_graph_alignment:
     input:
         sif = ancient('graphaligner.MultiseedClusters.sif'),
         graph = 'output/mbg_hifi/{sample}_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.gfa',
-        reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['ONTUL']
+        reads = lambda wildcards: get_read_path(wildcards.sample, 'ONTUL', '/hilbert')
     output:
         gaf = 'output/alignments/ont_to_mbg_graph/{sample}_ONTUL_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.gaf',
         ec_reads_clip = 'output/alignments/ont_to_mbg_graph/{sample}_ONTEC_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.fasta.gz',
@@ -79,7 +90,7 @@ rule ont_to_graph_alignment:
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.sif} '
-        'GraphAligner -g {input.graph} -f {params.input_path} '
+        'GraphAligner -g {input.graph} -f {input.reads} '
             '-x {params.preset} -t {threads} '
             '--min-alignment-score 5000 --multimap-score-fraction 1 '
             ' {params.hpc} '
