@@ -1,8 +1,8 @@
 
 import pathlib as pl
 
-ANNOTATION_REFERENCE_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20211006_chm13_1p36.13_allSegments.tsv'
-ANNOTATION_ASSEMBLY_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20211006_hifiasmv13dev_1p36.13_allSegments.tsv'
+ANNOTATION_REFERENCE_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20211006_chm13_1p36.13_allSegmentsV2.tsv'
+ANNOTATION_ASSEMBLY_SEGMENTS = '/home/local/work/code/github/project-diploid-assembly/annotation/bng_segments/20211006_hifiasmv13dev_1p36.13_allSegmentsV2.tsv'
 REFERENCE_FASTA = '/home/local/work/data/references/T2Tv11_38p13Y_chm13.fasta'
 ASSEMBLY_FASTA_FOLDER = '/home/local/work/data/hgsvc_2021/v13dev/phased_assm'
 
@@ -160,7 +160,8 @@ rule extract_segments_from_assemblies:
         assm_fasta = select_assembly_input
     output:
         assm_segments = 'output/segments/{sample}_segments.{hap}.fasta',
-        assm_colors = 'output/segments/{sample}_segment-colors.{hap}.txt'
+        assm_colors = 'output/segments/{sample}_segment-colors.{hap}.txt',
+        segment_list = 'output/segments/{sample}_segments.{hap}.txt',
     run:
         import pandas as pd
         right_offset = 1
@@ -189,6 +190,7 @@ rule extract_segments_from_assemblies:
             colors = set(segments['color'].values)
             _ = dump.write('\n'.join(sorted(colors)) + '\n')
         
+        segment_names = []
         for ctg, ctg_segments in segments.groupby('contig'):
             ctg_sequence = load_sequence(input.assm_fasta, ctg)
             for row in ctg_segments.itertuples(index=False):
@@ -199,9 +201,12 @@ rule extract_segments_from_assemblies:
                     str(row.start) + '-' + str(row.end),
                     row.color + '-' + row.order + '-' + row.seg_orient + '-' + row.ctg_orient
                 ])
+                segment_names.append(seg_header)
                 seg_sequence = ctg_sequence[row.start:row.end+right_offset]
                 with open(output.assm_segments, 'a') as fasta:
                     _ = fasta.write(f'>{seg_header}\n{seg_sequence}\n')
+        with open(output.segment_list, 'w') as listing:
+            _ = listing.write('\n'.join(sorted(segment_names)) + '\n')
     # END OF RUN BLOCK
 
 
@@ -213,10 +218,16 @@ rule merge_segments:
             sample=SAMPLES,
             hap=['h1', 'h2']
         ),
+        name_lists = expand(
+            'output/segments/{sample}_segments.{hap}.txt',
+            sample=SAMPLES,
+            hap=['h1', 'h2']
+        ),
     output:
         fasta = 'output/segments/merged_segments.{region}.fasta',
         stats = 'output/segments/merged_segments.{region}.stats.tsv',
         lengths = 'output/segments/merged_segments.{region}.lengths.tsv',
+        names = 'output/segments/merged_segments.{region}.names.txt',
     run:
         import collections as col
         import io
@@ -262,6 +273,14 @@ rule merge_segments:
                 _ = table.write(f'{color}_LEN_stddev\t{round(values.std(), 0)}\n')
                 _ = table.write(f'{color}_LEN_maximum\t{values.max()}\n')
 
+        out_buffer = io.StringIO()
+        for listing in input.name_lists:
+            with open(listing, 'r') as fd:
+                content = fd.read()
+                out_buffer.write(content)
+        
+        with open(output.names, 'w') as dump:
+            _ = dump.write(out_buffer.getvalue())
     # END OF RUN BLOCK
 
 
@@ -328,6 +347,7 @@ rule compute_reference_concordance:
         paf = 'output/seg_to_ref/merged_segments.{region}.ref.paf',
         segments = 'output/segments/merged_segments.{region}.stats.tsv',
         lengths = 'output/segments/merged_segments.{region}.lengths.tsv',
+        names = 'output/segments/merged_segments.{region}.names.txt',
     output:
         table = 'output/concordance/segments_to_reference.{region}.RO{ro}.tsv'
     run:
@@ -335,6 +355,8 @@ rule compute_reference_concordance:
         import collections as col
 
         ro_overlap_fraction = round(float(wildcards.ro) / 100, 2)
+
+        segment_names = set(open(input.names, 'r').read().strip().split())
 
         stats = col.Counter()
         with open(input.segments, 'r') as counts:
@@ -348,6 +370,7 @@ rule compute_reference_concordance:
             names=PAF_HEADER,
             usecols=[0,1,2,3,4,7,8,16]
         )
+
         paf['seqdiv'] = paf['seqdiv'].apply(lambda x: float(x.split(':')[-1]))
         paf['sample'] = paf['qname'].apply(lambda x: x.split('_')[0])
         paf['qcolor'] = paf['qname'].apply(lambda x: x.split('_')[-1].split('-')[0])
@@ -361,6 +384,9 @@ rule compute_reference_concordance:
         t2t_segments = paf.loc[paf['sample'] == 'T2Tv11', :].copy()
         stats['total_segments'] -= t2t_segments.shape[0]
         assm_segments = paf.loc[paf['sample'] != 'T2Tv11', :].copy()
+
+        aligned = set(assm_segments['qname'].values)
+        unaligned = segment_names - aligned
         
         split_align = []
         score_orientation = {
@@ -369,12 +395,23 @@ rule compute_reference_concordance:
         }
         for segment, alignments in assm_segments.groupby('qname'):
             color, _, expected_orientation, ctg_orientation = segment.split('_')[-1].split('-')
+            is_split = False
             if alignments.shape[0] > 1:
-                # split alignment - discordant
-                stats['discordant_total'] += 1
-                stats['discordant_split'] += 1
                 split_align.append(segment)
-                continue
+                # split alignment - discordant
+                # stats['discordant_total'] += 1
+                # stats['discordant_split'] += 1
+                # continue
+                # select alignment with smallest seq. div.
+                alignments = alignments.loc[alignments['seqdiv'] == alignments['seqdiv'].min(), :]
+                if alignments.shape[0] > 1:
+                    # two alignments with identical seq. div.
+                    stats['discordant_total'] += 1
+                    stats['discordant_split'] += 1
+                    continue
+                stats['split_align'] += 1
+                is_split = True
+
             map_orient = alignments['map_orient'].values[0]
             select_start = alignments['tstart'].values[0] < t2t_segments['tend']
             select_end = t2t_segments['tstart'] < alignments['tend'].values[0]
@@ -420,22 +457,48 @@ rule compute_reference_concordance:
                 t2t_color = t2t_match['qcolor'].values[0]
             color_match = t2t_color == color
             orient_match = score_orientation.get((expected_orientation, map_orient), 0) > 0
-            if color_match and orient_match:
-                stats[('HIT', expected_orientation, ctg_orientation, map_orient)] += 1
+            if color_match and orient_match and not is_split:
+                stats[('HIT', expected_orientation, ctg_orientation, map_orient, 'contig')] += 1
                 stats['concordant_total'] += 1
-                stats['concordant_strict_total'] += 1
-            elif color_match:
+                stats['concordant_full_ctg_total'] += 1
+                stats['concordant_ctg_total'] += 1
+                stats['concordant_full_total'] += 1
+            elif color_match and orient_match:
+                stats[('HIT', expected_orientation, ctg_orientation, map_orient, 'split')] += 1
+                stats['concordant_total'] += 1
+                stats['concordant_full_split_total'] += 1
+                stats['concordant_split_total'] += 1
+                stats['concordant_full_total'] += 1
+            elif color_match and not is_split:
                 # collect orientation statistics to check for biases
-                stats[('MISS', expected_orientation, ctg_orientation, map_orient)] += 1
+                stats[('MISO', expected_orientation, ctg_orientation, map_orient, 'contig')] += 1
                 stats['concordant_total'] += 1
+                stats['concordant_miso_ctg_total'] += 1
+                stats['concordant_ctg_total'] += 1
+                stats['concordant_miso_total'] += 1
+            elif color_match and is_split:
+                # collect orientation statistics to check for biases
+                stats[('MISO', expected_orientation, ctg_orientation, map_orient, 'split')] += 1
+                stats['concordant_total'] += 1
+                stats['concordant_miso_split_total'] += 1
+                stats['concordant_split_total'] += 1
+                stats['concordant_miso_total'] += 1
             else:
-                pass
+                stats['discordant_total'] += 1
         stats['aligned_segments'] = stats['concordant_total'] + stats['discordant_total']
         pct_values = [
             'concordant_total',
-            'concordant_strict_total',
+            'concordant_full_ctg_total',
+            'concordant_full_split_total',
+            'concordant_full_total',
+            'concordant_miso_ctg_total',
+            'concordant_miso_split_total',
+            'concordant_miso_total',
+            'concordant_ctg_total',
+            'concordant_split_total',
             'discordant_total',
-            'aligned_segments'
+            'aligned_segments',
+            'split_align'
         ]
         with open(output[0], 'w') as table:
             for key in sorted([k for k in stats.keys() if isinstance(k, str)]):
@@ -445,11 +508,13 @@ rule compute_reference_concordance:
                     pct_value = round(value/stats['total_segments']*100,1)
                     _ = table.write(f'{key}_pct\t{pct_value}\n')
             for key in sorted([k for k in stats.keys() if isinstance(k, tuple)]):
-                out_key = f'{key[0]}_SEG-{key[1]}_CTG-{key[2]}_ALN-{key[3]}'
+                out_key = f'{key[0]}_SEG-{key[1]}_CTG-{key[2]}_ALN-{key[3]}_STATE-{key[4]}'
                 value = stats[key]
                 _ = table.write(f'{out_key}\t{value}\n')
             for idx, split in enumerate(split_align, start=1):
                 _ = table.write(f'split_{idx}\t{split}\n')
+            for idx, segname in enumerate(sorted(unaligned), start=1):
+                _ = table.write(f'unaligned_{idx}\t{segname}\n')
     # END OF RUN BLOCK
 
 
