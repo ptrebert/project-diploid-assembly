@@ -1,3 +1,5 @@
+import pathlib as pl
+
 """
 Follow HiFi/ONT hybrid approach developed by MR
 https://github.com/maickrau/hybrid-assembly/blob/master/commands.sh
@@ -24,7 +26,9 @@ def select_hybrid_assm_ont_reads(wildcards):
         }
         ont_reads = template.format(**formatter)
     else:
-        ont_reads = SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
+        ont_reads = str(SAMPLE_INFOS[wildcards.sample][wildcards.ont_type])
+    if 'gpfs' in ont_reads:
+        ont_reads = str(pl.Path('/hilbert', ont_reads.strip('/')))
     return ont_reads
 
 
@@ -70,7 +74,7 @@ rule hybrid_ga_align_ont_to_string_graph:
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.container} '
-        'GraphAligner -g {input.graph} -f /hilbert/{input.reads} '
+        'GraphAligner -g {input.graph} -f {input.reads} '
             '-t {threads} '
             '--min-alignment-score 5000 --multimap-score-fraction 0.99 '
             '--precise-clipping 0.7 '
