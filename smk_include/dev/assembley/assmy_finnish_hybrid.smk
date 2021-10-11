@@ -37,7 +37,7 @@ def set_graphaligner_hybrid_resources(wildcards):
     if wildcards.tigs in ['TIGRAW', 'TIGPRI', 'TIGALT']:
         resources = config['num_cpu_max'], 303104, 167
     elif 'YRAW' in wildcards.tigs:
-        resources = config['num_cpu_high'], 65536, 47
+        resources = config['num_cpu_high'], 24576, 2
     else:
         raise
     return resources
@@ -173,6 +173,11 @@ rule cache_afr_mix_contig_to_reference_alignment:
     # END OF RUN BLOCK
 
 
+#######################################
+### BELOW: hybrid assembly approach ###
+#######################################
+
+
 HYBRID_SCRIPT_PATH = 'repos/hybrid-assembly/scripts'
 
 
@@ -180,19 +185,19 @@ rule filter_ont_to_graph_alignment:
     input:
         gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.gaf',
     output:
-        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.qlfilter.gaf',
+        gaf = 'output/hybrid/10_mapq_length_filter/{sample_info}_{sample}.{ont_type}.{tigs}.qlfilter.gaf',
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt,
     params:
         min_aligned_length = 0.8,
         min_mapq = 20
     shell:
-        'awk -F "\\t" "{{if ($4-$3 >= $2*{params.min_aligned_length} && $12 >= {params.min_mapq}) print;}}" < {input.gaf} > {output.gaf}'
+        "awk -F '\\t' '{{if ($4-$3 >= $2*{params.min_aligned_length} && $12 >= {params.min_mapq}) print;}}' < {input.gaf} > {output.gaf}"
 
 
 rule trim_graph_alignment:
     input:
-        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.qlfilter.gaf',
+        gaf = 'output/hybrid/10_mapq_length_filter/{sample_info}_{sample}.{ont_type}.{tigs}.qlfilter.gaf',
         graph = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.gfa',
     output:
         gaf = 'output/hybrid/20_trim_graph_alignment/{sample_info}_{sample}.{ont_type}.{tigs}.trimmed.gaf'
@@ -235,18 +240,18 @@ rule mapq_filter_ont_graph_alignment:
     input:
         gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.gaf',
     output:
-        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.mqfilter.gaf',
+        gaf = 'output/hybrid/10_mapq_only_filter/{sample_info}_{sample}.{ont_type}.{tigs}.mqfilter.gaf',
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt,
     params:
         min_mapq = 20
     shell:
-        "awk -F \"\\t\" '{{if ($12 >= {params.min_mapq}) print;}}' < {input.gaf} > {output.gaf}"
+        "awk -F '\\t' '{{if ($12 >= {params.min_mapq}) print;}}' < {input.gaf} > {output.gaf}"
 
 
 rule insert_alignment_gaps:
     input:
-        gaf = 'output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.mqfilter.gaf',
+        gaf = 'output/hybrid/10_mapq_only_filter/{sample_info}_{sample}.{ont_type}.{tigs}.mqfilter.gaf',
         graph = 'output/clean_graphs/{sample_info}_{sample}.{tigs}.gfa',
     output:
         graph = 'output/hybrid/50_insert_aln_gaps/{sample_info}_{sample}.{ont_type}.{tigs}.gapped.gfa'
