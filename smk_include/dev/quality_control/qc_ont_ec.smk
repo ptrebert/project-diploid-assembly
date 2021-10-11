@@ -71,7 +71,7 @@ rule ont_to_graph_alignment:
     input:
         sif = ancient('graphaligner.MultiseedClusters.sif'),
         graph = 'output/mbg_hifi/{sample}_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.gfa',
-        reads = lambda wildcards: get_read_path(wildcards.sample, 'ONTUL')
+        reads = 'input/ONTUL/{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz'
     output:
         gaf = 'output/alignments/ont_to_mbg_graph/{sample}_ONTUL_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.gaf',
         ec_reads_clip = 'output/alignments/ont_to_mbg_graph/{sample}_ONTEC_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.fasta.gz',
@@ -87,11 +87,10 @@ rule ont_to_graph_alignment:
     params:
         preset = 'dbg',
         hpc = set_read_hpc,
-        input_path = lambda wildcards: get_read_path(wildcards.sample, 'ONTUL', '/hilbert'),
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.sif} '
-        'GraphAligner -g {input.graph} -f {params.input_path} '
+        'GraphAligner -g {input.graph} -f {input.reads} '
             '-x {params.preset} -t {threads} '
             '--min-alignment-score 5000 --multimap-score-fraction 1 '
             ' {params.hpc} '

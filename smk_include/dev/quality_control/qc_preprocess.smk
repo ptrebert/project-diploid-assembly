@@ -1,7 +1,7 @@
 
 rule qc_merge_ontul:
     input:
-        fastq = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['ONTUL']
+        fastq = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['ONTUL_RAW']
     output:
         'input/ONTUL/{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz'
     benchmark:

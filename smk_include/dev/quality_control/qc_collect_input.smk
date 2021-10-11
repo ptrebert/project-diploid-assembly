@@ -88,6 +88,8 @@ def add_ontul_readsets(sample_infos, ontul_path):
     flag_files = pathlib.Path(ontul_path).glob(f'**/*.final')
     suffix = 'guppy-5.0.11-sup-prom_fastq_pass.fastq.gz'
 
+    merged_path = 'input/ONTUL/{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz
+
     ontul_samples = set()
     for flag_file in flag_files:
         sample_folder = flag_file.parent
@@ -95,7 +97,8 @@ def add_ontul_readsets(sample_infos, ontul_path):
         fastq_files = sample_folder.glob(f'*{suffix}')
         fastq_files = sorted([str(f) for f in fastq_files])
         assert len(fastq_files) > 1, f'{str(fastq_files)}'
-        sample_infos[sample_name]['ONTUL'] = fastq_files
+        sample_infos[sample_name]['ONTUL_RAW'] = fastq_files
+        sample_infos[sample_name]['ONTUL'] = merged_path.format(**{'sample': sample_name})
         ontul_samples.add(sample_name)
 
     return sample_infos, sorted(ontul_samples)
