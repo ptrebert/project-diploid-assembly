@@ -40,11 +40,19 @@ rule hifiasm_xypar_targeted_assembly:
 
 
 def select_chry_reads(wildcards):
-    import pathlib as pl
-    filename = '{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.'.format(**wildcards)
-    reads = list(pl.Path('output/read_subsets/chry').glob(f'{filename}*.gz'))
-    assert len(reads) == 1
-    return reads[0]
+    """
+    Why does this exist?
+    - avoid carrying wildcard for input sequence type (FASTA vs FASTQ)
+    """
+    if wildcards.read_type == 'HIFIAF':
+        seq_type = 'fastq'
+    else:
+        seq_type = 'fasta'
+    template = 'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz'
+    formatter = dict(wildcards)
+    formatter['seq_type'] = seq_type
+    reads_path = template.format(**formatter)
+    return reads_path
 
 
 rule hifiasm_chry_targeted_assembly:
