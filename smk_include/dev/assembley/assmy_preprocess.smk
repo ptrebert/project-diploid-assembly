@@ -244,18 +244,17 @@ def select_afr_mix_subsets(wildcards):
     else:
         seq_type = 'fasta'
     merge_samples = SAMPLE_INFOS[wildcards.sample]['merge']
-    sample_info = SAMPLE
-    path = pl.Path('output/read_subsets/chry/')
-    #template = 'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz'
+    template = 'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz'
     selected_readsets = []
-    for read_file in path.glob(f'*.{seq_type}.gz'):
-        if not any(s in read_file.name for s in merge_samples):
-            continue
-        if wildcards.read_type not in read_file.name:
-            continue
-        selected_readsets.append(read_file)
-    if not len(selected_readsets) == len(merge_samples):
-        raise ValueError(f'{str(wildcards)} / {selected_readsets} / {merge_samples}')
+    for sample in merge_samples:
+        sample_long = SAMPLE_INFOS[sample]['long_id']
+        formatter = {
+            'sample_long': sample_long,
+            'read_type': wildcards.read_type,
+            'mapq': wildcards.mapq,
+            'seq_type': seq_type
+        }
+        selected_readsets.append(template.format(**formatter))
     return sorted(selected_readsets)
 
 
