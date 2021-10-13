@@ -32,7 +32,7 @@ rule wmap_align_ont_to_gono_reference:
     benchmark:
         'rsrc/output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.k{kmer_size}.{hpc}.{ont_type}.wmap.rsrc'
     wildcard_constraints:
-        sample = CONSTRAINT_SAMPLES
+        sample = CONSTRAINT_REGULAR_SAMPLES
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
@@ -83,7 +83,7 @@ rule ga_align_ont_to_gono_reference:
     benchmark:
         'rsrc/output/read_aln/{sample_info}_{sample}.{reference}.AMXYUN.tigs.{ont_type}.ga.rsrc'
     wildcard_constraints:
-        sample = CONSTRAINT_SAMPLES
+        sample = CONSTRAINT_REGULAR_SAMPLES
 #    conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_medium']
     resources:
@@ -111,7 +111,7 @@ rule mmap_align_ont_to_aug_reference:
     benchmark:
         'rsrc/output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.rsrc'
     wildcard_constraints:
-        sample = CONSTRAINT_SAMPLES
+        sample = CONSTRAINT_REGULAR_SAMPLES
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
@@ -153,7 +153,7 @@ rule collect_xy_read_statistics:
         chrx_reads = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.chrX-reads.txt',
         chry_reads = 'output/read_aln/{sample_info}_{sample}.{reference}.augY.{ont_type}.mmap.chrY-reads.txt',
     wildcard_constraints:
-        sample = CONSTRAINT_SAMPLES
+        sample = CONSTRAINT_REGULAR_SAMPLES
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     run:

@@ -8,7 +8,7 @@ rule dump_tigs_to_fasta:
         'rsrc/output/tigs/{sample_info}_{sample}.{tigs}.dump.rsrc'
     wildcard_constraints:
         tigs = '(TIGPRI|TIGALT|TIGRAW)',
-        sample = CONSTRAINT_SAMPLES
+        sample = CONSTRAINT_REGULAR_SAMPLES
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * attempt,
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt
@@ -87,7 +87,7 @@ rule merge_tigs_to_reference_bams:
         bam = 'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.psort.bam',
         bai = 'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.psort.bam.bai',
     wildcard_constraints:
-        sample = CONSTRAINT_SAMPLES
+        sample = CONSTRAINT_REGULAR_SAMPLES
     log:
         'log/output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.merge.log'
     benchmark:
@@ -110,7 +110,7 @@ rule dump_tigs_to_reference_to_bed:
     output:
         bed = 'output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.psort.bed',
     wildcard_constraints:
-        sample = CONSTRAINT_SAMPLES
+        sample = CONSTRAINT_REGULAR_SAMPLES
     benchmark:
         'rsrc/output/tig_aln/{sample_info}_{sample}_MAP-TO_{reference}.dumpbed.rsrc'
     conda: '../../../environment/conda/conda_biotools.yml'
