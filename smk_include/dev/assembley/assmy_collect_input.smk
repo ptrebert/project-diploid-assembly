@@ -14,6 +14,23 @@ def read_sample_table(tsv_path):
         long_sample = f'{row.super_population}-{row.population}-{row.family_id}-{sex}_{row.sample}'
         sample_infos[row.sample]['long_id'] = long_sample
         sample_infos[row.sample]['sex'] = sex
+
+    # add several special samples for merging reads
+    sample_infos['NA193N7']['long_id'] = 'AFR-LWK-DUO-M_NA193N7'
+    sample_infos['NA193N7']['sex'] = 'M'
+    sample_infos['NA193N7']['merge'] = ['NA19317', 'NA19347']
+    sample_infos['NA193N7']['is_regular'] = False
+
+    sample_infos['NA193NN']['long_id'] = 'AFR-LWK-TRIO-M_NA193NN'
+    sample_infos['NA193NN']['sex'] = 'M'
+    sample_infos['NA193NN']['merge'] = ['NA19317', 'NA19347', 'NA19384']
+    sample_infos['NA193NN']['is_regular'] = False
+
+    sample_infos['AFR4MIX']['long_id'] = 'AFR-MIX-QUART-M_AFR4MIX'
+    sample_infos['AFR4MIX']['sex'] = 'M'
+    sample_infos['AFR4MIX']['merge'] = ['NA19317', 'NA19347', 'NA19384', 'HG02666']
+    sample_infos['AFR4MIX']['is_regular'] = False
+
     return sample_infos
 
 
@@ -144,4 +161,5 @@ def init_samples_and_data():
 
 SAMPLE_INFOS, HIFIEC_SAMPLES, HIFIAF_SAMPLES, ONTUL_SAMPLES, ONTEC_SAMPLES, ASSEMBLED_SAMPLES = init_samples_and_data()
 
-CONSTRAINT_SAMPLES = '(' + '|'.join(sorted(SAMPLE_INFOS.keys())) + ')'
+CONSTRAINT_REGULAR_SAMPLES = '(' + '|'.join(sorted(k for k in SAMPLE_INFOS.keys() if SAMPLE_INFOS[k].get('is_regular', True))) + ')'
+CONSTRAINT_ALL_SAMPLES = '(' + '|'.join(sorted(SAMPLE_INFOS.keys())) + ')'

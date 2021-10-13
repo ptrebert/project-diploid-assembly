@@ -59,6 +59,8 @@ rule hifiasm_chry_targeted_assembly:
         'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.t12.rsrc',
     conda:
         '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = CONSTRAINT_ALL_SAMPLES
     threads: config['num_cpu_medium']
     resources:
         mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
@@ -69,28 +71,33 @@ rule hifiasm_chry_targeted_assembly:
         'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.reads} &> {log.hifiasm}'
 
 
-# rule mbg_xypar_targeted_assembly:
-#     input:
-#         fastq = expand(
-#             'output/references/{sample_long}.XYPAR.reads.fastq.gz',
-#             sample_long=[
-#                 'AFR-YRI-Y117-M_NA19239',
-#                 'AMR-PUR-PR05-M_HG00731',
-#                 'EAS-CHS-SH032-M_HG00512',
-#                 'EUR-ASK-3140-M_NA24385'   
-#             ]
-#         )
-#     output:
-#         'output/target_assembly/xypar_kmers/'
-#     log:
-
-#     benchmark:
-
-#     conda:
-#         '../../../environment/conda/conda_biotools.yml'
-#     threads: config['num_cpu_medium']
-#     resources:
-#         mem_total_mb = lambda wildcards, attempt: 180224 * attempt,
-#         runtime_hrs = lambda wildcards, attempt: 12 * attempt
-#     shell:
-#         'MBG '
+rule mbg_chry_targeted_assembly:
+    """
+    sif = ancient('mbg.master.sif'),
+    """
+    input:
+        sif = ancient('mbg.UnitigResolve.sif'),
+        reads = select_chry_reads
+    output:
+        graph = 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.gfa',
+        paths = 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.gaf',
+    log:
+        'log/output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.log',
+    benchmark:
+        'rsrc/output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.rsrc',
+    wildcard_constraints:
+        read_type = 'HIFIEC',
+        sample = '(NA193N7|NA193NN|AFR4MIX)'
+#    conda:
+#        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+    shell:
+        'module load Singularity && singularity exec '
+        '--bind /:/hilbert {input.sif} '
+        'MBG -i {input.reads} -t {threads} '
+            '-k {wildcards.kmer} -w {wildcards.window} '
+            '--error-masking no --include-end-kmers '
+            '--out {output.graph} --output-sequence-paths {output.paths} &> {log}'

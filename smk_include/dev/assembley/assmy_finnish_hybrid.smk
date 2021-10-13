@@ -65,7 +65,7 @@ rule hybrid_ga_align_ont_to_string_graph:
     benchmark:
         'rsrc/output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.ga.rsrc',
     wildcard_constraints:
-        sample = CONSTRAINT_SAMPLES
+        sample = CONSTRAINT_ALL_SAMPLES
 #    conda: '../../../environment/conda/conda_biotools.yml'
     threads: lambda wildcards: set_graphaligner_hybrid_resources(wildcards)[0]
     resources:

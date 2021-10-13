@@ -227,8 +227,49 @@ rule extract_aligned_chry_read_sequences:
         'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
     conda:
         '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = CONSTRAINT_REGULAR_SAMPLES
     threads: 4
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * 4
     shell:
         'seqtk subseq {input.reads} {input.names} | pigz -p 4 --best > {output}'
+
+
+def select_afr_mix_subsets(wildcards):
+
+    assert 'mq0' in wildcards.mapq
+    if wildcards.read_type == 'HIFIAF':
+        seq_type = 'fastq'
+    else:
+        seq_type = 'fasta'
+    merge_samples = SAMPLE_INFOS[wildcards.sample]['merge']
+    sample_info = SAMPLE
+    path = pl.Path('output/read_subsets/chry/')
+    #template = 'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz'
+    selected_readsets = []
+    for read_file in path.glob(f'*.{seq_type}.gz'):
+        if not any(s in read_file.name for s in merge_samples):
+            continue
+        if wildcards.read_type not in read_file.name:
+            continue
+        selected_readsets.append(read_file)
+    if not len(selected_readsets) == len(merge_samples):
+        raise ValueError(f'{str(wildcards)} / {selected_readsets} / {merge_samples}')
+    return sorted(selected_readsets)
+
+
+rule merge_afr_mix_subsets:
+    input:
+        reads = select_afr_mix_subsets
+    output:
+        'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = '(NA193N7|NA193NN|AFR4MIX)'
+    threads: 4
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt
+    shell:
+        'pigz -d -c {input.reads} | pigz --best -p 4 > {output}'
