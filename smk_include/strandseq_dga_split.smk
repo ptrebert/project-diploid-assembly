@@ -367,7 +367,7 @@ def collect_polished_contigs(wildcards, glob_collect=True, caller='snakemake'):
     glob_path = source_path.replace('{sequence}', '*')
     cluster_key = 'sequence'
     if glob_collect:
-        fasta_files = check_cluster_file_completeness(wildcards, source_path, glob_path, wildcards.sseq_reads, cluster_key):
+        fasta_files = check_cluster_file_completeness(wildcards, source_path, glob_path, wildcards.sseq_reads, cluster_key)
         if not fasta_files:
             raise RuntimeError('collect_polished_contigs: no files collected with pattern {}'.format(pattern))
 
