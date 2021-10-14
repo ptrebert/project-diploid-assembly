@@ -37,7 +37,10 @@ def set_graphaligner_hybrid_resources(wildcards):
     if wildcards.tigs in ['TIGRAW', 'TIGPRI', 'TIGALT']:
         resources = config['num_cpu_max'], 303104, 167
     elif 'YRAW' in wildcards.tigs:
-        resources = config['num_cpu_high'], 24576, 2
+        if any(x in wildcards.sample_info for x in ['DUO', 'TRIO', 'MIX']):
+            resources = config['num_cpu_high'], 32768, 12
+        else:
+            resources = config['num_cpu_high'], 24576, 4
     else:
         raise
     return resources

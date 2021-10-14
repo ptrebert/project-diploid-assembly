@@ -71,8 +71,8 @@ rule hifiasm_chry_targeted_assembly:
         sample = CONSTRAINT_ALL_SAMPLES
     threads: config['num_cpu_medium']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 32768 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 ** attempt
     params:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
     shell:
@@ -100,8 +100,8 @@ rule mbg_chry_targeted_assembly:
 #        '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+        mem_total_mb = lambda wildcards, attempt: 12576 * attempt if int(wildcards.kmer) > 999 else 49152 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt if int(wildcards.kmer) > 999 else 2 * attempt
     shell:
         'module load Singularity && singularity exec '
         '--bind /:/hilbert {input.sif} '
