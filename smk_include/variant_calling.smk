@@ -375,26 +375,12 @@ def collect_final_vcf_splits(wildcards, glob_collect=True, caller='snakemake'):
     """
     """
     source_path = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/50-intersect-GQ{gq}/splits/{vc_reads}.{sequence}/0002.vcf'
+    glob_path = source_path.replace('.{sequence}/', '.*/')
+    cluster_key = 'sequence'
     if glob_collect:
-        import glob
-        pattern = source_path.replace('.{sequence}/', '.*/')
-        pattern = pattern.format(**dict(wildcards))
-        vcf_files = glob.glob(pattern)
-
+        vcf_files = check_cluster_file_completeness(wildcards, source_path, glob_path, wildcards.sseq_reads, cluster_key)
         if not vcf_files:
-            if caller == 'snakemake':
-                # this should be the input function call during DAG evaluation, i.e. before the rule is being
-                # executed, to determine the input files needed for the run. Add best guess here...
-                sample_name = wildcards.sseq_reads.split('_')[0]
-                estimate_num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
-                tmp = dict(wildcards)
-                vcf_files = []
-                for i in range(1, estimate_num_clusters + 1):
-                    tmp['sequence'] = 'cluster' + str(i)
-                    vcf_file = source_path.format(**tmp)
-                    vcf_files.append(vcf_file)
-            else:
-                raise RuntimeError('collect_final_vcf_splits: no files collected with pattern {}'.format(pattern))
+            raise RuntimeError('collect_final_vcf_splits: no files collected with pattern {}'.format(pattern))
 
     else:
         raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
@@ -519,27 +505,12 @@ def collect_intermediate_vcf_splits(wildcards, glob_collect=True, caller='snakem
     """
     """
     source_path = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/processing/20-snps-QUAL{qual}/splits/{vc_reads}.{sequence}.vcf'
-
+    glob_path = source_path.replace('.{sequence}.', '.*.')
+    cluster_key = 'sequence'
     if glob_collect:
-        import glob
-        pattern = source_path.replace('.{sequence}.', '.*.')
-        pattern = pattern.format(**dict(wildcards))
-        vcf_files = glob.glob(pattern)
-
+        vcf_files = check_cluster_file_completeness(wildcards, source_path, glob_path, wildcards.sseq_reads, cluster_key)
         if not vcf_files:
-            if caller == 'snakemake':
-                # this should be the input function call during DAG evaluation, i.e. before the rule is being
-                # executed, to determine the input files needed for the run. Add best guess here...
-                sample_name = wildcards.sseq_reads.split('_')[0]
-                estimate_num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
-                vcf_files = []
-                for i in range(1, estimate_num_clusters + 1):
-                    tmp = dict(wildcards)
-                    tmp['sequence'] = 'cluster' + str(i)
-                    vcf_file = source_path.format(**tmp)
-                    vcf_files.append(vcf_file)
-            else:
-                raise RuntimeError('collect_intermediate_vcf_splits: no files collected with pattern {}'.format(pattern))
+            raise RuntimeError('collect_intermediate_vcf_splits: no files collected with pattern {}'.format(pattern))
 
     else:
         raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')

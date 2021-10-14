@@ -304,24 +304,12 @@ def intphase_collect_phased_vcf_split_files(wildcards, glob_collect=True, caller
     source_path = os.path.join('output/integrative_phasing/processing/whatshap',
                                PATH_INTEGRATIVE_PHASING,
                                '{hap_reads}.{sequence}.phased.vcf')
-
+    glob_path = source_path.replace('.{sequence}.', '.*.')
+    cluster_key = 'sequence'
     if glob_collect:
-        import glob
-        pattern = source_path.replace('.{sequence}.', '.*.')
-        pattern = pattern.format(**dict(wildcards))
-        vcf_files = glob.glob(pattern)
-
+        vcf_files = check_cluster_file_completeness(wildcards, source_path, glob_path, wildcards.sseq_reads, cluster_key)
         if not vcf_files:
-            if caller == 'snakemake':
-                sample_name = wildcards.sseq_reads.split('_')[0]
-                num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
-                tmp = dict(wildcards)
-                vcf_files = []
-                for i in range(1, num_clusters + 1):
-                    tmp['sequence'] = 'cluster' + str(i)
-                    vcf_files.append(source_path.format(**tmp))
-            else:
-                raise RuntimeError('intphase_collect_phased_vcf_split_files: no files collected with pattern {}'.format(pattern))
+            raise RuntimeError('intphase_collect_phased_vcf_split_files: no files collected with pattern {}'.format(pattern))
 
     else:
         raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')

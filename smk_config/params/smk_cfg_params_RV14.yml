@@ -28,8 +28,10 @@ shasta_version: 0.5.0
 # Long read preprocessing
 check_hifi_adapter_contamination: true
 
-# for Strand-seq library QC: fail if more than X% [0...1] of libraries are low quality
-sseq_qc_lowq_threshold: 0.4
+# for Strand-seq library QC: fail if there are less than
+# N (>1) usable [acceptable quality] Strand-seq libraries for assembly
+sseq_qc_fail_threshold: 50
+sseq_qc_ignore_fail: false
 
 # Assembler settings
 shasta_target_coverage: 60  # tech-independent recommendation: cov between 40x and 80x
@@ -52,6 +54,7 @@ min_mapq: 10
 # - change back to 260 to check for
 # problems in clustering step
 max_cluster_length_mbp: 260
+ignore_cluster_size_error: false
 
 # VARIANT CALLING
 # Postprocessing parameters

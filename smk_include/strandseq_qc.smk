@@ -254,12 +254,12 @@ rule exclude_low_quality_libraries:
     params:
         t_conf_low = 0.3,  # follows hard-coded values in ASHLEYS
         t_conf_high = 0.7,
-        error_lowq = config.get('sseq_qc_lowq_threshold', 0.5)
+        error_lowq = config.get('sseq_qc_fail_threshold', 50)
     run:
         import collections as col
         import pandas as pd
 
-        assert 0 < params.error_lowq <= 1, f'Invalid value [0...1]: {params.error_lowq}'
+        assert 1 < params.error_lowq, f'Invalid value [1...+INF]: {params.error_lowq}'
 
         with open(log[0], 'w') as logfile:
             _ = logfile.write(f'strandseq_sample\t{wildcards.sseq_reads}\n')
@@ -283,8 +283,8 @@ rule exclude_low_quality_libraries:
             )
             num_feat_libs = qc_features.shape[0]
             _ = logfile.write(f'total_num_features\t{qc_features.shape[1]}\n')
-            if not num_feat_libs == total_num_libs:
-                _ = logfile.write(f'ERROR - number of libraries in feature table is inconsistent: {num_feat_libs}\n')
+            if num_feat_libs != total_num_libs:
+                _ = logfile.write(f'ERROR - number of libraries in feature table is inconsistent: {num_feat_libs} / {total_num_libs}\n')
                 raise ValueError(f'Cannot process ASHLEYS output for SSEQ reads {wildcards.sseq_reads}')
 
             qc_info = pd.concat([qc_labels, qc_features], axis=1, ignore_index=False)
@@ -314,20 +314,24 @@ rule exclude_low_quality_libraries:
             qc_info = qc_info[column_sort_order]
 
             lowq_libraries = (qc_info['label'] == 0).sum()
+            usable_libraries = total_num_libs - lowq_libraries
             _ = logfile.write(f'fail_threshold_lowQ\t{params.error_lowq}\n')
             _ = logfile.write(f'total_lowQ_libs\t{lowq_libraries}\n')
+            _ = logfile.write(f'total_usable_libs\t{usable_libraries}\n')
             frac_lowq_libs = round(lowq_libraries / total_num_libs, 2)
             pct_lowq_libs = round(lowq_libraries / total_num_libs * 100, 1)
             _ = logfile.write(f'fraction_lowQ_libs\t{frac_lowq_libs}\n')
             _ = logfile.write(f'pct_lowQ_libs\t{pct_lowq_libs}\n')
 
-            if frac_lowq_libs > params.error_lowq:
-                _ = logfile.write('ERROR - fraction of low-quality libraries too high')
+            if usable_libraries < params.error_lowq:
+                _ = logfile.write('ERROR\tnot_enough_usable_libraries\n')
                 # create an untracked error output file for simpler
                 # summary of what samples failed and why
                 with open(f'ERROR_sseq-quality_{wildcards.sseq_reads}.err', 'w'):
                     pass
-                raise ValueError(f'Cannot process ASHLEYS output for SSEQ reads (lowQ) {wildcards.sseq_reads}')
+                ignore_fail = bool(config.get('sseq_qc_ignore_fail', False))
+                if not ignore_fail:
+                    raise ValueError(f'Cannot process ASHLEYS output for SSEQ reads (lowQ) {wildcards.sseq_reads}')
 
             qc_info.to_csv(
                 output.table,

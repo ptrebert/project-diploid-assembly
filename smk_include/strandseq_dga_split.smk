@@ -218,24 +218,12 @@ def collect_assembled_sequence_files(wildcards, glob_collect=True, caller='snake
     source_path = os.path.join('output',
                                PATH_STRANDSEQ_DGA_SPLIT,
                                'draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.fasta')
-
+    glob_path = source_path.replace('{sequence}', '*')
+    cluster_key = 'sequence'
     if glob_collect:
-        import glob
-        pattern = source_path.replace('{sequence}', '*')
-        pattern = pattern.format(**dict(wildcards))
-        fasta_files = glob.glob(pattern)
-
+        fasta_files = check_cluster_file_completeness(wildcards, source_path, glob_path, wildcards.sseq_reads, cluster_key)
         if not fasta_files:
-            if caller == 'snakemake':
-                sample_name = wildcards.sseq_reads.split('_')[0]
-                num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
-                tmp = dict(wildcards)
-                fasta_files = []
-                for i in range(1, num_clusters + 1):
-                    tmp['sequence'] = 'cluster' + str(i)
-                    fasta_files.append(source_path.format(**tmp))
-            else:
-                raise RuntimeError('collect_assembled_sequence_files: no files collected with pattern {}'.format(pattern))
+            raise RuntimeError('collect_assembled_sequence_files: no files collected with pattern {}'.format(pattern))
 
     else:
         raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
@@ -376,24 +364,12 @@ def collect_polished_contigs(wildcards, glob_collect=True, caller='snakemake'):
     source_path = os.path.join('output',
                                PATH_STRANDSEQ_DGA_SPLIT,
                                'polishing/{pol_reads}/haploid_assembly/{hap_reads}-{assembler}.{hap}.{sequence}.{pol_pass}.fasta')
-
+    glob_path = source_path.replace('{sequence}', '*')
+    cluster_key = 'sequence'
     if glob_collect:
-        import glob
-        pattern = source_path.replace('{sequence}', '*')
-        pattern = pattern.format(**dict(wildcards))
-        fasta_files = glob.glob(pattern)
-
+        fasta_files = check_cluster_file_completeness(wildcards, source_path, glob_path, wildcards.sseq_reads, cluster_key):
         if not fasta_files:
-            if caller == 'snakemake':
-                sample_name = wildcards.sseq_reads.split('_')[0]
-                num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
-                tmp = dict(wildcards)
-                fasta_files = []
-                for i in range(1, num_clusters + 1):
-                    tmp['sequence'] = 'cluster' + str(i)
-                    fasta_files.append(source_path.format(**tmp))
-            else:
-                raise RuntimeError('collect_polished_contigs: no files collected with pattern {}'.format(pattern))
+            raise RuntimeError('collect_polished_contigs: no files collected with pattern {}'.format(pattern))
 
     else:
         raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')

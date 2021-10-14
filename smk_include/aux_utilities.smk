@@ -385,12 +385,22 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads):
     if cluster_fofn is not None and os.path.isfile(cluster_fofn):
         if DEBUG:
             sys.stderr.write('Loading number of clusters from fofn: {}\n'.format(cluster_fofn))
-        # best case: cluster fofn has already been created
+        num_clusters_slack = int(config.get('num_cluster_slack', 1))
+        default_clusters = int(config.get('num_default_clusters', 24))
+        # probably best case: cluster fofn has already been created
+        fofn_clusters = 0
         with open(cluster_fofn, 'r') as fofn:
-            num_clusters = len([line for line in fofn if line.strip()])
-
+            for line in fofn:
+                if not line.strip():
+                    continue
+                if 'cluster99' in line:
+                    raise ValueError(f'ERROR: cluster99 in cluster FOFN file {cluster_fofn} detected. Delete this file and restart the pipeline')
+                fofn_clusters += 1
+        if fofn_clusters < default_clusters - num_clusters_slack:
+            raise ValueError(f'ERROR: number of clusters loaded from FOFN file {cluster_fofn} is too small. Delete this file and restart the pipeline')
         if DEBUG:
             sys.stderr.write('Loaded number of cluster from fofn: {}\n'.format(num_clusters))
+        num_clusters = fofn_clusters
     elif sample_name in CONSTRAINT_MALE_SAMPLE_NAMES:
         num_clusters = config.get('desired_clusters_male', config.get('desired_clusters', 0))
         if DEBUG:
@@ -405,10 +415,34 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads):
             sys.stderr.write('Generic sample - cluster estimate (config): {}\n'.format(num_clusters))
     if num_clusters == 0:
         # reasonable best guess
-        num_clusters = 24
+        num_clusters = int(config.get('num_default_clusters', 24))
         if DEBUG:
             sys.stderr.write('Cluster estimate is zero - returning best guess: {}\n'.format(num_clusters))
     return num_clusters
+
+
+def check_cluster_file_completeness(wildcards, source_path, glob_path, sseq_reads, cluster_key):
+
+    import glob
+    import sys
+
+    glob_pattern = glob_path.format(**dict(wildcards))
+    cluster_files = glob.glob(glob_pattern)
+    if any('cluster99' in f for f in cluster_files):
+        sys.stderr.write(f'\naux::check_cluster_file_completeness >>>\nWARNING: cluster99 file detected with glob pattern {glob_pattern}\n')
+    cluster_files = set(f for f in cluster_files if 'cluster99' not in f)
+
+    sample_name = sseq_reads.split('_')[0]
+    estimate_num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+    num_clusters_slack = int(config.get('num_cluster_slack', 1))
+
+    if not (estimate_num_clusters - num_clusters_slack) < len(cluster_files) < (estimate_num_clusters + num_clusters_slack):
+        tmp = dict(wildcards)
+        for i in range(1, estimate_num_clusters + 1):
+            tmp[cluster_key] = 'cluster' + str(i)
+            cluster_file = source_path.format(**tmp)
+            cluster_files.add(cluster_file)
+    return sorted(cluster_files)
 
 
 def collect_strandseq_alignments(wildcards, glob_collect=True, caller='snakemake'):

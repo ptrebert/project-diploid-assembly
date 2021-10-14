@@ -343,7 +343,7 @@ rule check_max_cluster_size:
     run:
         max_seq_len = 268435456
         cache = dict()
-        ignore_size = bool(config.get('ignore_cluster_size_error', False))
+        ignore_size_error = bool(config.get('ignore_cluster_size_error', False))
         with open(input[0], 'r') as fasta_list:
             for fasta_file in fasta_list:
                 seq_len = 0
@@ -354,12 +354,13 @@ rule check_max_cluster_size:
                             cluster_name = line.strip().strip('>')
                             continue
                         seq_len += len(line.strip())
-                if seq_len > max_seq_len and not ignore_size:
+                if seq_len > max_seq_len:
                     # create an untracked error output file for simpler
                     # summary of what samples failed and why
                     with open(f'ERROR_cluster-size_{wildcards.sseq_reads}.err', 'w'):
                         pass
-                    raise ValueError('Squashed assembly cluster too large ({} / max {}): {}'.format(seq_len, max_seq_len, fasta_file))
+                    if not ignore_size_error:
+                        raise ValueError('Squashed assembly cluster too large ({} / max {}): {}'.format(seq_len, max_seq_len, fasta_file))
                 cache[cluster_name] = seq_len
 
         with open(output[0], 'w') as check_ok:

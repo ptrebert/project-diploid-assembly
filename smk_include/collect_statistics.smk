@@ -298,24 +298,12 @@ def collect_tag_lists(wildcards, glob_collect=True, caller='snakemake'):
     source_path = os.path.join('output',
                                PATH_STRANDSEQ_DGA_SPLIT,
                                'draft/haplotags/{hap_reads}.{sequence}.tags.{tag_type}.tsv')
-
+    glob_path = source_path.replace('{sequence}', '*')
+    cluster_key = 'sequence'
     if glob_collect:
-        import glob
-        pattern = source_path.replace('{sequence}', '*')
-        pattern = pattern.format(**dict(wildcards))
-        seq_files = glob.glob(pattern)
-
+        seq_files = check_cluster_file_completeness(wildcards, source_path, glob_path, wildcards.sseq_reads, cluster_key)
         if not seq_files:
-            if caller == 'snakemake':
-                sample_name = wildcards.sseq_reads.split('_')[0]
-                num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
-                tmp = dict(wildcards)
-                seq_files = []
-                for i in range(1, num_clusters + 1):
-                    tmp['sequence'] = 'cluster' + str(i)
-                    seq_files.append(source_path.format(**tmp))
-            else:
-                raise RuntimeError('collect_tag_lists: no files collected with pattern {}'.format(pattern))
+            raise RuntimeError('collect_tag_lists: no files collected with pattern {}'.format(pattern))
 
     else:
         raise RuntimeError('Illegal function call: Snakemake checkpoints must not be used!')
