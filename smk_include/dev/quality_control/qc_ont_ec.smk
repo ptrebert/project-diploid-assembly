@@ -20,6 +20,15 @@ def get_read_path(sample, read_type, prefix=''):
     return file_path
 
 
+def set_mbg_resources(wildcards):
+
+    if int(wildcards.kmer) < 999:
+        cpu, memory, runtime = config['num_cpu_max'], 786432, 167
+    else:
+        cpu, memory, runtime = config['num_cpu_high'], 73728, 6
+    return cpu, memory, runtime
+
+
 rule build_hifi_read_dbg:
     """
     sif = ancient('mbg.master.sif'),
@@ -38,10 +47,10 @@ rule build_hifi_read_dbg:
         read_type = '(HIFIEC|HIFIAF)'
 #    conda:
 #        '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_high']
+    threads: lambda wildcards: set_mbg_resources(wildcards)[0]
     resources:
-        mem_total_mb = lambda wildcards, attempt: 65536 + 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt
+        mem_total_mb = lambda wildcards, attempt: set_mbg_resources(wildcards)[1] * attempt,
+        runtime_hrs = lambda wildcards, attempt: min(set_mbg_resources(wildcards)[2] * attempt, 167)
     params:
         masking = set_errormasking,
         input_path = lambda wildcards: get_read_path(wildcards.sample, wildcards.read_type, '/hilbert')
@@ -65,6 +74,15 @@ def set_read_hpc(wildcards):
     return hpc
 
 
+def set_graphaligner_resources(wildcards):
+
+    # if int(wildcards.kmer) < 999:
+    #     cpu, memory, runtime = config['num_cpu_max'], 786432, 167
+    # else:
+    cpu, memory, runtime = config['num_cpu_high'] + config['num_cpu_medium'], 110592, 10
+    return cpu, memory, runtime
+
+
 rule ont_to_graph_alignment:
     """
     """
@@ -80,10 +98,10 @@ rule ont_to_graph_alignment:
         'log/output/alignments/ont_to_mbg_graph/{sample}_ONTUL_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.GA.log'
     benchmark:
         'rsrc/output/alignments/ont_to_mbg_graph/{sample}_ONTUL_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.GA.rsrc'
-    threads: config['num_cpu_high']
+    threads: lambda wildcards: set_graphaligner_resources(wildcards)[0]
     resources:
-        mem_total_mb = lambda wildcards, attempt: 90112 + 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 72 * attempt
+        mem_total_mb = lambda wildcards, attempt: set_graphaligner_resources(wildcards)[1] * attempt,
+        runtime_hrs = lambda wildcards, attempt: set_graphaligner_resources(wildcards)[2] * attempt
     params:
         preset = 'dbg',
         hpc = set_read_hpc,

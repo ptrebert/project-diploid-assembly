@@ -2,9 +2,9 @@
 def count_kmer_runtime(wildcards, attempt):
 
     if 'HIFI' in wildcards.read_type:
-        return 36 * attempt
+        return 2 * attempt
     elif 'ONT' in wildcards.read_type:
-        return 48 * attempt
+        return 4 * attempt
     else:
         return attempt * attempt * attempt
 
@@ -12,15 +12,20 @@ def count_kmer_runtime(wildcards, attempt):
 def count_kmer_memory(wildcards, attempt, unit='mb'):
 
     if 'HIFI' in wildcards.read_type:
-        mem = 262144
+        mem = 32768
+        hpc_factor = 15
     elif 'ONT' in wildcards.read_type:
-        mem = 262144
+        mem = 32768
+        hpc_factor = 20
     else:
         mem = 49152
     if unit == 'gb':
         mem = int(mem / 1024)
-    hpc_factor = 4 if wildcards.hpc == 'nohpc' else 1
-    return mem * attempt * hpc_factor
+    if wildcards.hpc == 'nohpc':
+        memory = mem * attempt * hpc_factor
+    else:
+        memory = mem * attempt
+    return memory
 
 
 rule qc_meryl_count_kmers_local:
