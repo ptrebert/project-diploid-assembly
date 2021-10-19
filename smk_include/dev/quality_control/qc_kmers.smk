@@ -19,6 +19,7 @@ def count_kmer_memory(wildcards, attempt, unit='mb'):
         hpc_factor = 20
     else:
         mem = 49152
+        hpc_factor = 2
     if unit == 'gb':
         mem = int(mem / 1024)
     if wildcards.hpc == 'nohpc':
