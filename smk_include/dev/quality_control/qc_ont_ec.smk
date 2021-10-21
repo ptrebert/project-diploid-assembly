@@ -132,12 +132,47 @@ rule compute_ont_corrected_stats:
         'pigz -p 2 -d -c {input} | seqtk comp | pigz -p 2 --best > {output} '
 
 
+rule cache_ont_corrected_read_stats:
+    input:
+        'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.tsv.gz'
+    output:
+        'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.h5'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt
+    run:
+        import pandas as pd
+        import pathlib as pl
+        seqtk_columns = [
+            'read_name',
+            'read_length',
+            'num_A',
+            'num_C',
+            'num_G',
+            'num_T',
+            'num_IUPAC2',
+            'num_IUPAC3',
+            'num_N',
+            'num_CpG',
+            'num_ts',
+            'num_tv',
+            'num_CpG_ts',
+        ]
+        input_file_name = pl.Path(input).name
+        df = pd.read_csv(input, sep='\t', header=None, names=seqtk_columns)
+        df['MBG_kmer'] = int(wildcards.kmer)
+        df['MBG_window'] = int(wildcards.window)
+        df['file'] = input_file_name
+        with pd.HDFStore(output, 'w', complib='blosc', complevel=9) as hdf:
+            hdf.put('cache', df, format='fixed')
+
+
+
 localrules: deduplicate_ont_corrected_reads
 
 rule deduplicate_ont_corrected_reads:
     input:
         reads = expand(
-            'output/alignments/ont_to_mbg_graph/{{sample}}_{{read_type}}_{{readset}}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.stats.tsv.gz',
+            'output/alignments/ont_to_mbg_graph/{{sample}}_{{read_type}}_{{readset}}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.stats.h5',
             zip,
             kmer=config['mbg_kmers'],
             window=config['mbg_windows']
