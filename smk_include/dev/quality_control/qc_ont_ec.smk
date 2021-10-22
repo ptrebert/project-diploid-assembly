@@ -134,9 +134,9 @@ rule compute_ont_corrected_stats:
 
 rule cache_ont_corrected_read_stats:
     input:
-        'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.tsv.gz'
+        tsv = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.tsv.gz'
     output:
-        'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.h5'
+        h5 = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.h5'
     resources:
         mem_total_mb = lambda wildcards, attempt: 1024 * attempt
     run:
@@ -157,27 +157,101 @@ rule cache_ont_corrected_read_stats:
             'num_tv',
             'num_CpG_ts',
         ]
-        input_file_name = pl.Path(input).name
-        df = pd.read_csv(input, sep='\t', header=None, names=seqtk_columns)
+        input_file_name = pl.Path(input.tsv).name
+        df = pd.read_csv(input.tsv, sep='\t', header=None, names=seqtk_columns)
         df['MBG_kmer'] = int(wildcards.kmer)
         df['MBG_window'] = int(wildcards.window)
         df['file'] = input_file_name
-        with pd.HDFStore(output, 'w', complib='blosc', complevel=9) as hdf:
+        with pd.HDFStore(output.h5, 'w', complib='blosc', complevel=9) as hdf:
             hdf.put('cache', df, format='fixed')
+    # END OF RUN BLOCK
 
-
-
-localrules: deduplicate_ont_corrected_reads
 
 rule deduplicate_ont_corrected_reads:
     input:
-        reads = expand(
+        cache = expand(
             'output/alignments/ont_to_mbg_graph/{{sample}}_{{read_type}}_{{readset}}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.stats.h5',
             zip,
             kmer=config['mbg_kmers'],
             window=config['mbg_windows']
         )
     output:
-        'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.foobar'
+        expand(
+            'output/alignments/ont_to_mbg_graph/{{sample}}_{{read_type}}_{{readset}}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.select-reads.txt',
+            zip,
+            kmer=config['mbg_kmers'],
+            window=config['mbg_windows']
+        )
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt
     run:
-        raise
+        import pandas as pd
+        import pathlib as pl
+        import collections as col
+
+        df = []
+        out_path = ''
+        for cache_file in input.cache:
+            out_path = pl.Path(cache_file).parent
+            df.append(pd.read_hdf(cache_file, 'cache'))
+        df = pd.concat(df, axis=0, ignore_index=False)
+        multiplicity = df['read_name'].value_counts()
+        df['multiplicty'] = df['read_name'].apply(lambda x: multiplicity[x])
+
+        out_files = dict()
+        for file_name, read_names in df.loc[df['multiplicity'] < 2, :].groupby('file')['read_name']:
+            try:
+                out_file_name = out_files[file_name]
+            except KeyError:
+                out_file_name = file_name.replace('.stats.tsv.gz', '.select-reads.txt')
+                out_files[file_name] = out_file_name
+            with open(pl.Path(out_path, out_file_name), 'w') as dump:
+                _ = dump.write('\n'.join(read_names.tolist()) + '\n')
+        
+        out_cache = col.defaultdict(list)
+        for read_name, file_names in df.loc[df['multiplicity'] > 1, :].groupby('read_name')['file']:
+            select_file = file_names.sample(1).values[0]
+            out_cache[out_files[select_file]].append(read_name)
+
+        for out_file_name, read_names in out_cache.items():
+            with open(pl.Path(out_path, out_file_name), 'a') as dump:
+                _ = dump.write('\n'.join(read_names.tolist()) + '\n')
+        
+        # END OF RUN BLOCK
+
+
+rule extract_selected_ontec_reads:
+    input:
+        reads = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.fasta.gz',
+        names = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.select-reads.txt',
+    output:
+        'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: 4
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    shell:
+        'pigz -p 2 -d -c {input.reads} | seqtk subseq /dev/stdin {input.names} | pigz -p 2 --best > {output}'
+
+
+rule merge_extracted_ontec_reads:
+    input:
+        subsets = expand(
+            'output/alignments/ont_to_mbg_graph/{{sample}}_{{read_type}}_{readset}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
+            zip,
+            kmer=config['mbg_kmers'],
+            window=config['mbg_windows'],
+            readset=['guppy-5.0.11-sup-prom', 'guppy-5.0.11-sup-prom']
+        )
+    output:
+        'input/{read_type}/{sample}_{readtype}_{graph_reads}-{graph_readset}.fasta.gz'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_low']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt
+    shell:
+        'pigz -p 2 -d -c {input.reads} | pigz -p {threads} --best > {output}'

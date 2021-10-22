@@ -94,18 +94,14 @@ rule run_qv_estimate:
 rule run_ont_error_correction:
     input:
         expand(
-            'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.foobar',
+            'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
             sample=ONTUL_SAMPLES,
             read_type=['ONTEC'],
-            readset=['guppy-5.0.11-sup-prom'],
-            graph_reads=['HIFIAF'],
-            graph_readset=['pgas-v14-dev']
+            readset=['HIFIAF-pgas-v14-dev'],
         ),
         expand(
-            'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.foobar',
+            'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
             sample=ONTUL_SAMPLES,
             read_type=['ONTEC'],
-            readset=['guppy-5.0.11-sup-prom'],
-            graph_reads=['HIFIEC'],
-            graph_readset=['hifiasm-v0.15.4']
+            readset=['HIFIEC-hifiasm-v0.15.4'],
         ),
