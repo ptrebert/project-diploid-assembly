@@ -25,7 +25,7 @@ def set_mbg_resources(wildcards):
     if int(wildcards.kmer) < 999:
         cpu, memory, runtime = config['num_cpu_max'], 786432, 167
     else:
-        cpu, memory, runtime = config['num_cpu_high'], 73728, 6
+        cpu, memory, runtime = config['num_cpu_high'], 73728, 23
     return cpu, memory, runtime
 
 
