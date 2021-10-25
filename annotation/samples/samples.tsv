@@ -407,6 +407,7 @@ HG03519	male	NG108	child	ESN	AFR	#FFD845	"Esan in Nigeria"	1KGP
 HG03520	female	NG109	mother	ESN	AFR	#FFD845	"Esan in Nigeria"	1KGP
 HG03521	male	NG109	father	ESN	AFR	#FFD845	"Esan in Nigeria"	1KGP
 HG03522	female	NG109	child	ESN	AFR	#FFD845	"Esan in Nigeria"	1KGP
+HC02666	male	GB40	father	GWD	AFR	#FFD845	"Gambian in Western Division, The Gambia"	hcHGSVC
 HG02461	male	GB15	father	GWD	AFR	#FFD845	"Gambian in Western Division, The Gambia"	1KGP
 HG02462	female	GB15	mother	GWD	AFR	#FFD845	"Gambian in Western Division, The Gambia"	1KGP
 HG02463	male	GB15	child	GWD	AFR	#FFD845	"Gambian in Western Division, The Gambia"	1KGP
@@ -1943,6 +1944,7 @@ HG00718	male	SH094	child	CHS	EAS	#778500	"Southern Han Chinese, China"	1KGP
 HG00728	male	SH098	father	CHS	EAS	#778500	"Southern Han Chinese, China"	1KGP
 HG00729	female	SH098	mother	CHS	EAS	#778500	"Southern Han Chinese, China"	1KGP
 HG00730	female	SH098	child	CHS	EAS	#778500	"Southern Han Chinese, China"	1KGP
+HC18989	male	NA18989	unspecified	JPT	EAS	#778500	"Japanese in Tokyo, Japan"	hcHGSVC
 NA18939	female	NA18939	unspecified	JPT	EAS	#778500	"Japanese in Tokyo, Japan"	1KGP
 NA18940	male	NA18940	unspecified	JPT	EAS	#778500	"Japanese in Tokyo, Japan"	1KGP
 NA18941	female	NA18941	unspecified	JPT	EAS	#778500	"Japanese in Tokyo, Japan"	1KGP
