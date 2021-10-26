@@ -28,7 +28,7 @@ sample_description_HC02666:
         #     load_type: parts
         #     data_source_folder: EMPTY_PATH
 
-sample_targets_HG02666:
+sample_targets_HC02666:
   - aliases:
       1: &long_reads HC02666_hgsvc_pbsq2-ccs_1000
       2: &strandseq_reads HC02666_hgsvc_ilnxs-80pe_sseq
