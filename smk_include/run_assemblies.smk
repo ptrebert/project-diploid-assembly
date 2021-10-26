@@ -365,6 +365,28 @@ rule compute_peregrine_nonhapres_assembly:
             ' cp {output.dir_cns}/cns-merge/ctg_cns.fa {output.assm} &> {log.assm_copy}'
 
 
+def set_hifiasm_nhr_resources(wildcards):
+    """
+    regular HGSVC HiFi sample: ~30x
+    regular HPRC HiFi sample: ~35x - ~40x
+    high-coverage HGSVC sample: ~60x
+    """
+    if 'hprc' in wildcards.sample:
+        threads = config['num_cpu_max'] // 2
+        memory_mb = 229376
+        runtime_hrs = 47
+    elif wildcards.sample.startswith('HC'):
+        # custom prefix for high-cov samples
+        threads = config['num_cpu_max']
+        memory_mb = 393216
+        runtime_hrs = 59
+    else:
+        threads = config['num_cpu_high']
+        memory_mb = 180224
+        runtime_hrs = 47
+    return threads, memory_mb, runtime_hrs
+
+
 rule compute_hifiasm_nonhapres_assembly:
     """
     Runtime for slow I/O systems
@@ -395,11 +417,10 @@ rule compute_hifiasm_nonhapres_assembly:
                      '{sample}_nhr-hifiasm' + '.t{}.rsrc'.format(config['num_cpu_high']))
     conda:
         '../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_high']
+    threads: lambda wildcards: set_hifiasm_nhr_resources(wildcards)[0]
     resources:
-        mem_per_cpu_mb = lambda wildcards, attempt: int((180224 * attempt) / config['num_cpu_high']),
-        mem_total_mb = lambda wildcards, attempt: 180224 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 36 * attempt
+        mem_total_mb = lambda wildcards, attempt: set_hifiasm_nhr_resources(wildcards)[1] * attempt,
+        runtime_hrs = lambda wildcards, attempt: set_hifiasm_nhr_resources(wildcards)[2] * attempt
     params:
         prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
     shell:
