@@ -230,7 +230,7 @@ rule extract_selected_ontec_reads:
         reads = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.fasta.gz',
         names = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.select-reads.txt',
     output:
-        'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
+        'output/dedup_ontec/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -246,7 +246,7 @@ rule extract_selected_ontec_reads:
 rule merge_extracted_ontec_reads:
     input:
         subsets = expand(
-            'output/alignments/ont_to_mbg_graph/{{sample}}_{{read_type}}_{readset}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
+            'output/dedup_ontec/ont_to_mbg_graph/{{sample}}_{{read_type}}_{readset}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
             zip,
             kmer=config['mbg_kmers'],
             window=config['mbg_windows'],
@@ -256,6 +256,8 @@ rule merge_extracted_ontec_reads:
         'input/{read_type}/{sample}_{read_type}_{graph_reads}-{graph_readset}.fasta.gz'
     conda:
         '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        graph_reads = '(HIFIEC|HIFIAF)'
     threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
