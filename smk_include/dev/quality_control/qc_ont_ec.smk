@@ -143,7 +143,7 @@ rule cache_ont_corrected_read_stats:
     output:
         h5 = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.stats.h5'
     resources:
-        mem_total_mb = lambda wildcards, attempt: 1024 * attempt
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt
     run:
         import pandas as pd
         import pathlib as pl
@@ -188,7 +188,7 @@ rule deduplicate_ont_corrected_reads:
             window=config['mbg_windows']
         )
     resources:
-        mem_total_mb = lambda wildcards, attempt: 2048 * attempt
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt
     run:
         import pandas as pd
         import pathlib as pl
@@ -235,12 +235,12 @@ rule extract_selected_ontec_reads:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         graph_reads = '(HIFIEC|HIFIAF)'
-    threads: 4
+    threads: config['num_cpu_low']
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
         runtime_hrs = lambda wildcards, attempt: 4 * attempt
     shell:
-        'pigz -p 2 -d -c {input.reads} | seqtk subseq /dev/stdin {input.names} | pigz -p 2 --best > {output}'
+        'pigz -p 2 -d -c {input.reads} | seqtk subseq /dev/stdin {input.names} | pigz -p {threads} --best > {output}'
 
 
 rule merge_extracted_ontec_reads:
@@ -263,4 +263,4 @@ rule merge_extracted_ontec_reads:
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
         runtime_hrs = lambda wildcards, attempt: 4 * attempt
     shell:
-        'pigz -p 2 -d -c {input.reads} | pigz -p {threads} --best > {output}'
+        'pigz -p 2 -d -c {input.subsets} | pigz -p {threads} --best > {output}'
