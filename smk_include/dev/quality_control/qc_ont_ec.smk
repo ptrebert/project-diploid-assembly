@@ -23,9 +23,14 @@ def get_read_path(sample, read_type, prefix=''):
 def set_mbg_resources(wildcards):
 
     if int(wildcards.kmer) < 999:
-        cpu, memory, runtime = config['num_cpu_max'], 786432, 167
+        if wildcards.read_type == 'HIFIAF':
+            cpu, memory, runtime = config['num_cpu_max'], 360448, 167
+        elif wildcards.read_type == 'HIFIEC':
+            cpu, memory, runtime = config['num_cpu_max'], 851968, 47
+        else:
+            raise ValueError(str(wildcards))
     else:
-        cpu, memory, runtime = config['num_cpu_high'], 73728, 23
+        cpu, memory, runtime = config['num_cpu_medium'], 73728, 11
     return cpu, memory, runtime
 
 
@@ -79,7 +84,7 @@ def set_graphaligner_resources(wildcards):
     # if int(wildcards.kmer) < 999:
     #     cpu, memory, runtime = config['num_cpu_max'], 786432, 167
     # else:
-    cpu, memory, runtime = config['num_cpu_high'] + config['num_cpu_medium'], 110592, 10
+    cpu, memory, runtime = config['num_cpu_high'] + config['num_cpu_medium'], 180224, 23
     return cpu, memory, runtime
 
 
@@ -243,10 +248,10 @@ rule merge_extracted_ontec_reads:
             zip,
             kmer=config['mbg_kmers'],
             window=config['mbg_windows'],
-            readset=['guppy-5.0.11-sup-prom', 'guppy-5.0.11-sup-prom']
+            readset=['guppy-5.0.11-sup-prom'] * len(config['mbg_kmers']),
         )
     output:
-        'input/{read_type}/{sample}_{readtype}_{graph_reads}-{graph_readset}.fasta.gz'
+        'input/{read_type}/{sample}_{read_type}_{graph_reads}-{graph_readset}.fasta.gz'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
