@@ -94,7 +94,7 @@ rule ont_to_graph_alignment:
     input:
         sif = ancient('graphaligner.MultiseedClusters.sif'),
         graph = 'output/mbg_hifi/{sample}_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.gfa',
-        reads = 'input/ONTUL/{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz'
+        reads = 'input/ONTUL/{sample}_ONTUL_{readset}.fasta.gz'
     output:
         gaf = 'output/alignments/ont_to_mbg_graph/{sample}_ONTUL_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.gaf',
         ec_reads_clip = 'output/alignments/ont_to_mbg_graph/{sample}_ONTEC_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.fasta.gz',
@@ -233,6 +233,8 @@ rule extract_selected_ontec_reads:
         'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
     conda:
         '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        graph_reads = '(HIFIEC|HIFIAF)'
     threads: 4
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
