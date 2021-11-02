@@ -30,7 +30,7 @@ def set_mbg_resources(wildcards):
         else:
             raise ValueError(str(wildcards))
     else:
-        cpu, memory, runtime = config['num_cpu_medium'], 73728, 11
+        cpu, memory, runtime = config['num_cpu_medium'], 114688, 23
     return cpu, memory, runtime
 
 
