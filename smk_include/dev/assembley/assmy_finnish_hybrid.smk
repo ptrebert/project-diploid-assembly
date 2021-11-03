@@ -452,3 +452,115 @@ rule cache_contig_to_reference_alignment:
             for ref_chrom, alignments in df.groupby('ref_name'):
                 hdf.put(f'{ref_chrom}', alignments, format='fixed')
     # END OF RUN BLOCK
+
+
+def compute_overlap(row, ref_aln_start, ref_aln_end):    
+    ovl = min(ref_aln_end, row['end']) - max(ref_aln_start, row['start'])
+    return ovl
+
+    
+def compute_chry_seq_class(row, seq_classes):
+    
+    select_start = row['ref_aln_start'] < seq_classes['end']
+    select_end = row['ref_aln_end'] > seq_classes['start']
+    hit_classes = seq_classes.loc[select_start & select_end, :].copy()
+    if hit_classes.empty:
+        print(row)
+        print(seq_classes)
+        raise
+    elif hit_classes.shape[0] > 1:
+        hit_classes['overlap'] = hit_classes.apply(
+            compute_overlap,
+            axis=1,
+            args=(row['ref_aln_start'], row['ref_aln_end'])
+        )
+        max_overlap = hit_classes['overlap'].max()
+        hit_classes = hit_classes.loc[(hit_classes['overlap'] == max_overlap), :]
+    assert hit_classes.shape[0] == 1
+    df_idx = hit_classes.index[0]
+    color = hit_classes.at[df_idx, 'color']
+    seq_class = hit_classes.at[df_idx, 'class']
+    order = hit_classes.at[df_idx, 'order']
+    return color, seq_class, order
+
+
+rule create_gfa_annotation:
+    input:
+        seq_classes = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.chrY-seq-classes.tsv'),
+        aln_cache = 'output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.h5',
+    output:
+        csv = 'output/hybrid/220_gfa_annotation/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt
+    run:
+        import pandas as pd
+
+        null_color = 'snow'
+        null_class = 'auto'
+        null_order = 'any'
+
+        seq_classes = pd.read_csv(
+            input.seq_classes, sep='\t', header=None,
+            names=['chrom', 'start', 'end', 'class', 'color', 'order'])
+        seq_classes['end'] += 1
+
+        keep_columns = [
+            'qry_name',
+            'qry_aln_fraction',
+            'color',
+            'seq_class',
+            'seg_order',
+            'ref_name'
+        ]
+
+        concat = []
+        with pd.HDFStore(input.aln_cache, 'r') as hdf:
+            for chrom in hdf.keys():
+                ctg_aln = hdf[chrom]
+                ctg_aln['qry_aln_length'] = ctg_aln['qry_aln_end'] - ctg_aln['qry_aln_start']
+                ctg_aln['qry_aln_fraction'] = ctg_aln['qry_aln_length'] / ctg_aln['qry_length']
+                if chrom.strip('/') != 'chrY':
+                    ctg_aln['color'] = null_color
+                    if chrom.strip('/') == 'chrX':
+                        ctg_aln['seq_class'] = 'chrX'
+                    else:
+                        ctg_aln['seq_class'] = null_class
+                    ctg_aln['seg_order'] = null_order
+                else:
+                    md = []
+                    md_idx = []
+                    for idx, row in ctg_aln.iterrows():
+                        md.append(compute_chry_seq_class(row, seq_classes))
+                        md_idx.append(idx)
+                    md = pd.DataFrame.from_records(
+                        md,
+                        index=md_idx,
+                        columns=['color', 'seq_class', 'seg_order']
+                    )
+                    ctg_aln = ctg_aln.merge(md, left_index=True, right_index=True)
+                concat.append(ctg_aln[keep_columns])
+
+    concat = pd.concat(concat, axis=0, ignore_index=False)
+    concat.reset_index(drop=True, inplace=True)
+
+    # merge split-align, all same region
+    concat.drop_duplicates(
+        ['qry_name', 'seg_order', 'ref_name'],
+        keep='first',
+        inplace=True
+    )
+    # drop split-align, keep max aligned
+    concat.sort_values(['qry_name', 'qry_aln_fraction'], inplace=True, ascending=False)
+    concat.drop_duplicates(
+        ['qry_name'],
+        keep='first',  # is sorted = keep max qry_aln_frac
+        inplace=True
+    )
+    with open(output.csv, 'w') as dump:
+        _ = dump.write(','.join(['Name', 'Chrom', 'AlnFrac', 'SeqClass', 'SegOrder', 'Color']) + '\n')
+        concat[['qry_name', 'ref_name', 'qry_aln_fraction', 'seq_class', 'seg_order', 'color']].to_csv(
+            dump,
+            header=False,
+            index=False
+        )
+    # END OF RUN BLOCK

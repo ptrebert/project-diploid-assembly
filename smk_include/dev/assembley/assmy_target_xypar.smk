@@ -79,6 +79,34 @@ rule hifiasm_chry_targeted_assembly:
         'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.reads} &> {log.hifiasm}'
 
 
+rule lja_chry_targeted_assembly:
+    input:
+        sif = ancient('LJA.sif'),
+        reads = select_chry_reads
+    output:
+        ass = 'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{read_type}.{mapq}/assembly.fasta',
+    log:
+        lja = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.lja.log',
+    benchmark:
+        'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.lja.t36.rsrc',
+    # conda:
+    #     '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        sample = CONSTRAINT_ALL_SAMPLES
+    threads: config['num_cpu_medium'] + config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 131072 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 11 * attempt
+    params:
+        low_k = 101,
+        high_k = 5001,
+        out_folder = lambda wildcards, output: output.assm.rsplit('/', 1)[0]
+    shell:
+        'module load Singularity && singularity exec '
+        '{input.sif} '
+        'lja -o {params.out_folder} --reads {input.reads} -t {threads} -k {params.low_k} -K {params.high_K} &> {log.lja} '
+
+
 rule mbg_chry_targeted_assembly:
     """
     sif = ancient('mbg.master.sif'),
