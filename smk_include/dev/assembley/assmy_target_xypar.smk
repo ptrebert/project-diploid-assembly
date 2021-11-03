@@ -84,7 +84,7 @@ rule lja_chry_targeted_assembly:
         sif = ancient('LJA.sif'),
         reads = select_chry_reads
     output:
-        ass = 'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{read_type}.{mapq}/assembly.fasta',
+        assm = 'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{read_type}.{mapq}/assembly.fasta',
     log:
         lja = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.lja.log',
     benchmark:
@@ -104,7 +104,7 @@ rule lja_chry_targeted_assembly:
     shell:
         'module load Singularity && singularity exec '
         '{input.sif} '
-        'lja -o {params.out_folder} --reads {input.reads} -t {threads} -k {params.low_k} -K {params.high_K} &> {log.lja} '
+        'lja -o {params.out_folder} --reads {input.reads} -t {threads} -k {params.low_k} -K {params.high_k} &> {log.lja} '
 
 
 rule mbg_chry_targeted_assembly:
