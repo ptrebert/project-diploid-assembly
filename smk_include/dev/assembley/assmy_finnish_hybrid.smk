@@ -458,7 +458,7 @@ def compute_overlap(row, ref_aln_start, ref_aln_end):
     ovl = min(ref_aln_end, row['end']) - max(ref_aln_start, row['start'])
     return ovl
 
-    
+
 def compute_chry_seq_class(row, seq_classes):
     
     select_start = row['ref_aln_start'] < seq_classes['end']
@@ -540,27 +540,27 @@ rule create_gfa_annotation:
                     ctg_aln = ctg_aln.merge(md, left_index=True, right_index=True)
                 concat.append(ctg_aln[keep_columns])
 
-    concat = pd.concat(concat, axis=0, ignore_index=False)
-    concat.reset_index(drop=True, inplace=True)
+        concat = pd.concat(concat, axis=0, ignore_index=False)
+        concat.reset_index(drop=True, inplace=True)
 
-    # merge split-align, all same region
-    concat.drop_duplicates(
-        ['qry_name', 'seg_order', 'ref_name'],
-        keep='first',
-        inplace=True
-    )
-    # drop split-align, keep max aligned
-    concat.sort_values(['qry_name', 'qry_aln_fraction'], inplace=True, ascending=False)
-    concat.drop_duplicates(
-        ['qry_name'],
-        keep='first',  # is sorted = keep max qry_aln_frac
-        inplace=True
-    )
-    with open(output.csv, 'w') as dump:
-        _ = dump.write(','.join(['Name', 'Chrom', 'AlnFrac', 'SeqClass', 'SegOrder', 'Color']) + '\n')
-        concat[['qry_name', 'ref_name', 'qry_aln_fraction', 'seq_class', 'seg_order', 'color']].to_csv(
-            dump,
-            header=False,
-            index=False
+        # merge split-align, all same region
+        concat.drop_duplicates(
+            ['qry_name', 'seg_order', 'ref_name'],
+            keep='first',
+            inplace=True
         )
-    # END OF RUN BLOCK
+        # drop split-align, keep max aligned
+        concat.sort_values(['qry_name', 'qry_aln_fraction'], inplace=True, ascending=False)
+        concat.drop_duplicates(
+            ['qry_name'],
+            keep='first',  # is sorted = keep max qry_aln_frac
+            inplace=True
+        )
+        with open(output.csv, 'w') as dump:
+            _ = dump.write(','.join(['Name', 'Chrom', 'AlnFrac', 'SeqClass', 'SegOrder', 'Color']) + '\n')
+            concat[['qry_name', 'ref_name', 'qry_aln_fraction', 'seq_class', 'seg_order', 'color']].to_csv(
+                dump,
+                header=False,
+                index=False
+            )
+        # END OF RUN BLOCK
