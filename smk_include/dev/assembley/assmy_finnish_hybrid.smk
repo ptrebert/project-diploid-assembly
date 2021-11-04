@@ -365,6 +365,90 @@ rule build_connected_graph:
         '{params.script_exec} {input.gapped_graph} {input.forbidden_ends} {input.majority_bridges} > {output.gfa} 2> {log}'
 
 
+def select_graph_to_dump(wildcards):
+
+    is_chry = False
+    is_wg = False
+    is_hybrid = False
+    is_hifiasm = False
+    is_lja = False
+    mapq = None
+    graph_reads = None
+    tig_set = None
+    if 'MQ0Y' in wildcards.tigs:
+        # targeted assembly graph
+        is_chry = True
+        mapq = 'mq00'
+        if 'EC' in wildcards.tigs:
+            graph_reads = 'HIFIEC'
+        elif 'AF' in wildcards.tigs:
+            graph_reads = 'HIFIAF'
+        else:
+            raise ValueError(str(wildcards))
+    elif wildcards.tigs in ['TIGRAW', 'TIGPRI', 'TIGALT']:
+        # whole-genome assembly graph
+        is_wg = True
+        is_hifiasm = True
+    elif wildcards.tigs in ['TIGLJA']:
+        is_wg = True
+        is_lja = True
+    else:
+        raise ValueError(str(wildcards))
+    
+    if any(x in wildcards.tigs for x in ['TIGRAW', 'YRAW']):
+        tig_set = 'r_utg'
+    elif any(x in wildcards.tigs for x in ['TIGPRI', 'YPRI']):
+        tig_set = 'p_ctg'
+    elif any(x in wildcards.tigs for x in ['TIGALT', 'YALT']):
+        tig_set = 'a_ctg'
+    else:
+        pass
+
+    if wildcards.ont_type == 'UNSET':
+        is_hybrid = False
+    elif wildcards.ont_type == 'ONTUL':
+        is_hybrid = True
+    else:
+        raise ValueError(str(wildcards))
+
+    if 'LJA' in wildcards.tigs:
+        is_lja = True
+        is_hifiasm = False
+    else:
+        is_hifiasm = True
+        is_lja = False
+
+    formatter = None
+    if is_hybrid:
+        gfa_path = 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa'
+        formatter = dict(wildcards)
+    elif is_chry and is_hifiasm:
+        gfa_path = 'output/target_assembly/chry_reads/{sample}/{sample_info}_{sample}_{graph_reads}.{mapq}.{tig_set}.gfa'
+        formatter = dict(wildcards)
+        assert graph_reads is not None
+        formatter['graph_reads'] = graph_reads
+        assert mapq is not None
+        formatter['mapq'] = mapq
+        assert tig_set is not None
+        formatter['tig_set'] = tig_set
+    elif is_chry and is_lja:
+        gfa_path = 'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{graph_reads}.{mapq}/assembly.fasta'
+        formatter = dict(wildcards)
+        assert graph_reads is not None
+        formatter['graph_reads'] = graph_reads
+        assert mapq is not None
+        formatter['mapq'] = mapq
+        raise  # so far, no hp-uncompressed gfa available as output it seems...
+    elif is_wg and is_hifiasm:
+        gfa_path = SAMPLE_INFOS[wildcards.sample][wildcards.tigs]
+    else:
+        raise ValueError(str(wildcards))
+
+    if formatter is not None:
+        gfa_path = gfa_path.format(**formatter)
+    return gfa_path
+
+
 rule dump_final_graph_to_fasta:
     input:
         gfa = 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa'
@@ -373,6 +457,8 @@ rule dump_final_graph_to_fasta:
         fasta = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.fasta',
     conda:
         '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        tigs = '(TIGPRI|TIGALT|TIGRAW|ECMQ0YRAW|AFMQ0YRAW)'
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt,
         runtime_hrs = lambda wildcards, attempt: attempt * attempt,
@@ -380,6 +466,28 @@ rule dump_final_graph_to_fasta:
         'gfatools stat {input.gfa} > {output.stats}'
             ' && '
         'gfatools gfa2fa {input.gfa} > {output.fasta}'
+
+
+def select_fasta_to_align(wildcards):
+
+    default_fasta = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.fasta'
+    lja_fasta = 'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{graph_reads}.{mapq}/assembly.fasta'
+    formatter = dict(wildcards)
+    if 'LJA' in wildcards.tigs:
+        if 'MQ0' in wildcards.tigs:
+            formatter['mapq'] = 'mq00'
+        else:
+            raise
+        if 'EC' in wildcards.tigs:
+            formatter['graph_reads'] = 'HIFIEC'
+        elif 'AF' in wildcards.tigs:
+            formatter['graph_reads'] = 'HIFIAF'
+        else:
+            raise
+        use_fasta = lja_fasta.format(**formatter)
+    else:
+        use_fasta = default_fasta.format(**formatter)
+    return use_fasta
 
 
 rule align_contigs_to_reference:
@@ -391,7 +499,7 @@ rule align_contigs_to_reference:
     benchmark:
         'rsrc/output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.mmap.rsrc',
     wildcard_constraints:
-        tigs = '(TIGPRI|TIGALT|TIGRAW|ECMQ0YRAW|AFMQ0YRAW)'
+        tigs = '(TIGPRI|TIGALT|TIGRAW|TIGLJA|ECMQ0YRAW|AFMQ0YRAW|AFMQ0YLJA|ECMQ0YLJA)'
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:

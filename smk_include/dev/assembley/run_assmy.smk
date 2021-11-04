@@ -140,10 +140,10 @@ rule run_chry_targeted_t2t:
             read_type=['HIFIAF', 'HIFIEC'],
             mapq=['mq00'],
         ),
-        aln_cache = expand(
+        gfa_labels = expand(
             'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
-            ont_type=['ONTUL'],
+            ont_type=['ONTUL', 'UNSET'],
             tigs=['ECMQ0YRAW', 'AFMQ0YRAW'],
             reference=['T2Tv11_hg002Yv2_chm13']
         )
@@ -156,6 +156,13 @@ rule run_chry_targeted_lja:
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ['HG02666', 'HC02666', 'NA18989', 'HC18989']],
             read_type=['HIFIAF', 'HIFIEC'],
             mapq=['mq00']
+        ),
+        gfa_labels = expand(
+            'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ['HG02666', 'HC02666', 'NA18989', 'HC18989']],
+            ont_type=['UNSET'],
+            tigs=['ECMQ0YLJA', 'AFMQ0YLJA'],
+            reference=['T2Tv11_hg002Yv2_chm13']
         )
 
 
