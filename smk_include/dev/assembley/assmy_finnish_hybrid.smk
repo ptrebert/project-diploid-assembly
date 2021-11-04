@@ -68,7 +68,8 @@ rule hybrid_ga_align_ont_to_string_graph:
     benchmark:
         'rsrc/output/hybrid/ont_to_graph/{sample_info}_{sample}.{ont_type}.{tigs}.ga.rsrc',
     wildcard_constraints:
-        sample = CONSTRAINT_ALL_SAMPLES
+        sample = CONSTRAINT_ALL_SAMPLES,
+        ont_type = '(ONTUL|ONTEC|ONTHY)'
 #    conda: '../../../environment/conda/conda_biotools.yml'
     threads: lambda wildcards: set_graphaligner_hybrid_resources(wildcards)[0]
     resources:
@@ -451,7 +452,7 @@ def select_graph_to_dump(wildcards):
 
 rule dump_final_graph_to_fasta:
     input:
-        gfa = 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa'
+        gfa = select_graph_to_dump
     output:
         stats = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.gfa.stats.txt',
         fasta = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.fasta',
@@ -492,7 +493,7 @@ def select_fasta_to_align(wildcards):
 
 rule align_contigs_to_reference:
     input:
-        fa_tigs = 'output/hybrid/200_final_post/{sample_info}_{sample}.{ont_type}.{tigs}.final.fasta',
+        fa_tigs = select_fasta_to_align,
         fa_ref = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta')
     output:
         paf = 'output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.paf.gz',
