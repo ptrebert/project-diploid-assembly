@@ -21,12 +21,17 @@ def get_read_path(sample, read_type, prefix=''):
 
 
 def set_mbg_resources(wildcards):
+    """
+    Since the resource usage is somewhat unpredictable
+    for MBG, make one last attempt to get the jobs done
+    utilizing the "big stick" tactic...
+    """
 
-    if int(wildcards.kmer) < 999:
+    if int(wildcards.kmer) < 9999:
         if wildcards.read_type == 'HIFIAF':
-            cpu, memory, runtime = config['num_cpu_max'], 360448, 167
+            cpu, memory, runtime = config['num_cpu_max'], 524288, 167
         elif wildcards.read_type == 'HIFIEC':
-            cpu, memory, runtime = config['num_cpu_max'], 851968, 47
+            cpu, memory, runtime = config['num_cpu_max'], 1073741824, 167
         else:
             raise ValueError(str(wildcards))
     else:
