@@ -31,7 +31,7 @@ def set_mbg_resources(wildcards):
         if wildcards.read_type == 'HIFIAF':
             cpu, memory, runtime = config['num_cpu_max'], 524288, 167
         elif wildcards.read_type == 'HIFIEC':
-            cpu, memory, runtime = config['num_cpu_max'], 1073741824, 167
+            cpu, memory, runtime = config['num_cpu_max'], 1048576, 167
         else:
             raise ValueError(str(wildcards))
     else:
