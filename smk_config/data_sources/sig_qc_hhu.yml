@@ -8,16 +8,6 @@ path_assembly_graphs: '/gpfs/project/projects/medbioinf/projects/hgsvc/2021_pgas
 path_short_reads: /gpfs/project/projects/medbioinf/data/short_reads/nygc
 reference: T2Tv11_hg002Yv2_chm13
 
-mbg_kmers:
-  - 501
-  - 1001
-  - 2001
-  - 3001
-  - 5001
-
-mbg_windows:
-  - 100
-  - 200
-  - 400
-  - 600
-  - 1000
+mbg_init_kmer: 501
+mbg_window_size: 100
+mbg_resolve_kmer: 5001

@@ -94,14 +94,43 @@ rule run_qv_estimate:
 rule run_ont_error_correction:
     input:
         expand(
-            'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
+            'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.h5',
             sample=ONTUL_SAMPLES,
-            read_type=['ONTEC'],
-            readset=['HIFIAF-pgas-v14-dev'],
+            read_type=['ONTUL'],
+            readset=['guppy-5.0.11-sup-prom'],
+            graph_reads=['HIFIAF'],
+            graph_readset=['pgas-v14-dev'],
+            kmer=config['mbg_init_kmer'],
+            window=config['mbg_window_size'],
+            resolve=config['mbg_resolve_kmer']
         ),
         expand(
-            'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
+            'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.h5',
             sample=ONTUL_SAMPLES,
-            read_type=['ONTEC'],
-            readset=['HIFIEC-hifiasm-v0.15.4'],
+            read_type=['ONTUL'],
+            readset=['guppy-5.0.11-sup-prom'],
+            graph_reads=['HIFIEC'],
+            graph_readset=['hifiasm-v0.15.4'],
+            kmer=config['mbg_init_kmer'],
+            window=config['mbg_window_size'],
+            resolve=config['mbg_resolve_kmer']
         ),
+
+
+# rule run_ont_error_correction:
+#     """
+#     Reminder: previous version...
+#     """
+#     input:
+#         expand(
+#             'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
+#             sample=ONTUL_SAMPLES,
+#             read_type=['ONTEC'],
+#             readset=['HIFIAF-pgas-v14-dev'],
+#         ),
+#         expand(
+#             'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
+#             sample=ONTUL_SAMPLES,
+#             read_type=['ONTEC'],
+#             readset=['HIFIEC-hifiasm-v0.15.4'],
+#         ),
