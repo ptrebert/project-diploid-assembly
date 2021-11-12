@@ -44,7 +44,7 @@ dependencies:
   - longshot=0.4.1
 #  - deepvariant=1.1.0
   - flye=2.9
-  - hifiasm=0.15.4
+  - hifiasm=0.16.1
   - yak=0.1
   - racon=1.4.10
   - lighter=1.1.2
