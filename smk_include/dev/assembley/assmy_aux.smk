@@ -32,7 +32,7 @@ def compute_lut_mbg_params():
     param_lut = dict()
     for k, w, r in zip(init_kmer, window_sizes, resolve_kmer):
         param_comb = f'k{k}-w{w}-r{r}'.encode('ascii')
-        param_hash = haslib.sha1(param_comb).hexdigest()
+        param_hash = hashlib.sha1(param_comb).hexdigest()
         key = param_hash.upper()[:6]
         if key in param_lut:
             raise ValueError(f"MBG param key collision: {param_comb.decode('ascii')} / {param_lut[key]}")
@@ -78,7 +78,7 @@ def compute_lut_lja_params():
     param_lut = dict()
     for k, K in zip(small_kmer, large_kmer):
         param_comb = f'k{k}-K{K}'.encode('ascii')
-        param_hash = haslib.sha1(param_comb).hexdigest()
+        param_hash = hashlib.sha1(param_comb).hexdigest()
         key = param_hash.upper()[:6]
         if key in param_lut:
             raise ValueError(f"LJA param key collision: {param_comb.decode('ascii')} / {param_lut[key]}")

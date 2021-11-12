@@ -170,17 +170,11 @@ rule run_chry_targeted_mbg_hybrid:
 
 rule run_chry_targeted_lja_input:
     input:
-        target_chry = expand(
-            'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}/assembly.fasta',
-            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ['HG02666', 'HC02666', 'NA18989', 'HC18989']],
-            read_type=['HIFIEC'],
-            mapq=['mq00']
-        ),
         gfa_labels = expand(
             'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ['HG02666', 'HC02666', 'NA18989', 'HC18989']],
             ont_type=['UNSET'],
-            tigs=[f'LJA{lja_params}-ECMQ0Y' for lja_params in LJA_PARAMS.keys()],
+            tigs=[f'LJA-{lja_params}-ECMQ0Y' for lja_params in LJA_PARAMS.keys()],
             reference=['T2Tv11_hg002Yv2_chm13']
         )
 
