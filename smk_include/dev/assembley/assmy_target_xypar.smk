@@ -59,24 +59,61 @@ rule hifiasm_chry_targeted_assembly:
     input:
         reads = select_chry_reads
     output:
-        primary_contigs = 'output/target_assembly/chry_reads/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.p_ctg.gfa',
-        raw_unitigs = 'output/target_assembly/chry_reads/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.r_utg.gfa',
+        primary_unitigs = 'output/target_assembly/chry_reads/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.p_utg.gfa',
+        raw_unitigs = 'output/target_assembly/chry_reads/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.r_utg.gfa',
     log:
         hifiasm = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.log',
     benchmark:
-        'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.t12.rsrc',
+        'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.t24.rsrc',
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         sample = CONSTRAINT_ALL_SAMPLES
-    threads: config['num_cpu_medium']
+    threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
         runtime_hrs = lambda wildcards, attempt: 4 ** attempt
     params:
-        prefix = lambda wildcards, output: output.primary_contigs.rsplit('.', 2)[0],
+        prefix = lambda wildcards, output: output.primary_unitigs.rsplit('.', 2)[0],
+        purge_stringency = 3,
+        n_hap = 1,
+        #genome_size = '60m' --- with hifiasm 0.16.1, this can be set, but since chrYq is quite
+        # variable in size, leave it to the default "auto" and hope for the best
     shell:
-        'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.reads} &> {log.hifiasm}'
+        'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary '
+            '-l {params.purge_stringency} --n-hap {params.n_hap} '
+            '{input.reads} &> {log.hifiasm}'
+
+
+rule mbg_chry_targeted_assembly:
+    """
+    sif = ancient('mbg.master.sif'),
+    sif = ancient('mbg.UnitigResolve.sif'),
+    'module load Singularity && singularity exec '
+        '--bind /:/hilbert {input.sif} '
+    """
+    input:
+        reads = select_chry_reads
+    output:
+        graph = 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gfa',
+        paths = 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gaf',
+    log:
+        'log/output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.log',
+    benchmark:
+        'rsrc/output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.t24.rsrc',
+    wildcard_constraints:
+        read_type = 'HIFIEC',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    threads: config['num_cpu_high']
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
+    shell:
+        'MBG -i {input.reads} -t {threads} '
+            '-k {wildcards.kmer} -w {wildcards.window} --resolve-maxk {wildcards.resolvek} '
+            '--error-masking no '
+            '--out {output.graph} --output-sequence-paths {output.paths} &> {log}'
 
 
 rule lja_chry_targeted_assembly:
@@ -84,56 +121,22 @@ rule lja_chry_targeted_assembly:
         sif = ancient('LJA.sif'),
         reads = select_chry_reads
     output:
-        assm = 'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{read_type}.{mapq}/assembly.fasta',
+        assm = 'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}/assembly.fasta',
     log:
-        lja = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.lja.log',
+        lja = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}.lja.log',
     benchmark:
-        'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.lja.t36.rsrc',
+        'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}.lja.t24.rsrc',
     # conda:
     #     '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
         sample = CONSTRAINT_ALL_SAMPLES
-    threads: config['num_cpu_medium'] + config['num_cpu_high']
+    threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 131072 * attempt,
         runtime_hrs = lambda wildcards, attempt: 11 * attempt
     params:
-        low_k = 101,
-        high_k = 5001,
         out_folder = lambda wildcards, output: output.assm.rsplit('/', 1)[0]
     shell:
         'module load Singularity && singularity exec '
         '{input.sif} '
-        'lja -o {params.out_folder} --reads {input.reads} -t {threads} -k {params.low_k} -K {params.high_k} &> {log.lja} '
-
-
-rule mbg_chry_targeted_assembly:
-    """
-    sif = ancient('mbg.master.sif'),
-    """
-    input:
-        sif = ancient('mbg.UnitigResolve.sif'),
-        reads = select_chry_reads
-    output:
-        graph = 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.gfa',
-        paths = 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.gaf',
-    log:
-        'log/output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.log',
-    benchmark:
-        'rsrc/output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.rsrc',
-    wildcard_constraints:
-        read_type = 'HIFIEC',
-        sample = '(NA193N7|NA193NN|AFR4MIX)'
-#    conda:
-#        '../../../environment/conda/conda_biotools.yml'
-    threads: config['num_cpu_high']
-    resources:
-        mem_total_mb = lambda wildcards, attempt: 12576 * attempt if int(wildcards.kmer) > 999 else 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: attempt if int(wildcards.kmer) > 999 else 2 * attempt
-    shell:
-        'module load Singularity && singularity exec '
-        '--bind /:/hilbert {input.sif} '
-        'MBG -i {input.reads} -t {threads} '
-            '-k {wildcards.kmer} -w {wildcards.window} '
-            '--error-masking no --include-end-kmers '
-            '--out {output.graph} --output-sequence-paths {output.paths} &> {log}'
+        'lja -o {params.out_folder} --reads {input.reads} -t {threads} -k {wildcards.kmer} -K {wildcards.resolvek} &> {log.lja} '

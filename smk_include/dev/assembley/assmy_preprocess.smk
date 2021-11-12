@@ -60,11 +60,20 @@ rule merge_hg002_chry_draft:
 
 
 def select_input_graph(wildcards):
-
+    assemblers = {
+        'HAS': 'hifiasm',
+        'MBG': 'mbg',
+        'LJA': 'lja'
+    }
+    graphs_paths = {
+        'hifiasm': 'output/target_assembly/chry_reads/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.{tigs}.gfa',
+        'mbg': 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gfa',
+        'lja': 'no_uncompressed_graph_available'
+    }
     try:
+        # for hifiasm whole-genome graphs
         gfa = SAMPLE_INFOS[wildcards.sample][wildcards.tigs]
     except KeyError:
-        template = 'output/target_assembly/chry_reads/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.r_utg.gfa'
         if 'EC' in wildcards.tigs:
             read_type = 'HIFIEC'
         elif 'AF' in wildcards.tigs:
@@ -73,16 +82,28 @@ def select_input_graph(wildcards):
             raise
         if 'MQ0' in wildcards.tigs:
             mapq = 'mq00'
-        assert 'RAW' in wildcards.tigs
+        else:
+            raise
+        assembler = assemblers[wildcards.tigs[:3]]
+        if assembler == 'lja':
+            raise ValueError(f'Not supported at the moment - assembler LJA / {str(wildcards)}')
         formatter = {
             'sample': wildcards.sample,
             'sample_info': wildcards.sample_info,
             'read_type': read_type,
-            'mapq': mapq
+            'mapq': mapq,
         }
-        gfa = template.format(**formatter)
+        if assembler == 'hifiasm':
+            formatter['tigs'] = get_hifiasm_tigs(wildcards.tigs)
+        elif assembler == 'mbg':
+            k, w, r = get_mbg_param(wildcards.tigs)
+            formatter['kmer'] = k
+            formatter['window'] = w
+            formatter['resolvek'] = r
+        else:
+            raise
+        gfa = graphs_paths[assembler].format(**formatter)
     return gfa
-
 
 
 rule check_overlong_edges:
