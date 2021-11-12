@@ -80,7 +80,7 @@ rule hifiasm_chry_targeted_assembly:
         #genome_size = '60m' --- with hifiasm 0.16.1, this can be set, but since chrYq is quite
         # variable in size, leave it to the default "auto" and hope for the best
     shell:
-        'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary '
+        'hifiasm -o {params.prefix} -t {threads} --write-paf --primary '
             '-l {params.purge_stringency} --n-hap {params.n_hap} '
             '{input.reads} &> {log.hifiasm}'
 

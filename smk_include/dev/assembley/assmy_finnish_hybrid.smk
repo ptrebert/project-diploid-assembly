@@ -13,7 +13,7 @@ def select_hybrid_assm_ont_reads(wildcards):
 
     if 'MQ' in wildcards.tigs:
         assert wildcards.ont_type == 'ONTUL'
-        assert 'YRAW' in wildcards.tigs
+        assert 'MQ0' in wildcards.tigs
         if 'MQ0' in wildcards.tigs:
             mapq = 'mq00'
         else:
@@ -36,7 +36,7 @@ def set_graphaligner_hybrid_resources(wildcards):
 
     if wildcards.tigs in ['TIGRAW', 'TIGPRI', 'TIGALT']:
         resources = config['num_cpu_max'], 303104, 167
-    elif 'YRAW' in wildcards.tigs:
+    elif 'MQ0Y' in wildcards.tigs:
         if any(x in wildcards.sample_info for x in ['DUO', 'TRIO', 'MIX']):
             resources = config['num_cpu_high'], 32768, 12
         else:
@@ -391,7 +391,7 @@ def select_graph_to_dump(wildcards):
     formatter = dict(wildcards)
     formatter['mapq'] = mapq
 
-    assembler = assemblers[wildcard.tigs.split('-')[0]]
+    assembler = assemblers[wildcards.tigs.split('-')[0]]
     if variant == 'input':
         if 'EC' in wildcards.tigs:
             read_type = 'HIFIEC'
@@ -466,8 +466,6 @@ rule align_contigs_to_reference:
         paf = 'output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.paf.gz',
     benchmark:
         'rsrc/output/hybrid/210_align_ref/{sample_info}_{sample}_{ont_type}_{tigs}_MAP-TO_{reference}.mmap.rsrc',
-    wildcard_constraints:
-        tigs = '(TIGPRI|TIGALT|TIGRAW|TIGLJA|ECMQ0YRAW|AFMQ0YRAW|AFMQ0YLJA|ECMQ0YLJA)'
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
