@@ -26,7 +26,13 @@ def set_mbg_resources(wildcards):
     unclear how much error-masking is affecting runtime
     for HIFI-AF read sets
     """
-    cpu, memory, runtime = config['num_cpu_high'], 114688, 47
+    if wildcards.read_type == 'HIFIAF':
+        # uses error-masing, much faster apparently
+        cpu, memory, runtime = config['num_cpu_high'], 114688, 23
+    elif wildcards.read_type == 'HIFIEC':
+        cpu, memory, runtime = config['num_cpu_high'] + config['num_cpu_medium'], 262144, 47
+    else:
+        raise ValueError(str(wildcards))
     return cpu, memory, runtime
 
 
@@ -84,7 +90,7 @@ def set_graphaligner_resources(wildcards):
     # if int(wildcards.kmer) < 999:
     #     cpu, memory, runtime = config['num_cpu_max'], 786432, 167
     # else:
-    cpu, memory, runtime = config['num_cpu_high'] + config['num_cpu_medium'], 180224, 23
+    cpu, memory, runtime = config['num_cpu_high'] + config['num_cpu_medium'], 114688, 23
     return cpu, memory, runtime
 
 
