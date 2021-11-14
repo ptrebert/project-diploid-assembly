@@ -108,7 +108,7 @@ rule mbg_chry_targeted_assembly:
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt,
     shell:
         'MBG -i {input.reads} -t {threads} '
             '-k {wildcards.kmer} -w {wildcards.window} --resolve-maxk {wildcards.resolvek} '
@@ -133,7 +133,7 @@ rule lja_chry_targeted_assembly:
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 131072 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 11 * attempt
+        runtime_hrs = lambda wildcards, attempt: 23 * attempt
     params:
         out_folder = lambda wildcards, output: output.assm.rsplit('/', 1)[0]
     shell:
