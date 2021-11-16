@@ -107,8 +107,8 @@ rule mbg_chry_targeted_assembly:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 49152 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 23 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 * attempt,
     shell:
         'MBG -i {input.reads} -t {threads} '
             '-k {wildcards.kmer} -w {wildcards.window} --resolve-maxk {wildcards.resolvek} '
@@ -132,7 +132,7 @@ rule lja_chry_targeted_assembly:
         sample = CONSTRAINT_ALL_SAMPLES
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 131072 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 24576 * attempt,
         runtime_hrs = lambda wildcards, attempt: 23 * attempt
     params:
         out_folder = lambda wildcards, output: output.assm.rsplit('/', 1)[0]

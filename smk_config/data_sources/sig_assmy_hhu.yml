@@ -11,10 +11,16 @@ path_alignment_cache: '/gpfs/project/projects/medbioinf/projects/hgsvc/ontqc/run
 
 mbg_init_kmer:
   - 501
+  - 501
+  - 501
 mbg_window_size:
+  - 100
+  - 100
   - 100
 mbg_resolve_kmer:
   - 5001
+  - 10001
+  - 15001
 
 lja_small_kmer:
   - 501
