@@ -10,4 +10,4 @@ reference: T2Tv11_hg002Yv2_chm13
 
 mbg_init_kmer: 501
 mbg_window_size: 100
-mbg_resolve_kmer: 5001
+mbg_resolve_kmer: 15001

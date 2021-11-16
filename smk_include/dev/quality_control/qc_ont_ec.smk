@@ -27,10 +27,10 @@ def set_mbg_resources(wildcards):
     for HIFI-AF read sets
     """
     if wildcards.read_type == 'HIFIAF':
-        # uses error-masing, much faster apparently
+        # uses error-masking, much faster apparently
         cpu, memory, runtime = config['num_cpu_high'], 114688, 23
     elif wildcards.read_type == 'HIFIEC':
-        cpu, memory, runtime = config['num_cpu_high'] + config['num_cpu_medium'], 262144, 47
+        cpu, memory, runtime = config['num_cpu_high'], 385024, 72
     else:
         raise ValueError(str(wildcards))
     return cpu, memory, runtime
