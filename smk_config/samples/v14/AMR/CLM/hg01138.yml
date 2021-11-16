@@ -13,6 +13,7 @@ sample_description_HG01138:
             data_type: fastq
             load_type: parts
             data_source_folder: EMPTY_PATH
+            comment: "QC issues - sample no longer queued for production"
         - strandseq:
             readset: HG01138_hprc_ilnxs-80pe_sseq
             library_fractions: one

@@ -17,7 +17,8 @@ sample_description_HG01258:
             readset: HG01258_hprc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
-            data_source_folder: EMPTY_PATH
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hprc_strandseq/HG01258
+            data_source_filter: ".txt.gz"
         - short_reads:
             readset: HG01258_SHORT_READSET
             load_type: complete
@@ -36,7 +37,7 @@ sample_targets_HG01258:
   - defaults:
       hap_reads: *long_reads
       vc_reads: *long_reads
-      #sseq_reads: *strandseq_reads
+      sseq_reads: *strandseq_reads
       hap_assm_mode: split
       hap:
         - h1-un
