@@ -96,7 +96,7 @@ rule run_ont_error_correction:
         expand(
             'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.h5',
             sample=ONTUL_SAMPLES,
-            read_type=['ONTUL'],
+            read_type=['ONTEC'],
             readset=['guppy-5.0.11-sup-prom'],
             graph_reads=['HIFIAF'],
             graph_readset=['pgas-v14-dev'],
@@ -107,7 +107,7 @@ rule run_ont_error_correction:
         expand(
             'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.h5',
             sample=ONTUL_SAMPLES,
-            read_type=['ONTUL'],
+            read_type=['ONTEC'],
             readset=['guppy-5.0.11-sup-prom'],
             graph_reads=['HIFIEC'],
             graph_readset=['hifiasm-v0.15.4'],
