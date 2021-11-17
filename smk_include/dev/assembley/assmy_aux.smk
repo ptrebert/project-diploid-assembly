@@ -1,3 +1,5 @@
+localrules: dump_mbg_param_info
+
 import hashlib
 
 
@@ -65,6 +67,19 @@ def get_mbg_param(param_spec, which=None):
         assert which in param_pos, f'Cannot process "which": {which}'
         result = result[param_pos[which]]
     return result
+
+
+rule dump_mbg_param_info:
+    output:
+        expand(
+            'assembler_params/MBG_{param_info}.info',
+        )
+    run:
+        file_template = 'assembler_params/MBG_{}.info'
+        for phash, pvalues in MBG_PARAMS.items():
+            param_info = f'{phash}_{pvalues}'
+            with open(file_template.format(param_info), 'w') as dump:
+                pass
 
 
 def compute_lut_lja_params():

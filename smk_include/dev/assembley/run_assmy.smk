@@ -151,6 +151,10 @@ rule run_chry_targeted_hifiasm_hybrid:
 
 rule run_chry_targeted_mbg_hybrid:
     input:
+        mbg_params = expand(
+            'assembler_params/MBG_{param_info}.info',
+            param_info=[f'{phash}_{pvalues}' for phash, pvalues in MBG_PARAMS.items()]
+        ),
         gfa_labels_regular = expand(
             'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
