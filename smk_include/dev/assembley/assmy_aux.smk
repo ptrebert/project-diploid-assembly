@@ -79,7 +79,7 @@ rule dump_mbg_param_info:
     run:
         file_template = 'assembler_params/MBG_{}.info'
         for phash, pvalues in MBG_PARAMS.items():
-            param_info = f'{phash}_{pvalues}'
+            param_info = '{}_k{}-w{}-r{}'.format(phash, *pvalues)
             with open(file_template.format(param_info), 'w') as dump:
                 pass
 
