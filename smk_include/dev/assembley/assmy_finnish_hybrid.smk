@@ -38,9 +38,9 @@ def set_graphaligner_hybrid_resources(wildcards):
         resources = config['num_cpu_max'], 303104, 167
     elif 'MQ0Y' in wildcards.tigs:
         if any(x in wildcards.sample_info for x in ['DUO', 'TRIO', 'MIX']) or wildcards.sample.startswith('HC'):
-            resources = config['num_cpu_high'], 110592, 23
+            resources = config['num_cpu_high'], 262144, 23
         else:
-            resources = config['num_cpu_high'], 24576, 4
+            resources = config['num_cpu_high'], 57344, 11
     else:
         raise
     return resources
@@ -277,7 +277,8 @@ rule identify_unique_nodes:
     output:
         listing = 'output/hybrid/60_id_unique_nodes/{sample_info}_{sample}.{ont_type}.{tigs}.unique-nodes.txt'
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt,
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt * attempt
     params:
         script_exec = os.path.join(HYBRID_SCRIPT_PATH, 'estimate_unique_local.py'),
         long_node_threshold = 100000,
