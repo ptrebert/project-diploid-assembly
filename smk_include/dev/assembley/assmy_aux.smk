@@ -73,7 +73,9 @@ rule dump_mbg_param_info:
     output:
         expand(
             'assembler_params/MBG_{param_info}.info',
+            param_info=['{}_k{}-w{}-r{}'.format(phash, *pvalues) for phash, pvalues in MBG_PARAMS.items()]
         )
+    priority: 100
     run:
         file_template = 'assembler_params/MBG_{}.info'
         for phash, pvalues in MBG_PARAMS.items():
