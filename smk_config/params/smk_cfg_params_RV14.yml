@@ -22,7 +22,7 @@ git_commit_version: 14
 use_legacy_data_scraping: false
 
 peregrine_version: 0.1.6.1
-deepvariant_version: 1.1.0
+deepvariant_version: 1.2.0
 shasta_version: 0.5.0
 
 # Long read preprocessing
@@ -52,7 +52,10 @@ min_mapq: 10
 # - changed from 250 to 300, see e-mail
 # by David P. from July 8, 2021
 # - change back to 260 to check for
-# problems in clustering step
+# problems in clustering step;
+# usually, this only affects male samples
+# because of the quasi-haploid sex
+# chromosomes
 max_cluster_length_mbp: 260
 ignore_cluster_size_error: false
 
@@ -69,7 +72,7 @@ bwa_strandseq_aln_discard: 2304
 # read unmapped || not primary alignment || failed QC || PCR dup
 minimap_readref_aln_discard: 1796
 
-# for minimap or unimap contig-to-reference alignments
+# for minimap contig-to-reference alignments
 # read unmapped || not primary alignment
 contigref_aln_discard: 260
 
@@ -84,7 +87,7 @@ minimap_racon_aln_min_qual: 10
 # way, so setting this too high will always result in failure.
 min_chromosome_coverage:
   hg38_HGSVC2_noalt: 60
-  T2Tv11_38p13Y_chm13: 70
+  T2Tv11_38p13Y_chm13: 80
 
 # main chromosomes to be used
 # for known references for main
@@ -93,9 +96,9 @@ min_chromosome_coverage:
 eval_known_ref: GRCh38_HGSVC2_noalt
 eval_align_ref:
   - hg38_HGSVC2_noalt
-  - T2Tv11_38p13Y_chm13
+  - T2Tv11_hg002Yv2_chm13
 eval_gene_model: GRCh38_GENCODEv31_basic
-use_genome_size: T2Tv11_38p13Y_chm13
+use_genome_size: T2Tv11_hg002Yv2_chm13
 sseq_qc_reference: hg38_HGSVC2_noalt
 main_chromosomes:
   - chr1
