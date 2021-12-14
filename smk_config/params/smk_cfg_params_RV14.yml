@@ -58,7 +58,10 @@ min_mapq: 10
 # chromosomes
 max_cluster_length_female_mbp: 260
 max_cluster_length_male_mbp: 300
-allow_contig_cuts: false
+# it is vital that the following switch is not
+# specified as boolean b/c the R script cannot
+# eval the type
+allow_contig_cuts: 'FALSE'
 ignore_cluster_size_error: false
 
 # VARIANT CALLING
