@@ -8,11 +8,11 @@ sample_description_NA19836:
     member: child
     data_sources:
         - long_reads:
-            readset: NA19836_LR_READSET
+            readset: NA19836_hgsvc_pbsq2-ccs
             technology: pacbio
             data_type: fastq
             load_type: parts
-            data_source_folder: EMPTY_PATH
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/GM19836
         - strandseq:
             readset: NA19836_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
@@ -29,9 +29,8 @@ sample_description_NA19836:
             data_source_folder: EMPTY_PATH
 
 sample_targets_NA19836:
-  - ignore: yes
   - aliases:
-      1: &long_reads NA19836_LR_READSET
+      1: &long_reads NA19836_hgsvc_pbsq2-ccs_1000
       2: &strandseq_reads NA19836_hgsvc_ilnxs-80pe_sseq
       3: &ont_reads NA19836_ONT_READSET
       4: &short_reads NA19836_SHORT_READSET
