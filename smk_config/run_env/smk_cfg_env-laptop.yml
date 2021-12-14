@@ -8,3 +8,7 @@ num_cpu_max: 8
 num_cpu_high: 4
 num_cpu_medium: 2
 num_cpu_low: 1
+
+git_repo_saarclust: "/home/local/work/code/github/external/SaaRclust"
+git_repo_strandphaser: "/home/local/work/code/github/external/StrandPhaseR"
+git_repo_breakpointr: "/home/local/work/code/github/external/breakpointR"

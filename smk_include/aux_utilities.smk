@@ -538,7 +538,8 @@ def load_saarclust_params(wildcards, input, use_case):
         'min_region_size',
         'bin_size',
         'step_size',
-        'min_mapq'
+        'min_mapq',
+        'allow_contig_cuts'
     ])
     key_map['init_clusters'] = 'num.clusters'
     key_map['prob_threshold'] = 'prob.th'
@@ -554,7 +555,6 @@ def load_saarclust_params(wildcards, input, use_case):
         'concat.fasta': None,
         'remove.always.WC': 'TRUE',
         'mask.regions': 'FALSE',
-        'max.cluster.length.mbp': config.get('max_cluster_length_mbp', None)
     }
     if use_case == 'haploid':
         parameter_set['concat.fasta'] = 'FALSE'
@@ -574,8 +574,10 @@ def load_saarclust_params(wildcards, input, use_case):
 
     if sample_sex == 'male':
         parameter_set['desired.num.clusters'] = config.get('desired_clusters_male', config.get('desired_clusters', None))
+        parameter_set['max.cluster.length.mbp'] = config.get('max_cluster_length_male_mbp', config.get('max_cluster_length_mbp', None))
     elif sample_sex == 'female':
         parameter_set['desired.num.clusters'] = config.get('desired_clusters_female', config.get('desired_clusters', None))
+        parameter_set['max.cluster.length.mbp'] = config.get('max_cluster_length_female_mbp', config.get('max_cluster_length_mbp', None))
     else:
         parameter_set['desired.num.clusters'] = config.get('desired_clusters', None)
 
@@ -615,6 +617,7 @@ def load_saarclust_params(wildcards, input, use_case):
     
     if pipeline_version < 14:
         del parameter_set['max.cluster.length.mbp']
+        del parameter_set['allow.contig.cuts']
 
     config_rows = ['[SaaRclust]'] + ['{} = {}'.format(k, parameter_set[k]) for k in sorted(parameter_set.keys())]
 
