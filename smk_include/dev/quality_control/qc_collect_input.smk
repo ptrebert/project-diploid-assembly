@@ -61,22 +61,19 @@ def add_assembly_graphs(sample_infos, assembly_path):
     for graph_file in graph_files:
         if 'noseq' in graph_file.name:
             continue
-        if 'p_utg' in graph_file.name:
-            continue
         file_sample = graph_file.name.split('_')[0]
         assert file_sample in sample_infos
-        if 'a_ctg' in graph_file.name:
-            sample_infos[file_sample]['TIGALT'] = graph_file
-        elif 'p_ctg' in graph_file.name:
-            sample_infos[file_sample]['TIGPRI'] = graph_file
-        elif 'r_utg' in graph_file.name:
-            sample_infos[file_sample]['TIGRAW'] = graph_file
-        else:
-            raise ValueError(f'Unexpected file: {graph_file.name}')
+        graph_type = graph_file.name.split('.')[-2]
+        try:
+            graph_key = HIFIASM_TIG_TO_KEY[graph_type]
+        except KeyError:
+            raise KeyError(f'Unexpected hifiasm output graph: {graph_file.name}')
+        sample_infos[graph_key] = graph_file
+
         assembled_samples.add(file_sample)
         graph_count[file_sample] += 1
     for n, c in graph_count.most_common():
-        if c != 3:
+        if c != 4:
             raise ValueError(f'Missing assembly graph type for sample {n}')
     return sample_infos, sorted(assembled_samples)
 
@@ -88,7 +85,7 @@ def add_ontul_readsets(sample_infos, ontul_path):
     flag_files = pathlib.Path(ontul_path).glob(f'**/*.final')
     suffix = 'guppy-5.0.11-sup-prom_fastq_pass.fastq.gz'
 
-    merged_path = 'input/ONTUL/{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz'
+    merged_path = 'input/ONTUL/{sample}_ONTUL_{readset}.fasta.gz'
 
     ontul_samples = set()
     for flag_file in flag_files:
@@ -98,7 +95,7 @@ def add_ontul_readsets(sample_infos, ontul_path):
         fastq_files = sorted([str(f) for f in fastq_files])
         assert len(fastq_files) > 1, f'{str(fastq_files)}'
         sample_infos[sample_name]['ONTUL_RAW'] = fastq_files
-        sample_infos[sample_name]['ONTUL'] = merged_path.format(**{'sample': sample_name})
+        sample_infos[sample_name]['ONTUL'] = merged_path.format(**{'sample': sample_name, 'readset': RS_ONTUL})
         ontul_samples.add(sample_name)
 
     return sample_infos, sorted(ontul_samples)

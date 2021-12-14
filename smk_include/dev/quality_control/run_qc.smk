@@ -9,8 +9,10 @@ include: 'qc_read_cov.smk'
 
 localrules: run_read_cov, run_qv_estimate
 
+COMPLETE_SAMPLES = sorted(set(ONTUL_SAMPLES).intersection(HIFIEC_SAMPLES))
+
 wildcard_constraints:
-    sample = '(' + '|'.join([s for s in ONTUL_SAMPLES]) + ')'
+    sample = '(' + '|'.join(COMPLETE_SAMPLES) + ')'
 
 
 def build_read_cov_targets(wildcards):
@@ -18,10 +20,10 @@ def build_read_cov_targets(wildcards):
     template = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.cov.cache.h5'
 
     long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF']
-    long_read_sets = ['guppy-5.0.11-sup-prom', 'hifiasm-v0.15.4', 'pgas-v14-dev']
+    long_read_sets = [RS_ONTUL, RS_HIFIEC, RS_HIFIAF]
 
     targets = []
-    for sample in ONTUL_SAMPLES:
+    for sample in COMPLETE_SAMPLES:
         for read_type, readset in zip(long_read_types, long_read_sets):
             formatter = {
                 'sample': sample,
@@ -45,10 +47,10 @@ def build_seqence_qv_estimate_targets(wildcards):
     template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_SHORT_{short_reads}_nohpc.qv.tsv'
 
     long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF']
-    long_read_sets = ['guppy-5.0.11-sup-prom', 'hifiasm-v0.15.4', 'pgas-v14-dev']
+    long_read_sets = [RS_ONTUL, RS_HIFIEC, RS_HIFIAF]
 
     targets = []
-    for sample in ONTUL_SAMPLES:
+    for sample in COMPLETE_SAMPLES:
         short_readset = SAMPLE_INFOS[sample]['SHORT_RS']
         for long_reads, read_set in zip(long_read_types, long_read_sets):
             for hpc in ['ishpc', 'nohpc']:
@@ -64,10 +66,10 @@ def build_seqence_qv_estimate_targets(wildcards):
                 fmt_target = template_global.format(**formatter)
                 targets.append(fmt_target)
 
-    template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_hifiasm-v0.15.4_nohpc.seq-qv.h5'
-    template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_hifiasm-v0.15.4_nohpc.qv.tsv'
+    template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_' + f'{RS_HIFIEC}_nohpc.seq-qv.h5'
+    template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_HIFIEC_' + f'{RS_HIFIEC}_nohpc.qv.tsv'
 
-    for sample in ONTUL_SAMPLES:
+    for sample in COMPLETE_SAMPLES:
         for long_reads, read_set in zip(long_read_types, long_read_sets):
             for hpc in ['ishpc', 'nohpc']:
                 if long_reads == 'HIFIEC':
@@ -95,26 +97,26 @@ rule run_ont_error_correction:
     input:
         expand(
             'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.h5',
-            sample=ONTUL_SAMPLES,
+            sample=COMPLETE_SAMPLES,
             read_type=['ONTEC'],
-            readset=['guppy-5.0.11-sup-prom'],
-            graph_reads=['HIFIAF'],
-            graph_readset=['pgas-v14-dev'],
-            kmer=config['mbg_init_kmer'],
-            window=config['mbg_window_size'],
-            resolve=config['mbg_resolve_kmer']
-        ),
-        expand(
-            'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.h5',
-            sample=ONTUL_SAMPLES,
-            read_type=['ONTEC'],
-            readset=['guppy-5.0.11-sup-prom'],
+            readset=[RS_ONTUL],
             graph_reads=['HIFIEC'],
-            graph_readset=['hifiasm-v0.15.4'],
+            graph_readset=[RS_HIFIEC],
             kmer=config['mbg_init_kmer'],
             window=config['mbg_window_size'],
             resolve=config['mbg_resolve_kmer']
         ),
+        # expand(
+        #     'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.h5',
+        #     sample=COMPLETE_SAMPLES,
+        #     read_type=['ONTEC'],
+        #     readset=[RS_ONTUL],
+        #     graph_reads=['HIFIAF'],
+        #     graph_readset=[RS_HIFIAF],
+        #     kmer=config['mbg_init_kmer'],
+        #     window=config['mbg_window_size'],
+        #     resolve=config['mbg_resolve_kmer']
+        # ),
 
 
 # rule run_ont_error_correction:

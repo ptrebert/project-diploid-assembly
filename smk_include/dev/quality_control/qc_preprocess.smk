@@ -3,9 +3,9 @@ rule qc_merge_ontul:
     input:
         fastq = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['ONTUL_RAW']
     output:
-        'input/ONTUL/{sample}_ONTUL_guppy-5.0.11-sup-prom.fasta.gz'
+        'input/ONTUL/{sample}_ONTUL_' + f'{RS_ONTUL}.fasta.gz'
     benchmark:
-        'rsrc/input/ONTUL/{sample}_ONTUL_guppy-5.0.11-sup-prom.merge.rsrc'
+        'rsrc/input/ONTUL/{sample}_ONTUL_' + f'{RS_ONTUL}.merge.rsrc'
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']
     resources:

@@ -1,4 +1,20 @@
 
+# Define some constant mappings
+
+RS_HIFIEC = 'HASv0161'
+RS_HIFIAF = 'ADFv1'
+RS_ONTUL = 'GPYv5011SUP'
+
+HIFIASM_TIG_TO_KEY = {
+    'r_utg': 'UTGRAW',
+    'p_utg': 'UTGPRI',
+    'p_ctg': 'CTGPRI',
+    'a_ctg': 'CTGALT'
+}
+
+HIFIASM_KEY_TO_TIG = dict((v, k) for k, v in HIFIASM_TIG_TO_KEY.items())
+
+
 def find_script_path(script_name, subfolder=''):
     import os
 

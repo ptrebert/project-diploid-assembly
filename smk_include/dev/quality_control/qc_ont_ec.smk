@@ -30,7 +30,7 @@ def set_mbg_resources(wildcards):
         # uses error-masking, much faster apparently
         cpu, memory, runtime = config['num_cpu_high'], 114688, 23
     elif wildcards.read_type == 'HIFIEC':
-        cpu, memory, runtime = config['num_cpu_high'], 385024, 72
+        cpu, memory, runtime = config['num_cpu_high'], 385024, 167
     else:
         raise ValueError(str(wildcards))
     return cpu, memory, runtime
