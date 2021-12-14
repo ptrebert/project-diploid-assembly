@@ -539,7 +539,8 @@ def load_saarclust_params(wildcards, input, use_case):
         'bin_size',
         'step_size',
         'min_mapq',
-        'allow_contig_cuts'
+        'allow_contig_cuts',
+        'eval_ploidy'
     ])
     key_map['init_clusters'] = 'num.clusters'
     key_map['prob_threshold'] = 'prob.th'
@@ -618,6 +619,7 @@ def load_saarclust_params(wildcards, input, use_case):
     if pipeline_version < 14:
         del parameter_set['max.cluster.length.mbp']
         del parameter_set['allow.contig.cuts']
+        del parameter_set['eval.ploidy']
 
     config_rows = ['[SaaRclust]'] + ['{} = {}'.format(k, parameter_set[k]) for k in sorted(parameter_set.keys())]
 

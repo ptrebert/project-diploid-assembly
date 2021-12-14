@@ -62,6 +62,7 @@ max_cluster_length_male_mbp: 300
 # specified as boolean b/c the R script cannot
 # eval the type
 allow_contig_cuts: 'FALSE'
+eval_ploidy: 'TRUE'
 ignore_cluster_size_error: false
 
 # VARIANT CALLING
