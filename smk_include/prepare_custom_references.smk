@@ -352,16 +352,18 @@ rule write_clustered_split_fasta:
 
         sample = wildcards.hap_reads.split('_')[0]
         sample_sex = get_sample_sex(sample)
+        sample_sex = 'M' if sample_sex == 'male' else 'F'
         garbage = io.StringIO()
         dump_garbage = False
         seen = set()
         with open(output.fasta, 'w') as dump:
             for (cluster_id, contig, scl_key), unitigs in df.groupby(['cluster_pad_id', 'contig', 'scl_key']):
+                # cluster ID is zero-padded two digits here
                 if contig in seen:
                     raise RuntimeError(f'Duplicate contig: {input.table} / {contig}')
-                output_name = f'>{cluster_id}_{contig}_{sample}-{sample_sex}_SCL-{scl_key}'
+                output_name = f'>cluster{cluster_id}_{contig}_{sample}-{sample_sex}_SCL-{scl_key}'
                 output_seq = nhr_seq[contig]
-                if cluster_id == 'cluster99':
+                if cluster_id == '99':
                     _ = garbage.write(f'{output_name}\n{output_seq}\n')
                     dump_garbage = True
                 else:
@@ -388,9 +390,10 @@ rule write_clustered_concat_fasta:
     input:
         table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
         nhr_fasta = 'output/reference_assembly/non-hap-res/{hap_reads}_nhr-{assembler}.fasta',
+        split_fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta-split.fa'.format(config['git_commit_version'])
     output:
-        fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta'.format(config['git_commit_version'])
-        cluster_ids = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.cluster-ids.txt'.format(config['git_commit_version'])
+        fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta'.format(config['git_commit_version']),
+        cluster_ids = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.cluster-ids.txt'.format(config['git_commit_version'])
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
@@ -411,7 +414,8 @@ rule write_clustered_concat_fasta:
         dumped_clusters = []
         with open(output.fasta, 'w') as dump:
             for (cluster_id, contig), unitigs in df.groupby(['cluster_pad_id', 'contig']):
-                if cluster_id == 'cluster99':
+                # cluster ID is zero-padded two digits here
+                if cluster_id == '99':
                     continue
                 if cluster_id != last_cluster:
                     if last_seq:
@@ -420,9 +424,9 @@ rule write_clustered_concat_fasta:
                             last_length, MAX_SEQ_LENGTH,
                             IGNORE_SIZE_ERROR
                         )
-                        output_name = f'>{last_cluster}'
-                        _ = dump.write(f'{output_name}\n{last_seq}\n')
-                        dumped_clusters.append(last_cluster)
+                        output_name = f'cluster{last_cluster}'
+                        _ = dump.write(f'>{output_name}\n{last_seq}\n')
+                        dumped_clusters.append(output_name)
 
                     last_cluster = cluster_id
                     last_seq = nhr_seq[contig]
@@ -432,9 +436,9 @@ rule write_clustered_concat_fasta:
                     last_seq += spacer + this_seq
                     last_length += len(this_seq)
             if last_seq:
-                output_name = f'>{last_cluster}'
-                _ = dump.write(f'{output_name}\n{last_seq}\n')
-                dumped_clusters.append(last_cluster)
+                output_name = f'cluster{last_cluster}'
+                _ = dump.write(f'>{output_name}\n{last_seq}\n')
+                dumped_clusters.append(output_name)
         with open(output.cluster_ids, 'w') as dump:
             _ = dump.write('\n'.join(dumped_clusters) + '\n')
     # END OF RUN BLOCK
