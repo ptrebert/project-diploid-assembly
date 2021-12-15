@@ -357,13 +357,12 @@ rule write_clustered_split_fasta:
         dump_garbage = False
         seen = set()
         with open(output.fasta, 'w') as dump:
-            for (cluster_id, contig, scl_key), unitigs in df.groupby(['cluster_pad_id', 'contig', 'scl_key']):
-                # cluster ID is zero-padded two digits here
+            for (cluster_id, contig, scl_key), unitigs in df.groupby(['cluster_id', 'contig', 'scl_key']):
                 if contig in seen:
                     raise RuntimeError(f'Duplicate contig: {input.table} / {contig}')
-                output_name = f'>cluster{cluster_id}_{contig}_{sample}-{sample_sex}_SCL-{scl_key}'
+                output_name = f'>{cluster_id}_{contig}_{sample}-{sample_sex}_SCL-{scl_key}'
                 output_seq = nhr_seq[contig]
-                if cluster_id == '99':
+                if cluster_id == 'cluster99':
                     _ = garbage.write(f'{output_name}\n{output_seq}\n')
                     dump_garbage = True
                 else:
@@ -413,9 +412,8 @@ rule write_clustered_concat_fasta:
         last_length = 0
         dumped_clusters = []
         with open(output.fasta, 'w') as dump:
-            for (cluster_id, contig), unitigs in df.groupby(['cluster_pad_id', 'contig']):
-                # cluster ID is zero-padded two digits here
-                if cluster_id == '99':
+            for (cluster_id, contig), unitigs in df.groupby(['cluster_id', 'contig']):
+                if cluster_id == 'cluster99':
                     continue
                 if cluster_id != last_cluster:
                     if last_seq:
@@ -424,9 +422,8 @@ rule write_clustered_concat_fasta:
                             last_length, MAX_SEQ_LENGTH,
                             IGNORE_SIZE_ERROR
                         )
-                        output_name = f'cluster{last_cluster}'
-                        _ = dump.write(f'>{output_name}\n{last_seq}\n')
-                        dumped_clusters.append(output_name)
+                        _ = dump.write(f'>{last_cluster}\n{last_seq}\n')
+                        dumped_clusters.append(last_cluster)
 
                     last_cluster = cluster_id
                     last_seq = nhr_seq[contig]
@@ -436,9 +433,9 @@ rule write_clustered_concat_fasta:
                     last_seq += spacer + this_seq
                     last_length += len(this_seq)
             if last_seq:
-                output_name = f'cluster{last_cluster}'
-                _ = dump.write(f'>{output_name}\n{last_seq}\n')
-                dumped_clusters.append(output_name)
+                _ = dump.write(f'>{last_cluster}\n{last_seq}\n')
+                dumped_clusters.append(last_cluster)
+
         with open(output.cluster_ids, 'w') as dump:
             _ = dump.write('\n'.join(dumped_clusters) + '\n')
     # END OF RUN BLOCK
