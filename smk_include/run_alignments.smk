@@ -453,9 +453,21 @@ rule pbmm2_arrow_polish_alignment_pass1:
 # BELOW: alignments for haploid contig to known reference / needed for SaaRclust
 #################################################################################
 
+
+def select_contigs(wildcards):
+
+    formatter = dict(wildcards)
+    regular_fasta = 'output/{folder_path}/{file_name}.fasta'.format(**formatter)
+    split_fasta = regular_fasta.replace('.fasta', '.fasta-split.fa')
+    if os.path.isfile(split_fasta):
+        return split_fasta
+    else:
+        return regular_fasta
+
+
 rule minimap_contig_to_known_reference_alignment:
     input:
-        contigs = 'output/{folder_path}/{file_name}.fasta',
+        contigs = select_contigs,
         #preset = 'input/fastq/{sample}.preset.minimap',
         reference = 'references/assemblies/{aln_reference}.fasta'
     output:
