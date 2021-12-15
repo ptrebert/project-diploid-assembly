@@ -339,10 +339,7 @@ rule write_clustered_split_fasta:
         table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
         nhr_fasta = 'output/reference_assembly/non-hap-res/{hap_reads}_nhr-{assembler}.fasta',
     output:
-        fasta = expand(
-            'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta-split.fa',
-            version=config['git_commit_version']
-        )
+        fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta-split.fa'.format(config['git_commit_version'])
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
@@ -392,14 +389,8 @@ rule write_clustered_concat_fasta:
         table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
         nhr_fasta = 'output/reference_assembly/non-hap-res/{hap_reads}_nhr-{assembler}.fasta',
     output:
-        fasta = expand(
-            'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta',
-            version=config['git_commit_version']
-        ),
-        cluster_ids = expand(
-            'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.cluster-ids.txt',
-            version=config['git_commit_version']
-        )
+        fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta'.format(config['git_commit_version'])
+        cluster_ids = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.cluster-ids.txt'.format(config['git_commit_version'])
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
