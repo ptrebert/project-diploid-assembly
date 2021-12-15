@@ -367,8 +367,10 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads):
 
     num_clusters = 0
 
-    formatter = {'sseq_reads': sseq_reads, 'sample': sample_name}
-    cluster_fofn_path = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{sample}*_nhr-*.clusters.fofn'.format(**formatter)
+    formatter = {'sseq_reads': sseq_reads, 'sample': sample_name, 'git_version': config['git_commit_version']}
+    #cluster_fofn_path = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{sample}*_nhr-*.clusters.fofn'.format(**formatter)
+    cluster_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.cluster-ids.txt'.format(**formatter)
+
     if DEBUG:
         sys.stderr.write('Checking cluster fofn path: {}\n'.format(cluster_fofn_path))
     cluster_fofn_matches = glob.glob(cluster_fofn_path)

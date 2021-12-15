@@ -177,7 +177,7 @@ rule run_saarclust_assembly_clustering:
         cfg = rules.write_saarclust_config_file.output.cfg,
         fofn = rules.write_saarclust_config_file.output.input_dir
     output:
-        dir_fasta = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly'),
+        ctg_report = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly/ctgReport_2e+05bp_dynamic.tsv'
         dir_data = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/data'),
         dir_plots = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/plots'),
         cfg = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/SaaRclust.config',
@@ -292,94 +292,255 @@ def collect_clustered_fasta_sequences(wildcards, glob_collect=False, caller='sna
 #                 _ = dump.write(file_path + '\n')
 
 
-rule write_reference_fasta_clusters_fofn:
+rule run_gba_rescue:
     """
-    Collect output of SaaRclust-ering
-    NB: reference here is "nhr" assembly
-    """
-    input:
-        fasta_dir = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly',
-        fasta_ref = 'output/reference_assembly/non-hap-res/{reference}.fasta',
-    output:
-        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
-    run:
-        import os
-        import sys
-
-        show_warnings = bool(config.get('show_warnings', False))
-
-        if not os.path.isdir(input.fasta_dir):
-            raise RuntimeError('SaaRclust output folder does not exist: {}'.format(input.fasta_dir))
-
-        cluster_files = []
-        for file_name in os.listdir(input.fasta_dir):
-            if not file_name.endswith('.fasta'):
-                continue
-            if 'cluster99' in file_name:
-                if show_warnings:
-                    sys.stderr.write('SaaRclust / cluster99 detected for sample {} / {}\n'.format(wildcards.reference, wildcards.sseq_reads))
-                continue
-            file_path = os.path.join(input.fasta_dir, file_name)
-            cluster_files.append(file_path)
-        
-        if not cluster_files:
-            raise RuntimeError('No FASTA cluster files detected in SaaRclust output directory: {}'.format(input.fasta_dir))
-        
-        with open(output.fofn, 'w') as fofn:
-            _ = fofn.write('\n'.join(sorted(cluster_files)))
-
-
-rule check_max_cluster_size:
-    """
-    This is a sanity check to avoid that downstream contig alignment tasks fail
-    due to squashed assembly clusters being too large to be processed (restriction of SAM/BAM)
-    see:
-    https://github.com/lh3/minimap2/issues/440#issuecomment-508052956
+    For contigs that cannot be clustered by Strand-seq,
+    bring them back into the assembly via guilt-by-association
+    (check assembly graph)
     """
     input:
-        'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
+        ctg_report = 'output/reference_assembly/clustered/temp/saarclust/results/{hap_reads}_nhr-{assembler}/{sseq_reads}/clustered_assembly/ctgReport_2e+05bp_dynamic.tsv'
+        raw_unitigs = 'output/reference_assembly/non-hap-res/layout/{assembler}/{hap_reads}/{hap_reads}.r_utg.noseq.gfa',
+        p_contigs = 'output/reference_assembly/non-hap-res/layout/{assembler}/{hap_reads}/{hap_reads}.p_ctg.noseq.gfa',
     output:
-        'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.size.ok'
-    run:
-        max_seq_len = 268435456
-        cache = dict()
-        ignore_size_error = bool(config.get('ignore_cluster_size_error', False))
-        with open(input[0], 'r') as fasta_list:
-            for fasta_file in fasta_list:
-                seq_len = 0
-                cluster_name = ''
-                with open(fasta_file.strip(), 'r') as fasta:
-                    for line in fasta:
-                        if line.startswith('>'):
-                            cluster_name = line.strip().strip('>')
-                            continue
-                        seq_len += len(line.strip())
-                if seq_len > max_seq_len:
-                    # create an untracked error output file for simpler
-                    # summary of what samples failed and why
-                    with open(f'ERROR_cluster-size_{wildcards.sseq_reads}.err', 'w'):
-                        pass
-                    if not ignore_size_error:
-                        raise ValueError('Squashed assembly cluster too large ({} / max {}): {}'.format(seq_len, max_seq_len, fasta_file))
-                cache[cluster_name] = seq_len
-
-        with open(output[0], 'w') as check_ok:
-            for c in sorted(cache.keys()):
-                cluster_size = cache[c]
-                ratio = round(cluster_size / max_seq_len * 100, 2)
-                _ = check_ok.write('{}\t{}\t{}\n'.format(c, cluster_size, ratio))
-
-
-rule merge_reference_fasta_clusters:
-    input:
-        fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{hap_reads}_nhr-{assembler}.clusters.fofn',
-        size_ok = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{hap_reads}_nhr-{assembler}.clusters.size.ok'
-    output:
-        expand('output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta',
-                version=config['git_commit_version'])
+        table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv'
     conda:
-        '../environment/conda/conda_shelltools.yml'
+        '../environment/conda/conda_pyscript.yml'
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 1024 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt
     params:
-        fasta_clusters = lambda wildcards, input: load_fofn_file(input)
+        script_exec = lambda wildcards: find_script_path('connect_unitig_contig.py'),
     shell:
-        'cat {params.fasta_clusters} > {output}'
+        '{params.script_exec} -r {input.raw_unitigs} -p {input.p_contigs} -s {input.ctg_report} -o {output.table}'
+
+
+def load_nhr_fasta_sequence(file_path):
+
+    cache = dict()
+    this_seq = ''
+    this_ctg = ''
+    with open(file_path, 'r') as fasta:
+        for line in fasta:
+            if line.startswith('>'):
+                if this_ctg:
+                    cache[this_ctg] = this_seq
+                this_ctg = line.strip()[1:]
+                this_seq = ''
+            else:
+                this_seq += line.strip()
+    cache[this_ctg] = this_ctg
+    return cache
+
+
+rule write_clustered_split_fasta:
+    input:
+        table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
+        nhr_fasta = 'output/reference_assembly/non-hap-res/{reference}.fasta',
+    output:
+        fasta = expand(
+            'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta-split.fa',
+            version=config['git_commit_version']
+        )
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import pandas as pd
+        import io
+        nhr_seq = load_nhr_fasta_sequence(input.nhr_fasta)
+        df = pd.read_csv(input.table, sep='\t', header=0)
+
+        sample = wildcards.hap_reads.split('_')[0]
+        sample_sex = get_sample_sex(sample)
+        garbage = io.StringIO()
+        dump_garbage = False
+        seen = set()
+        with open(output.fasta, 'w') as dump:
+            for (cluster_id, contig, scl_key), unitigs in df.groupby(['cluster_pad_id', 'contig', 'scl_key']):
+                if contig in seen:
+                    raise RuntimeError(f'Duplicate contig: {input.table} / {contig}')
+                output_name = f'>{cluster_id}_{contig}_{sample}-{sample_sex}_SCL-{scl_key}'
+                output_seq = nhr_seq[contig]
+                if cluster_id == 'cluster99':
+                    _ = garbage.write(f'{output_name}\n{output_seq}\n')
+                    dump_garbage = True
+                else:
+                    _ = dump.write(f'{output_name}\n{output_seq}\n')
+                seen.add(contig)
+        if dump_garbage:
+            cluster99_out = output.fasta.replace('fasta-split', 'cluster99')
+            with open(cluster99_out, 'w') as dump:
+                _ = dump.write(garbage.getvalue())
+    # END OF RUN BLOCK
+
+
+def dump_cluster_size_error(sseq_reads, contig, seq_len, max_seq_len, ignore_size_error):
+
+    if seq_len > max_seq_len:
+        with open(f'ERROR_cluster-size_{sseq_reads}.err', 'w'):
+            pass
+        if not ignore_size_error:
+            raise ValueError(f'Squashed assembly cluster too large ({contig} - {seq_len} / max {max_seq_len}): {sseq_reads}')
+    return
+
+
+rule write_clustered_concat_fasta:
+    input:
+        table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
+        nhr_fasta = 'output/reference_assembly/non-hap-res/{reference}.fasta',
+    output:
+        fasta = expand(
+            'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta',
+            version=config['git_commit_version']
+        ),
+        cluster_ids = expand(
+            'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.cluster-ids.txt',
+            version=config['git_commit_version']
+        )
+    resources:
+        mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
+        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+    run:
+        import pandas as pd
+        import io
+        nhr_seq = load_nhr_fasta_sequence(input.nhr_fasta)
+        df = pd.read_csv(input.table, sep='\t', header=0)
+
+        MAX_SEQ_LENGTH = 268435456
+        IGNORE_SIZE_ERROR = bool(config.get('ignore_cluster_size_error', False))
+
+        spacer = 'N' * 100
+        last_cluster = ''
+        last_seq = ''
+        last_length = 0
+        dumped_clusters = []
+        with open(output.fasta, 'w') as dump:
+            for (cluster_id, contig), unitigs in df.groupby(['cluster_pad_id', 'contig']):
+                if cluster_id == 'cluster99':
+                    continue
+                if cluster_id != last_cluster:
+                    if last_seq:
+                        dump_cluster_size_error(
+                            wildcards.sseq_reads, last_cluster,
+                            last_length, MAX_SEQ_LENGTH,
+                            IGNORE_SIZE_ERROR
+                        )
+                        output_name = f'>{last_cluster}'
+                        _ = dump.write(f'{output_name}\n{last_seq}\n')
+                        dumped_clusters.append(last_cluster)
+
+                    last_cluster = cluster_id
+                    last_seq = nhr_seq[contig]
+                    last_length = len(last_seq)
+                else:
+                    this_seq = nhr_seq[contig]
+                    last_seq += spacer + this_seq
+                    last_length += len(this_seq)
+            if last_seq:
+                output_name = f'>{last_cluster}'
+                _ = dump.write(f'{output_name}\n{last_seq}\n')
+                dumped_clusters.append(last_cluster)
+        with open(output.cluster_ids, 'w') as dump:
+            _ = dump.write('\n'.join(dumped_clusters) + '\n')
+    # END OF RUN BLOCK
+
+
+# rule write_reference_fasta_clusters_fofn:
+#     """
+#     Collect output of SaaRclust-ering
+#     NB: reference here is "nhr" assembly
+
+#     The "clusters.fofn" output is processed internally - if available - in the function
+#     aux_utilities::estimate_number_of_saarclusters
+
+#     """
+#     input:
+#         fasta_dir = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly',
+#         fasta_ref = 'output/reference_assembly/non-hap-res/{reference}.fasta',
+#     output:
+#         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
+#     run:
+#         import os
+#         import sys
+
+#         show_warnings = bool(config.get('show_warnings', False))
+
+#         if not os.path.isdir(input.fasta_dir):
+#             raise RuntimeError('SaaRclust output folder does not exist: {}'.format(input.fasta_dir))
+
+#         cluster_files = []
+#         for file_name in os.listdir(input.fasta_dir):
+#             if not file_name.endswith('.fasta'):
+#                 continue
+#             if 'cluster99' in file_name:
+#                 if show_warnings:
+#                     sys.stderr.write('SaaRclust / cluster99 detected for sample {} / {}\n'.format(wildcards.reference, wildcards.sseq_reads))
+#                 continue
+#             file_path = os.path.join(input.fasta_dir, file_name)
+#             cluster_files.append(file_path)
+        
+#         if not cluster_files:
+#             raise RuntimeError('No FASTA cluster files detected in SaaRclust output directory: {}'.format(input.fasta_dir))
+        
+#         with open(output.fofn, 'w') as fofn:
+#             _ = fofn.write('\n'.join(sorted(cluster_files)))
+
+
+# rule check_max_cluster_size:
+#     """
+#     This is a sanity check to avoid that downstream contig alignment tasks fail
+#     due to squashed assembly clusters being too large to be processed (restriction of SAM/BAM)
+#     see:
+#     https://github.com/lh3/minimap2/issues/440#issuecomment-508052956
+#     """
+#     input:
+#         'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
+#     output:
+#         'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.size.ok'
+#     run:
+#         max_seq_len = 268435456
+#         cache = dict()
+#         ignore_size_error = bool(config.get('ignore_cluster_size_error', False))
+#         with open(input[0], 'r') as fasta_list:
+#             for fasta_file in fasta_list:
+#                 seq_len = 0
+#                 cluster_name = ''
+#                 with open(fasta_file.strip(), 'r') as fasta:
+#                     for line in fasta:
+#                         if line.startswith('>'):
+#                             cluster_name = line.strip().strip('>')
+#                             continue
+#                         seq_len += len(line.strip())
+#                 if seq_len > max_seq_len:
+#                     # create an untracked error output file for simpler
+#                     # summary of what samples failed and why
+#                     with open(f'ERROR_cluster-size_{wildcards.sseq_reads}.err', 'w'):
+#                         pass
+#                     if not ignore_size_error:
+#                         raise ValueError('Squashed assembly cluster too large ({} / max {}): {}'.format(seq_len, max_seq_len, fasta_file))
+#                 cache[cluster_name] = seq_len
+
+#         with open(output[0], 'w') as check_ok:
+#             for c in sorted(cache.keys()):
+#                 cluster_size = cache[c]
+#                 ratio = round(cluster_size / max_seq_len * 100, 2)
+#                 _ = check_ok.write('{}\t{}\t{}\n'.format(c, cluster_size, ratio))
+
+
+# rule merge_reference_fasta_clusters:
+#     input:
+#         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{hap_reads}_nhr-{assembler}.clusters.fofn',
+#         size_ok = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{hap_reads}_nhr-{assembler}.clusters.size.ok'
+#     output:
+#         expand('output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta',
+#                 version=config['git_commit_version'])
+#     conda:
+#         '../environment/conda/conda_shelltools.yml'
+#     params:
+#         fasta_clusters = lambda wildcards, input: load_fofn_file(input)
+#     shell:
+#         'cat {params.fasta_clusters} > {output}'
