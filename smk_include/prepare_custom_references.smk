@@ -177,7 +177,7 @@ rule run_saarclust_assembly_clustering:
         cfg = rules.write_saarclust_config_file.output.cfg,
         fofn = rules.write_saarclust_config_file.output.input_dir
     output:
-        ctg_report = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly/ctgReport_2e+05bp_dynamic.tsv'
+        ctg_report = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly/ctgReport_2e+05bp_dynamic.tsv',
         dir_data = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/data'),
         dir_plots = directory('output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/plots'),
         cfg = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/SaaRclust.config',
@@ -299,7 +299,7 @@ rule run_gba_rescue:
     (check assembly graph)
     """
     input:
-        ctg_report = 'output/reference_assembly/clustered/temp/saarclust/results/{hap_reads}_nhr-{assembler}/{sseq_reads}/clustered_assembly/ctgReport_2e+05bp_dynamic.tsv'
+        ctg_report = 'output/reference_assembly/clustered/temp/saarclust/results/{hap_reads}_nhr-{assembler}/{sseq_reads}/clustered_assembly/ctgReport_2e+05bp_dynamic.tsv',
         raw_unitigs = 'output/reference_assembly/non-hap-res/layout/{assembler}/{hap_reads}/{hap_reads}.r_utg.noseq.gfa',
         p_contigs = 'output/reference_assembly/non-hap-res/layout/{assembler}/{hap_reads}/{hap_reads}.p_ctg.noseq.gfa',
     output:
@@ -313,7 +313,7 @@ rule run_gba_rescue:
     params:
         script_exec = lambda wildcards: find_script_path('connect_unitig_contig.py'),
     shell:
-        '{params.script_exec} -r {input.raw_unitigs} -p {input.p_contigs} -s {input.ctg_report} -o {output.table}'
+        '{params.script_exec} -u {input.raw_unitigs} -c {input.p_contigs} -s {input.ctg_report} -o {output.table}'
 
 
 def load_nhr_fasta_sequence(file_path):
@@ -337,7 +337,7 @@ def load_nhr_fasta_sequence(file_path):
 rule write_clustered_split_fasta:
     input:
         table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
-        nhr_fasta = 'output/reference_assembly/non-hap-res/{reference}.fasta',
+        nhr_fasta = 'output/reference_assembly/non-hap-res/{hap_reads}_nhr-{assembler}.fasta',
     output:
         fasta = expand(
             'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta-split.fa',
@@ -390,7 +390,7 @@ def dump_cluster_size_error(sseq_reads, contig, seq_len, max_seq_len, ignore_siz
 rule write_clustered_concat_fasta:
     input:
         table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
-        nhr_fasta = 'output/reference_assembly/non-hap-res/{reference}.fasta',
+        nhr_fasta = 'output/reference_assembly/non-hap-res/{hap_reads}_nhr-{assembler}.fasta',
     output:
         fasta = expand(
             'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{version}-{{assembler}}.fasta',

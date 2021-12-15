@@ -459,7 +459,7 @@ def select_contigs(wildcards):
     formatter = dict(wildcards)
     regular_fasta = 'output/{folder_path}/{file_name}.fasta'.format(**formatter)
     split_fasta = regular_fasta.replace('.fasta', '.fasta-split.fa')
-    if os.path.isfile(split_fasta):
+    if 'clustered' in split_fasta:
         return split_fasta
     else:
         return regular_fasta
