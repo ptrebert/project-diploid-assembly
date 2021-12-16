@@ -377,14 +377,10 @@ rule write_clustered_split_fasta:
         for cluster, size_expect in init_cluster_sizes.items():
             if cluster == 'cluster99':
                 continue
-            try:
-                size_observed = dumped_cluster_sizes[cluster]
-                if size_expect != size_observed:
-                    size_errors.append((cluster, size_expect, size_observed))
-            except KeyError as ke:
-                if cluster == 'cluster99':
-                    continue
-                size_errors.append((cluster, str(ke)))
+            size_observed = dumped_cluster_sizes[cluster]
+            if size_expect != size_observed:
+                size_errors.append((cluster, size_expect, size_observed))
+
         if size_errors:
             raise RuntimeError(f'fasta-split cluster size errors: {size_errors}')
 
@@ -463,14 +459,12 @@ rule write_clustered_concat_fasta:
 
         size_errors = []
         for cluster, size_expect in init_cluster_sizes.items():
-            try:
-                size_observed = dumped_cluster_sizes[cluster]
-                if size_expect != size_observed:
-                    size_errors.append((cluster, size_expect, size_observed))
-            except KeyError as ke:
-                if cluster == 'cluster99':
-                    continue
-                size_errors.append((cluster, str(ke)))
+            if cluster == 'cluster99':
+                continue
+            size_observed = dumped_cluster_sizes[cluster]
+            if size_expect != size_observed:
+                size_errors.append((cluster, size_expect, size_observed))
+
         if size_errors:
             raise RuntimeError(f'fasta-concat cluster size errors: {size_errors}')
 
