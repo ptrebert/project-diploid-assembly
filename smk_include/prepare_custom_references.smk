@@ -330,7 +330,7 @@ def load_nhr_fasta_sequence(file_path):
                 this_seq = ''
             else:
                 this_seq += line.strip()
-    cache[this_ctg] = this_ctg
+    cache[this_ctg] = this_seq
     return cache
 
 
@@ -375,6 +375,8 @@ rule write_clustered_split_fasta:
         
         size_errors = []
         for cluster, size_expect in init_cluster_sizes.items():
+            if cluster == 'cluster99':
+                continue
             try:
                 size_observed = dumped_cluster_sizes[cluster]
                 if size_expect != size_observed:
