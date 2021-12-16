@@ -24,6 +24,15 @@ rule plot_input_long_reads_statistics:
 
 rule plot_saarclust_nhr_assembly_diagnostic_output:
     """
+    Update 2021-12-16: because the separation of X and Y will not be possible
+    in Strand-seq space, it is to be expected that huge clusters will always be
+    created for male samples. To avoid alignment issues, the minimap contig-to-ref
+    alignment is dynamically selecting a unconcatednated version of the assembly
+    ("fasta-split") to produce the input for the diagnostic plots. However, the FASTA
+    headers do not include any ordering information coming from SaaRclust because
+    contig ordering also has never been robust.
+
+    Old comment:
     The default for SaaRclust is to concatenate all individual contigs
     per cluster into a single sequence. During this process, ordering
     information is lost, hence the following output is not part of this rule:
@@ -50,9 +59,10 @@ rule plot_saarclust_nhr_assembly_diagnostic_output:
         script_exec = lambda wildcards: find_script_path('plot_saarclust_diagnostics.R'),
         out_prefix = lambda wildcards: os.path.join(
             'output', 'plotting', 'saarclust_diagnostics', 'reference_assembly', wildcards.folder_path,
-            wildcards.reference + '_map-to_' + wildcards.aln_reference)
+            wildcards.reference + '_map-to_' + wildcards.aln_reference),
+        sample_sex = lambda wildcards: get_sample_sex(wildcards.reference.split('_')[0])
     shell:
-         '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} {wildcards.reference} FALSE &> {log}'
+         '{params.script_exec} {input.ctg_ref_aln} hg38 {params.out_prefix} {wildcards.reference} {params.sample_sex} FALSE &> {log}'
 
 
 rule workaround_saarclust_hap_diagnostic_plot:

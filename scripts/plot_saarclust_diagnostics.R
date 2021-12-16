@@ -8,12 +8,27 @@ bed.file <- args[1]
 ref.genome <- args[2]
 output.folder <- args[3]
 plot.title <- args[4]
-haploid.assembly <- args[5]
+sample.sex <- args[5]
+haploid.assembly <- args[6]
 
 if (is.na(haploid.assembly)) {
     haploid.assembly <- FALSE
 } else {
     haploid.assembly <- as.logical(haploid.assembly)
+}
+
+if (is.na(sample.sex)) {
+    sample.sex <- 'unknown'
+}
+
+if (sample.sex == 'unknown') {
+    plot.chromosomes = paste0('chr', c(1:22))
+} else if (sample.sex == 'male') {
+    plot.chromosomes = paste0('chr', c(1:22, 'X', 'Y'))
+} else if (sample.sex == 'female') {
+    plot.chromosomes = paste0('chr', c(1:22, 'X'))
+} else {
+    stop(paste0('Unknown sample sex ', sample.sex))
 }
 
 stopifnot(ref.genome == 'hg38')
@@ -31,8 +46,11 @@ if (!haploid.assembly) {
         min.mapq = 10,
         bsgenome = BSgenome.Hsapiens.UCSC.hg38,
         report = 'clustering',
+        info.delim = '_',
+        info.fields = c('cluster.ID', 'contig.ID', 'sample.sex', 'scl.info'),
+        col.by = 'cluster.ID',
         title = paste('Clustering', plot.title, sep=': '),
-        chromosomes = paste0('chr', c(1:22, 'X'))
+        chromosomes = plot.chromosomes
     )
 
     plot.orienting <- plotClusteredContigs(
@@ -40,8 +58,11 @@ if (!haploid.assembly) {
         min.mapq = 10,
         bsgenome = BSgenome.Hsapiens.UCSC.hg38,
         report = 'orienting',
+        info.delim = '_',
+        info.fields = c('cluster.ID', 'contig.ID', 'sample.sex', 'scl.info'),
+        col.by = 'cluster.ID',
         title = paste('Orientation', plot.title, sep=': '),
-        chromosomes = paste0('chr', c(1:22, 'X'))
+        chromosomes = plot.chromosomes
     )
 } else {
 
@@ -54,7 +75,7 @@ if (!haploid.assembly) {
         info.fields = c('cluster.SRC', 'contig.ID', 'order', 'cluster.ID'),
         col.by = 'cluster.ID',
         title = paste('Clustering', plot.title, sep=': '),
-        chromosomes = paste0('chr', c(1:22, 'X'))
+        chromosomes = plot.chromosomes
     )
 
     plot.ordering <- plotClusteredContigs(
@@ -65,7 +86,7 @@ if (!haploid.assembly) {
         info.delim = '_',
         info.fields = c('cluster.SRC', 'contig.ID', 'order', 'cluster.ID'),
         title = paste('Ordering', plot.title, sep=': '),
-        chromosomes = paste0('chr', c(1:22, 'X'))
+        chromosomes = plot.chromosomes
     )
 
     plot.orienting <- plotClusteredContigs(
@@ -76,7 +97,7 @@ if (!haploid.assembly) {
         info.delim = '_',
         info.fields = c('cluster.SRC', 'contig.ID', 'order', 'cluster.ID'),
         title = paste('Orientation', plot.title, sep=': '),
-        chromosomes = paste0('chr', c(1:22, 'X'))
+        chromosomes = plot.chromosomes
     )
 }
 

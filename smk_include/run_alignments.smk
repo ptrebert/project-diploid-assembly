@@ -466,6 +466,13 @@ def select_contigs(wildcards):
 
 
 rule minimap_contig_to_known_reference_alignment:
+    """
+    Update 2021-12-16: because the separation of X and Y will not be possible
+    in Strand-seq space, it is to be expected that huge clusters will always be
+    created for male samples. To avoid alignment issues, the minimap contig-to-ref
+    alignment is dynamically selecting a unconcatednated version of the assembly
+    ("fasta-split") to produce the input for the diagnostic plots.
+    """
     input:
         contigs = select_contigs,
         #preset = 'input/fastq/{sample}.preset.minimap',
