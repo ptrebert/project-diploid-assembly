@@ -220,11 +220,13 @@ rule dump_shasta_haploid_fasta:
 
 rule samtools_index_fasta:
     input:
-        '{filepath}.fasta'
+        '{filepath}.{fasta_ext}'
     output:
-        '{filepath}.fasta.fai'
+        '{filepath}.{fasta_ext}.fai'
     conda:
          '../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        fasta_ext = '(fasta|fa|fna)'
     shell:
         'samtools faidx {input}'
 

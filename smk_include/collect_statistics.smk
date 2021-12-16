@@ -252,6 +252,17 @@ rule collect_snv_stats_per_cluster:
                         _ = stat_dump.write('{}_HET-SNV_{}_{}\t{}\n'.format(seq, sl, fl, result))
 
 
+def select_contigs(wildcards):
+
+    formatter = dict(wildcards)
+    regular_fasta_idx = 'output/{folder_path}/{file_name}.fasta.fai'.format(**formatter)
+    split_fasta_idx = regular_fasta.replace('.fasta.fai', '.fasta-split.fa.fai')
+    if 'clustered' in split_fasta_idx:
+        return split_fasta_idx
+    else:
+        return regular_fasta_idx
+
+
 rule collect_contig_to_ref_aln_statistics:
     input:
         ctg_ref_aln = 'output/alignments/contigs_to_reference/{folder_path}/{assembly}_map-to_{aln_reference}.bed',

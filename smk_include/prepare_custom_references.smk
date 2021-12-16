@@ -346,15 +346,18 @@ rule write_clustered_split_fasta:
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     run:
         import pandas as pd
+        import collections as col
         import io
         nhr_seq = load_nhr_fasta_sequence(input.nhr_fasta)
         df = pd.read_csv(input.table, sep='\t', header=0)
+        # input_cluster_sizes
+        init_cluster_sizes = df.drop_duplicates(['cluster_id', 'contig'], inplace=False).groupby('cluster_id')['contig_length'].sum().to_dict()
 
         sample = wildcards.hap_reads.split('_')[0]
-        sample_sex = get_sample_sex(sample)
-        sample_sex = 'M' if sample_sex == 'male' else 'F'
+        sample_sex = get_sample_sex(sample)[0].upper()
         garbage = io.StringIO()
         dump_garbage = False
+        dumped_cluster_sizes = col.Counter()
         seen = set()
         with open(output.fasta, 'w') as dump:
             for (cluster_id, contig, scl_key), unitigs in df.groupby(['cluster_id', 'contig', 'scl_key']):
@@ -362,12 +365,27 @@ rule write_clustered_split_fasta:
                     raise RuntimeError(f'Duplicate contig: {input.table} / {contig}')
                 output_name = f'>{cluster_id}_{contig}_{sample}-{sample_sex}_SCL-{scl_key}'
                 output_seq = nhr_seq[contig]
+                dumped_cluster_sizes[cluster_id] += len(output_seq)
                 if cluster_id == 'cluster99':
                     _ = garbage.write(f'{output_name}\n{output_seq}\n')
                     dump_garbage = True
                 else:
                     _ = dump.write(f'{output_name}\n{output_seq}\n')
                 seen.add(contig)
+        
+        size_errors = []
+        for cluster, size_expect in init_cluster_sizes.items():
+            try:
+                size_observed = dumped_cluster_sizes[cluster]
+                if size_expect != size_observed:
+                    size_errors.append((cluster, size_expect, size_observed))
+            except KeyError as ke:
+                if cluster == 'cluster99':
+                    continue
+                size_errors.append((cluster, str(ke)))
+        if size_errors:
+            raise RuntimeError(f'fasta-split cluster size errors: {size_errors}')
+
         if dump_garbage:
             cluster99_out = output.fasta.replace('fasta-split', 'cluster99')
             with open(cluster99_out, 'w') as dump:
@@ -399,9 +417,11 @@ rule write_clustered_concat_fasta:
         runtime_hrs = lambda wildcards, attempt: attempt * attempt
     run:
         import pandas as pd
+        import collections as col
         import io
         nhr_seq = load_nhr_fasta_sequence(input.nhr_fasta)
         df = pd.read_csv(input.table, sep='\t', header=0)
+        init_cluster_sizes = df.drop_duplicates(['cluster_id', 'contig'], inplace=False).groupby('cluster_id')['contig_length'].sum().to_dict()
 
         MAX_SEQ_LENGTH = 268435456
         IGNORE_SIZE_ERROR = bool(config.get('ignore_cluster_size_error', False))
@@ -411,6 +431,7 @@ rule write_clustered_concat_fasta:
         last_seq = ''
         last_length = 0
         dumped_clusters = []
+        dumped_cluster_sizes = col.Counter()
         with open(output.fasta, 'w') as dump:
             for (cluster_id, contig), unitigs in df.groupby(['cluster_id', 'contig']):
                 if cluster_id == 'cluster99':
@@ -428,13 +449,28 @@ rule write_clustered_concat_fasta:
                     last_cluster = cluster_id
                     last_seq = nhr_seq[contig]
                     last_length = len(last_seq)
+                    dumped_cluster_sizes[last_cluster] += last_length
                 else:
                     this_seq = nhr_seq[contig]
                     last_seq += spacer + this_seq
                     last_length += len(this_seq)
+                    dumped_cluster_sizes[last_cluster] += len(this_seq)
             if last_seq:
                 _ = dump.write(f'>{last_cluster}\n{last_seq}\n')
                 dumped_clusters.append(last_cluster)
+
+        size_errors = []
+        for cluster, size_expect in init_cluster_sizes.items():
+            try:
+                size_observed = dumped_cluster_sizes[cluster]
+                if size_expect != size_observed:
+                    size_errors.append((cluster, size_expect, size_observed))
+            except KeyError as ke:
+                if cluster == 'cluster99':
+                    continue
+                size_errors.append((cluster, str(ke)))
+        if size_errors:
+            raise RuntimeError(f'fasta-concat cluster size errors: {size_errors}')
 
         with open(output.cluster_ids, 'w') as dump:
             _ = dump.write('\n'.join(dumped_clusters) + '\n')
