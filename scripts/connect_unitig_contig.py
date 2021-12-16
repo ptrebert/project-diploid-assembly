@@ -116,11 +116,19 @@ def process_raw_unitig_graph(file_path):
 
 
 def build_unitig_table(args):
+    """
+    Potential source of confusion:
+    In rare cases (e.g., utg022947l and utg025333l for HG02257), a unitig can be
+    assigned to several primary contigs on the basis of the read distribution between
+    unitig and contig. Since a 1-to-1 mapping seems desirable for the implemented
+    heuristic of patching back in assembled sequence that is discarded by SaaRclust,
+    the below procedure determines the assignment following a simple majority vote.
+    """
     unitig_table, read_to_unitig = process_raw_unitig_graph(args.unitigs)
     # skip over contig length - part of SaaRclust output
     contig_readcount, _, contig_read_depth, read_to_contig, _, _ = process_graph_file(args.contigs, False)
 
-    unitigs_to_contig_count = col.defaultdict(set)
+    unitigs_to_contig_count = col.defaultdict(col.Counter)
     contigs_to_unitigs_count = col.defaultdict(set)
     unitig_to_contig = dict()
     unseen_reads = col.Counter()
@@ -129,19 +137,18 @@ def build_unitig_table(args):
             unitig = read_to_unitig[read]
         except KeyError:
             unseen_reads[contig] += 1
-        unitigs_to_contig_count[unitig].add(contig)
-        unitig_to_contig[unitig] = contig
+        # count unitig to contig assignments - there is multiplicity
+        # because we are iterating over reads
+        unitigs_to_contig_count[unitig][contig] += 1
         contigs_to_unitigs_count[contig].add(unitig)
     contigs_to_unitigs_count = col.Counter({c: len(u) for c, u in contigs_to_unitigs_count.items()})
-    unitigs_to_contig_count = col.Counter({u: len(v) for u, v in unitigs_to_contig_count.items()})
-    error_count = 0
-    for unitig, assignments in unitigs_to_contig_count.most_common():
-        if assignments == 1:
-            break
-        sys.stderr.write(f'Error - multi assignment: {unitig} - {assignments}')
-        error_count += 1
-    if error_count > 0:
-        raise RuntimeError('Multi-unitig assignment')
+
+    # make majority decision explicit here
+    unitig_to_contig = dict()
+    for unitig, contig_counts in unitigs_to_contig_count.items():
+        contig, _ = contig_counts.most_common(1)[0]
+        unitig_to_contig[unitig] = contig
+
     unitig_table['contig'] = unitig_table.index.map(lambda x: unitig_to_contig.get(x, 'pruned'))
     unitig_table['contig_read_count'] = unitig_table['contig'].map(lambda x: contig_readcount[x])
     unitig_table['contig_read_depth'] = unitig_table['contig'].map(lambda x: contig_read_depth[x])
@@ -221,9 +228,6 @@ def process_saarclust_table(file_path):
 
 def run_guilt_by_association(unitig_table, contig_read_depth):
 
-    # - true singletons can obviously be ignored
-    # - the chances of an entire chromosome falling out of hifiasm
-    # as a single (raw) unitig are zero at the moment
     ignore_low_read_depth = unitig_table['contig_read_depth'] >= contig_read_depth
     process_unassigned = unitig_table['cluster_id'] == 'cluster99'
     select_unassigned_contigs = ignore_low_read_depth & process_unassigned
