@@ -316,8 +316,13 @@ rule run_gba_rescue:
         '{params.script_exec} -u {input.raw_unitigs} -c {input.p_contigs} -s {input.ctg_report} -o {output.table}'
 
 
-def load_nhr_fasta_sequence(file_path):
-
+def load_contig_fasta_sequences(file_path, is_oriented):
+    """
+    Load and cache contig sequences; if the input is not
+    the raw NHR assembly (= contig sequences are not oriented
+    using Strand-seq information), the contig information is extracted
+    from position 1 after splitting the FASTA header line at "_"
+    """
     cache = dict()
     this_seq = ''
     this_ctg = ''
@@ -327,6 +332,9 @@ def load_nhr_fasta_sequence(file_path):
                 if this_ctg:
                     cache[this_ctg] = this_seq
                 this_ctg = line.strip()[1:]
+                if not is_raw_nhr:
+                    # position 0 is cluster ID
+                    this_ctg = this_ctg.split('_')[1]
                 this_seq = ''
             else:
                 this_seq += line.strip()
@@ -348,10 +356,11 @@ rule write_clustered_split_fasta:
         import pandas as pd
         import collections as col
         import io
-        nhr_seq = load_nhr_fasta_sequence(input.nhr_fasta)
+        nhr_seq = load_contig_fasta_sequences(input.nhr_fasta, is_oriented=False)
         df = pd.read_csv(input.table, sep='\t', header=0)
         # input_cluster_sizes
         init_cluster_sizes = df.drop_duplicates(['cluster_id', 'contig'], inplace=False).groupby('cluster_id')['contig_length'].sum().to_dict()
+        REVCOMP_TABLE = get_revcomp_translation_table()
 
         sample = wildcards.hap_reads.split('_')[0]
         sample_sex = get_sample_sex(sample)[0].upper()
@@ -365,6 +374,9 @@ rule write_clustered_split_fasta:
                     raise RuntimeError(f'Duplicate contig: {input.table} / {contig}')
                 output_name = f'>{cluster_id}_{contig}_{sample}-{sample_sex}_SCL-{scl_key}'
                 output_seq = nhr_seq[contig]
+                if 'dR' in scl_key:
+                    # directionality of contig is revcomp
+                    output_seq = output_seq[::-1].translate(REVCOMP_TABLE)
                 dumped_cluster_sizes[cluster_id] += len(output_seq)
                 if cluster_id == 'cluster99':
                     _ = garbage.write(f'{output_name}\n{output_seq}\n')
@@ -404,7 +416,6 @@ def dump_cluster_size_error(sseq_reads, contig, seq_len, max_seq_len, ignore_siz
 rule write_clustered_concat_fasta:
     input:
         table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
-        nhr_fasta = 'output/reference_assembly/non-hap-res/{hap_reads}_nhr-{assembler}.fasta',
         split_fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta-split.fa'.format(config['git_commit_version'])
     output:
         fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta'.format(config['git_commit_version']),
@@ -417,7 +428,10 @@ rule write_clustered_concat_fasta:
         import pandas as pd
         import collections as col
         import io
-        nhr_seq = load_nhr_fasta_sequence(input.nhr_fasta)
+        # by using the contigs of the fasta-split assembly, it is ensured
+        # that the directionality information is propagated to the concatenated
+        # assembly FASTA
+        ctg_seq = load_contig_fasta_sequences(input.split_fasta, is_oriented=True)
         df = pd.read_csv(input.table, sep='\t', header=0)
         init_cluster_sizes = df.drop_duplicates(['cluster_id', 'contig'], inplace=False).groupby('cluster_id')['contig_length'].sum().to_dict()
 
@@ -445,11 +459,11 @@ rule write_clustered_concat_fasta:
                         dumped_clusters.append(last_cluster)
 
                     last_cluster = cluster_id
-                    last_seq = nhr_seq[contig]
+                    last_seq = ctg_seq[contig]
                     last_length = len(last_seq)
                     dumped_cluster_sizes[last_cluster] += last_length
                 else:
-                    this_seq = nhr_seq[contig]
+                    this_seq = ctg_seq[contig]
                     last_seq += spacer + this_seq
                     last_length += len(this_seq)
                     dumped_cluster_sizes[last_cluster] += len(this_seq)

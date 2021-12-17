@@ -255,8 +255,8 @@ rule collect_snv_stats_per_cluster:
 def select_assembly_contig_index(wildcards):
 
     formatter = dict(wildcards)
-    regular_fasta_idx = 'output/{folder_path}/{file_name}.fasta.fai'.format(**formatter)
-    split_fasta_idx = regular_fasta.replace('.fasta.fai', '.fasta-split.fa.fai')
+    regular_fasta_idx = 'output/{folder_path}/{assembly}.fasta.fai'.format(**formatter)
+    split_fasta_idx = regular_fasta_idx.replace('.fasta.fai', '.fasta-split.fa.fai')
     if 'clustered' in split_fasta_idx:
         return split_fasta_idx
     else:

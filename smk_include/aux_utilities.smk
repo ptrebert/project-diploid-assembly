@@ -354,11 +354,32 @@ rule singularity_pull_container:
             '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
 
 
-def estimate_number_of_saarclusters(sample_name, sseq_reads):
+def get_revcomp_translation_table():
+    """
+    Non-canonical chars (nucleotides) are returned unchanged
+    when calling translate() on the sequence
+    """
+    revcomp_mapping = {
+        'A': 'T',
+        'C': 'G',
+        'G': 'C',
+        'T': 'A'
+    }
+    revcomp_mapping.update({k.lower(): v.lower() for k, v in revcomp_mapping.items()})
+
+    revcomp_table = str.maketrans(revcomp_mapping)
+    return revcomp_table
+
+
+def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False):
     """
     Function introduced to drop all checkpoints w/ subsequent dynamic aggregation of output files.
     If number of clusters happens to match what is being produced by SaaRclust, should allow
     pipeline to run from start to end w/o interruption.
+
+    Update 2021-12-16
+    Non-consecutive naming of clusters can cause trouble. Introduce new parameter
+    "return_names" with default False to not break function calls.
     """
     import os
     import sys
@@ -368,9 +389,15 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads):
         sys.stderr.write('Estimating number of SaaRclusters for: {} / {}\n'.format(sample_name, sseq_reads))
 
     num_clusters = 0
+    # 2021-12-16
+    # SaaRclust (as-of #4700afe) has the annoying property of not renaming clusters after
+    # collapsing (?) clusters to meet the desired number of clusters;
+    # as a consequence, cluster IDs are not necessarily enumerated consecutively,
+    # which makes it next to impossible to detect missing information pertaining
+    # to a specific cluster
+    cluster_names = []
 
     formatter = {'sseq_reads': sseq_reads, 'sample': sample_name, 'git_version': config['git_commit_version']}
-    #cluster_fofn_path = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{sample}*_nhr-*.clusters.fofn'.format(**formatter)
     cluster_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.cluster-ids.txt'.format(**formatter)
 
     if DEBUG:
@@ -399,6 +426,10 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads):
                     continue
                 if 'cluster99' in line:
                     raise ValueError(f'ERROR: cluster99 in cluster FOFN file {cluster_fofn} detected. Delete this file and restart the pipeline')
+                # Update 2021-12-16: in PGAS versions v14+ (later than #dedaeba), the fofn file
+                # contains only the cluster names, and not the complete file paths because
+                # the SaaRclust output is post-processed.
+                cluster_names.append(line.strip())
                 fofn_clusters += 1
         if fofn_clusters < default_clusters - num_clusters_slack:
             raise ValueError(f'ERROR: number of clusters loaded from FOFN file {cluster_fofn} is too small. Delete this file and restart the pipeline')
@@ -422,11 +453,24 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads):
         num_clusters = int(config.get('num_default_clusters', 24))
         if DEBUG:
             sys.stderr.write('Cluster estimate is zero - returning best guess: {}\n'.format(num_clusters))
-    return num_clusters
+
+    if return_names:
+        if not cluster_names:
+            # have to work with best guess
+            cluster_names = [f'cluster{i}' for i in range(1, num_clusters + 1)]
+        retval = num_clusters, cluster_names
+    else:
+        retval = num_clusters
+
+    return retval
 
 
 def check_cluster_file_completeness(wildcards, source_path, glob_path, sseq_reads, cluster_key):
-
+    """
+    Update 2021-12-16
+    Rely on cluster names returned by estimate_number_of_saarclusters
+    as cluster names may not be consecutive (as-of SaaRclust #4700afe)
+    """
     import glob
     import sys
 
@@ -437,13 +481,13 @@ def check_cluster_file_completeness(wildcards, source_path, glob_path, sseq_read
     cluster_files = set(f for f in cluster_files if 'cluster99' not in f)
 
     sample_name = sseq_reads.split('_')[0]
-    estimate_num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+    estimate_num_clusters, cluster_names = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, return_names=True)
     num_clusters_slack = int(config.get('num_cluster_slack', 1))
 
     if not (estimate_num_clusters - num_clusters_slack) < len(cluster_files) < (estimate_num_clusters + num_clusters_slack):
         tmp = dict(wildcards)
-        for i in range(1, estimate_num_clusters + 1):
-            tmp[cluster_key] = 'cluster' + str(i)
+        for cn in cluster_names:
+            tmp[cluster_key] = cn
             cluster_file = source_path.format(**tmp)
             cluster_files.add(cluster_file)
     return sorted(cluster_files)
