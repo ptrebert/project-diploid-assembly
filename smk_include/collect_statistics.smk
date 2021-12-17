@@ -252,7 +252,7 @@ rule collect_snv_stats_per_cluster:
                         _ = stat_dump.write('{}_HET-SNV_{}_{}\t{}\n'.format(seq, sl, fl, result))
 
 
-def select_contigs(wildcards):
+def select_assembly_contig_index(wildcards):
 
     formatter = dict(wildcards)
     regular_fasta_idx = 'output/{folder_path}/{file_name}.fasta.fai'.format(**formatter)
@@ -267,7 +267,7 @@ rule collect_contig_to_ref_aln_statistics:
     input:
         ctg_ref_aln = 'output/alignments/contigs_to_reference/{folder_path}/{assembly}_map-to_{aln_reference}.bed',
         ref_chroms = 'references/assemblies/{aln_reference}.fasta.fai',
-        assm_chroms = 'output/{folder_path}/{assembly}.fasta.fai'
+        assm_chroms = select_assembly_contig_index
     output:
         'output/statistics/contigs_to_ref_aln/{folder_path}/{assembly}_map-to_{aln_reference}.mapq{mapq}.stats'
     priority: 200
