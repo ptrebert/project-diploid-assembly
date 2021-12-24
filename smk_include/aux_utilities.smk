@@ -395,10 +395,13 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False)
     # as a consequence, cluster IDs are not necessarily enumerated consecutively,
     # which makes it next to impossible to detect missing information pertaining
     # to a specific cluster
-    cluster_names = []
+    cluster_names = set()
 
     formatter = {'sseq_reads': sseq_reads, 'sample': sample_name, 'git_version': config['git_commit_version']}
     cluster_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.cluster-ids.txt'.format(**formatter)
+    # added 2021-12-24: in case breakpointR cannot process some clusters, the estimate would always be wrong, i.e.
+    # need to subtract the IDs of dropped clusters
+    dropped_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.dropped-clusters.err'.format(**formatter)
 
     if DEBUG:
         sys.stderr.write('Checking cluster fofn path: {}\n'.format(cluster_fofn_path))
@@ -418,8 +421,14 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False)
             sys.stderr.write('Loading number of clusters from fofn: {}\n'.format(cluster_fofn))
         num_clusters_slack = int(config.get('num_cluster_slack', 1))
         default_clusters = int(config.get('num_default_clusters', 24))
+        subtract_clusters = set()
+        # check if dropped_clusters exists
+        dropped_fofn_matches = glob.glob(dropped_fofn_path)
+        if len(dropped_fofn_matches) == 1:
+            dropped_fofn = dropped_fofn_matches[0]
+            with open(dropped_fofn, 'r') as listing:
+                subtract_clusters = set(l.strip() for l in listing if l.strip())
         # probably best case: cluster fofn has already been created
-        fofn_clusters = 0
         with open(cluster_fofn, 'r') as fofn:
             for line in fofn:
                 if not line.strip():
@@ -429,8 +438,9 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False)
                 # Update 2021-12-16: in PGAS versions v14+ (later than #dedaeba), the fofn file
                 # contains only the cluster names, and not the complete file paths because
                 # the SaaRclust output is post-processed.
-                cluster_names.append(line.strip())
-                fofn_clusters += 1
+                cluster_names.add(line.strip())
+        cluster_names = sorted(cluster_names - subtract_clusters)
+        fofn_clusters = len(cluster_names)
         if fofn_clusters < default_clusters - num_clusters_slack:
             raise ValueError(f'ERROR: number of clusters loaded from FOFN file {cluster_fofn} is too small. Delete this file and restart the pipeline')
         if DEBUG:

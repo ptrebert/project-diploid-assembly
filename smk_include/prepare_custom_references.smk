@@ -319,7 +319,7 @@ rule run_gba_rescue:
 def load_contig_fasta_sequences(file_path, is_oriented):
     """
     Load and cache contig sequences; if the input is not
-    the raw NHR assembly (= contig sequences are not oriented
+    the raw NHR assembly (= contig sequences are oriented
     using Strand-seq information), the contig information is extracted
     from position 1 after splitting the FASTA header line at "_"
     """
@@ -332,7 +332,7 @@ def load_contig_fasta_sequences(file_path, is_oriented):
                 if this_ctg:
                     cache[this_ctg] = this_seq
                 this_ctg = line.strip()[1:]
-                if not is_raw_nhr:
+                if is_oriented:
                     # position 0 is cluster ID
                     this_ctg = this_ctg.split('_')[1]
                 this_seq = ''
