@@ -397,7 +397,7 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False)
     # to a specific cluster
     cluster_names = set()
 
-    formatter = {'sseq_reads': sseq_reads, 'sample': sample_name, 'git_version': config['git_commit_version']}
+    formatter = {'sseq_reads': sseq_reads, 'sample': sample_name, 'version': config['git_commit_version']}
     cluster_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.cluster-ids.txt'.format(**formatter)
     # added 2021-12-24: in case breakpointR cannot process some clusters, the estimate would always be wrong, i.e.
     # need to subtract the IDs of dropped clusters

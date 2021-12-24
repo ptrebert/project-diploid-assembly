@@ -190,7 +190,7 @@ rule strandphaser_fix_inversion_phasing:
     """
     input:
         breakpointr_data = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/run/data',
-        strandphaser_data = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/data'
+        strandphaser_data = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/data',
         fofn = 'output/integrative_phasing/processing/config_files/{reference}/{sseq_reads}/strandphaser.input',
         variant_calls = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.vcf',
         reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
@@ -239,14 +239,15 @@ rule write_strandphaser_split_vcf_fofn:
         wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/{reference}.WCregions.txt',
         fix_inv_stats = 'output/integrative_phasing/postprocessing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/fix_inv_stats',
         data_dir = rules.run_strandphaser.output.data,
-        cluster_ids = rules.write_clustered_concat_fasta.cluster_ids
+        cluster_ids = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.cluster-ids.txt'
     output:
         fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn',
-        dropped_clusters = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.dropped-clusters.err'.format(config['git_commit_version'])
     log:
         'log/output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.write-fofn.log'
     run:
         import pathlib as pl
+
+        dropped_clusters_path = pl.Path(str(input.cluster_ids).replace('cluster-ids.txt', 'dropped-clusters.err'))
 
         with open(log[0], 'w') as logfile:
             _ = logfile.write(f'Reading cluster IDs from file {input.cluster_ids}')
@@ -287,7 +288,7 @@ rule write_strandphaser_split_vcf_fofn:
                     _ = logfile.write('Matching number of breakpointR clusters and existing VCF output files - not good, not terrible...')
                     missing_clusters = sorted(cluster_ids - brkp_clusters)
                     _ = logfile.write('Sequence cluster(s) w/o W/C-only regions as per breakpointR output: {}\n'.format(', '.join(missing_clusters)))
-                    with open(output.dropped_clusters, 'w') as dump:
+                    with open(dropped_clusters_path, 'w') as dump:
                         _ = dump.write('\n'.join(missing_clusters) + '\n')
                 else:
                     raise RuntimeError(
@@ -302,10 +303,6 @@ rule write_strandphaser_split_vcf_fofn:
             
             with open(output.fofn, 'w') as fofn:
                 _ = fofn.write('\n'.join(list(map(str, input_vcfs))) + '\n')
-
-            if not pl.Path(output.dropped_clusters).is_file():
-                with open(output.dropped_clusters, 'w') as dump:
-                    pass
 
             _ = logfile.write('Output fofn produced\n')
 
