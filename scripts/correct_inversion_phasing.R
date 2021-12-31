@@ -10,7 +10,7 @@ suppressMessages(library(StrandPhaseR))
 
 args = commandArgs(trailingOnly=TRUE)
 
-commit.hash.expect = args[7]
+commit.hash.expect = args[8]
 if (!is.na(commit.hash.expect)) {
     pkg.desc = library(help=StrandPhaseR)
     pkg.desc.version = grep("RemoteRef", pkg.desc$info[[1]], ignore.case=TRUE, value=TRUE)
@@ -25,9 +25,9 @@ bam.folder = args[1]
 breakpointr.data = args[2]
 strandphaser.data = args[3]
 strandphaser.vcf = args[4]
-variant.calls = args[4]
-clustered.assm = args[5]
-output.folder = args[6]
+variant.calls = args[5]
+clustered.assm = args[6]
+output.folder = args[7]
 
 correctInvertedRegionPhasing(
     input.bams = bam.folder,
