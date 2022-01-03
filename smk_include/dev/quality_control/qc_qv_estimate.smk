@@ -24,7 +24,7 @@ def set_meryl_memory(wildcards, attempt):
     memory_mb = 48576 * attempt
     if wildcards.read_type == 'ONTUL':
         # raw ONTUL reads
-        memory_mb = 262144 * attempt            
+        memory_mb = 262144 * attempt
     return memory_mb
 
 

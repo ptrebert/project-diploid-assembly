@@ -83,9 +83,10 @@ def add_ontul_readsets(sample_infos, ontul_path):
     Need to check first if complete flag file is set
     """
     flag_files = pathlib.Path(ontul_path).glob(f'**/*.final')
-    suffix = 'guppy-5.0.11-sup-prom_fastq_pass.fastq.gz'
+    suffix = RS_ONTUL_FILE_EXT  # from aux module
 
     merged_path = 'input/ONTUL/{sample}_ONTUL_{readset}.fasta.gz'
+    ontec_path = 'input/ONTEC/{sample}_ONTEC_{readset}.fasta.gz'
 
     ontul_samples = set()
     for flag_file in flag_files:
@@ -96,6 +97,9 @@ def add_ontul_readsets(sample_infos, ontul_path):
         assert len(fastq_files) > 1, f'{str(fastq_files)}'
         sample_infos[sample_name]['ONTUL_RAW'] = fastq_files
         sample_infos[sample_name]['ONTUL'] = merged_path.format(**{'sample': sample_name, 'readset': RS_ONTUL})
+        # every sample with ONT reads can be assumed to also have HiFi reads
+        # ==> ONTEC is possible
+        sample_infos[sample_name]['ONTEC'] = ontec_path.format(**{'sample': sample_name, 'readset': RS_ONTEC})
         ontul_samples.add(sample_name)
 
     return sample_infos, sorted(ontul_samples)

@@ -22,7 +22,7 @@ rule qc_local_seq_stats:
         'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz'
     conda: '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        read_type = '(ONTUL|ONTEC|ONTHY)'
+        read_type = '(ONTUL|ONTHY)'
     threads: 2
     resources:
         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,

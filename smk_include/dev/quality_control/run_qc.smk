@@ -46,8 +46,8 @@ def build_seqence_qv_estimate_targets(wildcards):
     template_seq = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_SHORT_{short_reads}_nohpc.seq-qv.h5'
     template_global = 'output/qv_estimate/{sample}_{long_reads}_{readset}_{hpc}_REF_SHORT_{short_reads}_nohpc.qv.tsv'
 
-    long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF']
-    long_read_sets = [RS_ONTUL, RS_HIFIEC, RS_HIFIAF]
+    long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF', 'ONTEC']
+    long_read_sets = [RS_ONTUL, RS_HIFIEC, RS_HIFIAF, RS_ONTEC]
 
     targets = []
     for sample in COMPLETE_SAMPLES:
@@ -106,33 +106,8 @@ rule run_ont_error_correction:
             window=config['mbg_window_size'],
             resolve=config['mbg_resolve_kmer']
         ),
-        # expand(
-        #     'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.h5',
-        #     sample=COMPLETE_SAMPLES,
-        #     read_type=['ONTEC'],
-        #     readset=[RS_ONTUL],
-        #     graph_reads=['HIFIAF'],
-        #     graph_readset=[RS_HIFIAF],
-        #     kmer=config['mbg_init_kmer'],
-        #     window=config['mbg_window_size'],
-        #     resolve=config['mbg_resolve_kmer']
-        # ),
-
-
-# rule run_ont_error_correction:
-#     """
-#     Reminder: previous version...
-#     """
-#     input:
-#         expand(
-#             'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
-#             sample=ONTUL_SAMPLES,
-#             read_type=['ONTEC'],
-#             readset=['HIFIAF-pgas-v14-dev'],
-#         ),
-#         expand(
-#             'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
-#             sample=ONTUL_SAMPLES,
-#             read_type=['ONTEC'],
-#             readset=['HIFIEC-hifiasm-v0.15.4'],
-#         ),
+        expand(
+            'input/ONTEC/{sample}_ONTEC_{readset}.fasta.gz',
+            sample=COMPLETE_SAMPLES,
+            readset=RS_ONTEC
+        )

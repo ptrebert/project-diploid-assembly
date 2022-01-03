@@ -1,5 +1,8 @@
 import pathlib as pl
 
+localrules: finalize_ontec_reads
+
+
 def set_errormasking(wildcards):
 
     if 'HIFIAF' in wildcards.read_type:
@@ -179,95 +182,30 @@ rule cache_ont_corrected_read_stats:
     # END OF RUN BLOCK
 
 
-# rule deduplicate_ont_corrected_reads:
-#     input:
-#         cache = expand(
-#             'output/alignments/ont_to_mbg_graph/{{sample}}_{{read_type}}_{{readset}}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.stats.h5',
-#             zip,
-#             kmer=config['mbg_kmers'],
-#             window=config['mbg_windows']
-#         )
-#     output:
-#         expand(
-#             'output/alignments/ont_to_mbg_graph/{{sample}}_{{read_type}}_{{readset}}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.select-reads.txt',
-#             zip,
-#             kmer=config['mbg_kmers'],
-#             window=config['mbg_windows']
-#         )
-#     resources:
-#         mem_total_mb = lambda wildcards, attempt: 8192 * attempt
-#     run:
-#         import pandas as pd
-#         import pathlib as pl
-#         import collections as col
-
-#         df = []
-#         out_path = ''
-#         for cache_file in input.cache:
-#             out_path = pl.Path(cache_file).parent
-#             df.append(pd.read_hdf(cache_file, 'cache'))
-#         df = pd.concat(df, axis=0, ignore_index=False)
-#         multiplicity = df['read_name'].value_counts()
-#         df['multiplicty'] = df['read_name'].apply(lambda x: multiplicity[x])
-
-#         out_files = dict()
-#         for file_name, read_names in df.loc[df['multiplicity'] < 2, :].groupby('file')['read_name']:
-#             try:
-#                 out_file_name = out_files[file_name]
-#             except KeyError:
-#                 out_file_name = file_name.replace('.stats.tsv.gz', '.select-reads.txt')
-#                 out_files[file_name] = out_file_name
-#             with open(pl.Path(out_path, out_file_name), 'w') as dump:
-#                 _ = dump.write('\n'.join(read_names.tolist()) + '\n')
-        
-#         out_cache = col.defaultdict(list)
-#         for read_name, file_names in df.loc[df['multiplicity'] > 1, :].groupby('read_name')['file']:
-#             select_file = file_names.sample(1).values[0]
-#             out_cache[out_files[select_file]].append(read_name)
-
-#         for out_file_name, read_names in out_cache.items():
-#             with open(pl.Path(out_path, out_file_name), 'a') as dump:
-#                 _ = dump.write('\n'.join(read_names.tolist()) + '\n')
-        
-#         # END OF RUN BLOCK
-
-
-# rule extract_selected_ontec_reads:
-#     input:
-#         reads = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.fasta.gz',
-#         names = 'output/alignments/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.select-reads.txt',
-#     output:
-#         'output/dedup_ontec/ont_to_mbg_graph/{sample}_{read_type}_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
-#     conda:
-#         '../../../environment/conda/conda_biotools.yml'
-#     wildcard_constraints:
-#         graph_reads = '(HIFIEC|HIFIAF)'
-#     threads: config['num_cpu_low']
-#     resources:
-#         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
-#         runtime_hrs = lambda wildcards, attempt: 4 * attempt
-#     shell:
-#         'pigz -p 2 -d -c {input.reads} | seqtk subseq /dev/stdin {input.names} | pigz -p {threads} --best > {output}'
-
-
-# rule merge_extracted_ontec_reads:
-#     input:
-#         subsets = expand(
-#             'output/dedup_ontec/ont_to_mbg_graph/{{sample}}_{{read_type}}_{readset}_MAP-TO_{{graph_reads}}_{{graph_readset}}.MBG-k{kmer}-w{window}.uniq.fasta.gz',
-#             zip,
-#             kmer=config['mbg_kmers'],
-#             window=config['mbg_windows'],
-#             readset=['guppy-5.0.11-sup-prom'] * len(config['mbg_kmers']),
-#         )
-#     output:
-#         'input/{read_type}/{sample}_{read_type}_{graph_reads}-{graph_readset}.fasta.gz'
-#     conda:
-#         '../../../environment/conda/conda_biotools.yml'
-#     wildcard_constraints:
-#         graph_reads = '(HIFIEC|HIFIAF)'
-#     threads: config['num_cpu_low']
-#     resources:
-#         mem_total_mb = lambda wildcards, attempt: 2048 * attempt,
-#         runtime_hrs = lambda wildcards, attempt: 4 * attempt
-#     shell:
-#         'pigz -p 2 -d -c {input.subsets} | pigz -p {threads} --best > {output}'
+rule finalize_ontec_reads:
+    input:
+        fasta = expand(
+            'output/alignments/ont_to_mbg_graph/{{sample}}_ONTEC_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.fasta.gz',
+            readset=RS_ONTUL,
+            graph_reads='HIFIEC',
+            graph_readset=RS_HIFIEC,
+            kmer=config['mbg_init_kmer'],
+            window=config['mbg_window_size'],
+            resolve=config['mbg_resolve_kmer']
+        ),
+        stats = expand(
+            'output/alignments/ont_to_mbg_graph/{sample}_ONTEC_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.tsv.gz',
+            readset=RS_ONTUL,
+            graph_reads='HIFIEC',
+            graph_readset=RS_HIFIEC,
+            kmer=config['mbg_init_kmer'],
+            window=config['mbg_window_size'],
+            resolve=config['mbg_resolve_kmer']
+        )
+    output:
+        fasta = 'input/ONTEC/{{sample}}_ONTEC_{}.fasta.gz'.format(RS_ONTEC),
+        stats = 'input/ONTEC/{{sample}}_ONTEC_{}.stats.tsv.gz'.format(RS_ONTEC)
+    shell:
+        'ln -s -r {input.fasta} {output.fasta}'
+        ' && '
+        'ln -s -r {input.stats} {output.stats}'
