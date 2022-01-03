@@ -172,7 +172,7 @@ rule cache_ont_corrected_read_stats:
         df = pd.read_csv(input.tsv, sep='\t', header=None, names=seqtk_columns)
         df['MBG_kmer'] = int(wildcards.kmer)
         df['MBG_window'] = int(wildcards.window)
-        df['MBG_resolveK'] - int(wildcards.resolve)
+        df['MBG_resolveK'] = int(wildcards.resolve)
         df['file'] = input_file_name
         with pd.HDFStore(output.h5, 'w', complib='blosc', complevel=9) as hdf:
             hdf.put('cache', df, format='fixed')
