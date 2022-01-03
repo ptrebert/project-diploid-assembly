@@ -194,7 +194,7 @@ rule finalize_ontec_reads:
             resolve=config['mbg_resolve_kmer']
         ),
         stats = expand(
-            'output/alignments/ont_to_mbg_graph/{sample}_ONTEC_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.tsv.gz',
+            'output/alignments/ont_to_mbg_graph/{{sample}}_ONTEC_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.stats.tsv.gz',
             readset=RS_ONTUL,
             graph_reads='HIFIEC',
             graph_readset=RS_HIFIEC,
