@@ -19,8 +19,8 @@ def build_read_cov_targets(wildcards):
 
     template = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.cov.cache.h5'
 
-    long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF']
-    long_read_sets = [RS_ONTUL, RS_HIFIEC, RS_HIFIAF]
+    long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF', 'ONTEC']
+    long_read_sets = [RS_ONTUL, RS_HIFIEC, RS_HIFIAF, RS_ONTEC]
 
     targets = []
     for sample in COMPLETE_SAMPLES:
