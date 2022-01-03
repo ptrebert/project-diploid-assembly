@@ -42,7 +42,7 @@ correctInvertedRegionPhasing(
     min.mapq = 10,
     background = 0.1,
     vcfs.files = strandphaser.vcf,
-    lookup.bp = 1000000
+    lookup.bp = 1000000,
     ref.fasta = clustered.assm,
     assume.biallelic = TRUE
 )
