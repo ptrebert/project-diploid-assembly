@@ -383,9 +383,9 @@ def select_graph_to_dump(wildcards):
         'LJA': 'lja'
     }
     graph_paths = {
-        ('hifiasm', 'input'): 'output/target_assembly/chry_reads/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.{tigs}.gfa',
+        ('hifiasm', 'input'): 'output/target_assembly/{chrom}/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.{tigs}.gfa',
         ('hifiasm', 'hybrid'): 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa',
-        ('mbg', 'input'): 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gfa',
+        ('mbg', 'input'): 'output/target_assembly/{chrom}/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gfa',
         ('mbg', 'hybrid'): 'output/hybrid/110_final_graph/{sample_info}_{sample}.{ont_type}.{tigs}.final.gfa',
     }
     if wildcards.ont_type == 'UNSET':
@@ -395,7 +395,7 @@ def select_graph_to_dump(wildcards):
     else:
         raise ValueError(str(wildcards))
 
-    assert 'MQ0Y' in wildcards.tigs or 'MQ0XY' in wildcards.tigs, f'Can only dump target assembly graphs / chrY: {wildcards.tigs}'
+    assert 'MQ0Y' in wildcards.tigs or 'MQ0XY' in wildcards.tigs, f'Can only dump target assembly graphs: {wildcards.tigs}'
     mapq = 'mq00'
 
     formatter = dict(wildcards)
@@ -414,6 +414,16 @@ def select_graph_to_dump(wildcards):
         else:
             raise
         formatter['read_type'] = read_type
+
+        if wildcards.tigs.endswith('XY'):
+            chrom = 'chrXY'
+        elif wildcards.tigs.endswith('X'):
+            chrom = 'chrX'
+        elif wildcards.tigs.endswith('Y'):
+            chrom = 'chrY'
+        else:
+            raise ValueError(f'Unknown chrom: {str(wildcards)}')
+        formatter['chrom'] = chrom
 
         if assembler == 'hifiasm':
             formatter['tigs'] = get_hifiasm_tigs(wildcards.tigs)

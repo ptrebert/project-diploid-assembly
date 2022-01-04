@@ -66,15 +66,19 @@ def select_input_graph(wildcards):
         'LJA': 'lja'
     }
     graphs_paths = {
-        'hifiasm': 'output/target_assembly/chry_reads/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.{tigs}.gfa',
-        'mbg': 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gfa',
+        'hifiasm': 'output/target_assembly/{chrom}/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.{tigs}.gfa',
+        'mbg': 'output/target_assembly/{chrom}/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gfa',
         'lja': 'no_uncompressed_graph_available'
     }
     try:
         # for hifiasm whole-genome graphs
         gfa = SAMPLE_INFOS[wildcards.sample][wildcards.tigs]
     except KeyError:
-        if 'EC' in wildcards.tigs:
+        if 'OHEC' in wildcards.tigs:
+            read_type = 'OHEC'
+        elif 'OEC' in wildcards.tigs:
+            read_type = 'ONTEC'
+        elif 'EC' in wildcards.tigs:
             read_type = 'HIFIEC'
         elif 'AF' in wildcards.tigs:
             read_type = 'HIFIAF'
@@ -82,6 +86,14 @@ def select_input_graph(wildcards):
             raise
         if 'MQ0' in wildcards.tigs:
             mapq = 'mq00'
+        else:
+            raise
+        if wildcards.tigs.endswith('XY'):
+            chrom = 'chrXY'
+        elif wildcards.endswith('X'):
+            chrom = 'chrX'
+        elif wildcards.endswith('Y'):
+            chrom = 'chrY'
         else:
             raise
         assembler = assemblers[wildcards.tigs[:3]]
@@ -92,6 +104,7 @@ def select_input_graph(wildcards):
             'sample_info': wildcards.sample_info,
             'read_type': read_type,
             'mapq': mapq,
+            'chrom': chrom
         }
         if assembler == 'hifiasm':
             formatter['tigs'] = get_hifiasm_tigs(wildcards.tigs)
@@ -252,6 +265,7 @@ rule extract_aligned_chrom_read_sequences:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
+        sample = CONSTRAINT_REGULAR_SAMPLES,
         read_type = '(HIFIEC|HIFIAF|ONTUL|ONTEC)',
         chrom = '(chrX|chrY)'
     threads: 4
@@ -267,6 +281,10 @@ rule merge_sex_chrom_reads:
         chry = 'output/read_subsets/chrY/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
     output:
         'output/read_subsets/chrXY/{sample_info}_{sample}_{read_type}.chrXY-reads.{mapq}.{seq_type}.gz',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        read_type = '(HIFIEC|HIFIAF|ONTUL|ONTEC)'
     threads: 4
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt
@@ -280,6 +298,10 @@ rule merge_read_types:
         ontec = 'output/read_subsets/{chrom}/{sample_info}_{sample}_ONTEC.{chrom}-reads.{mapq}.{seq_type}.gz',
     output:
         'output/read_subsets/{chrom}/{sample_info}_{sample}_OHEC.{chrom}-reads.{mapq}.{seq_type}.gz',
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
+    wildcard_constraints:
+        chrom = '(chrY|chrX|chrXY)'
     threads: 4
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt

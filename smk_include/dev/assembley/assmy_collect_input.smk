@@ -100,7 +100,7 @@ def add_assembly_graphs(sample_infos, assembly_path):
 
 def add_ontul_readsets(sample_infos, ontul_path):
 
-    suffix = 'ONTUL_guppy-5.0.11-sup-prom.fasta.gz'
+    suffix = 'GPYv5011SUP.fasta.gz'
     fasta_files = pathlib.Path(ontul_path).glob(f'*{suffix}')
     ontul_samples = []
 

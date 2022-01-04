@@ -69,7 +69,8 @@ rule hifiasm_targeted_assembly:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        sample = CONSTRAINT_ALL_SAMPLES
+        sample = CONSTRAINT_ALL_SAMPLES,
+        chrom = '(chrY|chrX|chrXY)'
     threads: config['num_cpu_high']
     resources:
         mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
@@ -104,6 +105,8 @@ rule mbg_targeted_assembly:
         'rsrc/output/target_assembly/{chrom}/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.t24.rsrc',
     wildcard_constraints:
         read_type = '(HIFIEC|ONTEC|OHEC)',
+        sample = CONSTRAINT_ALL_SAMPLES,
+        chrom = '(chrY|chrX|chrXY)'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']

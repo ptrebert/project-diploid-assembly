@@ -99,6 +99,9 @@ rule run_hybrid_assembly:
 #         )
 
 
+COMPLETE_SAMPLES = sorted(set(ONTUL_SAMPLES).intersection(set(HIFIEC_SAMPLES)))
+
+
 rule run_extract_read_subsets:
     input:
         fasta = expand(
@@ -151,7 +154,8 @@ def define_mbg_hybrid_targets(wildcards):
 
     target_files = []
 
-    params_info = ['assembler_params/MBG_{param_info}.info'.format(phash, *pvalues) for phash, pvalues in MBG_PARAMS.items()]
+    params_info = [(phash, *pvalues) for phash, pvalues in MBG_PARAMS.items()]
+    params_info = ['assembler_params/MBG_{}_k{}-w{}-r{}.info'.format(*p) for p in params_info]
     target_files.extend(params_info)
 
     tigs_hifiec = ['HECMQ0Y', 'HECMQ0XY']
@@ -171,7 +175,7 @@ def define_mbg_hybrid_targets(wildcards):
     for sample in samples_long:
         for ont_type in ont_types:
             for tigs in tigs_spec:
-                for rk, mbg_spec in mbg_spec:
+                for rk, spec_key in mbg_spec:
                     if rk > 20000 and tigs.startswith('HEC'):
                         # large resolveK for HIFIEC-only read sets
                         # is pointless
@@ -179,7 +183,7 @@ def define_mbg_hybrid_targets(wildcards):
                     formatter = {
                         'sample_long': sample,
                         'ont_type': ont_type,
-                        'tigs': f'MBG-{mbg_spec}-{tigs}',
+                        'tigs': f'MBG-{spec_key}-{tigs}',
                         'reference': reference
                     }
                     out_file = template.format(**formatter)
