@@ -57,23 +57,6 @@ rule run_all:
         # )
 
 
-rule run_hybrid_assembly:
-    input:
-        hybrid_ont_align = expand(
-            'output/hybrid/110_final_graph/{sample_long}.{ont_type}.{tigs}.final.gfa',
-            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
-            ont_type=['ONTUL'],
-            tigs=['TIGRAW']
-        ),
-        hybrid_contig_ref_align = expand(
-            'output/hybrid/210_align_ref/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.h5',
-            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
-            ont_type=['ONTUL'],
-            tigs=['TIGRAW'],
-            reference=['T2Tv11_hg002Yv2_chm13']
-        )
-
-
 # rule run_extract_confirmed_reads:
 #     input:
 #         xypar_reads = expand(
@@ -100,9 +83,9 @@ rule run_hybrid_assembly:
 
 
 COMPLETE_SAMPLES = sorted(set(ONTUL_SAMPLES).intersection(set(HIFIEC_SAMPLES)))
-
 if 'NA19317' in COMPLETE_SAMPLES and 'NA19347' in COMPLETE_SAMPLES:
     COMPLETE_SAMPLES.append('NA193N7')
+
 
 rule run_extract_read_subsets:
     input:
@@ -151,7 +134,6 @@ rule run_targeted_hifiasm_hybrid:
         )
 
 
-
 def define_mbg_hybrid_targets(wildcards):
 
     target_files = []
@@ -165,7 +147,8 @@ def define_mbg_hybrid_targets(wildcards):
     tigs_spec = tigs_hifiec + tigs_ohec
 
     samples_long = [SAMPLE_INFOS[sample]['long_id'] for sample in COMPLETE_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M']
-    samples_long.append('AFR-LWK-DUO-M_NA193N7')  # AFR duo mix
+    if 'NA193N7' in COMPLETE_SAMPLES:
+        samples_long.append('AFR-LWK-DUO-M_NA193N7')  # AFR duo mix
 
     ont_types = ['ONTUL', 'UNSET']  # unset = input assemblies, non-hybrid
     reference = 'T2Tv11_hg002Yv2_chm13'
@@ -207,44 +190,3 @@ rule run_chry_targeted_lja_input:
             tigs=[f'LJA-{lja_params}-ECMQ0Y' for lja_params in LJA_PARAMS.keys()],
             reference=['T2Tv11_hg002Yv2_chm13']
         )
-
-
-# rule run_afr_mix_tests:
-#     input:
-#         mbg_duo = expand(
-#             'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.gfa',
-#             zip,
-#             sample=['NA193N7'] * 3,
-#             sample_info=['AFR-LWK-DUO-M'] * 3,
-#             read_type=['HIFIEC'] * 3,
-#             mapq=['mq00'] * 3,
-#             kmer=[501, 1001, 2001],
-#             window=[100, 200, 400]
-#         ),
-#         mbg_trio = expand(
-#             'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.gfa',
-#             zip,
-#             sample=['NA193NN'] * 3,
-#             sample_info=['AFR-LWK-TRIO-M'] * 3,
-#             read_type=['HIFIEC'] * 3,
-#             mapq=['mq00'] * 3,
-#             kmer=[501, 1001, 2001],
-#             window=[100, 200, 400]
-#         ),
-#         mbg_quart = expand(
-#             'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.MBG-k{kmer}-w{window}.gfa',
-#             zip,
-#             sample=['AFR4MIX'] * 3,
-#             sample_info=['AFR-NNN-QUART-M'] * 3,
-#             read_type=['HIFIEC'] * 3,
-#             mapq=['mq00'] * 3,
-#             kmer=[501, 1001, 2001],
-#             window=[100, 200, 400]
-#         ),
-#         hybrid_assm = expand(
-#             'output/hybrid/210_align_ref/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.h5',
-#             sample_long=['AFR-LWK-DUO-M_NA193N7', 'AFR-LWK-TRIO-M_NA193NN', 'AFR-NNN-QUART-M_AFR4MIX'],
-#             ont_type=['ONTUL'],
-#             tigs=['ECMQ0YRAW', 'AFMQ0YRAW'],
-#             reference=['T2Tv11_hg002Yv2_chm13']
-#         )

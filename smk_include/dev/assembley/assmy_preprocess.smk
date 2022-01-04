@@ -284,7 +284,8 @@ rule merge_sex_chrom_reads:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        read_type = '(HIFIEC|HIFIAF|ONTUL|ONTEC)'
+        read_type = '(HIFIEC|HIFIAF|ONTUL|ONTEC)',
+        sample = CONSTRAINT_REGULAR_SAMPLES,
     threads: 4
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt
@@ -301,7 +302,8 @@ rule merge_read_types:
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        chrom = '(chrY|chrX|chrXY)'
+        chrom = '(chrY|chrX|chrXY)',
+        sample = CONSTRAINT_REGULAR_SAMPLES,
     threads: 4
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt
