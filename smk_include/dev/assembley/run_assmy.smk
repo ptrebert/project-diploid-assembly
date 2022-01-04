@@ -101,20 +101,22 @@ rule run_hybrid_assembly:
 
 COMPLETE_SAMPLES = sorted(set(ONTUL_SAMPLES).intersection(set(HIFIEC_SAMPLES)))
 
+if 'NA19317' in COMPLETE_SAMPLES and 'NA19347' in COMPLETE_SAMPLES:
+    COMPLETE_SAMPLES.append('NA193N7')
 
 rule run_extract_read_subsets:
     input:
         fasta = expand(
             'output/read_subsets/{chrom}/{sample_long}_{read_type}.{chrom}-reads.{mapq}.fasta.gz',
             chrom=['chrX', 'chrY', 'chrXY'],
-            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in COMPLETE_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             read_type=['HIFIEC', 'ONTUL', 'ONTEC', 'OHEC'],
             mapq=['mq00'],
         ),
         fastq = expand(
             'output/read_subsets/{chrom}/{sample_long}_{read_type}.{chrom}-reads.{mapq}.fastq.gz',
             chrom=['chrX', 'chrY', 'chrXY'],
-            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in COMPLETE_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             read_type=['HIFIAF'],
             mapq=['mq00'],
         )
@@ -135,7 +137,7 @@ rule run_targeted_hifiasm_hybrid:
     input:
         gfa_labels_regular = expand(
             'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
-            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
+            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in COMPLETE_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             ont_type=['ONTUL', 'UNSET'],
             tigs=HIFIASM_HYBRID_TIGS,
             reference=['T2Tv11_hg002Yv2_chm13']
@@ -162,7 +164,7 @@ def define_mbg_hybrid_targets(wildcards):
     tigs_ohec = ['OHECMQ0Y', 'OHECMQ0XY']
     tigs_spec = tigs_hifiec + tigs_ohec
 
-    samples_long = [SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M']
+    samples_long = [SAMPLE_INFOS[sample]['long_id'] for sample in COMPLETE_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M']
     samples_long.append('AFR-LWK-DUO-M_NA193N7')  # AFR duo mix
 
     ont_types = ['ONTUL', 'UNSET']  # unset = input assemblies, non-hybrid

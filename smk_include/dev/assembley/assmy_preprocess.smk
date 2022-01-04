@@ -90,9 +90,9 @@ def select_input_graph(wildcards):
             raise
         if wildcards.tigs.endswith('XY'):
             chrom = 'chrXY'
-        elif wildcards.endswith('X'):
+        elif wildcards.tigs.endswith('X'):
             chrom = 'chrX'
-        elif wildcards.endswith('Y'):
+        elif wildcards.tigs.endswith('Y'):
             chrom = 'chrY'
         else:
             raise
