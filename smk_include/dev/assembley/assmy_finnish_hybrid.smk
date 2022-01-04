@@ -18,12 +18,20 @@ def select_hybrid_assm_ont_reads(wildcards):
             mapq = 'mq00'
         else:
             raise
+        if wildcards.tigs.endswith('XY'):
+            chrom = 'chrXY'
+        elif wildcards.tigs.endswith('X'):
+            chrom = 'chrX'
+        elif wildcards.tigs.endswith('Y'):
+            chrom = 'chrY'
+        else:
+            raise ValueError(f'Unknown chrom: {str(wildcards)}')
         template = 'output/read_subsets/{chrom}/{sample_info}_{sample}_ONTUL.{chrom}-reads.{mapq}.fasta.gz'
         formatter = {
             'sample': wildcards.sample,
             'sample_info': wildcards.sample_info,
             'mapq': mapq,
-            'chrom': wildcards.chrom
+            'chrom': chrom
         }
         ont_reads = template.format(**formatter)
     else:

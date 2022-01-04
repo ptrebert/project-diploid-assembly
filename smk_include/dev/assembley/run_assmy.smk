@@ -147,7 +147,7 @@ rule run_targeted_hifiasm_hybrid:
 
 
 
-def define_mbg_hybrid_targets():
+def define_mbg_hybrid_targets(wildcards):
 
     target_files = []
 
