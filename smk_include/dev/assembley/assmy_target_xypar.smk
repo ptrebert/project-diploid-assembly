@@ -25,6 +25,7 @@ rule hifiasm_xypar_targeted_assembly:
         reads_ava = 'output/target_assembly/xypar_reads/xypar.ovlp.paf'
     log:
         hifiasm = 'log/output/target_assembly/xypar_reads.hifiasm.log',
+    message: 'DEPRECATED'
     benchmark:
         os.path.join('rsrc/output/target_assembly/xypar_reads.hifiasm' + '.t{}.rsrc'.format(config['num_cpu_medium']))
     conda:
@@ -39,7 +40,7 @@ rule hifiasm_xypar_targeted_assembly:
         'hifiasm -o {params.prefix} -t {threads} --write-ec --write-paf --primary {input.fastq} &> {log.hifiasm}'
 
 
-def select_chry_reads(wildcards):
+def select_chrom_reads(wildcards):
     """
     Why does this exist?
     - avoid carrying wildcard for input sequence type (FASTA vs FASTQ)
@@ -48,23 +49,23 @@ def select_chry_reads(wildcards):
         seq_type = 'fastq'
     else:
         seq_type = 'fasta'
-    template = 'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz'
+    template = 'output/read_subsets/{chrom}/{sample_info}_{sample}_{read_type}.{chrom}-reads.{mapq}.{seq_type}.gz'
     formatter = dict(wildcards)
     formatter['seq_type'] = seq_type
     reads_path = template.format(**formatter)
     return reads_path
 
 
-rule hifiasm_chry_targeted_assembly:
+rule hifiasm_targeted_assembly:
     input:
-        reads = select_chry_reads
+        reads = select_chrom_reads
     output:
-        primary_unitigs = 'output/target_assembly/chry_reads/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.p_utg.gfa',
-        raw_unitigs = 'output/target_assembly/chry_reads/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.r_utg.gfa',
+        primary_unitigs = 'output/target_assembly/{chrom}/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.p_utg.gfa',
+        raw_unitigs = 'output/target_assembly/{chrom}/hifiasm/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.r_utg.gfa',
     log:
-        hifiasm = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.log',
+        hifiasm = 'log/output/target_assembly/{chrom}/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.log',
     benchmark:
-        'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.t24.rsrc',
+        'rsrc/output/target_assembly/{chrom}/{sample_info}_{sample}_{read_type}.{mapq}.hifiasm.t24.rsrc',
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
@@ -75,8 +76,8 @@ rule hifiasm_chry_targeted_assembly:
         runtime_hrs = lambda wildcards, attempt: 4 ** attempt
     params:
         prefix = lambda wildcards, output: output.primary_unitigs.rsplit('.', 2)[0],
-        purge_stringency = 3,
-        n_hap = 1,
+        purge_stringency = lambda wildcards: 1 if wildcards.chrom == 'chrXY' else 3,
+        n_hap = lambda wildcards: 2 if wildcards.chrom == 'chrXY' else 1,
         #genome_size = '60m' --- with hifiasm 0.16.1, this can be set, but since chrYq is quite
         # variable in size, leave it to the default "auto" and hope for the best
     shell:
@@ -85,7 +86,7 @@ rule hifiasm_chry_targeted_assembly:
             '{input.reads} &> {log.hifiasm}'
 
 
-rule mbg_chry_targeted_assembly:
+rule mbg_targeted_assembly:
     """
     sif = ancient('mbg.master.sif'),
     sif = ancient('mbg.UnitigResolve.sif'),
@@ -93,16 +94,16 @@ rule mbg_chry_targeted_assembly:
         '--bind /:/hilbert {input.sif} '
     """
     input:
-        reads = select_chry_reads
+        reads = select_chrom_reads
     output:
-        graph = 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gfa',
-        paths = 'output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gaf',
+        graph = 'output/target_assembly/{chrom}/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gfa',
+        paths = 'output/target_assembly/{chrom}/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.gaf',
     log:
-        'log/output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.log',
+        'log/output/target_assembly/{chrom}/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.log',
     benchmark:
-        'rsrc/output/target_assembly/chry_reads/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.t24.rsrc',
+        'rsrc/output/target_assembly/{chrom}/mbg/{sample}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-w{window}-r{resolvek}.t24.rsrc',
     wildcard_constraints:
-        read_type = 'HIFIEC',
+        read_type = '(HIFIEC|ONTEC|OHEC)',
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -119,15 +120,16 @@ rule mbg_chry_targeted_assembly:
 rule lja_chry_targeted_assembly:
     input:
         sif = ancient('LJA.sif'),
-        reads = select_chry_reads
+        reads = select_chrom_reads
     output:
-        assm = 'output/target_assembly/chry_reads/lja/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}/assembly.fasta',
+        assm = 'output/target_assembly/{chrom}/lja/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}/assembly.fasta',
     log:
-        lja = 'log/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}.lja.log',
+        lja = 'log/output/target_assembly/{chrom}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}.lja.log',
     benchmark:
-        'rsrc/output/target_assembly/chry_reads/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}.lja.t24.rsrc',
+        'rsrc/output/target_assembly/{chrom}/{sample_info}_{sample}_{read_type}.{mapq}.k{kmer}-K{resolvek}.lja.t24.rsrc',
     # conda:
     #     '../../../environment/conda/conda_biotools.yml'
+    message: 'DEPRECATED'
     wildcard_constraints:
         sample = CONSTRAINT_ALL_SAMPLES
     threads: config['num_cpu_high']

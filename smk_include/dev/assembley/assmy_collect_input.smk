@@ -119,15 +119,15 @@ def add_ontul_readsets(sample_infos, ontul_path):
 
 def add_ontec_readsets(sample_infos, ontec_path):
 
-    suffix = 'ONTUL_guppy-5.0.11-sup-prom_MAP-TO_HIFIEC.mbg-k1001-w500.clip-ec.fa.gz'
+    suffix = 'ONTEC_B9A766C4.fasta.gz'
+    # hash key = combination of read sets used to generate
+    # this ONTEC read set
     fasta_files = pathlib.Path(ontec_path).glob(f'*{suffix}')
     ontec_samples = []
 
     for fasta_file in fasta_files:
-        file_size_bytes = fasta_file.stat().st_size
-        if file_size_bytes < 30 * 1024**3:
-            # assume file is still being dumped to disk
-            continue
+        # since the ONTEC FASTA files are just symlinked
+        # into the input folder, no size check necessary
         file_sample = fasta_file.name.split('_')[0]
         assert file_sample in sample_infos
         sample_infos[file_sample]['ONTEC'] = fasta_file

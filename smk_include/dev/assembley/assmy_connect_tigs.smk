@@ -228,6 +228,7 @@ rule extract_xy_reads:
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.ont_type]
     output:
         'output/read_subsets/xypar/{sample_info}_{sample}.{reference}.augY.{ont_type}.{chrom}-reads.fasta.gz'
+    message: 'DEPRECATED'
     conda: '../../../environment/conda/conda_biotools.yml'
     threads: 2
     resources:

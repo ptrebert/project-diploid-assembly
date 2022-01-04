@@ -166,6 +166,7 @@ rule merge_reference_confirmed_y_contigs:
     output:
         fa = 'output/references/{reference}.augY.fasta',
         faidx = 'output/references/{reference}.augY.fasta.fai'
+    message: 'DEPRECATED'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     shell:
@@ -190,6 +191,7 @@ rule extract_confirmed_y_contig_read_names:
         tig_alt = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['TIGALT'],
     output:
         'output/references/{sample_info}_{sample}.XYPAR.reads.txt'
+    message: 'DEPRECATED'
     shell:
         'egrep "^A" {input.tig_pri} | egrep -f {input.tig_names} | cut -f 5 > {output}'
             ' && '
@@ -202,6 +204,7 @@ rule extract_confirmed_y_contig_reads:
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample]['HIFIAF'],
     output:
         fq = 'output/references/{sample_info}_{sample}.XYPAR.reads.fastq.gz'
+    message: 'DEPRECATED'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: 4
@@ -226,35 +229,62 @@ rule extract_aligned_chry_read_names:
     input:
         cached_aln = select_alignment_cache_file
     output:
-        'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.mq60.txt',
-        'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.mq00.txt'
+        'output/read_subsets/{chrom}/{sample_info}_{sample}_{read_type}.{chrom}-reads.mq60.txt',
+        'output/read_subsets/{chrom}/{sample_info}_{sample}_{read_type}.{chrom}-reads.mq00.txt'
     run:
         import pandas as pd
         with pd.HDFStore(input.cached_aln, 'r') as hdf:
-            chry_aln = hdf['chrY']
-            highq_reads = chry_aln.loc[chry_aln['mapq'] == 60, 'read_name'].unique().tolist()
+            chrom_aln = hdf[wildcards.chrom]
+            highq_reads = chrom_aln.loc[chrom_aln['mapq'] == 60, 'read_name'].unique().tolist()
             with open(output[0], 'w') as dump:
                 _ = dump.write('\n'.join(sorted(highq_reads)) + '\n')
-            all_reads = chry_aln['read_name'].unique().tolist()
+            all_reads = chrom_aln['read_name'].unique().tolist()
             with open(output[1], 'w') as dump:
                 _ = dump.write('\n'.join(sorted(all_reads)) + '\n')
 
 
-rule extract_aligned_chry_read_sequences:
+rule extract_aligned_chrom_read_sequences:
     input:
-        names = 'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.txt',
+        names = 'output/read_subsets/{chrom}/{sample_info}_{sample}_{read_type}.{chrom}-reads.{mapq}.txt',
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type],
     output:
-        'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
+        'output/read_subsets/{chrom}/{sample_info}_{sample}_{read_type}.{chrom}-reads.{mapq}.{seq_type}.gz',
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:
-        sample = CONSTRAINT_REGULAR_SAMPLES
+        read_type = '(HIFIEC|HIFIAF|ONTUL|ONTEC)',
+        chrom = '(chrX|chrY)'
     threads: 4
     resources:
         runtime_hrs = lambda wildcards, attempt: attempt * 4
     shell:
         'seqtk subseq {input.reads} {input.names} | pigz -p 4 --best > {output}'
+
+
+rule merge_sex_chrom_reads:
+    input:
+        chrx = 'output/read_subsets/chrX/{sample_info}_{sample}_{read_type}.chrX-reads.{mapq}.{seq_type}.gz',
+        chry = 'output/read_subsets/chrY/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
+    output:
+        'output/read_subsets/chrXY/{sample_info}_{sample}_{read_type}.chrXY-reads.{mapq}.{seq_type}.gz',
+    threads: 4
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt
+    shell:
+        'pigz -d -c {input.chrx} {input.chry} | pigz --best -p 4 > {output}'
+
+
+rule merge_read_types:
+    input:
+        hifiec = 'output/read_subsets/{chrom}/{sample_info}_{sample}_HIFIEC.{chrom}-reads.{mapq}.{seq_type}.gz',
+        ontec = 'output/read_subsets/{chrom}/{sample_info}_{sample}_ONTEC.{chrom}-reads.{mapq}.{seq_type}.gz',
+    output:
+        'output/read_subsets/{chrom}/{sample_info}_{sample}_OHEC.{chrom}-reads.{mapq}.{seq_type}.gz',
+    threads: 4
+    resources:
+        runtime_hrs = lambda wildcards, attempt: attempt
+    shell:
+        'pigz -d -c {input.hifiec} {input.ontec} | pigz --best -p 4 > {output}'
 
 
 def select_afr_mix_subsets(wildcards):
@@ -265,7 +295,7 @@ def select_afr_mix_subsets(wildcards):
     else:
         seq_type = 'fasta'
     merge_samples = SAMPLE_INFOS[wildcards.sample]['merge']
-    template = 'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz'
+    template = 'output/read_subsets/{chrom}/{sample_long}_{read_type}.{chrom}-reads.{mapq}.{seq_type}.gz'
     selected_readsets = []
     for sample in merge_samples:
         sample_long = SAMPLE_INFOS[sample]['long_id']
@@ -273,7 +303,8 @@ def select_afr_mix_subsets(wildcards):
             'sample_long': sample_long,
             'read_type': wildcards.read_type,
             'mapq': wildcards.mapq,
-            'seq_type': seq_type
+            'seq_type': seq_type,
+            'chrom': wildcards.chrom
         }
         selected_readsets.append(template.format(**formatter))
     return sorted(selected_readsets)
@@ -283,7 +314,7 @@ rule merge_afr_mix_subsets:
     input:
         reads = select_afr_mix_subsets
     output:
-        'output/read_subsets/chry/{sample_info}_{sample}_{read_type}.chrY-reads.{mapq}.{seq_type}.gz',
+        'output/read_subsets/{chrom}/{sample_info}_{sample}_{read_type}.{chrom}-reads.{mapq}.{seq_type}.gz',
     conda:
         '../../../environment/conda/conda_biotools.yml'
     wildcard_constraints:

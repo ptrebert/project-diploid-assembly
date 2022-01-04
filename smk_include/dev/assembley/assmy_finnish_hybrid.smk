@@ -18,11 +18,12 @@ def select_hybrid_assm_ont_reads(wildcards):
             mapq = 'mq00'
         else:
             raise
-        template = 'output/read_subsets/chry/{sample_info}_{sample}_ONTUL.chrY-reads.{mapq}.fasta.gz'
+        template = 'output/read_subsets/{chrom}/{sample_info}_{sample}_ONTUL.{chrom}-reads.{mapq}.fasta.gz'
         formatter = {
             'sample': wildcards.sample,
             'sample_info': wildcards.sample_info,
-            'mapq': mapq
+            'mapq': mapq,
+            'chrom': wildcards.chrom
         }
         ont_reads = template.format(**formatter)
     else:
@@ -36,11 +37,11 @@ def set_graphaligner_hybrid_resources(wildcards):
 
     if wildcards.tigs in ['TIGRAW', 'TIGPRI', 'TIGALT']:
         resources = config['num_cpu_max'], 303104, 167
-    elif 'MQ0Y' in wildcards.tigs:
+    elif 'MQ0Y' in wildcards.tigs or 'MQ0XY' in wildcards.tigs:
         if any(x in wildcards.sample_info for x in ['DUO', 'TRIO', 'MIX']) or wildcards.sample.startswith('HC'):
             resources = config['num_cpu_high'], 262144, 23
         else:
-            resources = config['num_cpu_high'], 57344, 11
+            resources = config['num_cpu_high'], 65536, 11
     else:
         raise
     return resources
@@ -386,7 +387,7 @@ def select_graph_to_dump(wildcards):
     else:
         raise ValueError(str(wildcards))
 
-    assert 'MQ0Y' in wildcards.tigs, f'Can only dump target assembly graphs / chrY: {wildcards.tigs}'
+    assert 'MQ0Y' in wildcards.tigs or 'MQ0XY' in wildcards.tigs, f'Can only dump target assembly graphs / chrY: {wildcards.tigs}'
     mapq = 'mq00'
 
     formatter = dict(wildcards)
@@ -394,9 +395,13 @@ def select_graph_to_dump(wildcards):
 
     assembler = assemblers[wildcards.tigs.split('-')[0]]
     if variant == 'input':
-        if 'EC' in wildcards.tigs:
+        if 'OHEC' in wildcards.tigs:
+            read_type = 'OHEC'
+        elif 'OEC' in wildcards.tigs:
+            read_type = 'ONTEC'
+        elif 'HEC' in wildcards.tigs:
             read_type = 'HIFIEC'
-        elif 'AF' in wildcards.tigs:
+        elif 'HAF' in wildcards.tigs:
             read_type = 'HIFIAF'
         else:
             raise
@@ -444,9 +449,13 @@ def select_fasta_to_align(wildcards):
             formatter['mapq'] = 'mq00'
         else:
             raise
-        if 'EC' in wildcards.tigs:
+        if 'OHEC' in wildcards.tigs:
+            formatter['read_type'] = 'OHEC'
+        elif 'OEC' in wildcards.tigs:
+            formatter['read_type'] = 'ONTEC'
+        elif 'HEC' in wildcards.tigs:
             formatter['read_type'] = 'HIFIEC'
-        elif 'AF' in wildcards.tigs:
+        elif 'HAF' in wildcards.tigs:
             formatter['read_type'] = 'HIFIAF'
         else:
             raise
@@ -570,7 +579,7 @@ rule create_gfa_annotation:
     run:
         import pandas as pd
 
-        null_color = 'snow'
+        null_color = 'lightgrey'
         null_class = 'auto'
         null_order = 'any'
 

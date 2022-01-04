@@ -99,77 +99,97 @@ rule run_hybrid_assembly:
 #         )
 
 
-rule run_extract_aligned_chry_reads:
+rule run_extract_read_subsets:
     input:
         fasta = expand(
-            'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.fasta.gz',
+            'output/read_subsets/{chrom}/{sample_long}_{read_type}.{chrom}-reads.{mapq}.fasta.gz',
+            chrom=['chrX', 'chrY', 'chrXY'],
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
-            read_type=['HIFIEC', 'ONTUL'],
-            mapq=['mq00', 'mq60'],
+            read_type=['HIFIEC', 'ONTUL', 'ONTEC', 'OHEC'],
+            mapq=['mq00'],
         ),
         fastq = expand(
-            'output/read_subsets/chry/{sample_long}_{read_type}.chrY-reads.{mapq}.fastq.gz',
+            'output/read_subsets/{chrom}/{sample_long}_{read_type}.{chrom}-reads.{mapq}.fastq.gz',
+            chrom=['chrX', 'chrY', 'chrXY'],
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             read_type=['HIFIAF'],
-            mapq=['mq00', 'mq60'],
-        ),
+            mapq=['mq00'],
+        )
 
 
-def make_combinations(samples, sample_long_desc, read_types, mapq_thresholds):
+HIFIASM_HYBRID_TIGS = [
+    'HAS-UTGRAW-HECMQ0Y',
+    'HAS-UTGPRI-HECMQ0Y',
+    'HAS-UTGRAW-HECMQ0XY',
+    'HAS-UTGPRI-HECMQ0XY',
+    'HAS-UTGRAW-OHECMQ0Y',
+    'HAS-UTGPRI-OHECMQ0Y',
+    'HAS-UTGRAW-OHECMQ0XY',
+    'HAS-UTGPRI-OHECMQ0XY',
+]
 
-    wc_name_samplelong = set(t[0] for t in sample_long_desc).pop()
-    for wc_name_sample, sample in samples:
-        for wc_name_readtype, read_type in read_types:
-            for wc_name_mapqt, mapq_trhreshold in mapq_thresholds:
-                formatter = {
-                    wc_name_sample: sample,
-                    wc_name_samplelong: SAMPLE_INFOS[sample]['long_id'],
-                    wc_name_readtype: read_type,
-                    wc_name_mapqt: mapq_trhreshold
-                }
-                yield formatter
-    return
-
-
-rule run_chry_targeted_hifiasm_hybrid:
+rule run_targeted_hifiasm_hybrid:
     input:
         gfa_labels_regular = expand(
             'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
             sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
             ont_type=['ONTUL', 'UNSET'],
-            tigs=['HAS-UTGRAW-ECMQ0Y', 'HAS-UTGPRI-ECMQ0Y', 'HAS-UTGRAW-AFMQ0Y', 'HAS-UTGPRI-AFMQ0Y'],
+            tigs=HIFIASM_HYBRID_TIGS,
             reference=['T2Tv11_hg002Yv2_chm13']
         ),
         gfa_labels_duo = expand(
             'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
             sample_long=['AFR-LWK-DUO-M_NA193N7'],
             ont_type=['ONTUL', 'UNSET'],
-            tigs=['HAS-UTGRAW-ECMQ0Y', 'HAS-UTGPRI-ECMQ0Y', 'HAS-UTGRAW-AFMQ0Y', 'HAS-UTGPRI-AFMQ0Y'],
+            tigs=HIFIASM_HYBRID_TIGS,
             reference=['T2Tv11_hg002Yv2_chm13']
-        ),
+        )
 
 
-rule run_chry_targeted_mbg_hybrid:
+
+def define_mbg_hybrid_targets():
+
+    target_files = []
+
+    params_info = ['assembler_params/MBG_{param_info}.info'.format(phash, *pvalues) for phash, pvalues in MBG_PARAMS.items()]
+    target_files.extend(params_info)
+
+    tigs_hifiec = ['HECMQ0Y', 'HECMQ0XY']
+    tigs_ohec = ['OHECMQ0Y', 'OHECMQ0XY']
+    tigs_spec = tigs_hifiec + tigs_ohec
+
+    samples_long = [SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M']
+    samples_long.append('AFR-LWK-DUO-M_NA193N7')  # AFR duo mix
+
+    ont_types = ['ONTUL', 'UNSET']  # unset = input assemblies, non-hybrid
+    reference = 'T2Tv11_hg002Yv2_chm13'
+
+    mbg_spec = [(int(get_mbg_param(spec_hash, 'resolve')), spec_hash) for spec_hash in MBG_PARAMS.keys()]
+
+    template = 'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv'
+
+    for sample in samples_long:
+        for ont_type in ont_types:
+            for tigs in tigs_spec:
+                for rk, mbg_spec in mbg_spec:
+                    if rk > 20000 and tigs.startswith('HEC'):
+                        # large resolveK for HIFIEC-only read sets
+                        # is pointless
+                        continue
+                    formatter = {
+                        'sample_long': sample,
+                        'ont_type': ont_type,
+                        'tigs': f'MBG-{mbg_spec}-{tigs}',
+                        'reference': reference
+                    }
+                    out_file = template.format(**formatter)
+                    target_files.append(out_file)
+    return target_files
+
+
+rule run_targeted_mbg_hybrid:
     input:
-        mbg_params = expand(
-            'assembler_params/MBG_{param_info}.info',
-            param_info=['{}_k{}-w{}-r{}'.format(phash, *pvalues) for phash, pvalues in MBG_PARAMS.items()]
-        ),
-        gfa_labels_regular = expand(
-            'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
-            sample_long=[SAMPLE_INFOS[sample]['long_id'] for sample in ONTUL_SAMPLES if SAMPLE_INFOS[sample]['sex'] == 'M'],
-            ont_type=['ONTUL', 'UNSET'],
-            tigs=[f'MBG-{mbg_params}-ECMQ0Y' for mbg_params in MBG_PARAMS.keys()],
-            reference=['T2Tv11_hg002Yv2_chm13']
-        ),
-        gfa_labels_duo = expand(
-            'output/hybrid/220_gfa_annotation/{sample_long}_{ont_type}_{tigs}_MAP-TO_{reference}.gfa-labels.csv',
-            sample_long=['AFR-LWK-DUO-M_NA193N7'],
-            ont_type=['ONTUL', 'UNSET'],
-            tigs=[f'MBG-{mbg_params}-ECMQ0Y' for mbg_params in MBG_PARAMS.keys()],
-            reference=['T2Tv11_hg002Yv2_chm13']
-        ),
-
+        define_mbg_hybrid_targets
 
 
 rule run_chry_targeted_lja_input:
