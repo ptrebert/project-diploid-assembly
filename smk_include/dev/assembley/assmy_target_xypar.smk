@@ -56,6 +56,25 @@ def select_chrom_reads(wildcards):
     return reads_path
 
 
+def set_targeted_assembly_memory(assembler, chrom, read_type, resolve_k=0):
+
+    base_mem = 16384
+    chrom_factor = 1
+    read_factor = 1
+    assm_factor = 1
+    kmer_factor = 1
+    if chrom == 'chrXY':
+        chrom_factor = 1.2
+    if read_type == 'OHEC':
+        read_factor = 4
+    if assembler == 'hifiasm':
+        assm_factor = 1.5
+    if resolve_k > 20000:
+        kmer_factor = 1.5
+    mem_estimate = int(base_mem * chrom_factor * read_factor * assm_factor * kmer_factor)
+    return mem_estimate
+
+
 rule hifiasm_targeted_assembly:
     input:
         reads = select_chrom_reads
@@ -73,11 +92,11 @@ rule hifiasm_targeted_assembly:
         chrom = '(chrY|chrX|chrXY)'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 + 8192 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 4 ** attempt
+        mem_total_mb = lambda wildcards, attempt: set_targeted_assembly_memory('hifiasm', wildcards.chrom, wildcards.read_type) * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 ** attempt
     params:
         prefix = lambda wildcards, output: output.primary_unitigs.rsplit('.', 2)[0],
-        purge_stringency = lambda wildcards: 1 if wildcards.chrom == 'chrXY' else 3,
+        purge_stringency = lambda wildcards: 0 if wildcards.chrom == 'chrXY' else 2,
         n_hap = lambda wildcards: 2 if wildcards.chrom == 'chrXY' else 1,
         #genome_size = '60m' --- with hifiasm 0.16.1, this can be set, but since chrYq is quite
         # variable in size, leave it to the default "auto" and hope for the best
@@ -111,8 +130,8 @@ rule mbg_targeted_assembly:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
     resources:
-        mem_total_mb = lambda wildcards, attempt: 16384 * attempt,
-        runtime_hrs = lambda wildcards, attempt: 6 * attempt,
+        mem_total_mb = lambda wildcards, attempt: set_targeted_assembly_memory('mbg', wildcards.chrom, wildcards.read_type, int(wildcards.resolvek)) * attempt,
+        runtime_hrs = lambda wildcards, attempt: 6 ** attempt,
     shell:
         'MBG -i {input.reads} -t {threads} '
             '-k {wildcards.kmer} -w {wildcards.window} --resolve-maxk {wildcards.resolvek} '
