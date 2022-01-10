@@ -588,6 +588,7 @@ HG03260	male	GB120	child	GWD	AFR	#FFD845	"Gambian in Western Division, The Gambi
 HG03538	male	GB125	father	GWD	AFR	#FFD845	"Gambian in Western Division, The Gambia"	1KGP
 HG03539	female	GB125	mother	GWD	AFR	#FFD845	"Gambian in Western Division, The Gambia"	1KGP
 HG03540	female	GB125	child	GWD	AFR	#FFD845	"Gambian in Western Division, The Gambia"	1KGP
+HC19384	male	NA19384	unspecified	LWK	AFR	#FFD845	"Luhya in Webuye, Kenya"	hcHGSVC
 NA19017	female	NA19017	unrelated	LWK	AFR	#FFD845	"Luhya in Webuye, Kenya"	1KGP
 NA19019	female	NA19019	unrelated	LWK	AFR	#FFD845	"Luhya in Webuye, Kenya"	1KGP
 NA19020	male	NA19020	unspecified	LWK	AFR	#FFD845	"Luhya in Webuye, Kenya"	1KGP
@@ -1021,6 +1022,7 @@ NA19254	female	Y062	mother	YRI	AFR	#FFD845	"Yoruba in Ibadan, Nigeria"	1KGP
 NA19256	male	Y092	father	YRI	AFR	#FFD845	"Yoruba in Ibadan, Nigeria"	1KGP
 NA19257	female	Y092	mother	YRI	AFR	#FFD845	"Yoruba in Ibadan, Nigeria"	1KGP
 NA19258	male	Y092	child	YRI	AFR	#FFD845	"Yoruba in Ibadan, Nigeria"	1KGP
+HC01457	male	CLM51	child	CLM	AMR	#710027	"Colombian in Medellin, Colombia"	hcHGSVC
 HG01112	male	CLM03	father	CLM	AMR	#710027	"Colombian in Medellin, Colombia"	1KGP
 HG01113	female	CLM03	mother	CLM	AMR	#710027	"Colombian in Medellin, Colombia"	1KGP
 HG01114	female	CLM03	child	CLM	AMR	#710027	"Colombian in Medellin, Colombia"	1KGP
