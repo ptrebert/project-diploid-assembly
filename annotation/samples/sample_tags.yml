@@ -1,0 +1,34 @@
+
+data_source_tags:
+  -
+    tag: 'HGSVC[MGI]'
+    samples:
+      - HG03125
+      - HG02818
+      - HG03486
+  -
+    tag: 'HPRC'
+    samples:
+      - HG01123
+      - HG01138
+      - HG01358
+      - HG01888
+      - HG01891
+      - HG02257
+      - HG02486
+      - HG02559
+      - HG01361
+      - HG01258
+  -
+    tag: 'EXT[GIAB.HPG]'
+    samples:
+      - NA24385
+      - NA24143
+      - NA24143
+      - NA12878
+
+sample_excludes:
+  NA24149: "Parent of NA24385/HG002, no usable SSEQ data available"
+  NA24143: "Parent of NA24385/HG002, no usable SSEQ data available"
+  HG01888: "HPRC sample with HiFi QC issues, no longer queued for production"
+  HG01138: "HPRC sample with HiFi QC issues, no longer queued for production"

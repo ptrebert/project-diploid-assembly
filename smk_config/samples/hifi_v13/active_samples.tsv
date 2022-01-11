@@ -1,0 +1,15 @@
+individual	sex	super_population	population	project_context	data_source	HIFI_data	CLR_data	is_skipped	PGAS	HIFI_path	CLR_path	SSEQ_path
+HG03125	female	AFR	ESN	pangenie.inversions	HGSVC[MGI]	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG03125/	N/A	/data/hgsvc_strandseq/HG03125/
+HG02818	female	AFR	GWD	pangenie.inversions	HGSVC[MGI]	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG02818/	N/A	/data/hgsvc_strandseq/HG02818/
+HG03486	female	AFR	MSL	pangenie.inversions	HGSVC[MGI]	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG03486/	N/A	/data/hgsvc_strandseq/HG03486/
+NA19238	female	AFR	YRI	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/NA19238/	N/A	/data/1000GP_strandseq/NA19238/
+NA19239	male	AFR	YRI	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/NA19239/	N/A	/data/1000GP_strandseq/NA19239/
+NA19240	female	AFR	YRI	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/NA19240/	N/A	/data/1000GP_strandseq/NA19240/
+HG00731	male	AMR	PUR	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG00731/	N/A	/data/1000GP_strandseq/HG00731/
+HG00732	female	AMR	PUR	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG00732/	N/A	/data/1000GP_strandseq/HG00732/
+HG00733	female	AMR	PUR	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG00733/	N/A	/data/1000GP_strandseq/HG00733/
+HG00512	male	EAS	CHS	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG00512/	N/A	/data/1000GP_strandseq/HG00512/
+HG00513	female	EAS	CHS	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG00513/	N/A	/data/1000GP_strandseq/HG00513/
+HG00514	female	EAS	CHS	pangenie.inversions	HGSVC	yes-HIFI	no-clr	False	v13-dev	/data/hgsvc_hifi/HG00514/	N/A	/data/1000GP_strandseq/HG00514/
+NA24385	male	EUR	ASK	pangenie.inversions	EXT[GIAB.HPG]	yes-HIFI	no-clr	False	v13-dev	/data/giab_hifi/NA24385_HG002/	N/A	/data/hprc_plus/strandseq/HG002_NA24385/selected/
+NA12878	female	EUR	CEU	pangenie.inversions	EXT[GIAB.HPG]	yes-HIFI	no-clr	False	v13-dev	/data/giab_hifi/NA12878_HG001/	N/A	/data/eriba_strandseq/NA12878/

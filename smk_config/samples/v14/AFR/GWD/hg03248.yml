@@ -13,6 +13,7 @@ sample_description_HG03248:
             data_type: fastq
             load_type: parts
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG03248
+            comment: "22/01/10: additional SMRT cell added, but only total of ~40x"
         - strandseq:
             readset: HG03248_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
