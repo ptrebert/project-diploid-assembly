@@ -250,10 +250,10 @@ rule write_strandphaser_split_vcf_fofn:
         dropped_clusters_path = pl.Path(str(input.cluster_ids).replace('cluster-ids.txt', 'dropped-clusters.err'))
 
         with open(log[0], 'w') as logfile:
-            _ = logfile.write(f'Reading cluster IDs from file {input.cluster_ids}')
+            _ = logfile.write(f'Reading cluster IDs from file {input.cluster_ids}\n')
             with open(input.cluster_ids, 'r') as listing:
                 cluster_ids = set(l.strip() for l in listing if l.strip())
-            _ = logfile.write(f'Read {len(cluster_ids)} SaaRclusters from cluster ID file')
+            _ = logfile.write(f'Read {len(cluster_ids)} SaaRclusters from cluster ID file\n')
             num_clusters = len(cluster_ids)
             
             # this is the StrandPhaseR VCFfiles output folder that contains
@@ -265,7 +265,7 @@ rule write_strandphaser_split_vcf_fofn:
             # important: only select corrected VCFs
             all_vcfs = sorted(vcf_dir.glob('*.vcf'))
             _ = logfile.write(f'Identified a total of {len(all_vcfs)} VCF files in StrandPhaseR output directory.\n')
-            input_vcfs = sorted(vcf for vcf in all_vcfs if vcf.name.endswith('_corr.vcf'))
+            input_vcfs = sorted(vcf for vcf in all_vcfs if vcf.name.endswith('_INVcorr.vcf'))
             num_vcf = len(input_vcfs)
             _ = logfile.write(f'Identified {num_vcf} corrected VCFs in StrandPhaseR output directory.\n')
 
@@ -276,7 +276,7 @@ rule write_strandphaser_split_vcf_fofn:
                 )
 
             elif num_vcf != num_clusters:
-                _ = logfile.write('Potential error - checking breakpointR output\n')
+                _ = logfile.write('Potential error - checking breakpointR output...\n')
                 with open(input.wc_regions, 'r') as table:
                     brkp_clusters = set(l.split()[0] for l in table if l.strip())
                 _ = logfile.write(f'breakpointR called W/C-only for {len(brkp_clusters)} sequence clusters\n')
@@ -285,7 +285,7 @@ rule write_strandphaser_split_vcf_fofn:
                     # what's happening: we have one VCF output file per breakpointR cluster - no missing output per se.
                     # But: there are clusters where breakpointR could not identify W/C-only regions,
                     # which are thus omitted from the output (can't be phased by StrandPhaseR)
-                    _ = logfile.write('Matching number of breakpointR clusters and existing VCF output files - not good, not terrible...')
+                    _ = logfile.write('Matching number of breakpointR clusters and existing VCF output files - not good, not terrible...\n')
                     missing_clusters = sorted(cluster_ids - brkp_clusters)
                     _ = logfile.write('Sequence cluster(s) w/o W/C-only regions as per breakpointR output: {}\n'.format(', '.join(missing_clusters)))
                     with open(dropped_clusters_path, 'w') as dump:

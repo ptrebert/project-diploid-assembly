@@ -562,6 +562,16 @@ def collect_intermediate_vcf_splits(wildcards, glob_collect=True, caller='snakem
 
 
 rule write_intermediate_vcf_splits:
+    """
+    2022-01-11
+    Depending on when this rule is executed, it may throw an error because
+    of missing VCF cluster files as a result of some clusters being dropped
+    by breakpointR (see comments in integrative_phasing.smk module).
+    In that case, estimate_number_of_saarclusters() would already return
+    the number of clusters excluding the dropped ones. Change the code
+    below to proceed in case of a number mismatch where the estimate
+    is smaller than the number of input files here
+    """
     input:
         vcf_splits = collect_intermediate_vcf_splits
     output:
@@ -582,7 +592,11 @@ rule write_intermediate_vcf_splits:
             _ = logfile.write('Number of input VCF splits: {}\n'.format(num_vcf_splits))
             _ = logfile.write('Number of expected VCF splits (clusters): {}\n'.format(num_clusters))
             _ = logfile.write('Received following VCF split input:\n{}\n'.format('\n'.join(sorted(input.vcf_splits))))
-            if num_clusters != num_vcf_splits:
+            if num_clusters < num_vcf_splits and ((num_clusters * 2) > num_vcf_splits):
+                # if there are too many input vcf splits, this should fail nevertheless
+                _ = logfile.write('Expected number of clusters is smaller, assuming clusters were dropped downstream by breakpointR\n')
+                vcf_splits = input.vcf_splits
+            elif num_clusters != num_vcf_splits:
                 _ = logfile.write('Potential error situation: unexpected number of VCF split files as input\n')
                 _ = logfile.write('Checking for available VCF split files...\n')
                 vcf_splits = collect_intermediate_vcf_splits(wildcards, caller='runblock')
