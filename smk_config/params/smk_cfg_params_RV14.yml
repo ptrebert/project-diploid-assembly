@@ -65,6 +65,14 @@ allow_contig_cuts: 'FALSE'
 eval_ploidy: 'TRUE'
 ignore_cluster_size_error: false
 
+# adapt SaaRclust parameters to fix clustering errors
+sample_non_default_parameters:
+  HG02257:  # fix clustering error
+    use_only_in:
+      write_saarclust_config_file:
+        desired_clusters: 23
+
+
 # VARIANT CALLING
 # Postprocessing parameters
 filter_vcf_qual: 10

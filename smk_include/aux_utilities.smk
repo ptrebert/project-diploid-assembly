@@ -657,10 +657,7 @@ def load_saarclust_params(wildcards, input, use_case):
 
         if use_non_defaults:
             for cfg_key, sc_key in key_map.items():
-                if cfg_key == 'min_mapq':
-                    parameter_set[sc_key] = config.get(cfg_key, parameter_set[sc_key])
-                else:
-                    parameter_set[sc_key] = config.get(cfg_key, parameter_set[sc_key])
+                parameter_set[sc_key] = sample_non_defaults.get(cfg_key, parameter_set[sc_key])
 
     # drop all entries that were not specified in the pipeline config,
     # should default to whatever SaaRclust sets in this case
