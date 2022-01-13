@@ -41,14 +41,7 @@ def set_mbg_resources(wildcards):
 
 rule build_hifi_read_dbg:
     """
-    sif = ancient('mbg.master.sif'),
-    sif = ancient('mbg.UnitigResolve.sif'),
-
-    'module load Singularity && singularity exec '
-    '--bind /:/hilbert {input.sif} '
-
-    NB: only works with MBG 1.0.7+
-
+    NB: only works with MBG 1.0.7+ due to parameter --resolve-maxk
     """
     input:
         reads = lambda wildcards: get_read_path(wildcards.sample, wildcards.read_type)
@@ -101,7 +94,7 @@ rule ont_to_graph_alignment:
     """
     """
     input:
-        sif = ancient('graphaligner.MultiseedClusters.sif'),
+        #sif = ancient('graphaligner.MultiseedClusters.sif'),
         graph = 'output/mbg_hifi/{sample}_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.gfa',
         reads = 'input/ONTUL/{sample}_ONTUL_{readset}.fasta.gz'
     output:
@@ -112,6 +105,8 @@ rule ont_to_graph_alignment:
         'log/output/alignments/ont_to_mbg_graph/{sample}_ONTUL_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.GA.log'
     benchmark:
         'rsrc/output/alignments/ont_to_mbg_graph/{sample}_ONTUL_{readset}_MAP-TO_{graph_reads}_{graph_readset}.MBG-k{kmer}-w{window}-r{resolve}.GA.rsrc'
+    conda:
+        '../../../environment/conda/conda_biotools.yml'
     threads: lambda wildcards: set_graphaligner_resources(wildcards)[0]
     resources:
         mem_total_mb = lambda wildcards, attempt: set_graphaligner_resources(wildcards)[1] * attempt,
@@ -120,8 +115,6 @@ rule ont_to_graph_alignment:
         preset = 'dbg',
         hpc = set_read_hpc,
     shell:
-        'module load Singularity && singularity exec '
-        '--bind /:/hilbert {input.sif} '
         'GraphAligner -g {input.graph} -f {input.reads} '
             '-x {params.preset} -t {threads} '
             '--min-alignment-score 5000 --multimap-score-fraction 1 '
@@ -129,6 +122,8 @@ rule ont_to_graph_alignment:
             '--corrected-clipped-out {output.ec_reads_clip} '
             '--corrected-out {output.ec_reads_full} '
             '-a {output.gaf} &> {log}'
+        #'module load Singularity && singularity exec '
+        #'--bind /:/hilbert {input.sif} '
 
 
 rule compute_ont_corrected_stats:

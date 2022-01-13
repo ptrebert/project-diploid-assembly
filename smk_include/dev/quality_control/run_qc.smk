@@ -7,7 +7,7 @@ include: 'qc_kmers.smk'
 include: 'qc_qv_estimate.smk'
 include: 'qc_read_cov.smk'
 
-localrules: run_read_cov, run_qv_estimate
+localrules: run_read_cov, run_qv_estimate, run_ont_error_correction
 
 COMPLETE_SAMPLES = sorted(set(ONTUL_SAMPLES).intersection(HIFIEC_SAMPLES))
 
