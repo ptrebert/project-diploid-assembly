@@ -53,8 +53,8 @@ dependencies:
   - cutadapt=2.10
   - trim-galore=0.6.5
   - fastp=0.20.1
-  - mbg=1.0.7
-  - graphaligner=1.0.13
+  - mbg=1.0.8
+  - graphaligner=1.0.14
   - vg=1.36.0
   - gfatools=0.5
   - ucsc-bedgraphtobigwig=377
