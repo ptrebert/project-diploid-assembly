@@ -33,13 +33,13 @@ def build_read_cov_targets(wildcards):
                 'readset': readset,
                 'reference': config['reference']
             }
-            fmt_target = template.format(**formatter)
+            fmt_target = template_cov_cache.format(**formatter)
             targets.append(fmt_target)
 
             del formatter['reference']
             fmt_target = template_dump.format(**formatter)
             targets.append(fmt_target)
-            
+
             fmt_target = template_summary.format(**formatter)
             targets.append(fmt_target)
     return sorted(targets)
