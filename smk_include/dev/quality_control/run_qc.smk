@@ -17,7 +17,9 @@ wildcard_constraints:
 
 def build_read_cov_targets(wildcards):
 
-    template = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.cov.cache.h5'
+    template_cov_cache = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.cov.cache.h5'
+    template_summary = 'input/{read_type}/{sample}_{read_type}_{readset}.stats-summary.tsv'
+    template_dump = 'input/{read_type}/{sample}_{read_type}_{readset}.stats-dump.pck'
 
     long_read_types = ['ONTUL', 'HIFIEC', 'HIFIAF', 'ONTEC']
     long_read_sets = [RS_ONTUL, RS_HIFIEC, RS_HIFIAF, RS_ONTEC]
@@ -32,6 +34,13 @@ def build_read_cov_targets(wildcards):
                 'reference': config['reference']
             }
             fmt_target = template.format(**formatter)
+            targets.append(fmt_target)
+
+            del formatter['reference']
+            fmt_target = template_dump.format(**formatter)
+            targets.append(fmt_target)
+            
+            fmt_target = template_summary.format(**formatter)
             targets.append(fmt_target)
     return sorted(targets)
 

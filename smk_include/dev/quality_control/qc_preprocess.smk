@@ -47,6 +47,24 @@ rule qc_remote_seq_stats:
         'pigz -d -c {input} | seqtk comp | pigz --best > {output}'
 
 
+rule generate_readset_stats_summary:
+    input:
+        seqtk_stats = 'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
+        fai = ancient('/gpfs/project/projects/medbioinf/data/references/{}.fasta'.format(config['reference'])),
+    output:
+        'input/{read_type}/{sample}_{read_type}_{readset}.stats-summary.tsv',
+        'input/{read_type}/{sample}_{read_type}_{readset}.stats-dump.pck'
+    conda: '../../../environment/conda/conda_pyscript.yml'
+    threads: 2
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt,
+        runtime_hrs = lambda wildcards, attempt: 1
+    params:
+        script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
+    shell:
+        '{params.script_exec} '
+
+
 rule qc_short_read_quality_trimming:
     """
     Note that due to the rather "hidden" way trim-galore/cutadapt
