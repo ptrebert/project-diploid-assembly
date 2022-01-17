@@ -50,10 +50,10 @@ rule qc_remote_seq_stats:
 rule generate_readset_stats_summary:
     input:
         seqtk_stats = 'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
-        fai = ancient('/gpfs/project/projects/medbioinf/data/references/{}.fasta'.format(config['reference'])),
+        fai = ancient('/gpfs/project/projects/medbioinf/data/references/{}.fasta.fai'.format(config['reference'])),
     output:
-        'input/{read_type}/{sample}_{read_type}_{readset}.stats-summary.tsv',
-        'input/{read_type}/{sample}_{read_type}_{readset}.stats-dump.pck'
+        table = 'input/{read_type}/{sample}_{read_type}_{readset}.stats-summary.tsv',
+        dump = 'input/{read_type}/{sample}_{read_type}_{readset}.stats-dump.pck'
     conda: '../../../environment/conda/conda_pyscript.yml'
     threads: 2
     resources:
@@ -62,7 +62,8 @@ rule generate_readset_stats_summary:
     params:
         script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
     shell:
-        '{params.script_exec} '
+        '{params.script_exec} --input-files {input.seqtk_stats} --output {output.dump} '
+            '--summary-output {output.table} -n 2 --genome-size-file {input.fai}'
 
 
 rule qc_short_read_quality_trimming:
