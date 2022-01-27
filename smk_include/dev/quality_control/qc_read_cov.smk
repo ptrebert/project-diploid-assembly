@@ -66,13 +66,13 @@ rule qc_mmap_align_readsets:
     """
     input:
         reads = lambda wildcards: SAMPLE_INFOS[wildcards.sample][wildcards.read_type],
-        reference = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta'),
+        reference = ancient('references_derived/T2T_122XYM.fasta'),
     output:
-        bam = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.mmap.paf.gz',
+        bam = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_T2TXYM.mmap.paf.gz',
     log:
-        'log/output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.mmap.log'
+        'log/output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_T2TXYM.mmap.log'
     benchmark:
-        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.mmap.rsrc'
+        'rsrc/output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_T2TXYM.mmap.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_high']
@@ -128,11 +128,11 @@ SEQTK_STATS_HEADER = [
 
 rule cache_read_alignments:
     input:
-        faidx = ancient('/gpfs/project/projects/medbioinf/data/references/{reference}.fasta.fai'),
-        paf = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.mmap.paf.gz',
+        faidx = ancient('references_derived/T2T_122XYM.fasta.fai'),
+        paf = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_T2TXYM.mmap.paf.gz',
         read_stats = 'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz'
     output:
-        cache = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.cov.cache.h5'
+        cache = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_T2TXYM.cov.cache.h5'
     resources:
         mem_total_mb = lambda wildcards, attempt: 4096 * attempt
     run:
@@ -180,7 +180,7 @@ rule cache_read_alignments:
         assert df.notna().all(axis=0).all()
 
         with pd.HDFStore(output.cache, 'w', complevel=9, complib='blosc') as hdf:
-            hdf.put(f'reference/{wildcards.reference}', pd.Series(chroms, dtype='int64'), format='fixed')
+            hdf.put(f'reference/T2TXYM', pd.Series(chroms, dtype='int64'), format='fixed')
             hdf.put('metadata', pd.Series(metadata, dtype='int64'), format='fixed')
             if not unaligned.empty:
                 hdf.put('unaligned', unaligned, format='fixed')

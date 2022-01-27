@@ -50,7 +50,7 @@ rule qc_remote_seq_stats:
 rule generate_readset_stats_summary:
     input:
         seqtk_stats = 'input/{read_type}/{sample}_{read_type}_{readset}.stats.tsv.gz',
-        fai = ancient('/gpfs/project/projects/medbioinf/data/references/{}.fasta.fai'.format(config['reference'])),
+        fai = ancient('references_derived/T2T_122XYM.fasta.fai'),
     output:
         table = 'input/{read_type}/{sample}_{read_type}_{readset}.stats-summary.tsv',
         dump = 'input/{read_type}/{sample}_{read_type}_{readset}.stats-dump.pck'
@@ -83,7 +83,7 @@ rule qc_short_read_quality_trimming:
     log:
         'log/input/SHORT/{sample}_{readset}.trimming.log'
     benchmark:
-        'run/input/SHORT/{sample}_{readset}.trimming.rsrc'
+        'rsrc/input/SHORT/{sample}_{readset}.trimming.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: 16
@@ -146,7 +146,7 @@ rule qc_short_read_error_correction:
     log:
         'log/input/SHORT/{sample}_{readset}.corr.log'
     benchmark:
-        'run/input/SHORT/{sample}_{readset}.corr.rsrc'
+        'rsrc/input/SHORT/{sample}_{readset}.corr.rsrc'
     conda:
         '../../../environment/conda/conda_biotools.yml'
     threads: config['num_cpu_low']

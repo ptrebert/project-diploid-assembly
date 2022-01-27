@@ -17,7 +17,7 @@ wildcard_constraints:
 
 def build_read_cov_targets(wildcards):
 
-    template_cov_cache = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_{reference}.cov.cache.h5'
+    template_cov_cache = 'output/alignments/reads_to_linear_ref/{sample}_{read_type}_{readset}_MAP-TO_T2TXYM.cov.cache.h5'
     template_summary = 'input/{read_type}/{sample}_{read_type}_{readset}.stats-summary.tsv'
     template_dump = 'input/{read_type}/{sample}_{read_type}_{readset}.stats-dump.pck'
 
@@ -31,12 +31,10 @@ def build_read_cov_targets(wildcards):
                 'sample': sample,
                 'read_type': read_type,
                 'readset': readset,
-                'reference': config['reference']
             }
             fmt_target = template_cov_cache.format(**formatter)
             targets.append(fmt_target)
 
-            del formatter['reference']
             fmt_target = template_dump.format(**formatter)
             targets.append(fmt_target)
 
