@@ -248,7 +248,11 @@ rule collect_snv_stats_per_cluster:
                 _ = stat_dump.write('{}_HET-SNV_per_kbp\t{}\n'.format(seq, snv_per_kbp))
                 for sl, sc in zip(stats_labels, stats_collect):
                     for fl, fun in zip(fun_labels, stats_funs):
-                        result = round(fun(sc[seq]), 3)
+                        try:
+                            result = round(fun(sc[seq]), 3)
+                        except stats.StatisticsError:
+                            # can happen for no data
+                            result = 0.
                         _ = stat_dump.write('{}_HET-SNV_{}_{}\t{}\n'.format(seq, sl, fl, result))
 
 
