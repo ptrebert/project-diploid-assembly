@@ -480,9 +480,19 @@ def check_cluster_file_completeness(wildcards, source_path, glob_path, sseq_read
     Update 2021-12-16
     Rely on cluster names returned by estimate_number_of_saarclusters
     as cluster names may not be consecutive (as-of SaaRclust #4700afe)
+
+    # Update 2022-02-03
+    There is a unresolvable mismatch between the number of clusters at different
+    pipeline stages b/c variant calling for phasing happens before the integrative
+    phasing (breakpointR/StrandPhaseR) may drop clusters. This cannot be resolved.
+    --- unclear problem: it seems that WhatsHap produces phased VCFs for dropped clusters;
+    presumably, there is still a function call somewhere that assumes consecutively numbered
+    clusters.
+
     """
     import glob
     import sys
+    import re
 
     glob_pattern = glob_path.format(**dict(wildcards))
     cluster_files = glob.glob(glob_pattern)
@@ -494,12 +504,25 @@ def check_cluster_file_completeness(wildcards, source_path, glob_path, sseq_read
     estimate_num_clusters, cluster_names = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, return_names=True)
     num_clusters_slack = int(config.get('num_cluster_slack', 1))
 
-    if not (estimate_num_clusters - num_clusters_slack) < len(cluster_files) < (estimate_num_clusters + num_clusters_slack):
+    # first, check if there is one file per cluster name - estimate_number_of_saarclusters is accurate
+    # after the integrative phasing stage of the pipeline
+    produced_files = []
+    for cn in cluster_names:
+        find_name = re.compile(f'(\W){cn}(\W)')
+        matched_file = [cluster_file for cluster_file in cluster_files if find_name.search(cluster_file) is not None]
+        produced_files.extend(matched_file)
+
+    if len(produced_files) == len(cluster_names):
+        # we have a 1:1 match, this should be the best case
+        cluster_files = produced_files
+    elif not (estimate_num_clusters - num_clusters_slack) < len(cluster_files) < (estimate_num_clusters + num_clusters_slack):
         tmp = dict(wildcards)
         for cn in cluster_names:
             tmp[cluster_key] = cn
             cluster_file = source_path.format(**tmp)
             cluster_files.add(cluster_file)
+    else:
+        raise RuntimeError('Unconsidered situation')
     return sorted(cluster_files)
 
 
