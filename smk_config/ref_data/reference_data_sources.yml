@@ -58,4 +58,4 @@ reference_data_sources:
     remote_path: https://s3-us-west-2.amazonaws.com/human-pangenomics/T2T/CHM13/assemblies/chm13.draft_v1.1.fasta.gz
   T2Tv11_hg002Y_chm13:
     local_path: references/downloads/T2Tv11_hg002Y_chm13.fa.gz
-    remote_path: /gpfs/project/projects/medbioinf/data/share/globus/sig_chrY/T2T_122XYM.fa.gz
+    remote_path: /gpfs/project/projects/medbioinf/data/references/T2T_122XYM.fa.gz
