@@ -276,11 +276,12 @@ rule collect_contig_to_ref_aln_statistics:
     params:
         script_exec = lambda wildcards: find_script_path('collect_contig_aln_stats.py'),
         mapq = lambda wildcards: int(wildcards.mapq),
-        chrom_cov = lambda wildcards: int(config['min_chromosome_coverage'][wildcards.aln_reference])
+        chrom_cov = lambda wildcards: int(config['min_chromosome_coverage'][wildcards.aln_reference]),
+        no_fail = '--ignore-min-chrom-cov' if config['ignore_min_chrom_cov'] else ''
     shell:
         '{params.script_exec} --contig-alignments {input.ctg_ref_aln} '
         '--reference-chromosomes {input.ref_chroms} --contig-names {input.assm_chroms} '
-        '--min-chrom-coverage {params.chrom_cov} '
+        '--min-chrom-coverage {params.chrom_cov} {params.no_fail}'
         '--min-mapq {params.mapq} --contig-groups --group-id-position 0 --output {output}'
 
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import os
+import sys
+import pathlib as pl
 import argparse
 import csv
 import operator as op
@@ -15,21 +17,21 @@ def parse_command_line():
     parser.add_argument(
         '--contig-alignments',
         '-ca',
-        type=str,
+        type=lambda x: pl.Path(x).resolve(),
         dest='alignments',
         help='Contig to reference alignment as BED file'
     )
     parser.add_argument(
         '--reference-chromosomes',
         '-rc',
-        type=str,
+        type=lambda x: pl.Path(x).resolve(),
         dest='refchroms',
         help='Reference chromosome names and lengths as 2-column TSV table or FASTA index (fai) file.'
     )
     parser.add_argument(
         '--contig-names',
         '-cn',
-        type=str,
+        type=lambda x: pl.Path(x).resolve(),
         dest='contigs',
         help='Contig names and lengths as 2-column TSV table or FASTA index (fai) file.'
     )
@@ -52,6 +54,16 @@ def parse_command_line():
                 'covered that has to be attained for a single cluster. Otherwise, this script will '
                 'abort as it is assumed that there is at least one large assembly error for this '
                 'cluster/chromosome. Default: 0 pct. (0...100)'
+    )
+    parser.add_argument(
+        '--ignore-min-chrom-cov',
+        '-ignore',
+        action='store_true',
+        default=False,
+        dest='ignore_coverage_error',
+        help='If set, ignore reference chromosome alignment coverages below the minimal threshold, i.e. '
+             'do not fail and do not raise an error. If not set [the default], dump the alignment table '
+             'with suffix ".error" and raise an exception.'
     )
     parser.add_argument(
         '--chrom-coverage-select',
@@ -99,7 +111,7 @@ def parse_command_line():
     parser.add_argument(
         '--output',
         '-o',
-        type=str,
+        type=lambda x: pl.Path(x),
         dest='output',
         help='Path to TSV output table.'
     )
@@ -228,27 +240,31 @@ def collect_row_alignment_stats(ref_seq, aln_lengths, ref_seq_sizes, assm_seq_si
     row_records = dict()
     ref_counts = ref_counts.most_common()
 
+    error_record = ''
+
     chrom_matcher = re.compile(chrom_cov_select.strip('"'))
 
     for k, (assm_seq, aligned_bases) in zip(top_keys, ref_counts[:3]):
         assm_pct = str(round(aligned_bases / assm_seq_sizes[assm_seq] * 100, 2))
         ref_pct = round(aligned_bases / ref_seq_sizes[ref_seq] * 100, 2)
         if k == 'top1_alignment':
+            # change here: to make (i) debugging easier, or to (ii) ignore the chrom coverage error,
+            # dump the table either (i) to an alternate location (change file extension) and raise
+            # the below error, or (ii) dump to specified output location and print as warning
             if chrom_matcher.match(ref_seq) is not None and ref_pct < min_chrom_cov:
-                raise ValueError(
-                    'Top 1 alignment from assembly {} below coverage threshold for reference chromosome {}: {}% (< {}%)'.format(
-                        assm_seq, ref_seq, ref_pct, min_chrom_cov
-                        ))
-        item = '|'.join([assm_seq, str(aligned_bases), assm_pct, str(ref_pct)])
+                error_record += f'Top 1 alignment from assembly {assm_seq} below coverage threshold '
+                error_record += f'for reference chromosome {ref_seq}: {ref_pct}% (< {min_chrom_cov}%)'
+
+        item = '|'.join([assm_seq, 'bp:' + str(aligned_bases), 'asm:' + assm_pct, 'ref:' + str(ref_pct)])
         row_records[k] = item
 
     ref_counts = sorted(ref_counts, key=lambda x: x[0])
     for assm_seq, aligned_bases in ref_counts:
         assm_pct = str(round(aligned_bases / assm_seq_sizes[assm_seq] * 100, 2))
         ref_pct = str(round(aligned_bases / ref_seq_sizes[ref_seq] * 100, 2))
-        item = '|'.join([str(aligned_bases), assm_pct, ref_pct])
+        item = '|'.join(['bp:' + str(aligned_bases), 'asm:' + assm_pct, 'ref:' + ref_pct])
         row_records[assm_seq] = item
-    return row_records
+    return row_records, error_record
 
 
 def create_output_table(aln_lengths, ref_seq_sizes, assm_seq_sizes, min_chrom_cov, chrom_cov_select):
@@ -257,8 +273,9 @@ def create_output_table(aln_lengths, ref_seq_sizes, assm_seq_sizes, min_chrom_co
     aligned_refs = sorted(set(k[0] for k in aln_lengths.keys()), key=lambda x: ref_seq_sizes[x], reverse=True)
 
     table_rows = []
+    error_records = []
     for ref_seq in ref_seq_sizes.keys():
-        row_record = collect_row_alignment_stats(
+        row_record, error_record = collect_row_alignment_stats(
             ref_seq,
             aln_lengths,
             ref_seq_sizes,
@@ -269,6 +286,8 @@ def create_output_table(aln_lengths, ref_seq_sizes, assm_seq_sizes, min_chrom_co
         row_record['ref_seq'] = ref_seq
         row_record['ref_length'] = ref_seq_sizes[ref_seq]
         table_rows.append(row_record)
+        if error_record:
+            error_records.append(error_record)
 
     out_header = [
         'ref_seq',
@@ -279,7 +298,7 @@ def create_output_table(aln_lengths, ref_seq_sizes, assm_seq_sizes, min_chrom_co
     ]
     out_header.extend(aligned_contigs)
 
-    return table_rows, out_header
+    return table_rows, out_header, error_records
 
 
 def main():
@@ -301,7 +320,7 @@ def main():
         assm_chrom_names,
         args.minmapq
     )
-    table_rows, header = create_output_table(
+    table_rows, header, error_records = create_output_table(
         aln_lengths,
         ref_chroms_sizes,
         assm_chrom_sizes,
@@ -309,13 +328,31 @@ def main():
         args.chrom_coverage_select
     )
 
-    os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
-    with open(args.output, 'w', newline='') as table:
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    err_msg = '{} - alignment coverage [{}] below minimal threshold for the following reference chromosomes:\n'
+    err_msg += '\n'.join(error_records) + '\n'
+    if args.ignore_coverage_error or not error_records:
+        table_file = args.output
+        err_msg = err_msg.format('WARNING', args.alignments.name)
+    else:
+        table_file = args.output.with_suffix('.tsv.error')
+        err_msg = err_msg.format('ERROR', args.alignments.name)
+
+    with open(table_file, 'w', newline='') as table:
+        _ = table.write('## ALIGN RECORDS: bp - base pair // asm: pct. aligned assembly sequence // ref: pct. aligned reference sequence\n')
         _ = table.write('#')
         writer = csv.DictWriter(table, fieldnames=header, quoting=csv.QUOTE_NONE,
                                 extrasaction='ignore', restval='NA', delimiter='\t')
         writer.writeheader()
         writer.writerows(table_rows)
+
+    if error_records and table_file == args.output:
+        sys.stderr.write(err_msg)
+    elif error_records:
+        raise ValueError(err_msg)
+    else:
+        pass
+
     return 0
 
 

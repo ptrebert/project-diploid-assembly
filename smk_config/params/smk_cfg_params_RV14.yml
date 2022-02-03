@@ -31,7 +31,8 @@ check_hifi_adapter_contamination: true
 # for Strand-seq library QC: fail if there are less than
 # N (>1) usable [acceptable quality] Strand-seq libraries for assembly
 sseq_qc_fail_threshold: 50
-sseq_qc_ignore_fail: false
+# for evaluation purposes, ignore too few HQ SSEQ libs
+sseq_qc_ignore_fail: true
 
 # Assembler settings
 shasta_target_coverage: 60  # tech-independent recommendation: cov between 40x and 80x
@@ -63,7 +64,8 @@ max_cluster_length_male_mbp: 300
 # eval the type
 allow_contig_cuts: 'FALSE'
 eval_ploidy: 'TRUE'
-ignore_cluster_size_error: false
+# for evaluation purposes, ignore cluster size error
+ignore_cluster_size_error: true
 
 # adapt SaaRclust parameters to fix clustering errors
 sample_non_default_parameters:
@@ -71,6 +73,16 @@ sample_non_default_parameters:
     use_only_in:
       write_saarclust_config_file:
         desired_clusters: 23
+  HG01123:  # fix clustering error on chr9
+    use_only_in:
+      write_saarclust_config_file:
+        desired_clusters: 23
+        init_clusters: 150
+  HG01358:  # fix clustering error on chr13
+    use_only_in:
+      write_saarclust_config_file:
+        desired_clusters: 23
+        init_clusters: 150
 
 
 # VARIANT CALLING
@@ -103,6 +115,9 @@ min_chromosome_coverage:
   hg38_HGSVC2_noalt: 60
   T2Tv11_38p13Y_chm13: 70
   T2Tv11_hg002Yv2_chm13: 80
+# for evaluation purposes, do not fail if minimal alignment coverage
+# is not reached
+ignore_min_chrom_cov: true
 
 # main chromosomes to be used
 # for known references for main
