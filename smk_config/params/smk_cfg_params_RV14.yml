@@ -114,7 +114,7 @@ minimap_racon_aln_min_qual: 10
 min_chromosome_coverage:
   hg38_HGSVC2_noalt: 60
   T2Tv11_38p13Y_chm13: 70
-  T2Tv11_hg002Yv2_chm13: 80
+  T2Tv11_hg002Y_chm13: 80
 # for evaluation purposes, do not fail if minimal alignment coverage
 # is not reached
 ignore_min_chrom_cov: true
@@ -126,9 +126,9 @@ ignore_min_chrom_cov: true
 eval_known_ref: GRCh38_HGSVC2_noalt
 eval_align_ref:
   - hg38_HGSVC2_noalt
-  - T2Tv11_hg002Yv2_chm13
+  - T2Tv11_hg002Y_chm13
 eval_gene_model: GRCh38_GENCODEv31_basic
-use_genome_size: T2Tv11_hg002Yv2_chm13
+use_genome_size: T2Tv11_hg002Y_chm13
 sseq_qc_reference: hg38_HGSVC2_noalt
 main_chromosomes:
   - chr1
