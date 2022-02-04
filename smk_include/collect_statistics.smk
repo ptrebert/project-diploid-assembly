@@ -285,7 +285,7 @@ rule collect_contig_to_ref_aln_statistics:
     shell:
         '{params.script_exec} --contig-alignments {input.ctg_ref_aln} '
         '--reference-chromosomes {input.ref_chroms} --contig-names {input.assm_chroms} '
-        '--min-chrom-coverage {params.chrom_cov} {params.no_fail}'
+        '--min-chrom-coverage {params.chrom_cov} {params.no_fail} '
         '--min-mapq {params.mapq} --contig-groups --group-id-position 0 --output {output}'
 
 
