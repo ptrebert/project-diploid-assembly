@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from multiprocessing.sharedctypes import Value
 import sys
 import argparse as argp
 import traceback as trb
@@ -39,10 +40,24 @@ def parse_command_line():
         dest="contig_read_depth"
     )
     parser.add_argument(
+        "--ignore-non-assembly-sequence",
+        "-inas",
+        action="store_true",
+        default=False,
+        dest="ignore_extra_seq",
+    )
+    parser.add_argument(
         "--output",
         "-o",
         type=lambda x: pl.Path(x).resolve().absolute(),
         dest="output"
+    )
+    parser.add_argument(
+        "--unassigned-unitigs",
+        "-uu",
+        type=lambda x: pl.Path(x).resolve().absolute(),
+        dest="out_unassigned",
+        default=None
     )
     args = parser.parse_args()
     return args
@@ -149,14 +164,17 @@ def build_unitig_table(args):
         contig, _ = contig_counts.most_common(1)[0]
         unitig_to_contig[unitig] = contig
 
-    unitig_table['contig'] = unitig_table.index.map(lambda x: unitig_to_contig.get(x, 'pruned'))
+    unitig_table['contig'] = unitig_table.index.map(lambda x: unitig_to_contig.get(x, 'unassigned'))
     unitig_table['contig_read_count'] = unitig_table['contig'].map(lambda x: contig_readcount[x])
     unitig_table['contig_read_depth'] = unitig_table['contig'].map(lambda x: contig_read_depth[x])
     unitig_table['contig_only_reads'] = unitig_table['contig'].map(lambda x: unseen_reads[x])
     unitig_table['contig_unitig_count'] = unitig_table['contig'].map(lambda x: contigs_to_unitigs_count[x])
     unitig_table['unitig'] = unitig_table.index
+    unassigned_unitigs = unitig_table.loc[unitig_table['contig'] == 'unassigned', :].copy()
+    unitig_table = unitig_table.loc[~unitig_table.index.isin(unassigned_unitigs.index), :].copy()
     unitig_table.reset_index(drop=True, inplace=True)
-    return unitig_table
+    unassigned_unitigs.reset_index(drop=True, inplace=True)
+    return unitig_table, unassigned_unitigs
 
 
 ORIENT_MAP = {
@@ -244,8 +262,8 @@ def run_guilt_by_association(unitig_table, contig_read_depth):
         if subgraph_clusters.shape[0] != 1:
             continue
         reassign.append((ctg, subgraph_clusters.index[0]))
-    if reassign:
-        unitig_table['init_cluster_id'] = unitig_table['cluster_id']
+    unitig_table['init_cluster_id'] = unitig_table['cluster_id']
+    if reassign:    
         for ctg, new_cluster in reassign:
             unitig_table.loc[unitig_table['contig'] == ctg, 'cluster_id'] = new_cluster
     return unitig_table
@@ -288,9 +306,36 @@ def reorder_table(unitig_table):
 
 def main():
     args = parse_command_line()
-    unitig_table = build_unitig_table(args)
+    unitig_table, unassigned_unitigs = build_unitig_table(args)
     saarclusters = process_saarclust_table(args.saarclusters)
-    unitig_table = unitig_table.merge(saarclusters, on='contig')
+    unitig_table = unitig_table.merge(saarclusters, on='contig', how='outer')
+    # change here: unassigned unitigs were discarded before because of the default "inner"
+    # merge; does not affect downstream process, but to have the full assembly record
+    # available, keep them in a separate output file
+    no_unitig = pd.isnull(unitig_table['unitig'])
+    yes_contig = ~pd.isnull(unitig_table['contig'])
+    unknown_sequence = no_unitig & yes_contig
+    if not unitig_table.loc[unknown_sequence, :].empty:
+        if args.ignore_extra_seq:
+            int_columns = [
+                'unitig_read_count',
+                'component_size',
+                'unitig_length',
+                'unitig_read_depth',
+                'contig_read_count',
+                'contig_read_depth',
+                'contig_only_reads',
+                'contig_unitig_count'
+            ]
+            str_columns = ['component_hash', 'unitig']
+            for int_column in int_columns:
+                unitig_table[int_column].fillna(0, inplace=True)
+                unitig_table[int_column] = unitig_table[int_column].astype(int)
+
+            for str_column in str_columns:
+                unitig_table[str_column] = 'unknown'
+        else:
+            raise ValueError(f'Unknown sequence detected in clustered assembly:\n=====\n{unitig_table.loc[unknown_sequence, :]}\n=====\n')
     unitig_table = run_guilt_by_association(unitig_table, args.contig_read_depth)
     unitig_table['cluster_num_id'] = unitig_table['cluster_id'].map(make_num_cluster_id)
     unitig_table.sort_values(['cluster_num_id', 'contig_length'], ascending=[True, False], inplace=True)
@@ -301,6 +346,11 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     unitig_table = reorder_table(unitig_table)
     unitig_table.to_csv(args.output, sep='\t', header=True, index=False)
+
+    if args.out_unassigned is not None:
+        args.out_unassigned.parent.mkdir(parents=True, exist_ok=True)
+        unassigned_unitigs.to_csv(args.out_unassigned, sep='\t', header=True, index=False)
+
     return 0
 
 

@@ -297,13 +297,21 @@ rule run_gba_rescue:
     For contigs that cannot be clustered by Strand-seq,
     bring them back into the assembly via guilt-by-association
     (check assembly graph)
+
+    2022-02-20
+    for the hg002/acro experiments, it was necessary to add additional
+    sequences into the NHR assembly before clustering. The script below
+    was adapted to also keep these "unknown" sequences in the stats output,
+    but only so if the new parameter "--ignore-non-assembly-sequence" is set;
+    otherwise, the script will raise and report unknown sequence in the assembly.
     """
     input:
         ctg_report = 'output/reference_assembly/clustered/temp/saarclust/results/{hap_reads}_nhr-{assembler}/{sseq_reads}/clustered_assembly/ctgReport_2e+05bp_dynamic.tsv',
         raw_unitigs = 'output/reference_assembly/non-hap-res/layout/{assembler}/{hap_reads}/{hap_reads}.r_utg.noseq.gfa',
         p_contigs = 'output/reference_assembly/non-hap-res/layout/{assembler}/{hap_reads}/{hap_reads}.p_ctg.noseq.gfa',
     output:
-        table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv'
+        table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
+        unassigned = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.unassigned-unitigs.tsv',
     conda:
         '../environment/conda/conda_pyscript.yml'
     resources:
@@ -313,7 +321,8 @@ rule run_gba_rescue:
     params:
         script_exec = lambda wildcards: find_script_path('connect_unitig_contig.py'),
     shell:
-        '{params.script_exec} -u {input.raw_unitigs} -c {input.p_contigs} -s {input.ctg_report} -o {output.table}'
+        '{params.script_exec} -u {input.raw_unitigs} -c {input.p_contigs} -s {input.ctg_report} '
+            '-o {output.table} --unassigned-unitigs {output.unassigned} '
 
 
 def load_contig_fasta_sequences(file_path, is_oriented):
