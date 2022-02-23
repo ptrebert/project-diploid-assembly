@@ -309,6 +309,17 @@ def main():
     unitig_table, unassigned_unitigs = build_unitig_table(args)
     saarclusters = process_saarclust_table(args.saarclusters)
     unitig_table = unitig_table.merge(saarclusters, on='contig', how='outer')
+    # change here: if parts (contigs) of the assembly are replaced by new contigs,
+    # the original contig names will not show up in SaaRclust's contig report, and are hence
+    # unknown in this context. Since this script reads to original
+    # hifiasm graph, the original contig names are reintroduced here, causing a mismatch
+    unclustered_contigs = pd.isnull(unitig_table['is_selected'])
+    if not unitig_table.loc[unclustered_contigs, :].empty:
+        if args.ignore_extra_seq:
+            # drop the reintorduced contig names from the table
+            unitig_table = unitig_table.loc[~unclustered_contigs, :].copy()
+        else:
+            raise ValueError(f'Unknown sequence detected in NHR assembly:\n=====\n{unitig_table.loc[unclustered_contigs, :]}\n=====\n')
     # change here: unassigned unitigs were discarded before because of the default "inner"
     # merge; does not affect downstream process, but to have the full assembly record
     # available, keep them in a separate output file
@@ -320,6 +331,7 @@ def main():
             int_columns = [
                 'unitig_read_count',
                 'component_size',
+                'contig_length',
                 'unitig_length',
                 'unitig_read_depth',
                 'contig_read_count',
