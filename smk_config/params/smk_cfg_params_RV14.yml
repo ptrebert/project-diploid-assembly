@@ -2,7 +2,7 @@
 # === Software setup settings ===
 # Specify git commits for SaaRclust
 # and StrandPhaseR setup
-git_commit_saarclust: 06adc19
+git_commit_saarclust: 63f0b61
 git_commit_strandphaser: 8b93668
 git_commit_breakpointr: 0d1a155
 # arbitrarily tying a version number
@@ -83,7 +83,10 @@ sample_non_default_parameters:
       write_saarclust_config_file:
         desired_clusters: 23
         init_clusters: 150
-
+  HG01891:  # fix clustering error on chr9
+    use_only_in:
+      write_saarclust_config_file:
+        desired_clusters: 25
 
 # VARIANT CALLING
 # Postprocessing parameters
