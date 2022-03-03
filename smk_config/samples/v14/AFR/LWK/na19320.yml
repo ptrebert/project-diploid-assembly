@@ -18,6 +18,7 @@ sample_description_NA19320:
 #        library_fractions: one
 #        library_qc: yes
 #        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19320/
+#        comment: "cell growth issues, may be dropped"
     - short_reads:
         readset: &short_reads NA19320_1kg_ilnvs-150pe_short
         source_type: ena

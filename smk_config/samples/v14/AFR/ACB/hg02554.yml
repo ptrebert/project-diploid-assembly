@@ -12,12 +12,13 @@ sample_description_HG02554:
         technology: pacbio
         data_type: fastq
         load_type: parts
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG02554/
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HG02554
     - strandseq:
         readset: &sseq_reads HG02554_hgsvc_ilnxs-80pe_sseq
         library_fractions: one
         library_qc: yes
-        data_source_folder: EMPTY_PATH
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG02554
+        data_source_filter: ".txt.gz"
     - short_reads:
         readset: &short_reads HG02554_1kg_ilnvs-150pe_short
         source_type: ena
@@ -31,7 +32,7 @@ sample_targets_HG02554:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-#      sseq_reads: *sseq_reads
+      sseq_reads: *sseq_reads
       hap_assm_mode: split
       hap:
         - h1-un
