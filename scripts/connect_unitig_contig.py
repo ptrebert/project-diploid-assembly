@@ -138,6 +138,14 @@ def build_unitig_table(args):
     unitig and contig. Since a 1-to-1 mapping seems desirable for the implemented
     heuristic of patching back in assembled sequence that is discarded by SaaRclust,
     the below procedure determines the assignment following a simple majority vote.
+
+    2022-03-04 --- sample HG02257
+    The above situation now triggers an exception because the contig ptg000250l is
+    not assigned to any unitig (reads m64076_200129_001835/85721750/ccs and
+    m64076_200130_064345/127666640/ccs establish relation, but more reads of the
+    unitig utg022947l relate to another contig [ptg000188l]). Hence, the contig
+    ptg000250l is detected as an unknown sequence, which is misleading.
+
     """
     unitig_table, read_to_unitig = process_raw_unitig_graph(args.unitigs)
     # skip over contig length - part of SaaRclust output
@@ -160,11 +168,39 @@ def build_unitig_table(args):
 
     # make majority decision explicit here
     unitig_to_contig = dict()
+    minority_contigs = set()
+    majority_contigs = set()
     for unitig, contig_counts in unitigs_to_contig_count.items():
         contig, _ = contig_counts.most_common(1)[0]
+        # fix here [2022-03-04]
+        # keep a record of minority vote contigs,
+        # if any left (= unassigned) at the end,
+        # fix that in the table below
+        majority_contigs.add(contig)
+        [minority_contigs.add(contig) for contig, _ in contig_counts.most_common()[1:]]
         unitig_to_contig[unitig] = contig
 
-    unitig_table['contig'] = unitig_table.index.map(lambda x: unitig_to_contig.get(x, 'unassigned'))
+    unassigned_contigs = minority_contigs - majority_contigs
+
+    unitig_table['unitig'] = unitig_table.index
+    unitig_table.reset_index(drop=True, inplace=True)
+    unitig_table['contig'] = unitig_table['unitig'].map(lambda x: unitig_to_contig.get(x, 'unassigned'))
+    if unassigned_contigs:
+        records = []
+        for ctg in unassigned_contigs:
+            record = {
+                'contig': ctg,
+                'unitig': 'unassigned',
+                'component_hash': 'unknown',
+                'unitig_read_count': 0,
+                'component_size': 0,
+                'unitig_length': 0,
+                'unitig_read_depth': 0
+            }
+            records.append(record)
+        tmp = pd.DataFrame.from_records(records)
+        unitig_table = pd.concat([unitig_table, tmp], axis=0, ignore_index=False)
+
     unitig_table['contig_read_count'] = unitig_table['contig'].map(lambda x: contig_readcount[x])
     unitig_table['contig_read_depth'] = unitig_table['contig'].map(lambda x: contig_read_depth[x])
     unitig_table['contig_only_reads'] = unitig_table['contig'].map(lambda x: unseen_reads[x])
