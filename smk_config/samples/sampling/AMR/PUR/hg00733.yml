@@ -12,55 +12,55 @@ sample_description_HG00733:
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_5X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_5X.fastq.gz
     - long_reads:
         readset: HG00733_DP8X_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_8X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_8X.fastq.gz
     - long_reads:
         readset: HG00733_DP10X_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_10X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_10X.fastq.gz
     - long_reads:
         readset: HG00733_DP12X_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_12X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_12X.fastq.gz
     - long_reads:
         readset: HG00733_DP15X_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_15X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_15X.fastq.gz
     - long_reads:
         readset: HG00733_DP17X_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_17X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_17X.fastq.gz
     - long_reads:
         readset: HG00733_DP20X_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_20X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_20X.fastq.gz
     - long_reads:
         readset: HG00733_DP25X_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_25X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_25X.fastq.gz
     - long_reads:
         readset: HG00733_DP30X_pbsq2-ccs
         technology: pacbio
         data_type: fastq
         load_type: complete
-        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/HG00733/PacBio_HiFi_30X.fastq.gz
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_downsampling/PacBio_HiFi/data/HG00733/PacBio_HiFi_30X.fastq.gz
     - strandseq:
         readset: &sseq_reads HG00733_1kg_il25k-npe_sseq
         library_fractions: two
