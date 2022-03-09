@@ -31,7 +31,7 @@ sample_description_NA19384:
 sample_targets_NA19384:
   - aliases:
       1: &long_reads NA19384_hgsvc_pbsq2-ccs_1000
-      2: &strandseq_reads NA19384_SSEQ_READSET
+      2: &strandseq_reads NA19384_hgsvc_ilnxs-80pe_sseq
       3: &ont_reads NA19384_ONT_READSET
       4: &short_reads NA19384_SHORT_READSET
   - defaults:
