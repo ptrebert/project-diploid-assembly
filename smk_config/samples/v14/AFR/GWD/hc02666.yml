@@ -13,6 +13,7 @@ sample_description_HC02666:
             data_type: fastq
             load_type: parts
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HC02666
+            comment: "Dedicated HiFi high-coverage sample"
         - strandseq:
             readset: HC02666_hgsvc_ilnxs-80pe_sseq
             library_fractions: one

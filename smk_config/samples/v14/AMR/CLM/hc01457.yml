@@ -15,10 +15,10 @@ sample_description_HC01457:
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/HC01457
             comment: "Dedicated HiFi high-coverage sample"
         - strandseq:
-            readset: HG01457_hgsvc_ilnxs-80pe_sseq
+            readset: HC01457_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
-            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HG01457
+            data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/HC01457
             data_source_filter: ".txt.gz"
         # - short_reads:
         #     readset: HC01457_SHORT_READSET
