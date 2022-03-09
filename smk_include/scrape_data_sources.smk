@@ -122,7 +122,7 @@ def check_readset_name(readset_type, readset_name, sample_name):
     """
     """
     if not readset_name.startswith(sample_name):
-        raise ValueError('Readset name has to start with sample name: {} / {}'.format(readset_name, sample_name))
+        raise ValueError(f'Readset of type {readset_type}; name has to start with sample name: {readset_name} / {sample_name}')
     if readset_type == 'long_reads':
         try:
             sample, project, platform = readset_name.split('_')
@@ -134,7 +134,7 @@ def check_readset_name(readset_type, readset_name, sample_name):
             sample, project, platform, suffix = readset_name.split('_')
         except ValueError:
             expected_suffix = 'sseq' if readset_type == 'strandseq' else 'short'
-            raise ValueError('Readset name does not follow naming convention: SAMPLE_PROJECT_SEQPLATFORM_{}'.format(expected_suffix))
+            raise ValueError(f'Readset name {readset_name} does not follow naming convention: SAMPLE_PROJECT_SEQPLATFORM_{expected_suffix}')
     else:
         raise ValueError('Unknown type of readset: {} / {}'.format(readset_type, readset_name))
 
@@ -225,7 +225,7 @@ def group_by_two_iterator(file_list, readset_name, sort_folder, pgas_ext):
     import hashlib
 
     if len(file_list) % 2 != 0:
-        raise ValueError('Number of data files cannot be grouped by {} ({})'.format(2, len(file_list)))
+        raise ValueError(f'Number of data files for {readset_name} cannot be grouped by 2 ({len(file_list)})')
 
     readset_prefix = readset_name.rsplit('_', 1)[0]
 
@@ -265,7 +265,7 @@ def group_by_four_iterator(file_list, readset_name, sort_folder, pgas_ext):
     import hashlib
 
     if len(file_list) % 4 != 0:
-        raise ValueError('Number of data files cannot be grouped by {} ({})'.format(4, len(file_list)))
+        raise ValueError(f'Number of data files for {readset_name} cannot be grouped by 4 ({len(file_list)})')
 
     # - This is different from "grouping by two" because we need to account
     # here for the two different sequencing fraction per library

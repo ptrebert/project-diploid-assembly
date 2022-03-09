@@ -14,7 +14,7 @@ sample_description_NA19384:
             load_type: parts
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/NA19384
         - strandseq:
-            readset: NA19384_SSEQ_READSET
+            readset: NA19384_hgsvc_ilnxs-80pe_sseq
             library_fractions: one
             library_qc: yes
             data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19384
