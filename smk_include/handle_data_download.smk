@@ -459,7 +459,7 @@ rule handle_single_fastq_download_request:
         script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
         force_copy = lambda wildcards: '--force-local-copy' if bool(config.get('force_local_copy', False)) else '',
         parallel_conn = max(1, config['num_cpu_low']),
-        req_file_path = lambda wildcards, input: input[0] + f'/{wildcards.readset}.request'
+        req_file_path = lambda wildcards, input: input[0] + f'/{wildcards.readset}_1000.request'
     shell:
          '{params.script_exec} --debug {params.force_copy} '
          '--request-file {params.req_file_path} --output {output} '
