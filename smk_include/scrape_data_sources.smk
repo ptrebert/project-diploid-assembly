@@ -103,18 +103,24 @@ def read_configured_data_sources():
 def collect_input_data_files(top_path, sample, file_ext):
     """
     """
-    selected_files = []
-    for root, dirs, files in os.walk(top_path, followlinks=False):
-        if 'ignore' in root:
-            continue
-        level_files = [f for f in files if sample in f and f.endswith(file_ext)]
-        if not level_files:
-            level_files = [f for f in files if f.endswith(file_ext)]
-        level_files = [(f, os.path.join(root, f)) for f in level_files]
-        selected_files.extend(level_files)
-    selected_files = sorted(set(selected_files))
-    if len(selected_files) < 1:
-        raise ValueError('No data files found: {} / {} / {}'.format(top_path, sample, file_ext))
+    # 2022-03-10 fix just for HGSVC downsampling project
+    # see function "read_local_data_sources" for explanation;
+    # if "top_path" is an existing file, just return that
+    if os.path.isfile(top_path):  # note: follows links by default
+        selected_files = [(os.path.basename(top_path), top_path)]
+    else:
+        selected_files = []
+        for root, dirs, files in os.walk(top_path, followlinks=False):
+            if 'ignore' in root:
+                continue
+            level_files = [f for f in files if sample in f and f.endswith(file_ext)]
+            if not level_files:
+                level_files = [f for f in files if f.endswith(file_ext)]
+            level_files = [(f, os.path.join(root, f)) for f in level_files]
+            selected_files.extend(level_files)
+        selected_files = sorted(set(selected_files))
+        if len(selected_files) < 1:
+            raise ValueError('No data files found: {} / {} / {}'.format(top_path, sample, file_ext))
     return selected_files
 
 
@@ -127,7 +133,7 @@ def check_readset_name(readset_type, readset_name, sample_name):
         try:
             sample, project, platform = readset_name.split('_')
         except ValueError:
-            raise ValueError('Readset name does not follow naming convention: SAMPLE_PROJECT_SEQPLATFORM')
+            raise ValueError(f'Readset name does not follow naming convention: SAMPLE_PROJECT_SEQPLATFORM: {readset_name}')
     
     elif readset_type in ['strandseq', 'short_reads']:
         try:
@@ -391,7 +397,15 @@ def read_local_data_sources():
                     if WARN:
                         sys.stderr.write('\nWarning: no data source folder for readset {} - skipping\n'.format(readset_name))
                     continue
-                if not os.path.isdir(readset_spec['data_source_folder']):
+                # 2022-03-10: special fix just for the HGSVC downsampling project
+                # Because the external input files are all in a single folder,
+                # the common glob collection does not work, i.e., that would mix and
+                # merge the different sampling depths; in other words, the data_source_folder
+                # in the sample configs is actually a (single) data_source_file
+                # (load_type = complete is required)
+                is_no_folder = os.path.isdir(readset_spec['data_source_folder'])
+                is_no_single_file = os.path.isfile(readset_spec['data_source_folder']) and readset_spec['load_type'] == 'complete'
+                if is_no_folder and is_no_single_file:
                     if WARN:
                         sys.stderr.write('\nWarning: skipping over non-existing data source folder: {}\n'.format(readset_spec['data_source_folder']))
                     continue
