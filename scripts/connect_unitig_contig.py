@@ -200,12 +200,16 @@ def build_unitig_table(args):
             records.append(record)
         tmp = pd.DataFrame.from_records(records)
         unitig_table = pd.concat([unitig_table, tmp], axis=0, ignore_index=False)
+        # fix 2022-03-14: need to reset index here to avoid collisions below,
+        # as unassigned contigs are indexed starting at zero
+        unitig_table.reset_index(drop=True, inplace=True)
 
     unitig_table['contig_read_count'] = unitig_table['contig'].map(lambda x: contig_readcount[x])
     unitig_table['contig_read_depth'] = unitig_table['contig'].map(lambda x: contig_read_depth[x])
     unitig_table['contig_only_reads'] = unitig_table['contig'].map(lambda x: unseen_reads[x])
     unitig_table['contig_unitig_count'] = unitig_table['contig'].map(lambda x: contigs_to_unitigs_count[x])
-    unitig_table['unitig'] = unitig_table.index
+    # fix 2022-03-14: removed line resetting index from unitigs to numeric;
+    # is done above before dealing with unassigned contigs
     unassigned_unitigs = unitig_table.loc[unitig_table['contig'] == 'unassigned', :].copy()
     unitig_table = unitig_table.loc[~unitig_table.index.isin(unassigned_unitigs.index), :].copy()
     unitig_table.reset_index(drop=True, inplace=True)
