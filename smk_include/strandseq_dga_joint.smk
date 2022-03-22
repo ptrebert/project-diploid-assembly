@@ -53,7 +53,7 @@ def collect_haploid_split_reads(wildcards, file_ext, glob_collect, caller):
             if not hap_files:
                 if caller == 'snakemake':
                     sample_name = wildcards.sseq_reads.split('_')[0]
-                    num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+                    num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, readset=wildcards.hap_reads)
                     tmp = dict(wildcards)
                     hap_files = []
                     for i in range(1, num_clusters + 1):
@@ -115,7 +115,7 @@ rule write_haploid_split_reads_fofn:
 
         # Sanity check: there must be one FASTQ/PBN.BAM file per cluster
         sample_name = wildcards.sseq_reads.split('_')[0]
-        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, readset=wildcards.hap_reads)
 
         num_wh_vcf = 0
         with open(input.fofn, 'r') as fofn:

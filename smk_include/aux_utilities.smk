@@ -513,7 +513,13 @@ def check_cluster_file_completeness(wildcards, source_path, glob_path, sseq_read
     cluster_files = set(f for f in cluster_files if 'cluster99' not in f)
 
     sample_name = sseq_reads.split('_')[0]
-    estimate_num_clusters, cluster_names = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, return_names=True)
+    if hasattr(wildcards, 'vc_reads'):
+        readset = wildcards.vc_reads
+    elif hasattr(wildcards, 'hap_reads'):
+        readset = wildcards.hap_reads
+    else:
+        readset = None
+    estimate_num_clusters, cluster_names = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, return_names=True, readset=readset)
     num_clusters_slack = int(config.get('num_cluster_slack', 1))
 
     # first, check if there is one file per cluster name - estimate_number_of_saarclusters is accurate
