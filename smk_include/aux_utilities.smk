@@ -455,9 +455,9 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False,
         fofn_clusters = len(cluster_names)
         if fofn_clusters < default_clusters - num_clusters_slack:
             raise ValueError(f'ERROR: number of clusters loaded from FOFN file {cluster_fofn} is too small. Delete this file and restart the pipeline')
+        num_clusters = fofn_clusters
         if DEBUG:
             sys.stderr.write('Loaded number of cluster from fofn: {}\n'.format(num_clusters))
-        num_clusters = fofn_clusters
     elif sample_name in CONSTRAINT_MALE_SAMPLE_NAMES:
         num_clusters = config.get('desired_clusters_male', config.get('desired_clusters', 0))
         if DEBUG:
