@@ -266,7 +266,7 @@ rule write_assembled_fasta_clusters_fofn:
         
         # Sanity check: there must be one assembly FASTA file per cluster
         sample_name = wildcards.sseq_reads.split('_')[0]
-        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, readset=wildcards.hap_reads)
 
         num_fastas = len(input.cluster_fastas)
 
@@ -418,7 +418,7 @@ rule write_polished_contigs_fofn:
         
         # Sanity check: there must be one assembly FASTA file per cluster
         sample_name = wildcards.sseq_reads.split('_')[0]
-        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, readset=wildcards.hap_reads)
 
         num_assm_clusters = 0
         with open(input.fofn, 'r') as fofn:

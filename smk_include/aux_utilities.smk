@@ -371,7 +371,7 @@ def get_revcomp_translation_table():
     return revcomp_table
 
 
-def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False):
+def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False, readset=None):
     """
     Function introduced to drop all checkpoints w/ subsequent dynamic aggregation of output files.
     If number of clusters happens to match what is being produced by SaaRclust, should allow
@@ -386,25 +386,37 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False)
     import glob
 
     if DEBUG:
-        sys.stderr.write('Estimating number of SaaRclusters for: {} / {}\n'.format(sample_name, sseq_reads))
+        sys.stderr.write(f'Estimating number of SaaRclusters for: {sample_name} / {sseq_reads} / {readset}\n')
 
     num_clusters = 0
     # 2021-12-16
-    # SaaRclust (as-of #4700afe) has the annoying property of not renaming clusters after
+    # SaaRclust (as of #4700afe) has the annoying property of not renaming clusters after
     # collapsing (?) clusters to meet the desired number of clusters;
     # as a consequence, cluster IDs are not necessarily enumerated consecutively,
     # which makes it next to impossible to detect missing information pertaining
     # to a specific cluster
     cluster_names = set()
 
-    formatter = {'sseq_reads': sseq_reads, 'sample': sample_name, 'version': config['git_commit_version']}
-    cluster_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.cluster-ids.txt'.format(**formatter)
-    # added 2021-12-24: in case breakpointR cannot process some clusters, the estimate would always be wrong, i.e.
-    # need to subtract the IDs of dropped clusters
-    dropped_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.dropped-clusters.err'.format(**formatter)
+    # added 2022-03-22
+    # Triggered for downsampling project where combination of Strand-seq and LR readset
+    # is not unique enough for the below glob to find the correct file (all samples have the same name).
+    # Add parameter readset to disambiguate.
+    if readset is None:
+        # TODO this can probably be dropped
+        formatter = {'sseq_reads': sseq_reads, 'sample': sample_name, 'version': config['git_commit_version']}
+        cluster_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.cluster-ids.txt'.format(**formatter)
+        # added 2021-12-24: in case breakpointR cannot process some clusters, the estimate would always be wrong, i.e.
+        # need to subtract the IDs of dropped clusters
+        dropped_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{sample}*_scV{version}-*.dropped-clusters.err'.format(**formatter)
+    else:
+        formatter = {'sseq_reads': sseq_reads, 'readset': readset, 'version': config['git_commit_version']}
+        cluster_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{readset}_scV{version}-*.cluster-ids.txt'.format(**formatter)
+        # added 2021-12-24: in case breakpointR cannot process some clusters, the estimate would always be wrong, i.e.
+        # need to subtract the IDs of dropped clusters
+        dropped_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{readset}_scV{version}-*.dropped-clusters.err'.format(**formatter)
 
     if DEBUG:
-        sys.stderr.write('Checking cluster fofn path: {}\n'.format(cluster_fofn_path))
+        sys.stderr.write(f'Checking cluster fofn path: {cluster_fofn_path}\n')
     cluster_fofn_matches = glob.glob(cluster_fofn_path)
     if len(cluster_fofn_matches) == 1:
         cluster_fofn = cluster_fofn_matches[0]

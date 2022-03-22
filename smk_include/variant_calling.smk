@@ -449,7 +449,7 @@ rule write_final_vcf_splits:
             num_vcf_splits = len(input.vcf_splits)
             assert num_vcf_splits > 0, 'write_final_vcf_splits: no VCF split files as input'
             sample_name = wildcards.sseq_reads.split('_')[0]
-            num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+            num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, readset=wildcards.vc_reads)
             _ = logfile.write('Number of input VCF splits: {}\n'.format(num_vcf_splits))
             _ = logfile.write('Number of expected VCF splits (clusters): {}\n'.format(num_clusters))
             _ = logfile.write('Received following VCF split input:\n{}\n'.format('\n'.join(sorted(input.vcf_splits))))
@@ -587,7 +587,7 @@ rule write_intermediate_vcf_splits:
             num_vcf_splits = len(input.vcf_splits)
             assert num_vcf_splits > 0, 'write_intermediate_vcf_splits: no VCF split files as input'
             sample_name = wildcards.sseq_reads.split('_')[0]
-            num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+            num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, readset=wildcards.vc_reads)
             
             _ = logfile.write('Number of input VCF splits: {}\n'.format(num_vcf_splits))
             _ = logfile.write('Number of expected VCF splits (clusters): {}\n'.format(num_clusters))

@@ -410,7 +410,7 @@ rule write_phased_vcf_splits_fofn:
 
         # Sanity check: there must be one VCF file per cluster
         sample_name = wildcards.sseq_reads.split('_')[0]
-        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, readset=wildcards.hap_reads)
 
         num_vcf = len(input.vcf_splits)
 

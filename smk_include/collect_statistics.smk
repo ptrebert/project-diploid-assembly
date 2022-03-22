@@ -364,7 +364,7 @@ rule summarize_tagging_splitting_statistics:
 
         # Sanity check: there must be one tag list per cluster
         sample_name = wildcards.sseq_reads.split('_')[0]
-        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads)
+        num_clusters = estimate_number_of_saarclusters(sample_name, wildcards.sseq_reads, readset=wildcards.hap_reads)
 
         num_tags = len(input.tags)
 
