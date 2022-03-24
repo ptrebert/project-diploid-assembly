@@ -544,6 +544,19 @@ def check_cluster_file_completeness(wildcards, source_path, glob_path, sseq_read
     return sorted(cluster_files)
 
 
+def check_cluster_no_variants(cluster_vcf_stats):
+
+    no_variant_clusters = set()
+    with open(clusters_vcf_stats, 'r') as table:
+        for line in table:
+            if 'HET-SNV_num' in line:
+                record, number = line.strip().split()
+                cluster_id = record.strip('_HET-SNV_num')
+                if int(number) == 0:
+                    no_variant_clusters.add(cluster_id)
+    return no_variant_clusters
+
+
 def collect_strandseq_alignments(wildcards, glob_collect=True, caller='snakemake'):
     """
     """

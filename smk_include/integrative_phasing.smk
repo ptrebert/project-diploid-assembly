@@ -234,12 +234,23 @@ rule write_strandphaser_split_vcf_fofn:
     2021-12-24: PGAS v14 dev
     switch from vcf_dir to data, see run_strandphaser / strandphaser_fix_inversion_phasing for reason
 
+    2022-03-24: PGAS v14dev / HGSVC downsampling
+    In case one cluster does not contain any variants (in the final set, e.g., happens when only
+    low-quality variants are called and thus filtered when producing the final high-quality set
+    of variants), this rule cannot succeed b/c the number of clusters does not match even when considering
+    dropped clusters (from breakpointR); StrandPhaseR does not produce output for such a cluster.
+    Solution: read cluster stats file, and add all clusters IDs as missing that have 0 variants.
+
+    NB: a major source for confusion is that breakpointR identifies WC regions irrespective of
+    the fact whether or not the cluster actually contains variants. Hence, the correction
+    below does not trigger.
     """
     input:
         wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/{reference}.WCregions.txt',
         fix_inv_stats = 'output/integrative_phasing/postprocessing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '/fix_inv_stats',
         data_dir = rules.run_strandphaser.output.data,
-        cluster_ids = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.cluster-ids.txt'
+        cluster_ids = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.cluster-ids.txt',
+        cluster_vcf_stats = 'output/statistics/variant_calls/{var_caller}/{reference}/{sseq_reads}/{vc_reads}.snv.QUAL{qual}.GQ{gq}.vcf.cluster.stats'
     output:
         fofn = 'output/integrative_phasing/processing/strandphaser/' + PATH_INTEGRATIVE_PHASING + '.spr-phased.fofn',
     log:
@@ -281,13 +292,25 @@ rule write_strandphaser_split_vcf_fofn:
                     brkp_clusters = set(l.split()[0] for l in table if l.strip())
                 _ = logfile.write(f'breakpointR called W/C-only for {len(brkp_clusters)} sequence clusters\n')
 
-                missing_clusters = sorted(cluster_ids - brkp_clusters)
-                if len(brkp_clusters) == num_vcf:
-                    # what's happening: we have one VCF output file per breakpointR cluster - no missing output per se.
-                    # But: there are clusters where breakpointR could not identify W/C-only regions,
-                    # which are thus omitted from the output (can't be phased by StrandPhaseR)
-                    _ = logfile.write('Matching number of breakpointR clusters and existing VCF output files - not good, not terrible...\n')    
-                    _ = logfile.write('Sequence cluster(s) w/o W/C-only regions as per breakpointR output: {}\n'.format(', '.join(missing_clusters)))
+                # 2022-03-24 check if no-variant clusters exist
+                _ = logfile.write(f'Reading VCF cluster stats from file: {input.cluster_vcf_stats}\n')
+                no_variant_clusters = check_cluster_no_variants(input.cluster_vcf_stats)
+                if no_variant_clusters:
+                    _ = logfile.write(f'No-variant clusters [{len(no_variant_clusters)}] detected: {sorted(no_variant_clusters)}\n')
+                    _ = logfile.write('Those will be added to the missing clusters\n')
+
+                # all clusters minus clusters with WC-regions
+                # gives missing case 1: no WC region identified by breakpointR
+                missing_clusters = cluster_ids - brkp_clusters
+                # missing: previous missing plus no-variant clusters (may or may not contain WC regions)
+                missing_clusters = missing_clusters.union(no_variant_clusters)
+                num_missing = len(missing_clusters)
+                if (num_clusters - num_missing) == num_vcf:
+                    # what's happening: we have one VCF output file per remaining cluster.
+                    # - missing case 1: breakpointR could not identify WC regions
+                    # - missing case 2: cluster does not contain variants (final state)
+                    _ = logfile.write('Matching adjusted number of clusters and existing VCF output files.\n')    
+                    _ = logfile.write(f'Missing cluster(s) (no W/C-only regions, or no variants): {sorted(missing_clusters)}\n')
                     with open(dropped_clusters_path, 'w') as dump:
                         _ = dump.write('\n'.join(missing_clusters) + '\n')
                 else:
@@ -296,7 +319,8 @@ rule write_strandphaser_split_vcf_fofn:
                         f'{num_vcf} StrandPhaseR VCF files vs '
                         f'expected {num_clusters} sequence clusters (SaaRclust) vs '
                         f'breakpointR clusters {len(brkp_clusters)} (W/C-only regions identified) vs '
-                        f'breakpointR dropped clusters {len(missing_clusters)} (no W/C-only regions identified)'
+                        f'breakpointR dropped clusters {len(missing_clusters)} (no W/C-only regions identified) '
+                        f'vs number of clusters w/o remaining variants: {len(no_variant_clusters)} / {no_variant_clusters}'
                     )
             else:
                 pass
