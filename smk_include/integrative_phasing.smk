@@ -319,7 +319,7 @@ rule write_strandphaser_split_vcf_fofn:
                         f'{num_vcf} StrandPhaseR VCF files vs '
                         f'expected {num_clusters} sequence clusters (SaaRclust) vs '
                         f'breakpointR clusters {len(brkp_clusters)} (W/C-only regions identified) vs '
-                        f'breakpointR dropped clusters {len(missing_clusters)} (no W/C-only regions identified) '
+                        f'missing clusters {len(missing_clusters)} (no W/C regions identified, or no variants remaining) '
                         f'vs number of clusters w/o remaining variants: {len(no_variant_clusters)} / {no_variant_clusters}'
                     )
             else:

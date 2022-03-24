@@ -547,7 +547,7 @@ def check_cluster_file_completeness(wildcards, source_path, glob_path, sseq_read
 def check_cluster_no_variants(cluster_vcf_stats):
 
     no_variant_clusters = set()
-    with open(clusters_vcf_stats, 'r') as table:
+    with open(cluster_vcf_stats, 'r') as table:
         for line in table:
             if 'HET-SNV_num' in line:
                 record, number = line.strip().split()
