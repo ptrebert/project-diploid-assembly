@@ -244,6 +244,14 @@ rule write_strandphaser_split_vcf_fofn:
     NB: a major source for confusion is that breakpointR identifies WC regions irrespective of
     the fact whether or not the cluster actually contains variants. Hence, the correction
     below does not trigger.
+
+    2022-03-29
+    In addition to all of the above, StrandPhaseR may produce empty output files if the data
+    in the input VCF are too shallow (various requirements...). Since the output VCF files contain
+    a header, they cannot be identified using the file size. The respective clusters also
+    need to be added to the set of missing clusters (to be subtracted whenever checking
+    for cluster file completeness downstream). This problem occurred for one of the downsampled
+    samples (HGSVC downsampling project).
     """
     input:
         wc_regions = 'output/integrative_phasing/processing/breakpointr/{reference}/{sseq_reads}/{reference}.WCregions.txt',
@@ -276,6 +284,12 @@ rule write_strandphaser_split_vcf_fofn:
             # important: only select corrected VCFs
             all_vcfs = sorted(vcf_dir.glob('*.vcf'))
             _ = logfile.write(f'Identified a total of {len(all_vcfs)} VCF files in StrandPhaseR output directory.\n')
+            # 2022-03-29
+            # get the list of StrandPhaseR output VCFs to be checked if they contain variants
+            # or are just empty / header-only files
+            output_vcfs = sorted(vcf for vcf in all_vcfs if vcf.name.endswith('_phased.vcf'))
+            empty_file_clusters = check_cluster_vcf_is_empty(output_vcfs)
+            _ = logfile.write(f'{len(empty_file_clusters)} VCF files are empty / header-only: {sorted(empty_file_clusters)}\n')
             input_vcfs = sorted(vcf for vcf in all_vcfs if vcf.name.endswith('_INVcorr.vcf'))
             num_vcf = len(input_vcfs)
             _ = logfile.write(f'Identified {num_vcf} corrected VCFs in StrandPhaseR output directory.\n')
@@ -304,11 +318,14 @@ rule write_strandphaser_split_vcf_fofn:
                 missing_clusters = cluster_ids - brkp_clusters
                 # missing: previous missing plus no-variant clusters (may or may not contain WC regions)
                 missing_clusters = missing_clusters.union(no_variant_clusters)
+                # missing: previous missing plus empty VCF files
+                missing_clusters = missing_clusters.union(empty_file_clusters)
                 num_missing = len(missing_clusters)
                 if (num_clusters - num_missing) == num_vcf:
                     # what's happening: we have one VCF output file per remaining cluster.
                     # - missing case 1: breakpointR could not identify WC regions
                     # - missing case 2: cluster does not contain variants (final state)
+                    # - missing case 3: data too shallow to be processed by StrandPhaseR, produces empty output
                     _ = logfile.write('Matching adjusted number of clusters and existing VCF output files.\n')    
                     _ = logfile.write(f'Missing cluster(s) (no W/C-only regions, or no variants): {sorted(missing_clusters)}\n')
                     with open(dropped_clusters_path, 'w') as dump:
@@ -319,8 +336,9 @@ rule write_strandphaser_split_vcf_fofn:
                         f'{num_vcf} StrandPhaseR VCF files vs '
                         f'expected {num_clusters} sequence clusters (SaaRclust) vs '
                         f'breakpointR clusters {len(brkp_clusters)} (W/C-only regions identified) vs '
-                        f'missing clusters {len(missing_clusters)} (no W/C regions identified, or no variants remaining) '
-                        f'vs number of clusters w/o remaining variants: {len(no_variant_clusters)} / {no_variant_clusters}'
+                        f'missing clusters {len(missing_clusters)} (no W/C regions identified, or no variants remaining) vs '
+                        f'number of clusters w/o remaining variants: {len(no_variant_clusters)} / {no_variant_clusters} vs '
+                        f'number of empty VCF files: {len(empty_file_clusters)} / {empty_file_clusters}\n'
                     )
             else:
                 pass

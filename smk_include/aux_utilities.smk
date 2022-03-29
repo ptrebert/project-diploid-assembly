@@ -557,6 +557,25 @@ def check_cluster_no_variants(cluster_vcf_stats):
     return no_variant_clusters
 
 
+def check_cluster_vcf_is_empty(cluster_vcf_files):
+    import pathlib as pl
+
+    empty_clusters = set()
+    for cluster_vcf_file in cluster_vcf_files:
+        cluster_id = pl.Path(cluster_vcf_file).name.split('_')[0]
+        is_empty = True
+        with open(cluster_vcf_file, 'r') as vcf_file:
+            for line in vcf_file:
+                if line.startswith('#'):
+                    continue
+                is_empty = False
+                assert line.strip()
+                break
+        if is_empty:
+            empty_clusters.add(cluster_id)
+    return empty_clusters
+
+
 def collect_strandseq_alignments(wildcards, glob_collect=True, caller='snakemake'):
     """
     """
