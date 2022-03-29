@@ -159,6 +159,12 @@ TARGET_PATHS = {
         "{hap_reads}.{file_ext}.pck"
     ),
 
+    "STATS_CONTIG_CLUSTERING": os.path.join(
+        "output", "statistics", "clustering",
+        "{sseq_reads}",
+        "{hap_reads}_nhr-{nhr_assembler}.cluster-info.tsv"
+    ),
+
     "STATS_VARIANT_CALLING_INITIAL": os.path.join(
         "output", "statistics", "variant_calls",
         "{var_caller}",
