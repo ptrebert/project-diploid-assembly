@@ -249,7 +249,7 @@ rule call_variants_deepvariant:
         singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
         '{params.singularity}'
-        'singularity run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant '
+        'singularity --debug run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant '
             ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} '
             ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} '
             ' {params.use_hap_info} --novcf_stats_report '
