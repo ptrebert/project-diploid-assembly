@@ -36,37 +36,6 @@ rule compute_statistics_complete_input_fastq:
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
-rule compute_statistics_complete_input_fasta:
-    input:
-        fasta = 'input/fasta/{sample}.fasta',
-        faidx = 'references/assemblies/' + config['use_genome_size'] +'.fasta.fai',
-    output:
-        dump = 'output/statistics/stat_dumps/{sample}.fasta.pck',
-        summary = 'input/fasta/{sample}.stats'
-    log: 'log/output/statistics/stat_dumps/{sample}.fasta.log',
-    benchmark: 'rsrc/output/statistics/stat_dumps/{sample}.fasta.t2.rsrc'
-    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
-    threads: 2
-    resources:
-        runtime_hrs= 8,
-        mem_total_mb = 4096,
-        mem_per_cpu_mb = 2048,
-    conda:
-         '../environment/conda/conda_pyscript.yml'
-    params:
-        script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
-    shell:
-        '{params.script_exec} --debug --input-files {input.fasta} '
-        '--output {output.dump} --summary-output {output.summary} '
-        '--copy-stats-dump '
-        'output/statistics/stat_dumps/{wildcards.sample}.pbn.bam.pck '
-        'output/statistics/stat_dumps/{wildcards.sample}.fastq.pck '
-        '--copy-summary '
-        'input/bam/{wildcards.sample}.stats '
-        'input/fastq/{wildcards.sample}.stats '
-        '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
-
-
 rule compute_statistics_split_cluster_fastq:
     input:
          fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fastq/{hap_reads}.{hap}.{sequence}.fastq.gz',
@@ -115,56 +84,6 @@ rule compute_statistics_joint_cluster_fastq:
         '{params.script_exec} --debug --input-files {input.fasta} '
         '--output {output.dump} --summary-output {output.summary} '
         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
-
-
-rule compute_statistics_split_cluster_fasta:
-    input:
-         fasta = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta',
-         faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
-    output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.pck',
-          summary = 'output/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.log',
-    benchmark: 'rsrc/output/statistics/stat_dumps/diploid_assembly/strandseq_split/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.{sequence}.fasta.t2.rsrc'
-    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
-    threads: 2
-    resources:
-        runtime_hrs= 1,
-        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
-    conda:
-         '../environment/conda/conda_pyscript.yml'
-    params:
-          script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
-    shell:
-         '{params.script_exec} --debug --input-files {input.fasta} '
-         '--output {output.dump} --summary-output {output.summary} '
-         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
-
-
-rule compute_statistics_joint_cluster_fasta:
-    input:
-         fasta = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta',
-         faidx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai',
-    output:
-          dump = 'output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.pck',
-          summary = 'output/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.stats',
-    log: 'log/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.log',
-    benchmark: 'rsrc/output/statistics/stat_dumps/diploid_assembly/strandseq_joint/{var_caller}_QUAL{qual}_GQ{gq}/{reference}/{vc_reads}/{sseq_reads}/draft/haploid_fasta/{hap_reads}.{hap}.fasta.t2.rsrc'
-    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
-    threads: 2
-    resources:
-        runtime_hrs= 1,
-        mem_total_mb = lambda wildcards, attempt: 1024 + 1024 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: (1024 + 1024 * attempt) // 2,
-    conda:
-         '../environment/conda/conda_pyscript.yml'
-    params:
-          script_exec = lambda wildcards: find_script_path('collect_read_stats.py')
-    shell:
-         '{params.script_exec} --debug --input-files {input.fasta} '
-         '--output {output.dump} --summary-output {output.summary} '
-         '--num-cpu {threads} --genome-size-file {input.faidx} &> {log}'
 
 
 rule compute_statistics_complete_input_bam:

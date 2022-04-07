@@ -143,32 +143,6 @@ rule check_singularity_version:
         '--at-least {params.min_version}'
 
 
-rule download_shasta_executable:
-    input:
-        'output/check_files/environment/conda_biotools.ok'
-    output:
-        'output/check_files/environment/shasta_version.ok'
-    log:
-        'log/output/check_files/environment/shasta_version.log'
-    conda:
-        '../environment/conda/conda_biotools.yml'
-    params:
-        shasta_url = "https://github.com/chanzuckerberg/shasta/releases/download/{version}/shasta-Linux-{version}".format(**{'version': config['shasta_version']}),
-        shasta_ver = config['shasta_version'],
-        script_exec = lambda wildcards: find_script_path('downloader.py', 'utilities'),
-    threads: 2
-    resources:
-        mem_total_mb = 2048,
-        mem_per_cpu_mb = 1024
-    shell:
-         '{params.script_exec} --debug '
-            '--shasta-exec {params.shasta_url} '
-            '--shasta-version {params.shasta_ver} '
-            '--shasta-path $CONDA_PREFIX/bin/shasta '
-            '--output {output} '
-            '&> {log}'
-
-
 rule install_rlib_saarclust:
     input:
         rules.create_conda_environment_r_script.output

@@ -60,23 +60,6 @@ rule compute_md5_checksum:
         "md5sum {input} > {output}"
 
 
-rule gunzip_fastq_copy:
-    """
-    exists only for Shasta input
-    """
-    input:
-        '{filepath}.fastq.gz'
-    output:
-        '{filepath}.fastq'
-    conda:
-         '../environment/conda/conda_shelltools.yml'
-    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
-    resources:
-        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 12 * attempt
-    shell:
-        "gzip -dc {input} > {output}"
-
-
 rule samtools_index_bam_alignment:
     """
     - multi-threaded index generation seems to swallow error (e.g., bad blocks / error 33)
@@ -156,66 +139,6 @@ rule pb_bam2x_dump_haploid_fastq:
         out_prefix = lambda wildcards, output: output[0].rsplit('.', 2)[0]
     shell:
         'bam2fastq -c 5 -o {params.out_prefix} {input.pbn_bam} &> {log}'
-
-
-rule dump_shasta_fasta:
-    """
-    Despite the docs saying that (gzipped) fastq can be used
-    as input to Shasta, Shasta complains about it...
-    Dump to single-line (!) FASTA, only format that is accepted
-    (tested with v0.3.0)
-    """
-    input:
-        'input/fastq/{file_name}.fastq.gz'
-    output:
-        'input/fasta/{file_name}.fasta'
-    log:
-        'log/input/fastq/{file_name}.fa-dump.log'
-    benchmark:
-        'rsrc/input/fastq/{file_name}.fa-dump.rsrc'
-    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
-    resources:
-        runtime_hrs = lambda wildcards, attempt: 8 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 8192 + 4096 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 8192 + 4096 * attempt
-    conda:
-         '../environment/conda/conda_pyscript.yml'
-    params:
-        script_exec = lambda wildcards: find_script_path('dump_shasta_fasta.py'),
-        buffer_limit = 8  # gigabyte
-    shell:
-        '{params.script_exec} --debug --buffer-size {params.buffer_limit} '
-            ' --input-fq {input} --output-fa {output} &> {log}'
-
-
-rule dump_shasta_haploid_fasta:
-    """
-    Despite the docs saying that (gzipped) fastq can be used
-    as input to Shasta, Shasta complains about it...
-    Dump to single-line (!) FASTA, only format that is accepted
-    (tested with v0.3.0)
-    """
-    input:
-        '{file_path}/haploid_fastq/{file_name}.fastq.gz'
-    output:
-        '{file_path}/haploid_fasta/{file_name}.fasta'
-    log:
-        'log/{file_path}/haploid_fastq/{file_name}.fa-dump.log'
-    benchmark:
-        'rsrc/{file_path}/haploid_fastq/{file_name}.fa-dump.rsrc'
-    message: 'DEPRECATED: Shasta >= 0.4.0 now supports gzipped fastq'
-    resources:
-        runtime_hrs = lambda wildcards, attempt: 1 if attempt <= 1 else 2 * attempt,
-        mem_total_mb = lambda wildcards, attempt: 4096 + 4096 * attempt,
-        mem_per_cpu_mb = lambda wildcards, attempt: 4096 + 4096 * attempt
-    conda:
-         '../environment/conda/conda_pyscript.yml'
-    params:
-        script_exec = lambda wildcards: find_script_path('dump_shasta_fasta.py'),
-        buffer_limit = 4  # gigabyte
-    shell:
-        '{params.script_exec} --debug --buffer-size {params.buffer_limit} '
-            ' --input-fq {input} --output-fa {output} &> {log}'
 
 
 rule samtools_index_fasta:
