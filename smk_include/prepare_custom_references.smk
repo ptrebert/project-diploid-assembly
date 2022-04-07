@@ -266,32 +266,6 @@ def collect_clustered_fasta_sequences(wildcards, glob_collect=False, caller='sna
     return sorted(fasta_files)
 
 
-# DEPRECATED
-# rule write_reference_fasta_clusters_fofn:
-#     """
-#     Local rule with minimal overhead - properly collect checkpoint output
-#     """
-#     input:
-#         fasta = collect_clustered_fasta_sequences
-#     output:
-#         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
-#     run:
-#         try:
-#             validate_checkpoint_output(input.fasta)
-#             fasta_files = input.fasta
-#         except (RuntimeError, ValueError) as error:
-#             import sys
-#             sys.stderr.write('\n{}\n'.format(str(error)))
-#             fasta_files = collect_clustered_fasta_sequences(wildcards, glob_collect=True, caller='write_reference_fasta_clusters_fofn')
-
-#         with open(output.fofn, 'w') as dump:
-#             for file_path in sorted(fasta_files):
-#                 if not os.path.isfile(file_path):
-#                     import sys
-#                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-#                 _ = dump.write(file_path + '\n')
-
-
 rule run_gba_rescue:
     """
     For contigs that cannot be clustered by Strand-seq,
@@ -356,7 +330,7 @@ rule write_clustered_split_fasta:
         table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
         nhr_fasta = 'output/reference_assembly/non-hap-res/{hap_reads}_nhr-{assembler}.fasta',
     output:
-        fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta-split.fa'.format(config['git_commit_version'])
+        fasta = protected('output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta-split.fa'.format(config['git_commit_version']))
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
         mem_total_mb = lambda wildcards, attempt: 8192 * attempt,
@@ -427,7 +401,7 @@ rule write_clustered_concat_fasta:
         table = 'output/statistics/clustering/{sseq_reads}/{hap_reads}_nhr-{assembler}.cluster-info.tsv',
         split_fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta-split.fa'.format(config['git_commit_version'])
     output:
-        fasta = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta'.format(config['git_commit_version']),
+        fasta = protected('output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.fasta'.format(config['git_commit_version'])),
         cluster_ids = 'output/reference_assembly/clustered/{{sseq_reads}}/{{hap_reads}}_scV{}-{{assembler}}.cluster-ids.txt'.format(config['git_commit_version'])
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: 8192 * attempt,
@@ -494,47 +468,6 @@ rule write_clustered_concat_fasta:
         with open(output.cluster_ids, 'w') as dump:
             _ = dump.write('\n'.join(dumped_clusters) + '\n')
     # END OF RUN BLOCK
-
-
-# rule write_reference_fasta_clusters_fofn:
-#     """
-#     Collect output of SaaRclust-ering
-#     NB: reference here is "nhr" assembly
-
-#     The "clusters.fofn" output is processed internally - if available - in the function
-#     aux_utilities::estimate_number_of_saarclusters
-
-#     """
-#     input:
-#         fasta_dir = 'output/reference_assembly/clustered/temp/saarclust/results/{reference}/{sseq_reads}/clustered_assembly',
-#         fasta_ref = 'output/reference_assembly/non-hap-res/{reference}.fasta',
-#     output:
-#         fofn = 'output/reference_assembly/clustered/temp/saarclust/{sseq_reads}/{reference}.clusters.fofn'
-#     run:
-#         import os
-#         import sys
-
-#         show_warnings = bool(config.get('show_warnings', False))
-
-#         if not os.path.isdir(input.fasta_dir):
-#             raise RuntimeError('SaaRclust output folder does not exist: {}'.format(input.fasta_dir))
-
-#         cluster_files = []
-#         for file_name in os.listdir(input.fasta_dir):
-#             if not file_name.endswith('.fasta'):
-#                 continue
-#             if 'cluster99' in file_name:
-#                 if show_warnings:
-#                     sys.stderr.write('SaaRclust / cluster99 detected for sample {} / {}\n'.format(wildcards.reference, wildcards.sseq_reads))
-#                 continue
-#             file_path = os.path.join(input.fasta_dir, file_name)
-#             cluster_files.append(file_path)
-        
-#         if not cluster_files:
-#             raise RuntimeError('No FASTA cluster files detected in SaaRclust output directory: {}'.format(input.fasta_dir))
-        
-#         with open(output.fofn, 'w') as fofn:
-#             _ = fofn.write('\n'.join(sorted(cluster_files)))
 
 
 # rule check_max_cluster_size:

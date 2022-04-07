@@ -291,7 +291,7 @@ rule strandseq_dga_split_merge_assembled_cluster_fastas:
     input:
         fofn = 'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fofn'
     output:
-         'output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fasta'
+        protected('output/' + PATH_STRANDSEQ_DGA_SPLIT + '/draft/haploid_assembly/{hap_reads}-{assembler}.{hap}.fasta')
     params:
         cluster_fastas = lambda wildcards, input: load_fofn_file(input)
     priority: 1000

@@ -304,7 +304,7 @@ rule convert_nonhapres_gfa_to_fasta:
         paf_gz = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}.ava-reads.paf.gz',
         fasta_gz = 'output/reference_assembly/non-hap-res/layout/hifiasm/{sample}.ec-reads.fasta.gz',
     output:
-        fasta = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.fasta',
+        fasta = protected('output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.fasta'),
         rc_map = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.read-contig.map',
         stats = 'output/reference_assembly/non-hap-res/{sample}_nhr-hifiasm.contig.stats',
     log:
