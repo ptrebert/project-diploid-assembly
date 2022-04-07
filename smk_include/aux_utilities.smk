@@ -336,24 +336,6 @@ rule generate_bwa_index:
         'bwa index -p {params.prefix} {input.reference} &> {log}'
 
 
-rule singularity_pull_container:
-    input:
-        'output/check_files/environment/singularity_version.ok'
-    output:
-        'output/container/{hub}/{repo}/{tool}_{version}.sif'
-    log:
-        'log/output/container/{hub}/{repo}/{tool}_{version}.pull.log'
-    envmodules:
-        config['env_module_singularity']
-    params:
-        pull_folder = lambda wildcards: os.path.join(os.getcwd(), 'output', 'container', wildcards.hub, wildcards.repo),
-        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
-    shell:
-        '{params.singularity}'
-        'SINGULARITY_PULLFOLDER={params.pull_folder} singularity pull '
-            '{wildcards.hub}://{wildcards.repo}/{wildcards.tool}:{wildcards.version} &> {log}'
-
-
 def get_revcomp_translation_table():
     """
     Non-canonical chars (nucleotides) are returned unchanged

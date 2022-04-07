@@ -7,6 +7,8 @@ show_warnings: False
 
 env_module_singularity: Singularity
 
+container_store: /gpfs/project/projects/medbioinf/container
+
 num_cpu_max: 72
 num_cpu_high: 24
 num_cpu_medium: 12

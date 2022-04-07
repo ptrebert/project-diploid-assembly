@@ -220,7 +220,6 @@ rule call_variants_deepvariant:
     after variant calling).
     """
     input:
-        container = 'output/container/docker/google/deepvariant_{}.sif'.format(config['deepvariant_version']),
         reference = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta',
         ref_idx = 'output/reference_assembly/clustered/{sseq_reads}/{reference}.fasta.fai',
         seq_info = 'output/reference_assembly/clustered/{sseq_reads}/{reference}/sequences/{sequence}.seq',
@@ -235,26 +234,21 @@ rule call_variants_deepvariant:
         os.path.join('rsrc/output/variant_calls/deepvar',
                      '{reference}/{sseq_reads}/processing/10-norm/splits',
                      '{vc_reads}.{sequence}' + '.t{}.rsrc'.format(config['num_cpu_medium']))
-    envmodules:
-        config['env_module_singularity']
+    singularity:
+        f'{config["container_store"]}/{config["deepvariant"]}'
     threads: config['num_cpu_medium']
     resources:
         mem_per_cpu_mb = lambda wildcards, attempt: int((16384 + (max(attempt - 1, 0) * 16384)) / config['num_cpu_medium']),
         mem_total_mb = lambda wildcards, attempt: 16384 + (max(attempt - 1, 0) * 16384),
         runtime_hrs = lambda wildcards, attempt: attempt * attempt * attempt
     params:
-        bind_folder = lambda wildcards: os.getcwd(),
-        temp_dir = lambda wildcards: os.path.join('/tmp', 'deepvariant', wildcards.reference, wildcards.sseq_reads, wildcards.vc_reads, wildcards.sequence),
         use_hap_info = '--nouse_hp_information' if config['git_commit_version'] > 12 else '',
-        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
-        '{params.singularity}'
-        'singularity --debug run --bind {params.bind_folder}:/wd {input.container} /opt/deepvariant/bin/run_deepvariant '
-            ' --model_type=PACBIO  --ref=/wd/{input.reference} --reads=/wd/{input.read_ref_aln} '
-            ' --regions "{wildcards.sequence}" --output_vcf=/wd/{output.vcf} --output_gvcf=/wd/{output.gvcf} '
+        '/opt/deepvariant/bin/run_deepvariant '
+            ' --model_type="PACBIO"  --ref={input.reference} --reads={input.read_ref_aln} '
+            ' --regions "{wildcards.sequence}" --output_vcf={output.vcf} --output_gvcf={output.gvcf} '
             ' {params.use_hap_info} --novcf_stats_report '
-            ' --intermediate_results_dir="{params.temp_dir}" --num_shards={threads} &> {log} ; '
-        'rm -rfd {params.temp_dir} ; '
+            ' --intermediate_results_dir=$TMPDIR --num_shards={threads} &> {log}'
 
 
 rule filter_variant_calls_quality_biallelic_snps:
@@ -407,32 +401,6 @@ def collect_final_vcf_splits(wildcards, glob_collect=True, caller='snakemake'):
     return vcf_files
 
 
-# DEPRECATED
-# rule write_final_vcf_splits:
-#     input:
-#         vcf_splits = collect_final_vcf_splits
-#     output:
-#         fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}_GQ{gq}/{vc_reads}.snv.fofn'
-#     run:
-#         import os
-
-#         try:
-#             validate_checkpoint_output(input.vcf_splits)
-#             vcf_splits = input.vcf_splits
-#         except (RuntimeError, ValueError) as error:
-#             import sys
-#             sys.stderr.write('\n{}\n'.format(str(error)))
-#             vcf_splits = collect_final_vcf_splits(wildcards, glob_collect=True)
-
-
-#         with open(output.fofn, 'w') as dump:
-#             for file_path in sorted(vcf_splits):
-#                 if not os.path.isfile(file_path):
-#                     import sys
-#                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-#                 _ = dump.write(file_path + '\n')
-
-
 rule write_final_vcf_splits:
     input:
         vcf_splits = collect_final_vcf_splits
@@ -534,31 +502,6 @@ def collect_intermediate_vcf_splits(wildcards, glob_collect=True, caller='snakem
             )
 
     return vcf_files
-
-
-# DEPRECATED
-# rule write_intermediate_vcf_splits:
-#     input:
-#         vcf_splits = collect_intermediate_vcf_splits
-#     output:
-#         fofn = 'output/variant_calls/{var_caller}/{reference}/{sseq_reads}/QUAL{qual}/{vc_reads}.snv.fofn'
-#     run:
-#         import os
-
-#         try:
-#             validate_checkpoint_output(input.vcf_splits)
-#             vcf_splits = input.vcf_splits
-#         except (RuntimeError, ValueError) as error:
-#             import sys
-#             sys.stderr.write('\n{}\n'.format(str(error)))
-#             vcf_splits = collect_intermediate_vcf_splits(wildcards, glob_collect=True)
-
-#         with open(output.fofn, 'w') as dump:
-#             for file_path in sorted(vcf_splits):
-#                 if not os.path.isfile(file_path):
-#                     import sys
-#                     sys.stderr.write('\nWARNING: File missing, may not be created yet - please check: {}\n'.format(file_path))
-#                 _ = dump.write(file_path + '\n')
 
 
 rule write_intermediate_vcf_splits:

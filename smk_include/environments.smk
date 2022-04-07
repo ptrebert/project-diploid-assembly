@@ -1,12 +1,12 @@
 
-localrules: create_cluster_log_folders
+localrules: create_cluster_log_folders, inspect_hpc_module_singularity, check_singularity_version
 
 
 rule create_cluster_log_folders:
     output:
         touch('output/check_files/environment/cluster_log_folders.ok')
     shell:
-        'mkdir -p log/cluster_jobs/stderr && mkdir -p log/cluster_jobs/stdout'
+        'mkdir -p log/cluster_jobs/err && mkdir -p log/cluster_jobs/out'
 
 
 rule create_conda_environment_shell_tools:
@@ -102,22 +102,29 @@ rule create_conda_environment_pyscript:
 
 
 rule inspect_hpc_module_singularity:
+    """
+    Update 2022-04-07
+    Using the new/default HILBERT profile includes loading
+    the Singularity module for all cluster jobs.
+    """
     output:
         'output/check_files/environment/module_singularity.ok'
     log:
         'log/output/check_files/environment/module_singularity.log'
     params:
         script_exec = lambda wildcards: find_script_path('inspect_environment.py', 'utilities'),
-        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     envmodules:
         config['env_module_singularity']
     shell:
-        '{params.singularity}'
         '{params.script_exec} '
         '--outfile {output} --logfile {log}'
 
 
 rule check_singularity_version:
+    """
+    Update 2022-04-07
+    (same as above; inspect_hpc_module_singularity)
+    """
     input:
         'output/check_files/environment/module_singularity.ok'
     output:
@@ -129,9 +136,7 @@ rule check_singularity_version:
     params:
         script_exec = lambda wildcards: find_script_path('version_checker.py', 'utilities'),
         min_version = '3.1.0',  # due to container format change between v2 and v3
-        singularity = '' if not config.get('env_module_singularity', False) else 'module load {} ; '.format(config['env_module_singularity'])
     shell:
-        '{params.singularity}'
         'singularity --version | '
         '{params.script_exec} '
         '--outfile {output} --logfile {log} '

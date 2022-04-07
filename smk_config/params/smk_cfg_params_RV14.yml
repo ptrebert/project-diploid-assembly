@@ -21,9 +21,7 @@ git_commit_version: 14
 # ENA bioprojects needed for HGSVC2 data)
 use_legacy_data_scraping: false
 
-peregrine_version: 0.1.6.1
-deepvariant_version: 1.2.0
-shasta_version: 0.5.0
+deepvariant: deepvariant_v1.2.0.sif
 
 # Long read preprocessing
 check_hifi_adapter_contamination: true
