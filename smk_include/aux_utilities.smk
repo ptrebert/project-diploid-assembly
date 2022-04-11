@@ -176,6 +176,21 @@ rule bcftools_index_bgzipped_file:
         'bcftools index --tbi {input}'
 
 
+rule compute_genome_id:
+    input:
+        '{filepath}.fasta'
+    output:
+        '{filepath}.gid.tsv'
+    conda:
+         '../environment/conda/conda_pyscript.yml'
+    resources:
+        mem_total_mb = lambda wildcards, attempt: 1024 * attempt
+    params:
+        script_exec = lambda wildcards: find_script_path('genome_id.py', 'utilities')
+    shell:
+        '{params.script_exec} --describe --genome {input.fasta} --output {output}'
+
+
 rule create_assembly_sequence_files:
     """
     Converted from checkpoint to regular rule to get rid of

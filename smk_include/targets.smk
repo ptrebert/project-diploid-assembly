@@ -26,6 +26,11 @@ TARGET_PATHS = {
         "{hap_reads}_nhr-{nhr_assembler}.fasta"
     ),
 
+    "GENOME_ID_NHR_ASSEMBLY": os.path.join(
+        "output", "reference_assembly", "non-hap-res",
+        "{hap_reads}_nhr-{nhr_assembler}.gid.tsv"
+    ),
+
     # this target is only triggered for samples
     # that specify "library_qc: auto" in the
     # sample config
@@ -40,6 +45,12 @@ TARGET_PATHS = {
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}.fasta",
     ),
 
+    "GENOME_ID_CLUSTERED_ASSEMBLY": os.path.join(
+        "output", "reference_assembly", "clustered",
+        "{sseq_reads}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}.gid.tsv",
+    ),
+
     "BUILD_DRAFT_HAPLOID_ASSEMBLY": os.path.join(
         "output", "diploid_assembly",
         "strandseq_{hap_assm_mode}",
@@ -49,6 +60,17 @@ TARGET_PATHS = {
         "{sseq_reads}",
         "draft", "haploid_assembly",
         "{hap_reads}-{hap_assembler}.{hap}.fasta"
+    ),
+
+    "GENOME_ID_DRAFT_HAPLOID_ASSEMBLY": os.path.join(
+        "output", "diploid_assembly",
+        "strandseq_{hap_assm_mode}",
+        "{var_caller}_QUAL{filter_vcf_qual}_GQ{filter_vcf_gq}",
+        "{hap_reads}_scV{git_commit_version}-{nhr_assembler}",
+        "{vc_reads}",
+        "{sseq_reads}",
+        "draft", "haploid_assembly",
+        "{hap_reads}-{hap_assembler}.{hap}.gid.tsv"
     ),
 
     "BUILD_POLISHED_HAPLOID_ASSEMBLY": os.path.join(
