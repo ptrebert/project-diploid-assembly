@@ -13,12 +13,13 @@ sample_description_NA19320:
         data_type: fastq
         load_type: parts
         data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_hifi/GM19320/
-#    - strandseq:
-#        readset: &sseq_reads NA19320_hgsvc_ilnxs-80pe_sseq
-#        library_fractions: one
-#        library_qc: yes
-#        data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19320/
-#        comment: "cell growth issues, may be dropped"
+    - strandseq:
+       readset: &sseq_reads NA19320_hgsvc_ilnxs-80pe_sseq
+       library_fractions: one
+       library_qc: yes
+       data_source_folder: /gpfs/project/projects/medbioinf/data/hgsvc_strandseq/GM19320/
+       data_source_filter: ".txt.gz"
+       comment: "cell growth issues, may be dropped"
     - short_reads:
         readset: &short_reads NA19320_1kg_ilnvs-150pe_short
         source_type: ena
@@ -32,7 +33,7 @@ sample_targets_NA19320:
   - defaults:
       hap_reads: *ccs_reads
       vc_reads: *ccs_reads
-#      sseq_reads: *sseq_reads
+      sseq_reads: *sseq_reads
       hap_assm_mode: split
       hap:
         - h1-un
