@@ -188,7 +188,7 @@ rule compute_genome_id:
     params:
         script_exec = lambda wildcards: find_script_path('genome_id.py', 'utilities')
     shell:
-        '{params.script_exec} --describe --genome {input.fasta} --output {output}'
+        '{params.script_exec} --describe --genome {input} --output {output}'
 
 
 rule create_assembly_sequence_files:
