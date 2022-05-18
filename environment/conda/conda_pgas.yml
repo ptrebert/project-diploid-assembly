@@ -1,14 +1,13 @@
 name: pgas
 dependencies:
-  - Python=3.7.*
+  - Python=3.8.*
   - pip
   - openssl
-  - Snakemake=6.4.1
-  - drmaa=0.7.9
+  - Snakemake=7.6.2
   - pyyaml=5.3
-  - pandas=1.2.3
-  - pytables=3.6.1
+  - pandas=1.4.*
+  - pytables=3.6.*
   - intervaltree=3.0.2
-  - pulp=2.4
-  - coincbc=2.10.5
-  - mamba=0.14
+  - pulp=2.6.*
+  - coincbc=2.10.*
+  - mamba=0.23.*
