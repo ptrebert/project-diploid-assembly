@@ -1,27 +1,27 @@
 name: biotools
 dependencies:
-  - Python=3.6.*
-  - pip=19.2.3
-  - openssl=1.1.1k=h7f98852_0
-  - gxx_impl_linux-64=7.3.0
-  - gxx_linux-64=7.3.0
-  - ld_impl_linux-64=2.33.1
-  - libboost=1.73.0
-  - libblas=3.8.0
-  - libcblas=3.8.0
-  - liblapack=3.8.0
-  - libopenblas=0.3.6
+  - Python
+  - pip
+  - openssl
+  - gxx_impl_linux-64
+  - gxx_linux-64
+  - ld_impl_linux-64
+  - libboost
+  - libblas
+  - libcblas
+  - liblapack
+  - libopenblas
   - libgfortran-ng
   - libstdcxx-ng
   - libxml2=2.9.9
-  - lp_solve=5.5.2.5
-  - openblas=0.3.6
-  - make=4.2.1
+  - lp_solve
+  - openblas
+  - make
   - seqtk=1.3
   - blast=2.5.0
   - bwa=0.7.17
   - minimap2=2.24
-  - wfmash=0.7
+  #- wfmash=0.7
   - _libgcc_mutex
   - libgomp
   - _openmp_mutex
@@ -29,22 +29,22 @@ dependencies:
   - meryl=1.3
   - winnowmap=2.03
   - mummer4
-  - sambamba=0.8.0
-  - ldc=1.20.0
-  - htslib=1.10.2
-  - libdeflate=1.6
-  - pysam=0.16.0
-  - samtools=1.10
+  - sambamba=0.8.1
+  - ldc
+  - htslib=1.12
+  - libdeflate=1.7
+  - pysam=0.16.0.1
+  - samtools=1.12
   - bamtools=2.5.1
   - bedtools=2.30.0
   - bedops=2.4.37
-  - bcftools=1.10
+  - bcftools=1.12
   - fastqc=0.11.8
-  - freebayes=1.3.1
+  #- freebayes=1.3.1
   - longshot=0.4.1
 #  - deepvariant=1.1.0
-  - flye=2.9
-  - hifiasm=0.16.1
+  #- flye=2.9
+  - hifiasm=0.19.2
   - yak=0.1
   - racon=1.4.10
   - lighter=1.1.2
@@ -53,9 +53,9 @@ dependencies:
   - cutadapt=2.10
   - trim-galore=0.6.5
   - fastp=0.20.1
-  - mbg=1.0.7
-  - graphaligner=1.0.13
-  - vg=1.36.0
+  #- mbg=1.0.7
+  #- graphaligner=1.0.13
+  #- vg=1.36.0
   - gfatools=0.5
   - ucsc-bedgraphtobigwig=377
   - ucsc-bigwigaverageoverbed=377
