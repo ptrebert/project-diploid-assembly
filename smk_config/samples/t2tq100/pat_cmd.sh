@@ -1,0 +1,1 @@
+snakemake  -d ../wd --configfiles smk_config/params/smk_cfg_params_RV14.yml smk_config/run_env/smk_cfg_env-hhu.yml t2tpat_sample.yaml --profile /gpfs/project/projects/medbioinf/projects/t2tq100/wd/prf_RFDGA --config select_target_path=STATS_INTEGRATIVE_PHASING --restart-times 3 -n

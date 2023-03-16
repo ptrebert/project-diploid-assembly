@@ -1,0 +1,11 @@
+link_data_input:
+  - /gpfs/project/projects/medbioinf/projects/t2tq100/HG002_t2tq100_pbsq2-ccs_1000_nhr-matYv07.fasta
+  - /gpfs/project/projects/medbioinf/projects/t2tq100/HG002_t2tq100_pbsq2-ccs_1000_nhr-matYv07.fasta
+
+link_data_output:
+  - output/reference_assembly/non-hap-res/HG002_t2tq100_pbsq2-ccs_1000_nhr-matYv07.fasta
+  - output/reference_assembly/clustered/HG002_t2tq100_ilnxs-80pe_sseq/HG002_t2tq100_pbsq2-ccs_1000_scV14-matYv07.fasta
+
+# this is needed when working with
+# Singularity containers
+force_local_copy: True

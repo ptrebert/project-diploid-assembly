@@ -1,0 +1,41 @@
+
+sample_description_HG002:
+  individual: HG002
+  sex: male
+  super_population: EUR
+  population: ASK
+  family: 3140
+  member: child
+  data_sources:
+    - long_reads:
+        readset: HG002_t2tq100_pbsq2-ccs
+        technology: pacbio
+        data_type: fastq
+        load_type: parts
+        data_source_folder: /gpfs/project/projects/medbioinf/data/00_RESTRUCTURE/project-centric/unknown/pacbio/NA24385_HG002/uwash_eee_hifi
+    - strandseq:
+        readset: &sseq_reads HG002_t2tq100_ilnxs-80pe_sseq
+        library_fractions: one
+        data_source_folder: /gpfs/project/projects/medbioinf/data/hprc_plus/strandseq/HG002_NA24385/selected/
+        library_qc: no
+        comment: "github.com/human-pangenomics/HG002_Data_Freeze_v1.0#strand-seq"
+
+sample_targets_HG002:
+  - aliases:
+      1: &ccs_reads HG002_t2tq100_pbsq2-ccs_1000
+  - defaults:
+      hap_reads: *ccs_reads
+      vc_reads: *ccs_reads
+      sseq_reads: *sseq_reads
+      hap_assm_mode: split
+      hap:
+        - h1-un
+        - h2-un
+  - target:
+      nhr_assembler: patYv07
+      var_caller: deepvar
+
+# 22+X+Y+M+EBV
+# only 1-22 yield results
+# for a hap reference
+num_cluster_slack: 2
