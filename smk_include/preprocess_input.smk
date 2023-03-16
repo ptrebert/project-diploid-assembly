@@ -176,9 +176,10 @@ rule merge_fastq_input_parts:
         mrg_sample = CONSTRAINT_PARTS_FASTQ_INPUT_SAMPLES
     conda:
         '../environment/conda/conda_shelltools.yml'
-    threads: config['num_cpu_low']
+    threads: config['num_cpu_medium']
     resources:
-        runtime_hrs = lambda wildcards, attempt: attempt * attempt
+        runtime_hrs = lambda wildcards, attempt: 8 * attempt,
+        mem_total_mb = lambda wildcards, attempt: 2048 * attempt
     params:
         fastq_parts = lambda wildcards, input: load_fofn_file(input),
         threads = lambda wildcards: config['num_cpu_low'] // 2
@@ -453,3 +454,4 @@ rule relink_complete_short_read_input_samples:
         fastq_parts = lambda wildcards, input: load_fofn_file(input)
     shell:
         'ln --symbolic --relative {params.fastq_parts} {output}'
+
