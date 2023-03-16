@@ -157,7 +157,7 @@ rule install_rlib_saarclust:
         version = config['git_commit_saarclust'],
         repo = config.get('git_repo_saarclust', '')
     resources:
-        mem_total_mb = 4096,
+        mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
         mem_per_cpu_mb = 4096
     shell:
         'LC_MEASUREMENT=C TAR=$(which tar) {params.script_exec} {params.version} {params.repo} &> {log}'
@@ -183,7 +183,7 @@ rule install_rlib_breakpointr:
     conda:
         '../environment/conda/conda_rscript.yml'
     resources:
-        mem_total_mb = 4096,
+        mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
         mem_per_cpu_mb = 4096
     params:
         script_exec = lambda wildcards: find_script_path('install_breakpointr.R'),
@@ -203,7 +203,7 @@ rule install_rlib_strandphaser:
     conda:
         '../environment/conda/conda_rscript.yml'
     resources:
-        mem_total_mb = 4096,
+        mem_total_mb = lambda wildcards, attempt: 2048 + 2048 * attempt,
         mem_per_cpu_mb = 4096
     params:
         script_exec = lambda wildcards: find_script_path('install_strandphaser.R'),
@@ -222,3 +222,4 @@ rule download_quast_busco_databases:
         '../environment/conda/conda_rtools.yml'
     shell:
         'quast-download-busco &> {output}'
+

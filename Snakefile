@@ -34,7 +34,7 @@ wildcard_constraints:
     var_caller = '(freebayes|longshot|deepvar)',
     # allowed assembly tools
     # regexp [a-z0-9]+ to link pre-computed collapsed assemblies
-    assembler = '(wtdbg|canu|flye|hifiasm|[a-z0-9]+)',
+    assembler = '(wtdbg|canu|flye|hifiasm|[A-Za-z0-9]+)',
     # polisher
     polisher = '(arrow|racon)',
     pol_pass ='(arrow|racon)\-p[12]',
@@ -45,10 +45,10 @@ wildcard_constraints:
     # haplotype identifier
     hap = '[h12un\-]+',
     # sequence = chromosome, contig, cluster etc.
-    sequence = '[A-Za-z0-9]+',
+    sequence = '[A-Za-z0-9_]+',
     # For files that may or may not be just a split (chrom, contig etc.)
     # of the complete file, can carry a qualifier after the "hap"
-    split = '(^$|^\.[A-Za-z0-9]+)',
+    split = '(^$|^\.[A-Za-z0-9_]+)',
     # Some generic constraints to enforce a more consistent naming scheme
     folder_path = '[A-Za-z0-9\-_\/]+',  # note: "." is NOT allowed in a folder path
     file_name = '[A-Za-z0-9\-_\.]+',
