@@ -705,7 +705,7 @@ NA19472	female	NA19472	unspecified	LWK	AFR	#FFD845	"Luhya in Webuye, Kenya"	1KGP
 NA19473	female	NA19473	unspecified	LWK	AFR	#FFD845	"Luhya in Webuye, Kenya"	1KGP
 NA19474	female	NA19474	unspecified	LWK	AFR	#FFD845	"Luhya in Webuye, Kenya"	1KGP
 NA19475	female	NA19475	unrelated	LWK	AFR	#FFD845	"Luhya in Webuye, Kenya"	1KGP
-NA21485	female	2618	father	MKK	AFR	#FFD845	"Maasai in Kinyawa, Kenya"	HAPMAP
+NA21485	male	2618	father	MKK	AFR	#FFD845	"Maasai in Kinyawa, Kenya"	HAPMAP
 NA21486	female	2618	mother	MKK	AFR	#FFD845	"Maasai in Kinyawa, Kenya"	HAPMAP
 NA21487	female	2618	child	MKK	AFR	#FFD845	"Maasai in Kinyawa, Kenya"	HAPMAP
 HG03052	female	SL01	mother	MSL	AFR	#FFD845	"Mende in Sierra Leone"	1KGP
@@ -2176,7 +2176,7 @@ HG02523	female	VN090	child	KHV	EAS	#778500	"Kinh in Ho Chi Minh City, Vietnam"	1
 HG02524	male	VN91	father	KHV	EAS	#778500	"Kinh in Ho Chi Minh City, Vietnam"	1KGP
 HG02525	female	VN91	mother	KHV	EAS	#778500	"Kinh in Ho Chi Minh City, Vietnam"	1KGP
 HG02526	female	VN91	child	KHV	EAS	#778500	"Kinh in Ho Chi Minh City, Vietnam"	1KGP
-NA24143	male	3140	mother	ASK	EUR	#018EAD	"Eastern European Ashkenazi Jewish Ancestry"	GIAB
+NA24143	female	3140	mother	ASK	EUR	#018EAD	"Eastern European Ashkenazi Jewish Ancestry"	GIAB
 NA24149	male	3140	father	ASK	EUR	#018EAD	"Eastern European Ashkenazi Jewish Ancestry"	GIAB
 NA24385	male	3140	child	ASK	EUR	#018EAD	"Eastern European Ashkenazi Jewish Ancestry"	GIAB
 NA06984	male	1328	father	CEU	EUR	#018EAD	"Utah residents with Northern and Western European ancestry"	1KGP
