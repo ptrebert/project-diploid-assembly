@@ -190,7 +190,7 @@ rule compute_genome_id:
     shell:
         '{params.script_exec} --describe --genome {input} --output {output}'
 
-
+localrules: create_assembly_sequence_files
 rule create_assembly_sequence_files:
     """
     Converted from checkpoint to regular rule to get rid of
@@ -335,14 +335,37 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False,
         # need to subtract the IDs of dropped clusters
         dropped_fofn_path = 'output/reference_assembly/clustered/{sseq_reads}/{readset}_scV{version}-*.dropped-clusters.err'.format(**formatter)
 
+    # DEBUG for T2T-Q100
+    # glob expression too unspecific
+    ASSEMBLER = "patYv07"
+    # DEBUG END
+
     if DEBUG:
         sys.stderr.write(f'Checking cluster fofn path: {cluster_fofn_path}\n')
     cluster_fofn_matches = glob.glob(cluster_fofn_path)
+    # DBEUG T2T-Q100
+    sys.stderr.write("\nDEBUG OP FOR T2T-Q100 RUN\n")
+    cluster_fofn_matches = [fp for fp in cluster_fofn_matches if ASSEMBLER in fp]
+    print(cluster_fofn_matches)
+    # DEBUG END
+
     if len(cluster_fofn_matches) == 1:
         cluster_fofn = cluster_fofn_matches[0]
         if DEBUG:
             sys.stderr.write('... glob succeeded\n')
     else:
+        print(config)
+        sample_targets = config[f"sample_targets_{sample_name}"]
+        print(sample_targets)
+        for target_spec in sample_targets:
+            print(type(target_spec))
+            for key, vals in target_spec.items():
+                print(type(vals))
+                if key == "target":
+                    print(vals)
+                else:
+                    print("skip ", key)
+        raise RuntimeError(cluster_fofn_matches)
         if len(cluster_fofn_matches) > 1:
             if WARN:
                 sys.stderr.write('WARNING: ambiguous match for sequence cluster fofn file: {}\n'.format(', '.join(cluster_fofn_matches)))
@@ -351,15 +374,23 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False,
     if cluster_fofn is not None and os.path.isfile(cluster_fofn):
         if DEBUG:
             sys.stderr.write('Loading number of clusters from fofn: {}\n'.format(cluster_fofn))
-        num_clusters_slack = int(config.get('num_cluster_slack', 1))
+        num_clusters_slack = int(config.get('num_cluster_slack', 2))
         default_clusters = int(config.get('num_default_clusters', 24))
         subtract_clusters = set()
         # check if dropped_clusters exists
         dropped_fofn_matches = glob.glob(dropped_fofn_path)
+
+        # DEBUG: same as above
+        sys.stderr.write("\nDEBUG OP FOR T2T-Q100 RUN\n")
+        dropped_fofn_matches = [fp for fp in dropped_fofn_matches if ASSEMBLER in fp]
+        print(dropped_fofn_matches)
+        # DEBUG END
+
         if len(dropped_fofn_matches) == 1:
             dropped_fofn = dropped_fofn_matches[0]
             with open(dropped_fofn, 'r') as listing:
                 subtract_clusters = set(l.strip() for l in listing if l.strip())
+        print(subtract_clusters)
         # probably best case: cluster fofn has already been created
         with open(cluster_fofn, 'r') as fofn:
             for line in fofn:
@@ -371,8 +402,11 @@ def estimate_number_of_saarclusters(sample_name, sseq_reads, return_names=False,
                 # contains only the cluster names, and not the complete file paths because
                 # the SaaRclust output is post-processed.
                 cluster_names.add(line.strip())
+        print(cluster_names)
         cluster_names = sorted(cluster_names - subtract_clusters)
+        print(cluster_names)
         fofn_clusters = len(cluster_names)
+        print(fofn_clusters)
         if fofn_clusters < default_clusters - num_clusters_slack:
             raise ValueError(f'ERROR: number of clusters loaded from FOFN file {cluster_fofn} is too small. Delete this file and restart the pipeline')
         num_clusters = fofn_clusters
@@ -471,7 +505,7 @@ def check_cluster_no_variants(cluster_vcf_stats):
         for line in table:
             if 'HET-SNV_num' in line:
                 record, number = line.strip().split()
-                cluster_id = record.strip('_HET-SNV_num')
+                cluster_id = record.replace('_HET-SNV_num', '').strip()
                 if int(number) == 0:
                     no_variant_clusters.add(cluster_id)
     return no_variant_clusters
