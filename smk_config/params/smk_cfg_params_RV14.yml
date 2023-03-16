@@ -21,10 +21,10 @@ git_commit_version: 14
 # ENA bioprojects needed for HGSVC2 data)
 use_legacy_data_scraping: false
 
-deepvariant: deepvariant_v1.2.0.sif
+deepvariant: deepvariant_1.5.0.sif
 
 # Long read preprocessing
-check_hifi_adapter_contamination: true
+check_hifi_adapter_contamination: false
 
 # for Strand-seq library QC: fail if there are less than
 # N (>1) usable [acceptable quality] Strand-seq libraries for assembly
