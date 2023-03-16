@@ -219,7 +219,7 @@ rule strandphaser_fix_inversion_phasing:
             ' {input.strandphaser_data} {params.vcf_dir} {input.variant_calls} '
             ' {input.reference} {output.stats_out} {params.version} &> {log.stp}'
 
-
+localrules: write_strandphaser_split_vcf_fofn
 rule write_strandphaser_split_vcf_fofn:
     """
     2021-05-22 - PGAS v13 (needs to be checked if Strand-seq R tools are updated):
