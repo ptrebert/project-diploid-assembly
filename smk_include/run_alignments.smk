@@ -201,8 +201,8 @@ rule pbmm2_reads_to_reference_alignment_pacbio_fastq:
                                         wildcards.sample, wildcards.reference)
     shell:
         'mkdir -p {params.tempdir} && TMPDIR={params.tempdir} '
-        'pbmm2 align --log-level DEBUG --sort --sort-memory {resources.mem_per_cpu_mb}M --no-bai '
-            ' --alignment-threads {params.align_threads} --sort-threads {params.sort_threads} '
+        'pbmm2 align --log-level DEBUG --sort --sort-memory {resources.mem_per_cpu_mb}M --bam-index NONE '
+            ' --num-threads {params.align_threads} --sort-threads {params.sort_threads} '
             ' --preset {params.preset} --rg "@RG\\tID:1\\tSM:{params.individual}" --sample {params.individual} '
             ' {input.reference} {input.reads} {output.bam} &> {log}'
 
