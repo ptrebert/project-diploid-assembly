@@ -169,7 +169,7 @@ def parse_command_line():
     return parser.parse_args()
 
 
-def compute_read_statistics(base_counts, read_counts, read_lengths, genome_length):
+def compute_read_statistics(base_counts, read_counts, read_lengths, genome_length, n50_length):
     """
     :param base_counts:
     :param read_counts:
@@ -199,11 +199,12 @@ def compute_read_statistics(base_counts, read_counts, read_lengths, genome_lengt
 
     sample_infos.append('Shortest read: {}'.format(read_lengths.min()))
     sample_infos.append('Longest read: {}'.format(read_lengths.max()))
+    sample_infos.append('N50 read length: {}'.format(n50_length))
 
     percentiles = np.cumsum(read_counts) / total_reads
     pct_values = []
     for pct in [0.25, 0.5, 0.75, 0.95]:
-        selector = np.array(percentiles > pct, dtype=np.bool)
+        selector = np.array(percentiles > pct, dtype=bool)
         min_len = read_lengths[selector].min()
         pct_values.append(min_len)
 
@@ -226,6 +227,15 @@ def create_read_length_axis(read_lengths, axis, cargs, genome_length):
     # Count number of bases per read length
     base_counts = np.array([read_lengths[l] * l for l in length_values])
 
+    # add quick read length N50 in case
+    # summary is missing from pickle input
+    total_base_count = base_counts.sum()
+    half_cov = total_base_count // 2
+    base_count_cumsum = base_counts.cumsum()
+    n50_length_idx = np.argwhere(base_count_cumsum > half_cov).min()
+    # NB here: length values were sorted above
+    n50_length = length_values[n50_length_idx]
+    
     base_count_bins = []
     read_count_bins = []
 
@@ -239,8 +249,8 @@ def create_read_length_axis(read_lengths, axis, cargs, genome_length):
 
     for l, h in zip(lower, higher):
         # TODO this strikes me as complicated - why did I do this?
-        select_low = np.array(length_values >= l, dtype=np.bool)
-        select_high = np.array(length_values < h, dtype=np.bool)
+        select_low = np.array(length_values >= l, dtype=bool)
+        select_high = np.array(length_values < h, dtype=bool)
         selector = np.logical_and(select_low, select_high)
         base_count_bins.append(base_counts[selector].sum())
         read_count_bins.append(read_counts[selector].sum())
@@ -251,6 +261,9 @@ def create_read_length_axis(read_lengths, axis, cargs, genome_length):
     x_pos = list(range(len(lower)))
     x_labels = list(map(str, [x // 1000 for x in lower[1:]]))
     x_labels = [x if i % cargs.every_nth == 0 else ' ' for i, x in enumerate(x_labels)]
+    if len(x_labels) < len(x_pos):
+        x_labels.append(" ")
+    assert len(x_labels) == len(x_pos)
 
     axis.bar(x_pos, base_count_bins, width=0.8, align='center', color=cargs.color)
     axis.set_xlabel('Read length < X kbp', fontsize=cargs.label_size)
@@ -270,6 +283,7 @@ def create_read_length_axis(read_lengths, axis, cargs, genome_length):
         read_counts,
         length_values,
         genome_length,
+        n50_length
     )
 
     return axis, tt, read_stats
@@ -326,16 +340,16 @@ def create_multi_panel_plot(cargs, stats, genome_length, logger):
     gc_ax, gc_ax_tt = create_gc_content_axis(stats['gc_bins'], gc_ax, cargs)
     rl_ax, rl_ax_tt, stats_text = create_read_length_axis(stats['len_stats'], rl_ax, cargs, genome_length)
 
-    if 'summary' in stats:
+    if 'summary' in stats and stats['summary'] is not None:
         logger.debug('Plotting summary info')
 
         plot_values = [t for t in stats['summary'] if t[0].startswith('cov_geq_')]
-        x_values = np.array([int(t[0].split('_')[-1]) for t in plot_values], dtype=np.float16)
+        x_values = np.array([int(t[0].split('_')[-1]) for t in plot_values], dtype=np.float32)
         if x_values[1] >= 1000:
             x_values /= 1000
             x_label = 'Read length > X kbp'
         else:
-            x_label = 'Read length > x bp'
+            x_label = 'Read length > X bp'
         x_values = x_values.astype(np.int32)
         txt_ax.set_xlabel(x_label, fontsize=cargs.label_size)
 
@@ -374,6 +388,7 @@ def create_multi_panel_plot(cargs, stats, genome_length, logger):
                     fontdict={
                         'fontsize': cargs.text_size,
                     }, linespacing=0.11 * cargs.text_size)
+        txt_ax_tt = txt_ax.set_title('', fontsize=cargs.title_size)
 
     return fig, [fig_tt, sb_ax_tt, gc_ax_tt, rl_ax_tt, txt_ax_tt]
 
@@ -416,7 +431,7 @@ def derive_genome_length(cargs, stats, logger):
     :param logger:
     :return:
     """
-    if 'genome_size' in stats:
+    if 'genome_size' in stats and stats['genome_size'] > 0:
         logger.debug('Using genome size from loaded pickle dump')
         genome_length = int(stats['genome_size'])
     elif os.path.isfile(cargs.genome_length):
@@ -467,7 +482,7 @@ def main(logger, cargs):
     os.makedirs(outpath, exist_ok=True)
     if cargs.output.endswith('.pdf'):
         logger.debug('Figure saved as PDF')
-        fig.savefig(cargs.output, bbox_inches='tight', extra_artists=extra_artists)
+        fig.savefig(cargs.output, bbox_inches='tight')#, extra_artists=extra_artists)
     elif cargs.output.endswith('.png'):
         logger.debug('Figure saved as PNG')
         fig.savefig(cargs.output, bbox_inches='tight', extra_artists=extra_artists,
