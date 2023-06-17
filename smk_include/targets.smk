@@ -295,6 +295,18 @@ TARGET_PATHS = {
         "{hap_reads}_scV{git_commit_version}-{nhr_assembler}_map-to_{eval_align_ref}.mapq60.stats"
     ),
 
+    "STATS_CONTIG_REF_ALN_NHR_ASSEMBLY_MQ00": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "reference_assembly", "non-hap-res",
+        "{hap_reads}_nhr-{nhr_assembler}_map-to_{eval_align_ref}.mapq00.stats"
+    ),
+
+    "STATS_CONTIG_REF_ALN_NHR_ASSEMBLY_MQ60": os.path.join(
+        "output", "statistics", "contigs_to_ref_aln",
+        "reference_assembly", "non-hap-res",
+        "{hap_reads}_nhr-{nhr_assembler}_map-to_{eval_align_ref}.mapq60.stats"
+    ),
+
     "STATS_CONTIG_STATS_NHR_ASSEMBLY": os.path.join(
         "output", "statistics", "assembly_summary",
         "reference_assembly", "non-hap-res",
