@@ -59,3 +59,6 @@ reference_data_sources:
   T2Tv11_hg002Y_chm13:
     local_path: references/downloads/T2Tv11_hg002Y_chm13.fa.gz
     remote_path: /gpfs/project/projects/medbioinf/data/references/T2T_122XYM.fa.gz
+  t2tv2:
+    local_path: references/downloads/chm13v2.0.fa.gz
+    remote_path: /gpfs/project/projects/medbioinf/data/references/chm13v2.0.fa.gz
